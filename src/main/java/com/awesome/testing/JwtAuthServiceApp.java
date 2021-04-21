@@ -17,34 +17,34 @@ import com.awesome.testing.service.UserService;
 @RequiredArgsConstructor
 public class JwtAuthServiceApp implements CommandLineRunner {
 
-  private final UserService userService;
+    private final UserService userService;
 
-  public static void main(String[] args) {
-    SpringApplication.run(JwtAuthServiceApp.class, args);
-  }
+    public static void main(String[] args) {
+        SpringApplication.run(JwtAuthServiceApp.class, args);
+    }
 
-  @Bean
-  public ModelMapper modelMapper() {
-    return new ModelMapper();
-  }
+    @Bean
+    public ModelMapper modelMapper() {
+        return new ModelMapper();
+    }
 
-  @Override
-  public void run(String... params) {
-    User admin = new User();
-    admin.setUsername("admin");
-    admin.setPassword("admin");
-    admin.setEmail("admin@email.com");
-    admin.setRoles(Collections.singletonList(Role.ROLE_ADMIN));
+    @Override
+    public void run(String... params) {
+        User admin = new User();
+        admin.setUsername("admin");
+        admin.setPassword("admin");
+        admin.setEmail("admin@email.com");
+        admin.setRoles(Collections.singletonList(Role.ROLE_ADMIN));
 
-    userService.signup(admin);
+        userService.signup(admin);
 
-    User client = new User();
-    client.setUsername("client");
-    client.setPassword("client");
-    client.setEmail("client@email.com");
-    client.setRoles(Collections.singletonList(Role.ROLE_CLIENT));
+        User client = new User();
+        client.setUsername("client");
+        client.setPassword("client");
+        client.setEmail("client@email.com");
+        client.setRoles(Collections.singletonList(Role.ROLE_CLIENT));
 
-    userService.signup(client);
-  }
+        userService.signup(client);
+    }
 
 }

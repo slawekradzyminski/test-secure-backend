@@ -8,9 +8,9 @@ import org.springframework.http.HttpStatus;
 @Getter
 public class CustomException extends RuntimeException {
 
-  private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-  final String message;
-  final HttpStatus httpStatus;
+    final String message;
+    final HttpStatus httpStatus;
 
 }
