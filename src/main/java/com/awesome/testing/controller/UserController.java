@@ -2,6 +2,7 @@ package com.awesome.testing.controller;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.awesome.testing.dto.LoginDto;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,7 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.Api;
@@ -40,9 +40,8 @@ public class UserController {
             @ApiResponse(code = 400, message = "Something went wrong"),
             @ApiResponse(code = 422, message = "Invalid username/password supplied")})
     public String login(
-            @ApiParam("Username") @RequestParam String username,
-            @ApiParam("Password") @RequestParam String password) {
-        return userService.signin(username, password);
+            @ApiParam("Login details") @RequestBody LoginDto loginDetails) {
+        return userService.signin(modelMapper.map(loginDetails, LoginDto.class));
     }
 
     @PostMapping("/signup")
@@ -51,7 +50,7 @@ public class UserController {
             @ApiResponse(code = 400, message = "Something went wrong"),
             @ApiResponse(code = 403, message = "Access denied"),
             @ApiResponse(code = 422, message = "Username is already in use")})
-    public String signup(@ApiParam("Signup User") @RequestBody UserDataDTO user) {
+    public String signup(@ApiParam("Signup user") @RequestBody UserDataDTO user) {
         return userService.signup(modelMapper.map(user, User.class));
     }
 

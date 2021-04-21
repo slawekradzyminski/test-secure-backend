@@ -1,5 +1,6 @@
 package com.awesome.testing;
 
+import com.awesome.testing.dto.LoginDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -53,10 +54,12 @@ public abstract class HttpHelper {
     }
 
     private String getToken() {
+        LoginDto loginDetails = new LoginDto("admin", "admin");
+
         String token = restTemplate.exchange(
-                "/users/signin?password=admin&username=admin",
+                "/users/signin",
                 HttpMethod.POST,
-                new HttpEntity<>(getUnauthorizedHeaders()),
+                new HttpEntity<>(loginDetails, getUnauthorizedHeaders()),
                 String.class)
                 .getBody();
 

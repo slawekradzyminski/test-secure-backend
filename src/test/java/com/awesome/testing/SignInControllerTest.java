@@ -1,10 +1,9 @@
 package com.awesome.testing;
 
 import com.awesome.testing.dto.ErrorDTO;
+import com.awesome.testing.dto.LoginDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.*;
-
-import java.text.MessageFormat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,7 +18,7 @@ public class SignInControllerTest extends HttpHelper {
     public void shouldLoginUser() {
         // when
         ResponseEntity<String> responseWithToken =
-                attemptLogin(VALID_USERNAME, VALID_PASSWORD, String.class);
+                attemptLogin(new LoginDto(VALID_USERNAME, VALID_PASSWORD), String.class);
 
         // then
         assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -31,7 +30,7 @@ public class SignInControllerTest extends HttpHelper {
     public void shouldReturn422OnWrongPassword() {
         // when
         ResponseEntity<ErrorDTO> responseWithToken =
-                attemptLogin(VALID_USERNAME, "wrong", ErrorDTO.class);
+                attemptLogin(new LoginDto(VALID_USERNAME, "wrong"), ErrorDTO.class);
 
         // then
         assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
@@ -43,18 +42,18 @@ public class SignInControllerTest extends HttpHelper {
     public void shouldReturn422OnWrongUsername() {
         // when
         ResponseEntity<ErrorDTO> responseWithToken =
-                attemptLogin("wrong", VALID_PASSWORD, ErrorDTO.class);
+                attemptLogin(new LoginDto("wrong", VALID_PASSWORD), ErrorDTO.class);
 
         // then
         assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
         assertThat(responseWithToken.getBody().getMessage()).isEqualTo(LOGIN_FAILED);
     }
 
-    private <T> ResponseEntity<T> attemptLogin(String username, String password, Class<T> clazz) {
+    private <T> ResponseEntity<T> attemptLogin(LoginDto loginDetails, Class<T> clazz) {
         return restTemplate.exchange(
-                MessageFormat.format("/users/signin?password={0}&username={1}", password, username),
+                "/users/signin",
                 HttpMethod.POST,
-                new HttpEntity<>("", getRequiredHeaders()),
+                new HttpEntity<>(loginDetails, getRequiredHeaders()),
                 clazz);
     }
 
