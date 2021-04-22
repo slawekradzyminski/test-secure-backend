@@ -28,10 +28,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
-        http.authorizeRequests()//
-                .antMatchers("/users/signin").permitAll()//
-                .antMatchers("/users/signup").permitAll()//
+        http.authorizeRequests()
+                .antMatchers("/users/signin").permitAll()
+                .antMatchers("/users/signup").permitAll()
                 .antMatchers("/h2-console/**/**").permitAll()
+                .antMatchers("/h2-console").permitAll()
                 .anyRequest().authenticated();
 
         http.exceptionHandling().accessDeniedPage("/login");
@@ -41,15 +42,16 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     public void configure(WebSecurity web) {
-        web.ignoring().antMatchers("/v2/api-docs")//
-                .antMatchers("/swagger-resources/**")//
-                .antMatchers("/swagger-ui.html")//
-                .antMatchers("/configuration/**")//
-                .antMatchers("/webjars/**")//
+        web.ignoring().antMatchers("/v2/api-docs")
+                .antMatchers("/swagger-resources/**")
+                .antMatchers("/swagger-ui.html")
+                .antMatchers("/configuration/**")
+                .antMatchers("/webjars/**")
                 .antMatchers("/public")
                 .and()
                 .ignoring()
-                .antMatchers("/h2-console/**/**");
+                .antMatchers("/h2-console/**/**")
+                .antMatchers("/h2-console");
     }
 
     @Bean

@@ -31,8 +31,8 @@ public abstract class HttpHelper {
         execute(HttpMethod.DELETE, url, null, httpHeaders, Object.class);
     }
 
-    protected <T, V> ResponseEntity<T> executePost(String url, V body, HttpHeaders httpHeaders, Class<T> responseType) {
-        return execute(HttpMethod.POST, url, body, httpHeaders, responseType);
+    protected <T, V> ResponseEntity<T> executePost(String url, V body, Class<T> responseType) {
+        return execute(HttpMethod.POST, url, body, getJsonOnlyHeaders(), responseType);
     }
 
     protected <T, V> ResponseEntity<T> execute(HttpMethod httpMethod,
@@ -46,19 +46,25 @@ public abstract class HttpHelper {
                 responseType);
     }
 
+    protected HttpHeaders getHeadersWith(String token) {
+        HttpHeaders headers = getJsonOnlyHeaders();
+        headers.add(HttpHeaders.AUTHORIZATION, MessageFormat.format("Bearer {0}", token));
+        return headers;
+    }
+
     protected HttpHeaders getAdminHeaders() {
-        HttpHeaders headers = getUnauthorizedHeaders();
+        HttpHeaders headers = getJsonOnlyHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, getToken("admin", "admin"));
         return headers;
     }
 
     protected HttpHeaders getClientHeaders() {
-        HttpHeaders headers = getUnauthorizedHeaders();
+        HttpHeaders headers = getJsonOnlyHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, getToken("client", "client"));
         return headers;
     }
 
-    protected HttpHeaders getUnauthorizedHeaders() {
+    protected HttpHeaders getJsonOnlyHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.ACCEPT, "application/json");
         headers.add(HttpHeaders.CONTENT_TYPE, "application/json");
@@ -71,7 +77,7 @@ public abstract class HttpHelper {
         String token = restTemplate.exchange(
                 "/users/signin",
                 HttpMethod.POST,
-                new HttpEntity<>(loginDetails, getUnauthorizedHeaders()),
+                new HttpEntity<>(loginDetails, getJsonOnlyHeaders()),
                 String.class)
                 .getBody();
 

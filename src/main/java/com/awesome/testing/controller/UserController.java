@@ -1,6 +1,7 @@
 package com.awesome.testing.controller;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
 import com.awesome.testing.dto.LoginDto;
 import lombok.RequiredArgsConstructor;
@@ -37,22 +38,24 @@ public class UserController {
     @PostMapping("/signin")
     @ApiOperation(value = "${UserController.signin}")
     @ApiResponses(value = {
+            @ApiResponse(code = 400, message = "Field validation failed"),
             @ApiResponse(code = 422, message = "Invalid username/password supplied"),
             @ApiResponse(code = 500, message = "Something went wrong")
     })
     public String login(
-            @ApiParam("Login details") @RequestBody LoginDto loginDetails) {
+            @ApiParam("Login details") @Valid @RequestBody LoginDto loginDetails) {
         return userService.signin(modelMapper.map(loginDetails, LoginDto.class));
     }
 
     @PostMapping("/signup")
     @ApiOperation(value = "${UserController.signup}")
     @ApiResponses(value = {
+            @ApiResponse(code = 400, message = "Field validation failed"),
             @ApiResponse(code = 403, message = "Access denied"),
             @ApiResponse(code = 422, message = "Username is already in use"),
             @ApiResponse(code = 500, message = "Something went wrong")
     })
-    public String signup(@ApiParam("Signup user") @RequestBody UserDataDTO user) {
+    public String signup(@ApiParam("Signup user") @Valid @RequestBody UserDataDTO user) {
         return userService.signup(modelMapper.map(user, User.class));
     }
 

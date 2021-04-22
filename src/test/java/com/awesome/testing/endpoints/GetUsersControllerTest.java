@@ -8,7 +8,7 @@ import org.springframework.http.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class UsersControllerTest extends HttpHelper {
+public class GetUsersControllerTest extends HttpHelper {
 
     @Test
     public void shouldGetUser() {
@@ -40,7 +40,7 @@ public class UsersControllerTest extends HttpHelper {
         ResponseEntity<Object> userResponseEntity = restTemplate.exchange(
                 "/users/admin",
                 HttpMethod.GET,
-                new HttpEntity<>(getUnauthorizedHeaders()),
+                new HttpEntity<>(getJsonOnlyHeaders()),
                 Object.class);
 
         // then

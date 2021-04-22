@@ -1,6 +1,6 @@
 package com.awesome.testing;
 
-import java.util.Collections;
+import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -34,7 +34,7 @@ public class JwtAuthServiceApp implements CommandLineRunner {
         admin.setUsername("admin");
         admin.setPassword("admin");
         admin.setEmail("admin@email.com");
-        admin.setRoles(Collections.singletonList(Role.ROLE_ADMIN));
+        admin.setRoles(List.of(Role.ROLE_ADMIN));
 
         userService.signup(admin);
 
@@ -42,7 +42,7 @@ public class JwtAuthServiceApp implements CommandLineRunner {
         client.setUsername("client");
         client.setPassword("client");
         client.setEmail("client@email.com");
-        client.setRoles(Collections.singletonList(Role.ROLE_CLIENT));
+        client.setRoles(List.of(Role.ROLE_CLIENT));
 
         userService.signup(client);
     }
