@@ -17,32 +17,44 @@ public abstract class HttpHelper {
     @Autowired
     protected TestRestTemplate restTemplate;
 
-    protected <T> ResponseEntity<T> executeGet(String url, Class<T> responseType) {
-        return execute(HttpMethod.GET, url, null, responseType);
+    protected <T> ResponseEntity<T> executeGet(String url,
+                                               HttpHeaders httpHeaders,
+                                               Class<T> responseType) {
+        return execute(HttpMethod.GET, url, null, httpHeaders, responseType);
     }
 
-    protected void executePut(String url, Object body) {
-        execute(HttpMethod.PUT, url, body, Object.class);
+    protected void executePut(String url, Object body, HttpHeaders httpHeaders) {
+        execute(HttpMethod.PUT, url, body, httpHeaders, Object.class);
     }
 
-    protected void executeDelete(String url) {
-        execute(HttpMethod.DELETE, url, null, Object.class);
+    protected void executeDelete(String url, HttpHeaders httpHeaders) {
+        execute(HttpMethod.DELETE, url, null, httpHeaders, Object.class);
     }
 
-    protected <T, V> ResponseEntity<T> executePost(String url, V body, Class<T> responseType) {
-        return execute(HttpMethod.POST, url, body, responseType);
+    protected <T, V> ResponseEntity<T> executePost(String url, V body, HttpHeaders httpHeaders, Class<T> responseType) {
+        return execute(HttpMethod.POST, url, body, httpHeaders, responseType);
     }
 
-    protected <T, V> ResponseEntity<T> execute(HttpMethod httpMethod, String url, V body, Class<T> responseType) {
+    protected <T, V> ResponseEntity<T> execute(HttpMethod httpMethod,
+                                               String url,
+                                               V body,
+                                               HttpHeaders httpHeaders,
+                                               Class<T> responseType) {
         return restTemplate.exchange(url,
                 httpMethod,
-                new HttpEntity<>(body, getRequiredHeaders()),
+                new HttpEntity<>(body, httpHeaders),
                 responseType);
     }
 
-    private HttpHeaders getRequiredHeaders() {
+    protected HttpHeaders getAdminHeaders() {
         HttpHeaders headers = getUnauthorizedHeaders();
-        headers.add(HttpHeaders.AUTHORIZATION, getToken());
+        headers.add(HttpHeaders.AUTHORIZATION, getToken("admin", "admin"));
+        return headers;
+    }
+
+    protected HttpHeaders getClientHeaders() {
+        HttpHeaders headers = getUnauthorizedHeaders();
+        headers.add(HttpHeaders.AUTHORIZATION, getToken("client", "client"));
         return headers;
     }
 
@@ -53,8 +65,8 @@ public abstract class HttpHelper {
         return headers;
     }
 
-    private String getToken() {
-        LoginDto loginDetails = new LoginDto("admin", "admin");
+    private String getToken(String username, String password) {
+        LoginDto loginDetails = new LoginDto(username, password);
 
         String token = restTemplate.exchange(
                 "/users/signin",

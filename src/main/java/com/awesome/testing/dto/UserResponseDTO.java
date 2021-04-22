@@ -6,9 +6,11 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 import com.awesome.testing.model.Role;
+import lombok.ToString;
 
 @Setter
 @Getter
+@ToString
 public class UserResponseDTO {
 
     @ApiModelProperty(position = 0)

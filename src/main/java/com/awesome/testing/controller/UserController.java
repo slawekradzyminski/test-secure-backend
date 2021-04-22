@@ -37,8 +37,9 @@ public class UserController {
     @PostMapping("/signin")
     @ApiOperation(value = "${UserController.signin}")
     @ApiResponses(value = {
-            @ApiResponse(code = 400, message = "Something went wrong"),
-            @ApiResponse(code = 422, message = "Invalid username/password supplied")})
+            @ApiResponse(code = 422, message = "Invalid username/password supplied"),
+            @ApiResponse(code = 500, message = "Something went wrong")
+    })
     public String login(
             @ApiParam("Login details") @RequestBody LoginDto loginDetails) {
         return userService.signin(modelMapper.map(loginDetails, LoginDto.class));
@@ -47,34 +48,23 @@ public class UserController {
     @PostMapping("/signup")
     @ApiOperation(value = "${UserController.signup}")
     @ApiResponses(value = {
-            @ApiResponse(code = 400, message = "Something went wrong"),
             @ApiResponse(code = 403, message = "Access denied"),
-            @ApiResponse(code = 422, message = "Username is already in use")})
+            @ApiResponse(code = 422, message = "Username is already in use"),
+            @ApiResponse(code = 500, message = "Something went wrong")
+    })
     public String signup(@ApiParam("Signup user") @RequestBody UserDataDTO user) {
         return userService.signup(modelMapper.map(user, User.class));
-    }
-
-    @DeleteMapping(value = "/{username}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @ApiOperation(value = "${UserController.delete}", authorizations = {@Authorization(value = "apiKey")})
-    @ApiResponses(value = {
-            @ApiResponse(code = 400, message = "Something went wrong"),
-            @ApiResponse(code = 403, message = "Access denied"),
-            @ApiResponse(code = 404, message = "The user doesn't exist"),
-            @ApiResponse(code = 500, message = "Expired or invalid JWT token")})
-    public String delete(@ApiParam("Username") @PathVariable String username) {
-        userService.delete(username);
-        return username;
     }
 
     @GetMapping(value = "/{username}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @ApiOperation(value = "${UserController.search}", response = UserResponseDTO.class, authorizations = {@Authorization(value = "apiKey")})
     @ApiResponses(value = {
-            @ApiResponse(code = 400, message = "Something went wrong"),
+            @ApiResponse(code = 400, message = "Expired or invalid JWT token"),
             @ApiResponse(code = 403, message = "Access denied"),
             @ApiResponse(code = 404, message = "The user doesn't exist"),
-            @ApiResponse(code = 500, message = "Expired or invalid JWT token")})
+            @ApiResponse(code = 500, message = "Something went wrong")
+    })
     public UserResponseDTO search(@ApiParam("Username") @PathVariable String username) {
         return modelMapper.map(userService.search(username), UserResponseDTO.class);
     }
@@ -83,11 +73,26 @@ public class UserController {
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
     @ApiOperation(value = "${UserController.me}", response = UserResponseDTO.class, authorizations = {@Authorization(value = "apiKey")})
     @ApiResponses(value = {
-            @ApiResponse(code = 400, message = "Something went wrong"),
+            @ApiResponse(code = 400, message = "Expired or invalid JWT token"),
             @ApiResponse(code = 403, message = "Access denied"),
-            @ApiResponse(code = 500, message = "Expired or invalid JWT token")})
+            @ApiResponse(code = 500, message = "Something went wrong")
+    })
     public UserResponseDTO whoami(HttpServletRequest req) {
         return modelMapper.map(userService.whoami(req), UserResponseDTO.class);
+    }
+
+    @DeleteMapping(value = "/{username}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @ApiOperation(value = "${UserController.delete}", authorizations = {@Authorization(value = "apiKey")})
+    @ApiResponses(value = {
+            @ApiResponse(code = 400, message = "Expired or invalid JWT token"),
+            @ApiResponse(code = 403, message = "Access denied"),
+            @ApiResponse(code = 404, message = "The user doesn't exist"),
+            @ApiResponse(code = 500, message = "Something went wrong")
+    })
+    public String delete(@ApiParam("Username") @PathVariable String username) {
+        userService.delete(username);
+        return username;
     }
 
     @GetMapping("/refresh")

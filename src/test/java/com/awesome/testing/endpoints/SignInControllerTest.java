@@ -1,5 +1,6 @@
-package com.awesome.testing;
+package com.awesome.testing.endpoints;
 
+import com.awesome.testing.HttpHelper;
 import com.awesome.testing.dto.ErrorDTO;
 import com.awesome.testing.dto.LoginDto;
 import org.junit.jupiter.api.Test;
