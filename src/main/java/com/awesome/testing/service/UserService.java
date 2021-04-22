@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 
 import com.awesome.testing.model.User;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -25,7 +27,7 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
 
-    public String signin(LoginDto loginDetails) {
+    public String signIn(LoginDto loginDetails) {
         String username = loginDetails.getUsername();
         String password = loginDetails.getPassword();
         try {
@@ -36,14 +38,14 @@ public class UserService {
         }
     }
 
-    public String signup(User user) {
-        if (!userRepository.existsByUsername(user.getUsername())) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-            userRepository.save(user);
-            return jwtTokenProvider.createToken(user.getUsername(), user.getRoles());
-        } else {
+    public String signUp(User user) {
+        if (userRepository.existsByUsername(user.getUsername())) {
             throw new CustomException("Username is already in use", HttpStatus.UNPROCESSABLE_ENTITY);
         }
+
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        userRepository.save(user);
+        return jwtTokenProvider.createToken(user.getUsername(), user.getRoles());
     }
 
     public void delete(String username) {
@@ -51,15 +53,13 @@ public class UserService {
     }
 
     public User search(String username) {
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new CustomException("The user doesn't exist", HttpStatus.NOT_FOUND);
-        }
-        return user;
+        return Optional.ofNullable(userRepository.findByUsername(username))
+                .orElseThrow(() -> new CustomException("The user doesn't exist", HttpStatus.NOT_FOUND));
     }
 
-    public User whoami(HttpServletRequest req) {
-        return userRepository.findByUsername(jwtTokenProvider.getUsername(jwtTokenProvider.resolveToken(req)));
+    public User whoAmI(HttpServletRequest req) {
+        String token = jwtTokenProvider.extractTokenFromRequest(req);
+        return userRepository.findByUsername(jwtTokenProvider.getUsername(token));
     }
 
     public String refresh(String username) {

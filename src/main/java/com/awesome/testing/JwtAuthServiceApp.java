@@ -36,7 +36,7 @@ public class JwtAuthServiceApp implements CommandLineRunner {
         admin.setEmail("admin@email.com");
         admin.setRoles(List.of(Role.ROLE_ADMIN));
 
-        userService.signup(admin);
+        userService.signUp(admin);
 
         User client = new User();
         client.setUsername("client");
@@ -44,7 +44,7 @@ public class JwtAuthServiceApp implements CommandLineRunner {
         client.setEmail("client@email.com");
         client.setRoles(List.of(Role.ROLE_CLIENT));
 
-        userService.signup(client);
+        userService.signUp(client);
     }
 
 }

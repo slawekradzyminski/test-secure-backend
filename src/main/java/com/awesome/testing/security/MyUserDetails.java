@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import com.awesome.testing.model.User;
 
+import static org.springframework.security.core.userdetails.User.*;
+
 @Service
 @RequiredArgsConstructor
 public class MyUserDetails implements UserDetailsService {
@@ -23,8 +25,7 @@ public class MyUserDetails implements UserDetailsService {
             throw new UsernameNotFoundException("User '" + username + "' not found");
         }
 
-        return org.springframework.security.core.userdetails.User
-                .withUsername(username)
+        return withUsername(username)
                 .password(user.getPassword())
                 .authorities(user.getRoles())
                 .accountExpired(false)

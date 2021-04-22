@@ -44,7 +44,7 @@ public class UserController {
     })
     public String login(
             @ApiParam("Login details") @Valid @RequestBody LoginDto loginDetails) {
-        return userService.signin(modelMapper.map(loginDetails, LoginDto.class));
+        return userService.signIn(modelMapper.map(loginDetails, LoginDto.class));
     }
 
     @PostMapping("/signup")
@@ -56,7 +56,7 @@ public class UserController {
             @ApiResponse(code = 500, message = "Something went wrong")
     })
     public String signup(@ApiParam("Signup user") @Valid @RequestBody UserDataDTO user) {
-        return userService.signup(modelMapper.map(user, User.class));
+        return userService.signUp(modelMapper.map(user, User.class));
     }
 
     @GetMapping(value = "/{username}")
@@ -81,7 +81,7 @@ public class UserController {
             @ApiResponse(code = 500, message = "Something went wrong")
     })
     public UserResponseDTO whoami(HttpServletRequest req) {
-        return modelMapper.map(userService.whoami(req), UserResponseDTO.class);
+        return modelMapper.map(userService.whoAmI(req), UserResponseDTO.class);
     }
 
     @DeleteMapping(value = "/{username}")
