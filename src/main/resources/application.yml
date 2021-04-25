@@ -37,3 +37,5 @@ UserController:
   delete: Deletes specific user by username
   search: Returns specific user by username
   me: Returns current user's data
+  refresh: Refreshes token for logged in user
+  getAll: Get all users

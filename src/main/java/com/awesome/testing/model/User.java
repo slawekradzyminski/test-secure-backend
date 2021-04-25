@@ -32,10 +32,18 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Size(min = 8, message = "Minimum password length: 8 characters")
+    @Size(min = 4, message = "Minimum password length: 4 characters")
     private String password;
 
     @ElementCollection(fetch = FetchType.EAGER)
-    List<Role> roles;
+    private List<Role> roles;
+
+    @Size(min = 4, message = "Minimum firstName length: 4 characters")
+    @Column(nullable = false)
+    private String firstName;
+
+    @Size(min = 4, message = "Minimum lastName length: 4 characters")
+    @Column(nullable = false)
+    private String lastName;
 
 }

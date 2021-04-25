@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import com.awesome.testing.model.User;
 
+import java.text.MessageFormat;
+
 import static org.springframework.security.core.userdetails.User.*;
 
 @Service
@@ -22,7 +24,8 @@ public class MyUserDetails implements UserDetailsService {
         final User user = userRepository.findByUsername(username);
 
         if (user == null) {
-            throw new UsernameNotFoundException("User '" + username + "' not found");
+            throw new UsernameNotFoundException(
+                    MessageFormat.format("User ''{0}'' not found", username));
         }
 
         return withUsername(username)

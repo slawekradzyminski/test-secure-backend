@@ -31,6 +31,14 @@ public class UserDataDTO {
 
     @NotEmpty(message = "Please pick at least one role")
     @ApiModelProperty(position = 3)
-    List<Role> roles;
+    private List<Role> roles;
+
+    @Size(min = 4, max = 255, message = "Minimum firstName length: 4 characters")
+    @ApiModelProperty(position = 4)
+    private String firstName;
+
+    @Size(min = 4, max = 255, message = "Minimum firstName length: 4 characters")
+    @ApiModelProperty(position = 5)
+    private String lastName;
 
 }

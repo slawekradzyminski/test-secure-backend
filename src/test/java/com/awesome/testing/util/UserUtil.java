@@ -15,6 +15,8 @@ public class UserUtil {
                 .email(getRandomEmail())
                 .password(RandomString.make(10))
                 .roles(List.of(Role.ROLE_ADMIN))
+                .firstName(RandomString.make(10))
+                .lastName(RandomString.make(10))
                 .build();
     }
 
@@ -24,6 +26,8 @@ public class UserUtil {
                 .email(getRandomEmail())
                 .password(RandomString.make(10))
                 .roles(List.of(Role.ROLE_ADMIN))
+                .firstName(RandomString.make(10))
+                .lastName(RandomString.make(10))
                 .build();
     }
 
@@ -33,6 +37,8 @@ public class UserUtil {
                 .email(getRandomEmail())
                 .password(RandomString.make(10))
                 .roles(roles)
+                .firstName(RandomString.make(10))
+                .lastName(RandomString.make(10))
                 .build();
     }
 

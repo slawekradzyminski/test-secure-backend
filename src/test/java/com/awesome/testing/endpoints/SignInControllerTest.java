@@ -1,10 +1,7 @@
 package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.ErrorDTO;
-import com.awesome.testing.dto.LoginDto;
-import com.awesome.testing.dto.UserDataDTO;
-import com.awesome.testing.dto.UserResponseDTO;
+import com.awesome.testing.dto.*;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,23 +29,25 @@ public class SignInControllerTest extends DomainHelper {
         registerUser(user);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldLoginUser() {
         // when
-        ResponseEntity<String> responseWithToken =
-                attemptLogin(new LoginDto(validUsername, validPassword), String.class);
+        ResponseEntity<LoginResponseDto> responseWithToken =
+                attemptLogin(new LoginDto(validUsername, validPassword), LoginResponseDto.class);
 
         // then
         assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(responseWithToken.getBody()).isNotBlank();
+        assertThat(responseWithToken.getBody().getToken()).isNotBlank();
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     public void loggingReturnsValidToken() {
         // given
-        String token = attemptLogin(new LoginDto(validUsername, validPassword), String.class)
-                .getBody();
+        String token = attemptLogin(new LoginDto(validUsername, validPassword), LoginResponseDto.class)
+                .getBody()
+                .getToken();
 
         // when
         ResponseEntity<UserResponseDTO> response =

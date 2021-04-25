@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import com.awesome.testing.model.User;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -56,6 +57,10 @@ public class UserService {
     public User search(String username) {
         return Optional.ofNullable(userRepository.findByUsername(username))
                 .orElseThrow(() -> new CustomException("The user doesn't exist", HttpStatus.NOT_FOUND));
+    }
+
+    public List<User> getAll() {
+        return userRepository.findAll();
     }
 
     public User whoAmI(HttpServletRequest req) {
