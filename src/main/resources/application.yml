@@ -18,18 +18,33 @@ spring:
       path: /h2-console
 
 server:
-  port: 8080 # This is the default port anyway, but you can change it here
+  port: 4000
   error:
     include-message: always
     include-binding-errors: always
     include-stacktrace: on_trace_param
     include-exception: false
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
 
 security:
   jwt:
     token:
       secret-key: secret-key
       expire-length: 300000 # 5 minutes duration by default: 5 minutes * 60 seconds * 1000 miliseconds
+
+logbook:
+  include: "**/users**"
+
+logging:
+  level:
+    org:
+      zalando:
+        logbook: TRACE
 
 UserController:
   signin: Authenticates user and returns its JWT token.
@@ -40,3 +55,4 @@ UserController:
   refresh: Refreshes token for logged in user
   getAll: Get all users
   edit: Edits user details
+

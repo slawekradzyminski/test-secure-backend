@@ -12,6 +12,9 @@ import org.springframework.context.annotation.Bean;
 import com.awesome.testing.model.Role;
 import com.awesome.testing.model.User;
 import com.awesome.testing.service.UserService;
+import org.zalando.logbook.HeaderFilter;
+
+import static org.zalando.logbook.HeaderFilter.none;
 
 @SpringBootApplication
 @RequiredArgsConstructor
@@ -21,6 +24,11 @@ public class JwtAuthServiceApp implements CommandLineRunner {
 
     public static void main(String[] args) {
         SpringApplication.run(JwtAuthServiceApp.class, args);
+    }
+
+    @Bean
+    public HeaderFilter headerFilter() {
+        return none();
     }
 
     @Bean
