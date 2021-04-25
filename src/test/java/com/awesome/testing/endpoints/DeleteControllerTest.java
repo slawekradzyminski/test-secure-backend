@@ -3,44 +3,43 @@ package com.awesome.testing.endpoints;
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.ErrorDTO;
 import com.awesome.testing.dto.UserDataDTO;
-import com.awesome.testing.dto.UserResponseDTO;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
 import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class GetUsersControllerTest extends DomainHelper {
+public class DeleteControllerTest extends DomainHelper {
 
     @Test
-    public void shouldGetUserAsAdmin() {
+    public void shouldDeleteUser() {
         // given
         UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
-        String adminToken = registerUser(user).getBody();
+        String username = user.getUsername();
+        String apiToken = registerUser(user).getBody();
 
         // when
-        ResponseEntity<UserResponseDTO> response =
-                executeGet(getUserEndpoint(user.getUsername()),
-                        getHeadersWith(adminToken),
-                        UserResponseDTO.class);
+        ResponseEntity<String> response =
+                executeDelete(getUserEndpoint(username), getHeadersWith(apiToken), String.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test
-    public void shouldGet403AsClient() {
+    public void shouldGet403AsUnauthorized() {
         // given
         UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String clientToken = registerUser(user).getBody();
+        String username = user.getUsername();
 
         // when
         ResponseEntity<ErrorDTO> response =
-                executeGet(getUserEndpoint(user.getUsername()),
-                        getHeadersWith(clientToken),
+                executeDelete(getUserEndpoint(username),
+                        getJsonOnlyHeaders(),
                         ErrorDTO.class);
 
         // then
@@ -48,33 +47,33 @@ public class GetUsersControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet403AsUnauthorized() {
+    public void shouldGet403AsClient() {
         // given
         UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        registerUser(user);
+        String username = user.getUsername();
+        String apiToken = registerUser(user).getBody();
 
         // when
-        ResponseEntity<ErrorDTO> userResponseEntity = restTemplate.exchange(
-                getUserEndpoint(user.getUsername()),
-                HttpMethod.GET,
-                new HttpEntity<>(getJsonOnlyHeaders()),
-                ErrorDTO.class);
+        ResponseEntity<ErrorDTO> response =
+                executeDelete(getUserEndpoint(username),
+                        getHeadersWith(apiToken),
+                        ErrorDTO.class);
 
         // then
-        assertThat(userResponseEntity.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet404ForNonExistingUser() {
+    public void shouldGet404Nonexisting() {
         // given
         UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
-        String token = registerUser(user).getBody();
+        String apiToken = registerUser(user).getBody();
 
         // when
         ResponseEntity<ErrorDTO> response =
-                executeGet(getUserEndpoint("nonexisting"),
-                        getHeadersWith(token),
+                executeDelete(getUserEndpoint("nonexisting"),
+                        getHeadersWith(apiToken),
                         ErrorDTO.class);
 
         // then

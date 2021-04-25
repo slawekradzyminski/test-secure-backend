@@ -61,9 +61,10 @@ public class UserController {
 
     @GetMapping(value = "/{username}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @ApiOperation(value = "${UserController.search}", response = UserResponseDTO.class, authorizations = {@Authorization(value = "apiKey")})
+    @ApiOperation(value = "${UserController.search}", response = UserResponseDTO.class,
+            authorizations = {@Authorization(value = "apiKey")})
     @ApiResponses(value = {
-            @ApiResponse(code = 400, message = "Expired or invalid JWT token"),
+            @ApiResponse(code = 403, message = "Expired or invalid JWT token"),
             @ApiResponse(code = 403, message = "Access denied"),
             @ApiResponse(code = 404, message = "The user doesn't exist"),
             @ApiResponse(code = 500, message = "Something went wrong")
@@ -74,21 +75,23 @@ public class UserController {
 
     @GetMapping(value = "/me")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
-    @ApiOperation(value = "${UserController.me}", response = UserResponseDTO.class, authorizations = {@Authorization(value = "apiKey")})
+    @ApiOperation(value = "${UserController.me}", response = UserResponseDTO.class,
+            authorizations = {@Authorization(value = "apiKey")})
     @ApiResponses(value = {
-            @ApiResponse(code = 400, message = "Expired or invalid JWT token"),
+            @ApiResponse(code = 403, message = "Expired or invalid JWT token"),
             @ApiResponse(code = 403, message = "Access denied"),
             @ApiResponse(code = 500, message = "Something went wrong")
     })
-    public UserResponseDTO whoami(HttpServletRequest req) {
+    public UserResponseDTO whoAmI(HttpServletRequest req) {
         return modelMapper.map(userService.whoAmI(req), UserResponseDTO.class);
     }
 
     @DeleteMapping(value = "/{username}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @ApiOperation(value = "${UserController.delete}", authorizations = {@Authorization(value = "apiKey")})
+    @ApiOperation(value = "${UserController.delete}",
+            authorizations = {@Authorization(value = "apiKey")})
     @ApiResponses(value = {
-            @ApiResponse(code = 400, message = "Expired or invalid JWT token"),
+            @ApiResponse(code = 403, message = "Expired or invalid JWT token"),
             @ApiResponse(code = 403, message = "Access denied"),
             @ApiResponse(code = 404, message = "The user doesn't exist"),
             @ApiResponse(code = 500, message = "Something went wrong")
@@ -100,6 +103,13 @@ public class UserController {
 
     @GetMapping("/refresh")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
+    @ApiOperation(value = "${UserController.refresh}",
+            authorizations = {@Authorization(value = "apiKey")})
+    @ApiResponses(value = {
+            @ApiResponse(code = 403, message = "Expired or invalid JWT token"),
+            @ApiResponse(code = 403, message = "Access denied"),
+            @ApiResponse(code = 500, message = "Something went wrong")
+    })
     public String refresh(HttpServletRequest req) {
         return userService.refresh(req.getRemoteUser());
     }

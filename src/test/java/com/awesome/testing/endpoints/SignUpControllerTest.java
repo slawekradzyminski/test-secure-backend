@@ -1,6 +1,6 @@
 package com.awesome.testing.endpoints;
 
-import com.awesome.testing.HttpHelper;
+import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.ErrorDTO;
 import com.awesome.testing.dto.UserDataDTO;
 import org.junit.jupiter.api.Test;
@@ -16,9 +16,7 @@ import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static com.awesome.testing.util.UserUtil.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class SignUpControllerTest extends HttpHelper {
-
-    private static final String REGISTER_ENDPOINT = "/users/signup";
+public class SignUpControllerTest extends DomainHelper {
 
     @Test
     public void shouldRegister() {

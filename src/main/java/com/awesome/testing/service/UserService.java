@@ -49,6 +49,7 @@ public class UserService {
     }
 
     public void delete(String username) {
+        search(username);
         userRepository.deleteByUsername(username);
     }
 

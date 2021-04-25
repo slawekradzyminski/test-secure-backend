@@ -1,6 +1,5 @@
 package com.awesome.testing;
 
-import com.awesome.testing.dto.LoginDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -8,8 +7,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-
-import java.text.MessageFormat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class HttpHelper {
@@ -27,8 +24,8 @@ public abstract class HttpHelper {
         execute(HttpMethod.PUT, url, body, httpHeaders, Object.class);
     }
 
-    protected void executeDelete(String url, HttpHeaders httpHeaders) {
-        execute(HttpMethod.DELETE, url, null, httpHeaders, Object.class);
+    protected <T> ResponseEntity<T> executeDelete(String url, HttpHeaders httpHeaders, Class<T> responseType) {
+        return execute(HttpMethod.DELETE, url, null, httpHeaders, responseType);
     }
 
     protected <T, V> ResponseEntity<T> executePost(String url, V body, Class<T> responseType) {
@@ -46,42 +43,11 @@ public abstract class HttpHelper {
                 responseType);
     }
 
-    protected HttpHeaders getHeadersWith(String token) {
-        HttpHeaders headers = getJsonOnlyHeaders();
-        headers.add(HttpHeaders.AUTHORIZATION, MessageFormat.format("Bearer {0}", token));
-        return headers;
-    }
-
-    protected HttpHeaders getAdminHeaders() {
-        HttpHeaders headers = getJsonOnlyHeaders();
-        headers.add(HttpHeaders.AUTHORIZATION, getToken("admin", "admin"));
-        return headers;
-    }
-
-    protected HttpHeaders getClientHeaders() {
-        HttpHeaders headers = getJsonOnlyHeaders();
-        headers.add(HttpHeaders.AUTHORIZATION, getToken("client", "client"));
-        return headers;
-    }
-
     protected HttpHeaders getJsonOnlyHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.ACCEPT, "application/json");
         headers.add(HttpHeaders.CONTENT_TYPE, "application/json");
         return headers;
-    }
-
-    private String getToken(String username, String password) {
-        LoginDto loginDetails = new LoginDto(username, password);
-
-        String token = restTemplate.exchange(
-                "/users/signin",
-                HttpMethod.POST,
-                new HttpEntity<>(loginDetails, getJsonOnlyHeaders()),
-                String.class)
-                .getBody();
-
-        return MessageFormat.format("Bearer {0}", token);
     }
 
 }
