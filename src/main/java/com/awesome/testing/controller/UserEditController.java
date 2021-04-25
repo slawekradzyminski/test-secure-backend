@@ -1,10 +1,10 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.dto.UserResponseDTO;
+import com.awesome.testing.dto.UserEditDTO;
+import com.awesome.testing.model.User;
 import com.awesome.testing.service.UserService;
 import io.swagger.annotations.*;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +17,6 @@ import javax.validation.Valid;
 public class UserEditController {
 
     private final UserService userService;
-    private final ModelMapper modelMapper;
 
     @PutMapping(value = "/{username}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -29,10 +28,14 @@ public class UserEditController {
             @ApiResponse(code = 404, message = "The user doesn't exist"),
             @ApiResponse(code = 500, message = "Something went wrong")
     })
-    public String edit(@ApiParam("Username") @PathVariable String username,
-                        @ApiParam("User details") @Valid @RequestBody UserResponseDTO userResponseDTO) {
-        userService.delete(username);
-        return username;
+    public void edit(@ApiParam("Username") @PathVariable String username,
+                        @ApiParam("User details") @Valid @RequestBody UserEditDTO userEditBody) {
+        User user = userService.search(username);
+        user.setFirstName(userEditBody.getFirstName());
+        user.setLastName(userEditBody.getLastName());
+        user.setEmail(userEditBody.getEmail());
+        user.setRoles(userEditBody.getRoles());
+        userService.save(user);
     }
 
 }

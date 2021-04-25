@@ -39,6 +39,10 @@ public class UserService {
         }
     }
 
+    public void save(User user) {
+        userRepository.save(user);
+    }
+
     public String signUp(User user) {
         if (userRepository.existsByUsername(user.getUsername())) {
             throw new CustomException("Username is already in use", HttpStatus.UNPROCESSABLE_ENTITY);

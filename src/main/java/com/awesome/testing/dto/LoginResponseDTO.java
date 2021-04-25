@@ -26,4 +26,7 @@ public class LoginResponseDTO {
     @ApiModelProperty(position = 4)
     String token;
 
+    @ApiModelProperty(position = 5)
+    String email;
+
 }

@@ -42,7 +42,7 @@ public class UserUtil {
                 .build();
     }
 
-    private static String getRandomEmail() {
+    public static String getRandomEmail() {
         return MessageFormat.format("{0}@slawek.com", RandomString.make(10));
     }
 

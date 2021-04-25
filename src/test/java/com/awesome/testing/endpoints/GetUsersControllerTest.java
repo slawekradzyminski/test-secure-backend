@@ -16,8 +16,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class GetUsersControllerTest extends DomainHelper {
 
-    public static final String USERS_ENDPOINT = "/users";
-
     @Test
     public void shouldGetUsersAsAdmin() {
         // given

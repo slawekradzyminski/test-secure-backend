@@ -13,24 +13,21 @@ import java.util.List;
 @Builder
 public class UserEditDTO {
 
-    @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
-    @ApiModelProperty(position = 0)
-    String username;
-
+    @NotEmpty
     @Email
-    @ApiModelProperty(position = 1)
+    @ApiModelProperty(position = 0)
     String email;
 
     @NotEmpty(message = "Please pick at least one role")
-    @ApiModelProperty(position = 2)
+    @ApiModelProperty(position = 1)
     List<Role> roles;
 
     @Size(min = 4, max = 255, message = "Minimum firstName length: 4 characters")
-    @ApiModelProperty(position = 3)
+    @ApiModelProperty(position = 2)
     String firstName;
 
     @Size(min = 4, max = 255, message = "Minimum lastName length: 4 characters")
-    @ApiModelProperty(position = 4)
+    @ApiModelProperty(position = 3)
     String lastName;
 
 }

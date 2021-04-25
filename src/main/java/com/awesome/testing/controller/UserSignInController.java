@@ -38,6 +38,7 @@ public class UserSignInController {
                 .lastName(user.getLastName())
                 .roles(user.getRoles())
                 .token(token)
+                .email(user.getEmail())
                 .build();
     }
 

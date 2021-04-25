@@ -20,8 +20,8 @@ public abstract class HttpHelper {
         return execute(HttpMethod.GET, url, null, httpHeaders, responseType);
     }
 
-    protected void executePut(String url, Object body, HttpHeaders httpHeaders) {
-        execute(HttpMethod.PUT, url, body, httpHeaders, Object.class);
+    protected ResponseEntity<Object> executePut(String url, Object body, HttpHeaders httpHeaders) {
+        return execute(HttpMethod.PUT, url, body, httpHeaders, Object.class);
     }
 
     protected <T> ResponseEntity<T> executeDelete(String url, HttpHeaders httpHeaders, Class<T> responseType) {

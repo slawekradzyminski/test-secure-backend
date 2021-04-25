@@ -100,12 +100,4 @@ public class SignInControllerTest extends DomainHelper {
         assertThat(responseWithToken.getBody().getMessage()).isEqualTo(LOGIN_FAILED);
     }
 
-    private <T> ResponseEntity<T> attemptLogin(LoginDTO loginDetails, Class<T> clazz) {
-        return restTemplate.exchange(
-                LOGIN_ENDPOINT,
-                HttpMethod.POST,
-                new HttpEntity<>(loginDetails, getJsonOnlyHeaders()),
-                clazz);
-    }
-
 }

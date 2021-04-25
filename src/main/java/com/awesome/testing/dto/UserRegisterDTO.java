@@ -21,6 +21,7 @@ public class UserRegisterDTO {
     @ApiModelProperty(position = 0)
     private String username;
 
+    @NotEmpty
     @Email
     @ApiModelProperty(position = 1)
     private String email;
