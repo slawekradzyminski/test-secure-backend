@@ -2,7 +2,7 @@ package com.awesome.testing.service;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.awesome.testing.dto.LoginDto;
+import com.awesome.testing.dto.LoginDTO;
 import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;
@@ -28,7 +28,7 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
 
-    public String signIn(LoginDto loginDetails) {
+    public String signIn(LoginDTO loginDetails) {
         String username = loginDetails.getUsername();
         String password = loginDetails.getPassword();
         try {

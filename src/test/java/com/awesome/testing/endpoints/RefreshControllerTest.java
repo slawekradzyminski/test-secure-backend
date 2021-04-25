@@ -1,7 +1,7 @@
 package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.UserDataDTO;
+import com.awesome.testing.dto.UserRegisterDTO;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -19,7 +19,7 @@ public class RefreshControllerTest extends DomainHelper {
     @Test
     public void shouldRefreshTwice() {
         // given
-        UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String apiToken = registerUser(user).getBody();
 
         // when

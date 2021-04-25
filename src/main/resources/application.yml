@@ -39,3 +39,4 @@ UserController:
   me: Returns current user's data
   refresh: Refreshes token for logged in user
   getAll: Get all users
+  edit: Edits user details

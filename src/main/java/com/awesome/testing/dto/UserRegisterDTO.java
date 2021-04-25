@@ -15,7 +15,7 @@ import javax.validation.constraints.Size;
 @Setter
 @Getter
 @Builder
-public class UserDataDTO {
+public class UserRegisterDTO {
 
     @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
     @ApiModelProperty(position = 0)

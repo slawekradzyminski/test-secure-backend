@@ -1,7 +1,7 @@
 package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.UserDataDTO;
+import com.awesome.testing.dto.UserRegisterDTO;
 import com.awesome.testing.dto.UserResponseDTO;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +23,7 @@ public class MeControllerTest extends DomainHelper {
 
     @BeforeEach
     public void prepareUserForTest() {
-        UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         validUsername = user.getUsername();
         apiToken = registerUser(user).getBody();
     }

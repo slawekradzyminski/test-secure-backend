@@ -2,7 +2,7 @@ package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.ErrorDTO;
-import com.awesome.testing.dto.UserDataDTO;
+import com.awesome.testing.dto.UserRegisterDTO;
 import com.awesome.testing.dto.UserResponseDTO;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,7 @@ public class GetUsersControllerTest extends DomainHelper {
     @Test
     public void shouldGetUsersAsAdmin() {
         // given
-        UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String adminToken = registerUser(user).getBody();
 
         // when

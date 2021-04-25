@@ -23,7 +23,7 @@ public class SignInControllerTest extends DomainHelper {
 
     @BeforeEach
     public void prepareUserForTest() {
-        UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         validUsername = user.getUsername();
         validPassword = user.getPassword();
         registerUser(user);
@@ -33,8 +33,8 @@ public class SignInControllerTest extends DomainHelper {
     @Test
     public void shouldLoginUser() {
         // when
-        ResponseEntity<LoginResponseDto> responseWithToken =
-                attemptLogin(new LoginDto(validUsername, validPassword), LoginResponseDto.class);
+        ResponseEntity<LoginResponseDTO> responseWithToken =
+                attemptLogin(new LoginDTO(validUsername, validPassword), LoginResponseDTO.class);
 
         // then
         assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -45,7 +45,7 @@ public class SignInControllerTest extends DomainHelper {
     @Test
     public void loggingReturnsValidToken() {
         // given
-        String token = attemptLogin(new LoginDto(validUsername, validPassword), LoginResponseDto.class)
+        String token = attemptLogin(new LoginDTO(validUsername, validPassword), LoginResponseDTO.class)
                 .getBody()
                 .getToken();
 
@@ -67,7 +67,7 @@ public class SignInControllerTest extends DomainHelper {
         ResponseEntity<Map<String, String>> response = restTemplate.exchange(
                 LOGIN_ENDPOINT,
                 HttpMethod.POST,
-                new HttpEntity<>(new LoginDto("one", "two"), getJsonOnlyHeaders()),
+                new HttpEntity<>(new LoginDTO("one", "two"), getJsonOnlyHeaders()),
                 mapTypeReference());
 
         // then
@@ -81,7 +81,7 @@ public class SignInControllerTest extends DomainHelper {
     public void shouldReturn422OnWrongPassword() {
         // when
         ResponseEntity<ErrorDTO> responseWithToken =
-                attemptLogin(new LoginDto(validUsername, "wrong"), ErrorDTO.class);
+                attemptLogin(new LoginDTO(validUsername, "wrong"), ErrorDTO.class);
 
         // then
         assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
@@ -93,14 +93,14 @@ public class SignInControllerTest extends DomainHelper {
     public void shouldReturn422OnWrongUsername() {
         // when
         ResponseEntity<ErrorDTO> responseWithToken =
-                attemptLogin(new LoginDto("wrong", validPassword), ErrorDTO.class);
+                attemptLogin(new LoginDTO("wrong", validPassword), ErrorDTO.class);
 
         // then
         assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
         assertThat(responseWithToken.getBody().getMessage()).isEqualTo(LOGIN_FAILED);
     }
 
-    private <T> ResponseEntity<T> attemptLogin(LoginDto loginDetails, Class<T> clazz) {
+    private <T> ResponseEntity<T> attemptLogin(LoginDTO loginDetails, Class<T> clazz) {
         return restTemplate.exchange(
                 LOGIN_ENDPOINT,
                 HttpMethod.POST,

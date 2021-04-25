@@ -9,7 +9,7 @@ import java.util.List;
 
 @Value
 @Builder
-public class LoginResponseDto {
+public class LoginResponseDTO {
 
     @ApiModelProperty(position = 0)
     String username;

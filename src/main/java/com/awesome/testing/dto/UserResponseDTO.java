@@ -3,10 +3,8 @@ package com.awesome.testing.dto;
 import java.util.List;
 
 import io.swagger.annotations.ApiModelProperty;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import com.awesome.testing.model.Role;
-import lombok.ToString;
 
 @Setter
 @Getter

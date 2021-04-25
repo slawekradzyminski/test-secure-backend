@@ -1,6 +1,6 @@
 package com.awesome.testing;
 
-import com.awesome.testing.dto.UserDataDTO;
+import com.awesome.testing.dto.UserRegisterDTO;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
@@ -13,10 +13,10 @@ public abstract class DomainHelper extends HttpHelper {
 
     protected static final String MISSING_USER = "The user doesn't exist";
 
-    protected ResponseEntity<String> registerUser(UserDataDTO userDataDTO) {
+    protected ResponseEntity<String> registerUser(UserRegisterDTO userRegisterDTO) {
         return executePost(
                 REGISTER_ENDPOINT,
-                userDataDTO,
+                userRegisterDTO,
                 String.class);
     }
 

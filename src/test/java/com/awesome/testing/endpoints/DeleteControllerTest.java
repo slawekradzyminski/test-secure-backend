@@ -2,7 +2,7 @@ package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.ErrorDTO;
-import com.awesome.testing.dto.UserDataDTO;
+import com.awesome.testing.dto.UserRegisterDTO;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -18,7 +18,7 @@ public class DeleteControllerTest extends DomainHelper {
     @Test
     public void shouldDeleteUser() {
         // given
-        UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String username = user.getUsername();
         String apiToken = registerUser(user).getBody();
 
@@ -33,7 +33,7 @@ public class DeleteControllerTest extends DomainHelper {
     @Test
     public void shouldGet403AsUnauthorized() {
         // given
-        UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
 
         // when
@@ -49,7 +49,7 @@ public class DeleteControllerTest extends DomainHelper {
     @Test
     public void shouldGet403AsClient() {
         // given
-        UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
         String apiToken = registerUser(user).getBody();
 
@@ -67,7 +67,7 @@ public class DeleteControllerTest extends DomainHelper {
     @Test
     public void shouldGet404Nonexisting() {
         // given
-        UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String apiToken = registerUser(user).getBody();
 
         // when

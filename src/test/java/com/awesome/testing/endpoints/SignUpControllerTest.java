@@ -2,7 +2,7 @@ package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.ErrorDTO;
-import com.awesome.testing.dto.UserDataDTO;
+import com.awesome.testing.dto.UserRegisterDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -21,10 +21,10 @@ public class SignUpControllerTest extends DomainHelper {
     @Test
     public void shouldRegister() {
         // given
-        UserDataDTO userDataDTO = getRandomUser();
+        UserRegisterDTO userRegisterDTO = getRandomUser();
 
         // when
-        ResponseEntity<String> response = registerUser(userDataDTO, String.class);
+        ResponseEntity<String> response = registerUser(userRegisterDTO, String.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -35,9 +35,9 @@ public class SignUpControllerTest extends DomainHelper {
     @Test
     public void shouldFailToRegisterExistingUsername() {
         // given
-        UserDataDTO firstUser = getRandomUser();
+        UserRegisterDTO firstUser = getRandomUser();
         registerUser(firstUser, String.class);
-        UserDataDTO secondUser = getRandomUserWithUsername(firstUser.getUsername());
+        UserRegisterDTO secondUser = getRandomUserWithUsername(firstUser.getUsername());
 
         // when
         ResponseEntity<ErrorDTO> response = registerUser(secondUser, ErrorDTO.class);
@@ -51,7 +51,7 @@ public class SignUpControllerTest extends DomainHelper {
     @Test
     public void shouldFailToRegisterUsernameTooShort() {
         // given
-        UserDataDTO user = getRandomUserWithUsername("one");
+        UserRegisterDTO user = getRandomUserWithUsername("one");
 
         // when
         ResponseEntity<Map<String, String>> response =  restTemplate.exchange(
@@ -69,7 +69,7 @@ public class SignUpControllerTest extends DomainHelper {
     @Test
     public void shouldFailToRegisterWithEmptyRoles() {
         // given
-        UserDataDTO user = getRandomUserWithRoles(List.of());
+        UserRegisterDTO user = getRandomUserWithRoles(List.of());
 
         // when
         ResponseEntity<Map<String, String>> response =  restTemplate.exchange(
@@ -83,10 +83,10 @@ public class SignUpControllerTest extends DomainHelper {
         assertThat(response.getBody().get("roles")).contains("at least");
     }
 
-    private <T> ResponseEntity<T> registerUser(UserDataDTO userDataDTO, Class<T> clazz) {
+    private <T> ResponseEntity<T> registerUser(UserRegisterDTO userRegisterDTO, Class<T> clazz) {
         return executePost(
                 REGISTER_ENDPOINT,
-                userDataDTO,
+                userRegisterDTO,
                 clazz);
     }
 }

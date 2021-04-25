@@ -2,7 +2,7 @@ package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.ErrorDTO;
-import com.awesome.testing.dto.UserDataDTO;
+import com.awesome.testing.dto.UserRegisterDTO;
 import com.awesome.testing.dto.UserResponseDTO;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,7 @@ public class GetSingleUserControllerTest extends DomainHelper {
     @Test
     public void shouldGetUserAsAdmin() {
         // given
-        UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String adminToken = registerUser(user).getBody();
 
         // when
@@ -34,7 +34,7 @@ public class GetSingleUserControllerTest extends DomainHelper {
     @Test
     public void shouldGet403AsClient() {
         // given
-        UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = registerUser(user).getBody();
 
         // when
@@ -50,7 +50,7 @@ public class GetSingleUserControllerTest extends DomainHelper {
     @Test
     public void shouldGet403AsUnauthorized() {
         // given
-        UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         registerUser(user);
 
         // when
@@ -68,7 +68,7 @@ public class GetSingleUserControllerTest extends DomainHelper {
     @Test
     public void shouldGet404ForNonExistingUser() {
         // given
-        UserDataDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String token = registerUser(user).getBody();
 
         // when

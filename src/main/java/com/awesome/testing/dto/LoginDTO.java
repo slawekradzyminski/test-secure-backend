@@ -6,7 +6,7 @@ import lombok.Value;
 import javax.validation.constraints.Size;
 
 @Value
-public class LoginDto {
+public class LoginDTO {
 
     @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
     @ApiModelProperty(position = 0)
