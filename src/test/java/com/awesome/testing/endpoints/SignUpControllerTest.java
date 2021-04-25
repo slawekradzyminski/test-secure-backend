@@ -87,6 +87,7 @@ public class SignUpControllerTest extends DomainHelper {
         return executePost(
                 REGISTER_ENDPOINT,
                 userRegisterDTO,
+                getJsonOnlyHeaders(),
                 clazz);
     }
 }

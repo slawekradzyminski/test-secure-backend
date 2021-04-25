@@ -28,8 +28,8 @@ public abstract class HttpHelper {
         return execute(HttpMethod.DELETE, url, null, httpHeaders, responseType);
     }
 
-    protected <T, V> ResponseEntity<T> executePost(String url, V body, Class<T> responseType) {
-        return execute(HttpMethod.POST, url, body, getJsonOnlyHeaders(), responseType);
+    protected <T, V> ResponseEntity<T> executePost(String url, V body, HttpHeaders httpHeaders, Class<T> responseType) {
+        return execute(HttpMethod.POST, url, body, httpHeaders, responseType);
     }
 
     protected <T, V> ResponseEntity<T> execute(HttpMethod httpMethod,

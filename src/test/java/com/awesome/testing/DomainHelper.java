@@ -2,9 +2,7 @@ package com.awesome.testing;
 
 import com.awesome.testing.dto.LoginDTO;
 import com.awesome.testing.dto.UserRegisterDTO;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
 import java.text.MessageFormat;
@@ -18,10 +16,10 @@ public abstract class DomainHelper extends HttpHelper {
     protected static final String MISSING_USER = "The user doesn't exist";
 
     protected <T> ResponseEntity<T> attemptLogin(LoginDTO loginDetails, Class<T> clazz) {
-        return restTemplate.exchange(
+        return executePost(
                 LOGIN_ENDPOINT,
-                HttpMethod.POST,
-                new HttpEntity<>(loginDetails, getJsonOnlyHeaders()),
+                loginDetails,
+                getJsonOnlyHeaders(),
                 clazz);
     }
 
@@ -29,6 +27,7 @@ public abstract class DomainHelper extends HttpHelper {
         return executePost(
                 REGISTER_ENDPOINT,
                 userRegisterDTO,
+                getJsonOnlyHeaders(),
                 String.class);
     }
 
