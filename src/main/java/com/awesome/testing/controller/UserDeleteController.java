@@ -31,9 +31,8 @@ public class UserDeleteController {
             @ApiResponse(code = 404, message = "The user doesn't exist"),
             @ApiResponse(code = 500, message = "Something went wrong")
     })
-    public String delete(@ApiParam("Username") @PathVariable String username) {
+    public void delete(@ApiParam("Username") @PathVariable String username) {
         userService.delete(username);
-        return username;
     }
 
 }
