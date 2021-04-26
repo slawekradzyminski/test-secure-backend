@@ -1,6 +1,7 @@
 package com.awesome.testing.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,7 @@ public class UserDeleteController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @ApiOperation(value = "${UserController.delete}",
             authorizations = {@Authorization(value = "apiKey")})
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiResponses(value = {
             @ApiResponse(code = 403, message = "Expired or invalid JWT token"),
             @ApiResponse(code = 403, message = "Access denied"),

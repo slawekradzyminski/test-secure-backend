@@ -27,7 +27,7 @@ public class SignUpControllerTest extends DomainHelper {
         ResponseEntity<String> response = registerUser(userRegisterDTO, String.class);
 
         // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isNotBlank();
     }
 

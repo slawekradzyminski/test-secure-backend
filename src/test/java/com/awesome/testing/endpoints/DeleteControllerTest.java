@@ -27,7 +27,7 @@ public class DeleteControllerTest extends DomainHelper {
                 executeDelete(getUserEndpoint(username), getHeadersWith(apiToken), String.class);
 
         // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
     @Test

@@ -6,6 +6,7 @@ import com.awesome.testing.service.UserService;
 import io.swagger.annotations.*;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -22,6 +23,7 @@ public class UserSignUpController {
 
     @PostMapping("/signup")
     @ApiOperation(value = "${UserController.signup}")
+    @ResponseStatus(HttpStatus.CREATED)
     @ApiResponses(value = {
             @ApiResponse(code = 400, message = "Field validation failed"),
             @ApiResponse(code = 403, message = "Access denied"),
