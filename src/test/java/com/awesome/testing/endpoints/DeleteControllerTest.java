@@ -20,7 +20,7 @@ public class DeleteControllerTest extends DomainHelper {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String username = user.getUsername();
-        String apiToken = registerUser(user).getBody();
+        String apiToken = registerAndGetToken(user);
 
         // when
         ResponseEntity<String> response =
@@ -51,7 +51,7 @@ public class DeleteControllerTest extends DomainHelper {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
-        String apiToken = registerUser(user).getBody();
+        String apiToken = registerAndGetToken(user);
 
         // when
         ResponseEntity<ErrorDTO> response =
@@ -68,7 +68,7 @@ public class DeleteControllerTest extends DomainHelper {
     public void shouldGet404Nonexisting() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
-        String apiToken = registerUser(user).getBody();
+        String apiToken = registerAndGetToken(user);
 
         // when
         ResponseEntity<ErrorDTO> response =

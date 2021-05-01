@@ -20,7 +20,7 @@ public class RefreshControllerTest extends DomainHelper {
     public void shouldRefreshTwice() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String apiToken = registerUser(user).getBody();
+        String apiToken = registerAndGetToken(user);
 
         // when
         String refreshedToken =

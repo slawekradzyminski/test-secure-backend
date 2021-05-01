@@ -1,6 +1,7 @@
 package com.awesome.testing.controller;
 
 import com.awesome.testing.dto.UserRegisterDTO;
+import com.awesome.testing.dto.UserRegisterResponseDTO;
 import com.awesome.testing.model.User;
 import com.awesome.testing.service.UserService;
 import io.swagger.annotations.*;
@@ -30,7 +31,7 @@ public class UserSignUpController {
             @ApiResponse(code = 422, message = "Username is already in use"),
             @ApiResponse(code = 500, message = "Something went wrong")
     })
-    public String signup(@ApiParam("Signup user") @Valid @RequestBody UserRegisterDTO user) {
+    public UserRegisterResponseDTO signup(@ApiParam("Signup user") @Valid @RequestBody UserRegisterDTO user) {
         return userService.signUp(modelMapper.map(user, User.class));
     }
 

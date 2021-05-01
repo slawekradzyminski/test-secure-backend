@@ -3,6 +3,7 @@ package com.awesome.testing.service;
 import javax.servlet.http.HttpServletRequest;
 
 import com.awesome.testing.dto.LoginDTO;
+import com.awesome.testing.dto.UserRegisterResponseDTO;
 import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;
@@ -43,14 +44,15 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public String signUp(User user) {
+    public UserRegisterResponseDTO signUp(User user) {
         if (userRepository.existsByUsername(user.getUsername())) {
             throw new CustomException("Username is already in use", HttpStatus.UNPROCESSABLE_ENTITY);
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
-        return jwtTokenProvider.createToken(user.getUsername(), user.getRoles());
+        String token = jwtTokenProvider.createToken(user.getUsername(), user.getRoles());
+        return UserRegisterResponseDTO.builder().token(token).build();
     }
 
     public void delete(String username) {

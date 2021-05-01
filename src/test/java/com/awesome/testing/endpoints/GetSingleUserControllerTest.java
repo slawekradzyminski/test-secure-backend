@@ -19,7 +19,7 @@ public class GetSingleUserControllerTest extends DomainHelper {
     public void shouldGetUserAsAdmin() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
-        String adminToken = registerUser(user).getBody();
+        String adminToken = registerAndGetToken(user);
 
         // when
         ResponseEntity<UserResponseDTO> response =
@@ -35,7 +35,7 @@ public class GetSingleUserControllerTest extends DomainHelper {
     public void shouldGet403AsClient() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String clientToken = registerUser(user).getBody();
+        String clientToken = registerAndGetToken(user);
 
         // when
         ResponseEntity<ErrorDTO> response =
@@ -51,7 +51,7 @@ public class GetSingleUserControllerTest extends DomainHelper {
     public void shouldGet403AsUnauthorized() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        registerUser(user);
+        registerAndGetToken(user);
 
         // when
         ResponseEntity<ErrorDTO> userResponseEntity = restTemplate.exchange(
@@ -69,7 +69,7 @@ public class GetSingleUserControllerTest extends DomainHelper {
     public void shouldGet404ForNonExistingUser() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
-        String token = registerUser(user).getBody();
+        String token = registerAndGetToken(user);
 
         // when
         ResponseEntity<ErrorDTO> response =
