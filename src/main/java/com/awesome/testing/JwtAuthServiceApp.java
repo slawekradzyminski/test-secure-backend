@@ -44,7 +44,7 @@ public class JwtAuthServiceApp implements CommandLineRunner {
         admin.setEmail("admin@email.com");
         admin.setFirstName("Slawomir");
         admin.setLastName("Radzyminski");
-        admin.setRoles(List.of(Role.ROLE_ADMIN));
+        admin.setRoles(List.of(Role.ROLE_ADMIN, Role.ROLE_CLIENT));
         userService.signUp(admin);
 
         User client = new User();
