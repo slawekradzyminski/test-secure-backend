@@ -20,7 +20,7 @@ public class UserEditController {
     private final UserService userService;
 
     @PutMapping(value = "/{username}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
     @ApiOperation(value = "${UserController.edit}",
             authorizations = {@Authorization(value = "apiKey")})
     @ApiResponses(value = {

@@ -66,7 +66,7 @@ public class EditUserControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet403AsClient() {
+    public void shouldGet200AsClient() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
@@ -79,7 +79,7 @@ public class EditUserControllerTest extends DomainHelper {
                 getHeadersWith(clientToken));
 
         // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test
