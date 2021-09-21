@@ -56,3 +56,9 @@ UserController:
   getAll: Get all users
   edit: Edits user details
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
