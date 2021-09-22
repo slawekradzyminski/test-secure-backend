@@ -1,6 +1,15 @@
+## Direct run
+
 ```commandline
 ./mvnw clean package spring-boot:repackage
 java -jar target/jwt-auth-service-1.0.0.jar
+```
+
+## Docker run
+
+```commandline
+docker build --tag=jwt-auth-service:latest .
+docker run -p4000:4000 jwt-auth-service:latest
 ```
 
 ## Verification
