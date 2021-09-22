@@ -5,11 +5,17 @@
 java -jar target/jwt-auth-service-1.0.0.jar
 ```
 
-## Docker run
+## Docker local run
 
 ```commandline
 docker build --tag=jwt-auth-service:latest .
 docker run -p4000:4000 jwt-auth-service:latest
+```
+
+## Docker remote run (warning: may be outdated)
+
+```commandline
+docker run -p4000:4000 slawekradzyminski/jwt-auth-service:latest
 ```
 
 ## Verification
