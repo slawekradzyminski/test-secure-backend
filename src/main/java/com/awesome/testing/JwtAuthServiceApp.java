@@ -2,6 +2,8 @@ package com.awesome.testing;
 
 import java.util.List;
 
+import com.awesome.testing.service.OspsService;
+import com.awesome.testing.service.SjpService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.boot.CommandLineRunner;
@@ -21,16 +23,21 @@ import static org.zalando.logbook.HeaderFilter.none;
 public class JwtAuthServiceApp implements CommandLineRunner {
 
     private final UserService userService;
+    private final OspsService ospsService;
+    private final SjpService sjpService;
+    private final FileResourcesUtils fileResourcesUtils;
 
     public static void main(String[] args) {
         SpringApplication.run(JwtAuthServiceApp.class, args);
     }
 
+    @SuppressWarnings("unused")
     @Bean
     public HeaderFilter headerFilter() {
         return none();
     }
 
+    @SuppressWarnings("unused")
     @Bean
     public ModelMapper modelMapper() {
         return new ModelMapper();
@@ -55,6 +62,12 @@ public class JwtAuthServiceApp implements CommandLineRunner {
         client.setLastName("Radzyminska");
         client.setRoles(List.of(Role.ROLE_CLIENT));
         userService.signUp(client);
+
+//        fileResourcesUtils.getAllLines("osps.txt").parallelStream()
+//                .forEach(ospsService::addWord);
+
+        fileResourcesUtils.getAllLines("sjp.txt").parallelStream()
+                .forEach(sjpService::addWord);
     }
 
 }

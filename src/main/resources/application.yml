@@ -22,8 +22,8 @@ server:
   error:
     include-message: always
     include-binding-errors: always
-    include-stacktrace: on_trace_param
-    include-exception: false
+    include-stacktrace: always
+    include-exception: true
   servlet:
     encoding:
       charset: UTF-8
@@ -38,10 +38,11 @@ security:
       expire-length: 300000 # 5 minutes duration by default: 5 minutes * 60 seconds * 1000 miliseconds
 
 logbook:
-  include: "**/users**"
+  include: "**/users**,**/sjp**"
 
 logging:
   level:
+    com.awesome.testing: TRACE
     org:
       zalando:
         logbook: TRACE
