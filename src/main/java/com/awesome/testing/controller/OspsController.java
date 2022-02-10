@@ -1,7 +1,7 @@
 package com.awesome.testing.controller;
 
 import com.awesome.testing.dto.sjp.ExtensionDTO;
-import com.awesome.testing.service.SjpService;
+import com.awesome.testing.service.OspsService;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfPCell;
@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
@@ -21,16 +20,16 @@ import java.util.stream.Stream;
 
 @CrossOrigin(origins = "http://localhost:8080", maxAge = 3600)
 @RestController
-@RequestMapping("/sjp")
-@Api(tags = "sjp")
+@RequestMapping("/osps")
+@Api(tags = "osps")
 @RequiredArgsConstructor
-public class SjpController {
+public class OspsController {
 
-    private final SjpService sjpService;
+    private final OspsService ospsService;
 
     @GetMapping(value = "/{length}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @ApiOperation(value = "${SjpController.getWords()}", authorizations = {@Authorization(value = "apiKey")})
+    @ApiOperation(value = "${OspsController.getWords()}", authorizations = {@Authorization(value = "apiKey")})
     @ApiResponses(value = {
             @ApiResponse(code = 403, message = "Expired or invalid JWT token"),
             @ApiResponse(code = 403, message = "Access denied"),
@@ -38,12 +37,12 @@ public class SjpController {
             @ApiResponse(code = 500, message = "Something went wrong")
     })
     public List<String> getWords(@ApiParam("length") @PathVariable String length) {
-        return sjpService.getWords(Integer.parseInt(length));
+        return ospsService.getWords(Integer.parseInt(length));
     }
 
     @GetMapping(value = "/extensions/{length}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @ApiOperation(value = "${SjpController.getWords()}", authorizations = {@Authorization(value = "apiKey")})
+    @ApiOperation(value = "${OspsController.getWords()}", authorizations = {@Authorization(value = "apiKey")})
     @ApiResponses(value = {
             @ApiResponse(code = 403, message = "Expired or invalid JWT token"),
             @ApiResponse(code = 403, message = "Access denied"),
@@ -53,7 +52,7 @@ public class SjpController {
     public List<ExtensionDTO> getExtensions(@ApiParam("length") @PathVariable String length) throws IOException, DocumentException {
 
         Document document = new Document();
-        PdfWriter.getInstance(document, new FileOutputStream("SJP" + length + ".pdf"));
+        PdfWriter.getInstance(document, new FileOutputStream("OSPS" + length + ".pdf"));
 
         document.open();
         BaseFont bf = BaseFont.createFont("Helvetica", "ISO-8859-2", false);
@@ -62,8 +61,8 @@ public class SjpController {
         addTableHeader(table, modified_font);
 
 
-        List<String> words = sjpService.getWords(Integer.parseInt(length));
-        List<String> longerWords = sjpService.getWords(Integer.parseInt(length) + 1);
+        List<String> words = ospsService.getWords(Integer.parseInt(length));
+        List<String> longerWords = ospsService.getWords(Integer.parseInt(length) + 1);
 
         List<ExtensionDTO> entries = words.stream().map(word -> ExtensionDTO.builder()
                 .beforeExtensions(getLeftExtensions(word, longerWords))

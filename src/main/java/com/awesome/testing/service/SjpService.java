@@ -20,7 +20,7 @@ public class SjpService {
     public void addWord(String word) {
         Sjp sjpWord = new Sjp();
         sjpWord.setWord(word);
-        log.info("Adding SJP word {}", sjpWord);
+        log.info("Adding SJP word {}", sjpWord.getWord());
         sjpRepository.save(sjpWord);
     }
 

@@ -63,11 +63,11 @@ public class JwtAuthServiceApp implements CommandLineRunner {
         client.setRoles(List.of(Role.ROLE_CLIENT));
         userService.signUp(client);
 
-//        fileResourcesUtils.getAllLines("osps.txt").parallelStream()
-//                .forEach(ospsService::addWord);
+        fileResourcesUtils.getAllLines("osps.txt").parallelStream()
+                .forEach(ospsService::addWord);
 
-        fileResourcesUtils.getAllLines("sjp.txt").parallelStream()
-                .forEach(sjpService::addWord);
+//        fileResourcesUtils.getAllLines("sjp.txt").parallelStream()
+//                .forEach(sjpService::addWord);
     }
 
 }

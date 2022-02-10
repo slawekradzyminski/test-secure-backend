@@ -10,4 +10,7 @@ import java.util.Collection;
 @Repository
 public interface OspsRepository extends JpaRepository<Osps, Integer> {
 
+    @Query("select word from Osps WHERE CHAR_LENGTH(word)=?#{[0]} ORDER BY word ASC")
+    Collection<String> getWords(int length);
+
 }
