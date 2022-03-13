@@ -5,11 +5,11 @@
   "protocol": "HTTP/1.1",
   "remote": "0:0:0:0:0:0:0:1",
   "method": "POST",
-  "uri": "http://localhost:4000/users/signup",
+  "uri": "http://localhost:4001/users/signup",
   "host": "localhost",
   "path": "/users/signup",
   "scheme": "http",
-  "port": "4000",
+  "port": "4001",
   "headers": {
     "accept": [
       "*/*"
@@ -30,13 +30,13 @@
       "application/json"
     ],
     "host": [
-      "localhost:4000"
+      "localhost:4001"
     ],
     "origin": [
-      "http://localhost:8080"
+      "http://localhost:8081"
     ],
     "referer": [
-      "http://localhost:8080/"
+      "http://localhost:8081/"
     ],
     "sec-ch-ua": [
       "\"Google Chrome\";v=\"89\", \"Chromium\";v=\"89\", \";Not A Brand\";v=\"99\""
