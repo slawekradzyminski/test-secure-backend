@@ -12,12 +12,14 @@ import org.springframework.context.annotation.Bean;
 import com.awesome.testing.model.Role;
 import com.awesome.testing.model.User;
 import com.awesome.testing.service.UserService;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.zalando.logbook.HeaderFilter;
 
 import static org.zalando.logbook.HeaderFilter.none;
 
 @SpringBootApplication
 @RequiredArgsConstructor
+@EnableAsync
 public class JwtAuthServiceApp implements CommandLineRunner {
 
     private final UserService userService;
@@ -26,11 +28,13 @@ public class JwtAuthServiceApp implements CommandLineRunner {
         SpringApplication.run(JwtAuthServiceApp.class, args);
     }
 
+    @SuppressWarnings("unused")
     @Bean
     public HeaderFilter headerFilter() {
         return none();
     }
 
+    @SuppressWarnings("unused")
     @Bean
     public ModelMapper modelMapper() {
         return new ModelMapper();

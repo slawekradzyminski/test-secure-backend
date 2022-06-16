@@ -16,6 +16,14 @@ spring:
     console:
       enabled: true
       path: /h2-console
+  activemq:
+    in-memory: false
+    broker-url: tcp://localhost:61616
+    user: admin
+    password: admin
+
+activemq:
+  destination: email
 
 server:
   port: 4001
@@ -55,6 +63,9 @@ UserController:
   refresh: Refreshes token for logged in user
   getAll: Get all users
   edit: Edits user details
+
+JmsSender:
+  sendEmail: Sending email to Active MQ
 
 management:
   endpoints:
