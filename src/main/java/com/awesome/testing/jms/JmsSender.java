@@ -17,7 +17,7 @@ public class JmsSender {
     @Async
     public void asyncSendTo(String destination, EmailDTO email) {
         jmsTemplate.convertAndSend(destination, email);
-        log.info("Message sent successfully");
+        log.info("Message {} sent successfully", email);
     }
 
 }
