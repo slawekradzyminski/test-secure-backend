@@ -9,15 +9,19 @@ java -jar target/jwt-auth-service-1.0.0.jar
 
 ```commandline
 ./mvnw clean package spring-boot:repackage
-docker build --tag=jwt-auth-service:latest .
-docker run -p4001:4001 jwt-auth-service:latest
+docker build --tag=backend:latest .
+docker run -p4001:4001 backend:latest
 ```
 
 ## Docker remote run (warning: may be outdated)
 
 ```commandline
-docker run -p4001:4001 slawekradzyminski/jwt-auth-service:latest
+docker run -p4001:4001 slawekradzyminski/backend:1.2
 ```
+
+## Publish image
+
+[https://docs.docker.com/docker-hub/repos/](https://docs.docker.com/docker-hub/repos/)
 
 ## Verification
 
