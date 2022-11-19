@@ -11,7 +11,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @SuppressWarnings("unused")
-@CrossOrigin(origins = "http://localhost:8081", maxAge = 3600)
+@CrossOrigin(origins = "http://localhost:8082", maxAge = 3600)
 @RestController
 @RequestMapping("/email")
 @Api(tags = "email")
