@@ -32,22 +32,6 @@ public class GetSingleUserControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet403AsClient() {
-        // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String clientToken = registerAndGetToken(user);
-
-        // when
-        ResponseEntity<ErrorDTO> response =
-                executeGet(getUserEndpoint(user.getUsername()),
-                        getHeadersWith(clientToken),
-                        ErrorDTO.class);
-
-        // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-    }
-
-    @Test
     public void shouldGet403AsUnauthorized() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));

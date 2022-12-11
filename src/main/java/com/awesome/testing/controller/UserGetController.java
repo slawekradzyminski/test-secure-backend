@@ -39,7 +39,7 @@ public class UserGetController {
     }
 
     @GetMapping(value = "/{username}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
     @ApiOperation(value = "${UserController.search}", response = UserResponseDTO.class,
             authorizations = {@Authorization(value = "apiKey")})
     @ApiResponses(value = {
