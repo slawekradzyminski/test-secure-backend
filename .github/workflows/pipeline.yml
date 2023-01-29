@@ -1,0 +1,82 @@
+name: Java 17 Maven Build and Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set Java version
+        uses: actions/setup-java@v2
+        with:
+          java-version: 17
+
+      - name: Build with Maven Wrapper
+        run: ./mvnw clean install
+
+      - name: Transfer target folder to next job
+        uses: actions/upload-artifact@v3
+        with:
+          name: target
+          path: target
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set Java version
+        uses: actions/setup-java@v2
+        with:
+          java-version: 17
+
+      - name: Download target folder
+        uses: actions/download-artifact@v3
+        with:
+          name: target
+
+      - name: Run unit tests with Maven Wrapper
+        run: ./mvnw test
+
+  build_jar:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set Java version
+        uses: actions/setup-java@v2
+        with:
+          java-version: 17
+
+      - name: Download target folder
+        uses: actions/download-artifact@v3
+        with:
+          name: target
+
+      - name: Run unit tests with Maven Wrapper
+        run: ./mvnw -DskipTests=true package spring-boot:repackage
+
+      - name: Verify file exists
+        run: |
+          if [ -e ./target/jwt-auth-service-1.0.0.jar ]; then
+            echo "File exists"
+          else
+            echo "File does not exist"
+            exit 1
+          fi
