@@ -16,3 +16,5 @@ while ! nc -z localhost 4001; do
   fi
   echo "Waiting for application to start... ($counter seconds)"
 done
+
+echo "Application successfully started on port 4001."
