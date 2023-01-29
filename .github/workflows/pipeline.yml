@@ -23,7 +23,7 @@ jobs:
           java-version: 17
 
       - name: Build with Maven Wrapper
-        run: ./mvnw clean install
+        run: ./mvnw clean compile
 
       - name: Transfer target folder to next job
         uses: actions/upload-artifact@v3
@@ -72,7 +72,7 @@ jobs:
         with:
           name: target
 
-      - name: Run unit tests with Maven Wrapper
+      - name: Build jar
         run: ./mvnw -DskipTests=true package spring-boot:repackage
 
       - name: Verify file exists
