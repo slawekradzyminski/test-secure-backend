@@ -4,9 +4,6 @@ pipeline {
             image 'maven:3.8.2-openjdk-17'
         }
     }
-    environment {
-        MAVEN_OPTS = '-Dmaven.repo.local=/root/.m2/repository'
-    }
     stages {
         stage('Checkout') {
             steps {
