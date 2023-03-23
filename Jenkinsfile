@@ -12,7 +12,7 @@ pipeline {
         }
         stage('Build') {
             steps {
-                sh 'mvn clean test'
+                sh 'mvn clean package spring-boot:repackage'
             }
         }
         stage('Archive') {
