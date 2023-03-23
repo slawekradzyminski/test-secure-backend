@@ -12,9 +12,7 @@ pipeline {
         }
         stage('Build') {
             steps {
-                sh 'ls -al'
-                sh 'chmod +x ./mvnw'
-                sh './mvnw clean package spring-boot:repackage'
+                sh 'mvn clean test'
             }
         }
         stage('Archive') {
