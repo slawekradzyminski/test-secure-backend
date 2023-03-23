@@ -12,6 +12,8 @@ pipeline {
         }
         stage('Build') {
             steps {
+                sg 'ls -al'
+                sh 'chmod +x ./mvnw'
                 sh './mvnw clean package spring-boot:repackage'
             }
         }
