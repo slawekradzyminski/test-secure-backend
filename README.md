@@ -8,7 +8,6 @@ java -jar target/jwt-auth-service-1.0.0.jar
 ## Docker local run
 
 ```commandline
-./mvnw clean package spring-boot:repackage
 docker build --tag=backend:latest .
 docker run -p4001:4001 backend:latest
 ```
