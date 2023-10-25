@@ -42,4 +42,4 @@ jobs:
 
       - name: Run the jar
         run: |
-          java -jar jwt-auth-service-1.0.0.jar
+          ./run.sh
