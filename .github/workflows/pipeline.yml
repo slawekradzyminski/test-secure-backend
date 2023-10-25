@@ -18,3 +18,27 @@ jobs:
 
       - name: Build
         run: ./mvnw clean package spring-boot:repackage
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v3
+        with:
+          name: jwt-auth-service-jar
+          path: target/jwt-auth-service-1.0.0.jar
+
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Java version
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: 17
+
+      - name: Download JAR
+        uses: actions/download-artifact@v3
+        with:
+          name: jwt-auth-service-jar
+
+      - name: Run the jar
+        run: |
+          java -jar jwt-auth-service-1.0.0.jar
