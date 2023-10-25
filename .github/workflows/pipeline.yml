@@ -29,17 +29,17 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Set Java version
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: 17
-
       - name: Download JAR
         uses: actions/download-artifact@v3
         with:
           name: jwt-auth-service-jar
-
       - name: Run the jar
         run: |
           ./run.sh
