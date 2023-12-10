@@ -56,16 +56,6 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    private SecretKey getKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
-    }
-
-    private Date getExpirationDate() {
-        Date now = new Date();
-        return new Date(now.getTime() + validityInMilliseconds);
-    }
-
     public Authentication getAuthentication(String token) {
         UserDetails userDetails = myUserDetails.loadUserByUsername(getUsername(token));
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
@@ -92,6 +82,16 @@ public class JwtTokenProvider {
         } catch (JwtException | IllegalArgumentException e) {
             throw new CustomException("Expired or invalid JWT token", HttpStatus.FORBIDDEN);
         }
+    }
+
+    private SecretKey getKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    private Date getExpirationDate() {
+        Date now = new Date();
+        return new Date(now.getTime() + validityInMilliseconds);
     }
 
     private List<SimpleGrantedAuthority> getRoles(List<Role> roles) {
