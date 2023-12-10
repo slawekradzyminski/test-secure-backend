@@ -26,7 +26,8 @@ public class UserEditController {
 
     @PutMapping(value = "/{username}")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
-    @Operation(summary = "${UserController.edit}", security = @SecurityRequirement(name = "apiKey"))
+    @Operation(summary = "${UserController.edit}",
+            security = {@SecurityRequirement(name = "Authorization")})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "403", description = "Expired or invalid JWT token"),
             @ApiResponse(responseCode = "403", description = "Access denied"),

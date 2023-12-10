@@ -28,7 +28,8 @@ public class UserGetController {
 
     @GetMapping
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
-    @Operation(summary = "${UserController.getAll}", security = @SecurityRequirement(name = "apiKey"))
+    @Operation(summary = "${UserController.getAll}",
+            security = {@SecurityRequirement(name = "Authorization")})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "403", description = "Expired or invalid JWT token"),
             @ApiResponse(responseCode = "403", description = "Access denied"),
@@ -44,7 +45,8 @@ public class UserGetController {
 
     @GetMapping(value = "/{username}")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
-    @Operation(summary = "${UserController.search}", security = @SecurityRequirement(name = "apiKey"))
+    @Operation(summary = "${UserController.search}",
+            security = {@SecurityRequirement(name = "Authorization")})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "403", description = "Expired or invalid JWT token"),
             @ApiResponse(responseCode = "403", description = "Access denied"),

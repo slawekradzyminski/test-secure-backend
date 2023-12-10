@@ -23,7 +23,8 @@ public class UserRefreshController {
 
     @GetMapping("/refresh")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
-    @Operation(summary = "${UserController.refresh}", security = @SecurityRequirement(name = "apiKey"))
+    @Operation(summary = "${UserController.refresh}",
+            security = {@SecurityRequirement(name = "Authorization")})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "403", description = "Expired or invalid JWT token"),
             @ApiResponse(responseCode = "403", description = "Access denied"),

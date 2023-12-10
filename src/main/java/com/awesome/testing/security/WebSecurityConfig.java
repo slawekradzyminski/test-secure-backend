@@ -32,11 +32,11 @@ public class WebSecurityConfig {
                         .requestMatchers(
                                 "/users/signin",
                                 "/users/signup",
-                                "/email",
                                 "/actuator/**",
                                 "/swagger-resources/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
+                                "/swagger-ui.html",
                                 "/configuration/**",
                                 "/webjars/**",
                                 "/public",

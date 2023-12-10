@@ -23,7 +23,8 @@ public class UserDeleteController {
 
     @DeleteMapping(value = "/{username}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "${UserController.delete}", security = @SecurityRequirement(name = "apiKey"))
+    @Operation(summary = "${UserController.delete}",
+            security = {@SecurityRequirement(name = "Authorization")})
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "403", description = "Expired or invalid JWT token"),

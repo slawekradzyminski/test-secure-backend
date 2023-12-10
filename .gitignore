@@ -23,3 +23,6 @@ dist/
 nbdist/
 .nb-gradle/
 .vscode/settings.json
+
+### VS CODE ###
+.vscode

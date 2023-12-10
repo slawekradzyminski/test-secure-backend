@@ -23,10 +23,12 @@ public class SwaggerConfig {
                         new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))
                 .info(new Info().title("JSON Web Token Authentication API")
                         .description(
-                                "This is a sample JWT authentication service. You can find out more about JWT at [https://jwt.io/](https://jwt.io/). For this sample, you can use the `admin` or `client` users (password: admin and client respectively) to test the authorization filters. Once you have successfully logged in and obtained the token, you should click on the right top button `Authorize` and introduce it with the prefix \"Bearer \".")
+                                "This is a sample JWT authentication service. You can find out more about JWT at [https://jwt.io/](https://jwt.io/)." +
+                                        " For this sample, you can use the `admin` or `client` users (password: admin and client respectively) to test the Authorization filters." +
+                                        " Once you have successfully logged in and obtained the token, you should click on the right top button `Authorize` and copy paste token.")
                         .version("1.0.0").license(new io.swagger.v3.oas.models.info.License().name("MIT License")
                                 .url("http://opensource.org/licenses/MIT"))
-                        .contact(new Contact().email("mauriurraco@gmail.com")))
+                        .contact(new Contact().email("slawekradz@gmail.com")))
                 .addTagsItem(new Tag().name("users").description("Operations about users"))
                 .addSecurityItem(new SecurityRequirement().addList("Authorization", Collections.emptyList()));
     }
