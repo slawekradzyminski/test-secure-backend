@@ -53,4 +53,8 @@ public class UserEntity {
                 .lastName(userRegisterDTO.getLastName())
                 .build();
     }
+
+    public static UserEntity from(UserRegisterDTO randomUser) {
+        return from(randomUser, randomUser.getPassword());
+    }
 }

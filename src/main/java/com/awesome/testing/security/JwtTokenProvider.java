@@ -3,9 +3,10 @@ package com.awesome.testing.security;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -20,6 +21,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import com.awesome.testing.model.Role;
+
+import javax.crypto.SecretKey;
 
 @Component
 @RequiredArgsConstructor
@@ -44,24 +47,23 @@ public class JwtTokenProvider {
     }
 
     public String createToken(String username, List<Role> roles) {
-
-        Date now = new Date();
-        Date validity = new Date(now.getTime() + validityInMilliseconds);
-
-        JwtBuilder builder = Jwts.builder()
-                .setSubject(username)
+        return Jwts.builder()
+                .subject(username)
                 .claim("auth", getRoles(roles))
-                .setIssuedAt(now)
-                .setExpiration(validity)
-                .signWith(SignatureAlgorithm.HS256, secretKey);
-
-        return builder.compact();
+                .issuedAt(new Date())
+                .expiration(getExpirationDate())
+                .signWith(getKey())
+                .compact();
     }
 
-    private List<SimpleGrantedAuthority> getRoles(List<Role> roles) {
-        return roles.stream()
-                .map(role -> new SimpleGrantedAuthority(role.getAuthority()))
-                .collect(Collectors.toList());
+    private SecretKey getKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    private Date getExpirationDate() {
+        Date now = new Date();
+        return new Date(now.getTime() + validityInMilliseconds);
     }
 
     public Authentication getAuthentication(String token) {
@@ -70,8 +72,8 @@ public class JwtTokenProvider {
     }
 
     public String getUsername(String token) {
-        JwtParser parser = Jwts.parser().setSigningKey(secretKey).build();
-        return parser.parseClaimsJws(token).getBody().getSubject();
+        JwtParser parser = Jwts.parser().verifyWith(getKey()).build();
+        return parser.parseSignedClaims(token).getPayload().getSubject();
     }
 
     public String extractTokenFromRequest(HttpServletRequest req) {
@@ -84,12 +86,18 @@ public class JwtTokenProvider {
 
     public boolean validateToken(String token) {
         try {
-            JwtParser parser = Jwts.parser().setSigningKey(secretKey).build();
-            parser.parseClaimsJws(token);
+            JwtParser parser = Jwts.parser().verifyWith(getKey()).build();
+            parser.parseSignedClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             throw new CustomException("Expired or invalid JWT token", HttpStatus.FORBIDDEN);
         }
+    }
+
+    private List<SimpleGrantedAuthority> getRoles(List<Role> roles) {
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority(role.getAuthority()))
+                .toList();
     }
 
 }
