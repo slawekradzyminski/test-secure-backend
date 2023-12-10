@@ -1,5 +1,6 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.model.UserEntity;
 import jakarta.servlet.http.HttpServletRequest;
 
 import com.awesome.testing.dto.LoginDTO;
@@ -14,8 +15,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import com.awesome.testing.model.User;
 
 import java.util.List;
 import java.util.Optional;
@@ -40,18 +39,18 @@ public class UserService {
         }
     }
 
-    public void save(User user) {
-        userRepository.save(user);
+    public void save(UserEntity userEntity) {
+        userRepository.save(userEntity);
     }
 
-    public UserRegisterResponseDTO signUp(User user) {
-        if (userRepository.existsByUsername(user.getUsername())) {
+    public UserRegisterResponseDTO signUp(UserEntity userEntity) {
+        if (userRepository.existsByUsername(userEntity.getUsername())) {
             throw new CustomException("Username is already in use", HttpStatus.UNPROCESSABLE_ENTITY);
         }
 
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
-        String token = jwtTokenProvider.createToken(user.getUsername(), user.getRoles());
+        userEntity.setPassword(passwordEncoder.encode(userEntity.getPassword()));
+        userRepository.save(userEntity);
+        String token = jwtTokenProvider.createToken(userEntity.getUsername(), userEntity.getRoles());
         return UserRegisterResponseDTO.builder().token(token).build();
     }
 
@@ -60,16 +59,16 @@ public class UserService {
         userRepository.deleteByUsername(username);
     }
 
-    public User search(String username) {
+    public UserEntity search(String username) {
         return Optional.ofNullable(userRepository.findByUsername(username))
                 .orElseThrow(() -> new CustomException("The user doesn't exist", HttpStatus.NOT_FOUND));
     }
 
-    public List<User> getAll() {
+    public List<UserEntity> getAll() {
         return userRepository.findAll();
     }
 
-    public User whoAmI(HttpServletRequest req) {
+    public UserEntity whoAmI(HttpServletRequest req) {
         String token = jwtTokenProvider.extractTokenFromRequest(req);
         return userRepository.findByUsername(jwtTokenProvider.getUsername(token));
     }

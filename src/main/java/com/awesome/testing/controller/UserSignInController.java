@@ -2,7 +2,7 @@ package com.awesome.testing.controller;
 
 import com.awesome.testing.dto.LoginDTO;
 import com.awesome.testing.dto.LoginResponseDTO;
-import com.awesome.testing.model.User;
+import com.awesome.testing.model.UserEntity;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -23,7 +22,6 @@ import jakarta.validation.Valid;
 public class UserSignInController {
 
     private final UserService userService;
-    private final ModelMapper modelMapper;
 
     @PostMapping("/signin")
     @Operation(summary = "${UserController.signin}")
@@ -34,16 +32,16 @@ public class UserSignInController {
     })
     public LoginResponseDTO login(
             @Parameter(description = "Login details") @Valid @RequestBody LoginDTO loginDetails) {
-        String token = userService.signIn(modelMapper.map(loginDetails, LoginDTO.class));
-        User user = userService.search(loginDetails.getUsername());
+        String token = userService.signIn(loginDetails);
+        UserEntity userEntity = userService.search(loginDetails.getUsername());
 
         return LoginResponseDTO.builder()
-                .username(user.getUsername())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .roles(user.getRoles())
+                .username(userEntity.getUsername())
+                .firstName(userEntity.getFirstName())
+                .lastName(userEntity.getLastName())
+                .roles(userEntity.getRoles())
                 .token(token)
-                .email(user.getEmail())
+                .email(userEntity.getEmail())
                 .build();
     }
 

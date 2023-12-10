@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +21,6 @@ import jakarta.servlet.http.HttpServletRequest;
 public class UserMeController {
 
     private final UserService userService;
-    private final ModelMapper modelMapper;
 
     @GetMapping(value = "/me")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
@@ -34,7 +32,7 @@ public class UserMeController {
             @ApiResponse(responseCode = "500", description = "Something went wrong")
     })
     public UserResponseDTO whoAmI(HttpServletRequest req) {
-        return modelMapper.map(userService.whoAmI(req), UserResponseDTO.class);
+        return UserResponseDTO.from(userService.whoAmI(req));
     }
 
 }

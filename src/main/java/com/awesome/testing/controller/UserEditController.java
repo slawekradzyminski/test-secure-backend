@@ -1,7 +1,7 @@
 package com.awesome.testing.controller;
 
 import com.awesome.testing.dto.UserEditDTO;
-import com.awesome.testing.model.User;
+import com.awesome.testing.model.UserEntity;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -36,12 +36,12 @@ public class UserEditController {
     })
     public void edit(@Parameter(description = "Username") @PathVariable String username,
                      @Parameter(description = "User details") @Valid @RequestBody UserEditDTO userEditBody) {
-        User user = userService.search(username);
-        user.setFirstName(userEditBody.getFirstName());
-        user.setLastName(userEditBody.getLastName());
-        user.setEmail(userEditBody.getEmail());
-        user.setRoles(userEditBody.getRoles());
-        userService.save(user);
+        UserEntity userEntity = userService.search(username);
+        userEntity.setFirstName(userEditBody.getFirstName());
+        userEntity.setLastName(userEditBody.getLastName());
+        userEntity.setEmail(userEditBody.getEmail());
+        userEntity.setRoles(userEditBody.getRoles());
+        userService.save(userEntity);
     }
 
 }

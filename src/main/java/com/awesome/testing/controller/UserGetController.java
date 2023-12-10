@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +23,6 @@ import java.util.stream.Collectors;
 public class UserGetController {
 
     private final UserService userService;
-    private final ModelMapper modelMapper;
 
     @GetMapping
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
@@ -39,7 +37,7 @@ public class UserGetController {
     public List<UserResponseDTO> search() {
         return userService.getAll()
                 .stream()
-                .map(user -> modelMapper.map(user, UserResponseDTO.class))
+                .map(UserResponseDTO::from)
                 .collect(Collectors.toList());
     }
 
@@ -54,7 +52,7 @@ public class UserGetController {
             @ApiResponse(responseCode = "500", description = "Something went wrong")
     })
     public UserResponseDTO search(@Parameter(description = "Username") @PathVariable String username) {
-        return modelMapper.map(userService.search(username), UserResponseDTO.class);
+        return UserResponseDTO.from(userService.search(username));
     }
 
 }

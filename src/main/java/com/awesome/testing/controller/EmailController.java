@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class EmailController {
 
-    @Autowired
     private final JmsSender jmsSender;
 
     @Value("${activemq.destination}")

@@ -1,9 +1,8 @@
 package com.awesome.testing.model;
 
+import com.awesome.testing.dto.UserRegisterDTO;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.List;
 
@@ -14,7 +13,10 @@ import jakarta.validation.constraints.Size;
 @Setter
 @Getter
 @Table(name = "users")
-public class User {
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,5 +42,16 @@ public class User {
     @Size(min = 4, message = "Minimum lastName length: 4 characters")
     @Column(nullable = false)
     private String lastName;
+
+    public static UserEntity from(UserRegisterDTO userRegisterDTO) {
+        return UserEntity.builder()
+                .username(userRegisterDTO.getUsername())
+                .password(userRegisterDTO.getPassword())
+                .roles(userRegisterDTO.getRoles())
+                .email(userRegisterDTO.getEmail())
+                .firstName(userRegisterDTO.getFirstName())
+                .lastName(userRegisterDTO.getLastName())
+                .build();
+    }
 
 }

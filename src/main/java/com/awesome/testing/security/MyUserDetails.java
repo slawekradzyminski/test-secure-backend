@@ -1,13 +1,12 @@
 package com.awesome.testing.security;
 
+import com.awesome.testing.model.UserEntity;
 import com.awesome.testing.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import com.awesome.testing.model.User;
 
 import java.text.MessageFormat;
 
@@ -21,16 +20,16 @@ public class MyUserDetails implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        final User user = userRepository.findByUsername(username);
+        final UserEntity userEntity = userRepository.findByUsername(username);
 
-        if (user == null) {
+        if (userEntity == null) {
             throw new UsernameNotFoundException(
                     MessageFormat.format("User ''{0}'' not found", username));
         }
 
         return withUsername(username)
-                .password(user.getPassword())
-                .authorities(user.getRoles())
+                .password(userEntity.getPassword())
+                .authorities(userEntity.getRoles())
                 .accountExpired(false)
                 .accountLocked(false)
                 .credentialsExpired(false)
