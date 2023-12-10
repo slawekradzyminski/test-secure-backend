@@ -48,27 +48,11 @@ public class EmailControllerTest extends DomainHelper {
     @Test
     public void shouldGet403AsUnauthorized() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         EmailDTO emailDTO = new EmailDTO("slawek@gmail.com", "Important", "Read carefully");
 
         // when
         ResponseEntity<ErrorDTO> response =
                 executePost(EMAIL_ENDPOINT, emailDTO, getJsonOnlyHeaders(), ErrorDTO.class);
-
-        // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-    }
-
-    @Test
-    public void shouldGet403AsClient() {
-        // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String token = registerAndThenLoginSavingToken(user);
-        EmailDTO emailDTO = new EmailDTO("slawek@gmail.com", "Important", "Read carefully");
-
-        // when
-        ResponseEntity<ErrorDTO> response =
-                executePost(EMAIL_ENDPOINT, emailDTO, getHeadersWith(token), ErrorDTO.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);

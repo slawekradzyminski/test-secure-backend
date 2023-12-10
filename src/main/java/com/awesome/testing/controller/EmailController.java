@@ -25,7 +25,7 @@ public class EmailController {
     private String destination;
 
     @PostMapping(value = "")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
     @Operation(summary = "Send email",
             description = "Send an email message to the specified destination",
             security = {@SecurityRequirement(name = "Authorization")})
