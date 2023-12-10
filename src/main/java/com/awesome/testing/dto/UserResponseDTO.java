@@ -2,7 +2,7 @@ package com.awesome.testing.dto;
 
 import java.util.List;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import com.awesome.testing.model.Role;
 
@@ -11,22 +11,22 @@ import com.awesome.testing.model.Role;
 @ToString
 public class UserResponseDTO {
 
-    @ApiModelProperty(position = 0)
+    @Schema(description = "User ID", example = "1", required = true)
     private Integer id;
 
-    @ApiModelProperty(position = 1)
+    @Schema(description = "Username", example = "user", required = true)
     private String username;
 
-    @ApiModelProperty(position = 2)
+    @Schema(description = "Email", example = "user@example.com", required = true)
     private String email;
 
-    @ApiModelProperty(position = 3)
+    @Schema(description = "List of roles", required = true)
     private List<Role> roles;
 
-    @ApiModelProperty(position = 5)
+    @Schema(description = "First name", example = "John", required = true)
     private String firstName;
 
-    @ApiModelProperty(position = 6)
+    @Schema(description = "Last name", example = "Doe", required = true)
     private String lastName;
 
 }

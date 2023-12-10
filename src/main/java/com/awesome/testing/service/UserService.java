@@ -1,6 +1,6 @@
 package com.awesome.testing.service;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import com.awesome.testing.dto.LoginDTO;
 import com.awesome.testing.dto.UserRegisterResponseDTO;

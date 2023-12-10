@@ -18,8 +18,8 @@ import org.zalando.logbook.HeaderFilter;
 import static org.zalando.logbook.HeaderFilter.none;
 
 @SpringBootApplication
-@RequiredArgsConstructor
 @EnableAsync
+@RequiredArgsConstructor
 public class JwtAuthServiceApp implements CommandLineRunner {
 
     private final UserService userService;
@@ -28,7 +28,6 @@ public class JwtAuthServiceApp implements CommandLineRunner {
         SpringApplication.run(JwtAuthServiceApp.class, args);
     }
 
-    @SuppressWarnings("unused")
     @Bean
     public HeaderFilter headerFilter() {
         return none();

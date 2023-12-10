@@ -1,12 +1,12 @@
 package com.awesome.testing.dto;
 
 import com.awesome.testing.model.Role;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 
 @Value
@@ -15,19 +15,19 @@ public class UserEditDTO {
 
     @NotEmpty
     @Email
-    @ApiModelProperty(position = 0)
+    @Schema(description = "Email", example = "user@example.com", required = true)
     String email;
 
     @NotEmpty(message = "Please pick at least one role")
-    @ApiModelProperty(position = 1)
+    @Schema(description = "List of roles", required = true)
     List<Role> roles;
 
     @Size(min = 4, max = 255, message = "Minimum firstName length: 4 characters")
-    @ApiModelProperty(position = 2)
+    @Schema(description = "First name", example = "John", required = true)
     String firstName;
 
     @Size(min = 4, max = 255, message = "Minimum lastName length: 4 characters")
-    @ApiModelProperty(position = 3)
+    @Schema(description = "Last name", example = "Doe", required = true)
     String lastName;
 
 }

@@ -1,19 +1,19 @@
 package com.awesome.testing.dto;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Size;
 
 @Value
 public class LoginDTO {
 
     @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
-    @ApiModelProperty(position = 0)
+    @Schema(description = "Username", example = "user", required = true)
     String username;
 
     @Size(min = 4, max = 255, message = "Minimum password length: 4 characters")
-    @ApiModelProperty(position = 1)
+    @Schema(description = "Password", example = "pass", required = true)
     String password;
 
 }

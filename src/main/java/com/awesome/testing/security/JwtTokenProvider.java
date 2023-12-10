@@ -5,8 +5,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
+import io.jsonwebtoken.*;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
 
 import com.awesome.testing.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +19,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import com.awesome.testing.model.Role;
 
 @Component
@@ -29,7 +26,8 @@ import com.awesome.testing.model.Role;
 public class JwtTokenProvider {
 
     /**
-     * THIS IS NOT A SECURE PRACTICE! For simplicity, we are storing a static key here. Ideally, in a
+     * THIS IS NOT A SECURE PRACTICE! For simplicity, we are storing a static key
+     * here. Ideally, in a
      * microservices environment, this key would be kept on a config-server.
      */
     @Value("${security.jwt.token.secret-key:secret-key}")
@@ -47,18 +45,17 @@ public class JwtTokenProvider {
 
     public String createToken(String username, List<Role> roles) {
 
-        Claims claims = Jwts.claims().setSubject(username);
-        claims.put("auth", getRoles(roles));
-
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
 
-        return Jwts.builder()
-                .setClaims(claims)
+        JwtBuilder builder = Jwts.builder()
+                .setSubject(username)
+                .claim("auth", getRoles(roles))
                 .setIssuedAt(now)
                 .setExpiration(validity)
-                .signWith(SignatureAlgorithm.HS256, secretKey)
-                .compact();
+                .signWith(SignatureAlgorithm.HS256, secretKey);
+
+        return builder.compact();
     }
 
     private List<SimpleGrantedAuthority> getRoles(List<Role> roles) {
@@ -73,7 +70,8 @@ public class JwtTokenProvider {
     }
 
     public String getUsername(String token) {
-        return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody().getSubject();
+        JwtParser parser = Jwts.parser().setSigningKey(secretKey).build();
+        return parser.parseClaimsJws(token).getBody().getSubject();
     }
 
     public String extractTokenFromRequest(HttpServletRequest req) {
@@ -86,7 +84,8 @@ public class JwtTokenProvider {
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
+            JwtParser parser = Jwts.parser().setSigningKey(secretKey).build();
+            parser.parseClaimsJws(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             throw new CustomException("Expired or invalid JWT token", HttpStatus.FORBIDDEN);

@@ -3,68 +3,50 @@ package com.awesome.testing.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.Customizer;
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity
 @RequiredArgsConstructor
-public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+public class WebSecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.cors();
-        http.csrf().disable();
-
-        http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-
-        http.authorizeRequests()
-                .antMatchers("/users/signin").permitAll()
-                .antMatchers("/actuator/**").permitAll()
-                .antMatchers("/users/signup").permitAll()
-                .antMatchers("/email").permitAll()
-                .antMatchers("/h2-console/**/**").permitAll()
-                .antMatchers("/h2-console").permitAll()
-                .anyRequest().authenticated();
-
-        http.exceptionHandling().accessDeniedPage("/login");
-
-        http.apply(new JwtTokenFilterConfigurer(jwtTokenProvider));
-    }
-
-    @Override
-    public void configure(WebSecurity web) {
-        web.ignoring().antMatchers("/v2/api-docs")
-                .antMatchers("/swagger-resources/**")
-                .antMatchers("/swagger-ui.html")
-                .antMatchers("/configuration/**")
-                .antMatchers("/webjars/**")
-                .antMatchers("/public")
-                .and()
-                .ignoring()
-                .antMatchers("/h2-console/**/**")
-                .antMatchers("/h2-console");
-    }
-
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
-    }
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        JwtTokenFilter customFilter = new JwtTokenFilter(jwtTokenProvider);
 
-    @Override
-    @Bean
-    public AuthenticationManager authenticationManagerBean() throws Exception {
-        return super.authenticationManagerBean();
+        http
+                .cors(Customizer.withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(
+                                "/users/signin",
+                                "/users/signup",
+                                "/email",
+                                "/actuator/**",
+                                "/swagger-resources/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/configuration/**",
+                                "/webjars/**",
+                                "/public",
+                                "/h2-console/**"
+                        ).permitAll()
+                        .anyRequest().authenticated())
+                .exceptionHandling(e -> e.accessDeniedPage("/login"))
+                .addFilterBefore(customFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
     }
 
 }

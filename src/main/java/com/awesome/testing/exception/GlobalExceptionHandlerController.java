@@ -1,48 +1,43 @@
 package com.awesome.testing.exception;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletResponse;
-
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 
-@RestControllerAdvice
+@ControllerAdvice
 public class GlobalExceptionHandlerController {
 
     @ExceptionHandler(CustomException.class)
-    public void handleCustomException(HttpServletResponse res, CustomException ex) throws IOException {
-        res.sendError(ex.getHttpStatus().value(), ex.getMessage());
+    protected ResponseEntity<Object> handleCustomException(CustomException ex, WebRequest request) {
+        Map<String, String> bodyOfResponse = new HashMap<>();
+        bodyOfResponse.put("message", ex.getMessage());
+        return new ResponseEntity<>(bodyOfResponse, new HttpHeaders(), ex.getHttpStatus());
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public void handleAccessDeniedException(HttpServletResponse res) throws IOException {
-        res.sendError(HttpStatus.FORBIDDEN.value(), "Access denied");
+    protected ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException ex, WebRequest request) {
+        Map<String, String> bodyOfResponse = new HashMap<>();
+        bodyOfResponse.put("message", "Access denied");
+        return new ResponseEntity<>(bodyOfResponse, new HttpHeaders(), HttpStatus.FORBIDDEN);
     }
 
-    @ExceptionHandler(Exception.class)
-    public void handleException(HttpServletResponse res) throws IOException {
-        res.sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Something went wrong");
-    }
-
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Map<String, String> handleValidationExceptions(
-            MethodArgumentNotValidException ex) {
+    protected ResponseEntity<Object> handleValidationExceptions(MethodArgumentNotValidException ex, WebRequest request) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        return errors;
+        return new ResponseEntity<>(errors, new HttpHeaders(), HttpStatus.BAD_REQUEST);
     }
-
 }

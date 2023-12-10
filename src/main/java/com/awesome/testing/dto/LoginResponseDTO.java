@@ -1,7 +1,7 @@
 package com.awesome.testing.dto;
 
 import com.awesome.testing.model.Role;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Value;
 
@@ -11,22 +11,22 @@ import java.util.List;
 @Builder
 public class LoginResponseDTO {
 
-    @ApiModelProperty(position = 0)
+    @Schema(description = "Username", example = "user", required = true)
     String username;
 
-    @ApiModelProperty(position = 1)
+    @Schema(description = "List of roles", required = true)
     List<Role> roles;
 
-    @ApiModelProperty(position = 2)
+    @Schema(description = "First name", example = "John", required = true)
     String firstName;
 
-    @ApiModelProperty(position = 3)
+    @Schema(description = "Last name", example = "Doe", required = true)
     String lastName;
 
-    @ApiModelProperty(position = 4)
+    @Schema(description = "Token", example = "token", required = true)
     String token;
 
-    @ApiModelProperty(position = 5)
+    @Schema(description = "Email", example = "user@example.com", required = true)
     String email;
 
 }
