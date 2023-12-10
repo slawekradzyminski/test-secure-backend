@@ -35,10 +35,7 @@ public class UserGetController {
             @ApiResponse(responseCode = "500", description = "Something went wrong")
     })
     public List<UserResponseDTO> search() {
-        return userService.getAll()
-                .stream()
-                .map(UserResponseDTO::from)
-                .collect(Collectors.toList());
+        return userService.getAll();
     }
 
     @GetMapping(value = "/{username}")

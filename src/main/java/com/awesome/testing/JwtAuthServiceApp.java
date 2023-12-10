@@ -2,7 +2,7 @@ package com.awesome.testing;
 
 import java.util.List;
 
-import com.awesome.testing.model.UserEntity;
+import com.awesome.testing.dto.UserRegisterDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -34,7 +34,7 @@ public class JwtAuthServiceApp implements CommandLineRunner {
 
     @Override
     public void run(String... params) {
-        UserEntity admin = UserEntity.builder()
+        UserRegisterDTO admin = UserRegisterDTO.builder()
             .username("admin")
             .password("admin")
             .email("admin@email.com")
@@ -44,7 +44,7 @@ public class JwtAuthServiceApp implements CommandLineRunner {
             .build();
         userService.signUp(admin);
 
-        UserEntity client = UserEntity.builder()
+        UserRegisterDTO client = UserRegisterDTO.builder()
             .username("client")
             .password("client")
             .email("client@email.com")

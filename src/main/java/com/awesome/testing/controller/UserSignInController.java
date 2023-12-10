@@ -32,17 +32,7 @@ public class UserSignInController {
     })
     public LoginResponseDTO login(
             @Parameter(description = "Login details") @Valid @RequestBody LoginDTO loginDetails) {
-        String token = userService.signIn(loginDetails);
-        UserEntity userEntity = userService.search(loginDetails.getUsername());
-
-        return LoginResponseDTO.builder()
-                .username(userEntity.getUsername())
-                .firstName(userEntity.getFirstName())
-                .lastName(userEntity.getLastName())
-                .roles(userEntity.getRoles())
-                .token(token)
-                .email(userEntity.getEmail())
-                .build();
+        return userService.signIn(loginDetails);
     }
 
 }

@@ -1,14 +1,17 @@
 package com.awesome.testing.dto;
 
 import com.awesome.testing.model.Role;
+import com.awesome.testing.model.UserEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Builder;
-import lombok.Value;
+import lombok.*;
 
 import java.util.List;
 
-@Value
+@Setter
+@Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class LoginResponseDTO {
 
     @Schema(description = "Username", example = "user", required = true)
@@ -29,4 +32,14 @@ public class LoginResponseDTO {
     @Schema(description = "Email", example = "user@example.com", required = true)
     String email;
 
+    public static LoginResponseDTO from(UserEntity userEntity, String token) {
+        return LoginResponseDTO.builder()
+                .username(userEntity.getUsername())
+                .firstName(userEntity.getFirstName())
+                .lastName(userEntity.getLastName())
+                .roles(userEntity.getRoles())
+                .token(token)
+                .email(userEntity.getEmail())
+                .build();
+    }
 }

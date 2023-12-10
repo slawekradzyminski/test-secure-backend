@@ -20,7 +20,7 @@ public class GetUsersControllerTest extends DomainHelper {
     public void shouldGetUsersAsAdmin() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
-        String adminToken = registerAndGetToken(user);
+        String adminToken = registerAndThenLoginSavingToken(user);
 
         // when
         ResponseEntity<UserResponseDTO[]> response =

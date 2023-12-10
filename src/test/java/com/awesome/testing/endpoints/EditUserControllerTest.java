@@ -22,7 +22,7 @@ public class EditUserControllerTest extends DomainHelper {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String username = user.getUsername();
-        String token = registerAndGetToken(user);
+        String token = registerAndThenLoginSavingToken(user);
         UserEditDTO userEditDTO = getRandomUserEditBody();
 
         // when
@@ -48,7 +48,7 @@ public class EditUserControllerTest extends DomainHelper {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String username = user.getUsername();
-        String clientToken = registerAndGetToken(user);
+        String clientToken = registerAndThenLoginSavingToken(user);
         UserEditDTO userEditDTO = UserEditDTO.builder()
                 .email("")
                 .roles(List.of(Role.ROLE_ADMIN))
@@ -70,7 +70,7 @@ public class EditUserControllerTest extends DomainHelper {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
-        String clientToken = registerAndGetToken(user);
+        String clientToken = registerAndThenLoginSavingToken(user);
         UserEditDTO userEditDTO = getRandomUserEditBody();
 
         // when
@@ -102,7 +102,7 @@ public class EditUserControllerTest extends DomainHelper {
     public void shouldGet404ForNonExistingUser() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
-        String clientToken = registerAndGetToken(user);
+        String clientToken = registerAndThenLoginSavingToken(user);
         UserEditDTO userEditDTO = getRandomUserEditBody();
 
         // when

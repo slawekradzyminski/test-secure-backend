@@ -24,11 +24,11 @@ public class SignUpControllerTest extends DomainHelper {
         UserRegisterDTO userRegisterDTO = getRandomUser();
 
         // when
-        ResponseEntity<String> response = registerUser(userRegisterDTO, String.class);
+        ResponseEntity<?> response = registerUser(userRegisterDTO, Object.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isNotBlank();
+        assertThat(response.getBody()).isNull();
     }
 
     @SuppressWarnings("ConstantConditions")

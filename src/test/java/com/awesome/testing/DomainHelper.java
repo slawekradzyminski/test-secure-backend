@@ -1,8 +1,8 @@
 package com.awesome.testing;
 
 import com.awesome.testing.dto.LoginDTO;
+import com.awesome.testing.dto.LoginResponseDTO;
 import com.awesome.testing.dto.UserRegisterDTO;
-import com.awesome.testing.dto.UserRegisterResponseDTO;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
@@ -25,12 +25,18 @@ public abstract class DomainHelper extends HttpHelper {
     }
 
     @SuppressWarnings("ConstantConditions")
-    protected String registerAndGetToken(UserRegisterDTO userRegisterDTO) {
-        return executePost(
+    protected String registerAndThenLoginSavingToken(UserRegisterDTO userRegisterDTO) {
+        executePost(
                 REGISTER_ENDPOINT,
                 userRegisterDTO,
                 getJsonOnlyHeaders(),
-                UserRegisterResponseDTO.class)
+                Void.class);
+
+        return executePost(
+                LOGIN_ENDPOINT,
+                new LoginDTO(userRegisterDTO.getUsername(), userRegisterDTO.getPassword()),
+                getJsonOnlyHeaders(),
+                LoginResponseDTO.class)
                 .getBody()
                 .getToken();
     }

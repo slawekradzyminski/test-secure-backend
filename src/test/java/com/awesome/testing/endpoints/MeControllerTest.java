@@ -25,7 +25,7 @@ public class MeControllerTest extends DomainHelper {
     public void prepareUserForTest() {
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         validUsername = user.getUsername();
-        apiToken = registerAndGetToken(user);
+        apiToken = registerAndThenLoginSavingToken(user);
     }
 
     @SuppressWarnings("ConstantConditions")

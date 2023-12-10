@@ -26,7 +26,7 @@ public class SignInControllerTest extends DomainHelper {
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         validUsername = user.getUsername();
         validPassword = user.getPassword();
-        registerAndGetToken(user);
+        registerAndThenLoginSavingToken(user);
     }
 
     @SuppressWarnings("ConstantConditions")

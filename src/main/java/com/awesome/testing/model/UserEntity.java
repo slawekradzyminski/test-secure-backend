@@ -43,15 +43,14 @@ public class UserEntity {
     @Column(nullable = false)
     private String lastName;
 
-    public static UserEntity from(UserRegisterDTO userRegisterDTO) {
+    public static UserEntity from(UserRegisterDTO userRegisterDTO, String encryptedPassword) {
         return UserEntity.builder()
                 .username(userRegisterDTO.getUsername())
-                .password(userRegisterDTO.getPassword())
+                .password(encryptedPassword)
                 .roles(userRegisterDTO.getRoles())
                 .email(userRegisterDTO.getEmail())
                 .firstName(userRegisterDTO.getFirstName())
                 .lastName(userRegisterDTO.getLastName())
                 .build();
     }
-
 }

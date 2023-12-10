@@ -1,8 +1,6 @@
 package com.awesome.testing.controller;
 
 import com.awesome.testing.dto.UserRegisterDTO;
-import com.awesome.testing.dto.UserRegisterResponseDTO;
-import com.awesome.testing.model.UserEntity;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,9 +30,9 @@ public class UserSignUpController {
             @ApiResponse(responseCode = "422", description = "Username is already in use"),
             @ApiResponse(responseCode = "500", description = "Something went wrong")
     })
-    public UserRegisterResponseDTO signup(
+    public void signup(
             @Parameter(description = "Signup user") @Valid @RequestBody UserRegisterDTO user) {
-        return userService.signUp(UserEntity.from(user));
+        userService.signUp(user);
     }
 
 }

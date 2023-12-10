@@ -31,7 +31,7 @@ public class UserRefreshController {
             @ApiResponse(responseCode = "500", description = "Something went wrong")
     })
     public String refresh(HttpServletRequest req) {
-        return userService.refresh(req.getRemoteUser());
+        return userService.refreshToken(req.getRemoteUser());
     }
 
 }

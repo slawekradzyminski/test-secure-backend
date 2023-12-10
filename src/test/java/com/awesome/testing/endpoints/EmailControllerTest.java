@@ -33,7 +33,7 @@ public class EmailControllerTest extends DomainHelper {
     public void shouldSentEmail() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
-        String token = registerAndGetToken(user);
+        String token = registerAndThenLoginSavingToken(user);
         EmailDTO emailDTO = new EmailDTO("slawek@gmail.com", "Important", "Read carefully");
 
         // when
@@ -63,7 +63,7 @@ public class EmailControllerTest extends DomainHelper {
     public void shouldGet403AsClient() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String token = registerAndGetToken(user);
+        String token = registerAndThenLoginSavingToken(user);
         EmailDTO emailDTO = new EmailDTO("slawek@gmail.com", "Important", "Read carefully");
 
         // when
