@@ -1,13 +1,16 @@
 package com.awesome.testing.security;
 
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
 import com.awesome.testing.exception.CustomException;
@@ -67,11 +70,13 @@ public class JwtTokenProvider {
     }
 
     public String extractTokenFromRequest(HttpServletRequest req) {
-        String bearerToken = req.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        return null;
+        return Optional.ofNullable(req.getCookies())
+            .stream()
+            .flatMap(Arrays::stream)
+            .filter(cookie -> "token".equals(cookie.getName()))
+            .map(Cookie::getValue)
+            .findFirst()
+            .orElse(null);
     }
 
     public boolean validateToken(String token) {

@@ -22,11 +22,11 @@ public class UserEditDTO {
     @Schema(description = "List of roles", required = true)
     List<Role> roles;
 
-    @Size(min = 4, max = 255, message = "Minimum firstName length: 4 characters")
+    @Size(min = 3, max = 255, message = "Minimum firstName length: 3 characters")
     @Schema(description = "First name", example = "John", required = true)
     String firstName;
 
-    @Size(min = 4, max = 255, message = "Minimum lastName length: 4 characters")
+    @Size(min = 3, max = 255, message = "Minimum lastName length: 3 characters")
     @Schema(description = "Last name", example = "Doe", required = true)
     String lastName;
 

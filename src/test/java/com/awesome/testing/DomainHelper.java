@@ -32,22 +32,30 @@ public abstract class DomainHelper extends HttpHelper {
                 getJsonOnlyHeaders(),
                 Void.class);
 
-        return executePost(
+        String cookie = executePost(
                 LOGIN_ENDPOINT,
                 new LoginDTO(userRegisterDTO.getUsername(), userRegisterDTO.getPassword()),
                 getJsonOnlyHeaders(),
                 LoginResponseDTO.class)
-                .getBody()
-                .getToken();
+                .getHeaders()
+                .get("Set-Cookie")
+                .get(0);
+
+        return getTokenValueFromCookie(cookie);
+    }
+
+    protected String getTokenValueFromCookie(String cookie) {
+        String[] parts = cookie.split(";")[0].split("=");
+        return parts[1];
     }
 
     protected String getUserEndpoint(String username) {
         return MessageFormat.format("/users/{0}", username);
     }
 
-    protected HttpHeaders getHeadersWith(String token) {
+    public HttpHeaders getHeadersWith(String token) {
         HttpHeaders headers = getJsonOnlyHeaders();
-        headers.add(HttpHeaders.AUTHORIZATION, MessageFormat.format("Bearer {0}", token));
+        headers.add(HttpHeaders.COOKIE, "token=" + token);
         return headers;
     }
 

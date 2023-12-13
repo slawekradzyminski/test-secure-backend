@@ -32,6 +32,7 @@ public class WebSecurityConfig {
                         .requestMatchers(
                                 "/users/signin",
                                 "/users/signup",
+                                "/users/logout",
                                 "/actuator/**",
                                 "/swagger-resources/**",
                                 "/v3/api-docs/**",

@@ -51,7 +51,7 @@ public class SignUpControllerTest extends DomainHelper {
     @Test
     public void shouldFailToRegisterUsernameTooShort() {
         // given
-        UserRegisterDTO user = getRandomUserWithUsername("one");
+        UserRegisterDTO user = getRandomUserWithUsername("on");
 
         // when
         ResponseEntity<Map<String, String>> response =  restTemplate.exchange(
