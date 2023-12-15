@@ -1,8 +1,8 @@
 package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.ErrorDTO;
-import com.awesome.testing.dto.UserRegisterDTO;
+import com.awesome.testing.dto.users.ErrorDTO;
+import com.awesome.testing.dto.users.UserRegisterDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;

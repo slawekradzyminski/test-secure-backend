@@ -1,6 +1,6 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.*;
+import com.awesome.testing.dto.users.*;
 import com.awesome.testing.model.UserEntity;
 import jakarta.servlet.http.HttpServletRequest;
 

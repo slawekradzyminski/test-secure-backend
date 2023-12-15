@@ -1,15 +1,15 @@
-package com.awesome.testing.controller;
+package com.awesome.testing.controller.users;
 
-import com.awesome.testing.dto.UserRegisterDTO;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = {"http://localhost:8081", "http://127.0.0.1:8081"}, maxAge = 36000, allowCredentials = "true")
@@ -17,22 +17,23 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/users")
 @Tag(name = "users")
 @RequiredArgsConstructor
-public class UserSignUpController {
+public class UserDeleteController {
 
     private final UserService userService;
 
-    @PostMapping("/signup")
-    @Operation(summary = "${UserController.signup}")
-    @ResponseStatus(HttpStatus.CREATED)
+    @DeleteMapping(value = "/{username}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Operation(summary = "${UserController.delete}",
+            security = {@SecurityRequirement(name = "Authorization")})
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "400", description = "Field validation failed"),
+            @ApiResponse(responseCode = "403", description = "Expired or invalid JWT token"),
             @ApiResponse(responseCode = "403", description = "Access denied"),
-            @ApiResponse(responseCode = "422", description = "Username is already in use"),
+            @ApiResponse(responseCode = "404", description = "The user doesn't exist"),
             @ApiResponse(responseCode = "500", description = "Something went wrong")
     })
-    public void signup(
-            @Parameter(description = "Signup user") @Valid @RequestBody UserRegisterDTO user) {
-        userService.signUp(user);
+    public void delete(@Parameter(description = "Username") @PathVariable String username) {
+        userService.delete(username);
     }
 
 }

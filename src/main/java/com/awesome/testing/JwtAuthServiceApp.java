@@ -1,8 +1,9 @@
 package com.awesome.testing;
 
+import java.awt.image.BufferedImage;
 import java.util.List;
 
-import com.awesome.testing.dto.UserRegisterDTO;
+import com.awesome.testing.dto.users.UserRegisterDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -11,6 +12,8 @@ import org.springframework.context.annotation.Bean;
 
 import com.awesome.testing.model.Role;
 import com.awesome.testing.service.UserService;
+import org.springframework.http.converter.BufferedImageHttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.zalando.logbook.HeaderFilter;
 
@@ -30,6 +33,11 @@ public class JwtAuthServiceApp implements CommandLineRunner {
     @Bean
     public HeaderFilter headerFilter() {
         return none();
+    }
+
+    @Bean
+    public HttpMessageConverter<BufferedImage> createImageHttpMessageConverter() {
+        return new BufferedImageHttpMessageConverter();
     }
 
     @Override

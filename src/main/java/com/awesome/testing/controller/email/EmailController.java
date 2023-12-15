@@ -1,6 +1,6 @@
-package com.awesome.testing.controller;
+package com.awesome.testing.controller.email;
 
-import com.awesome.testing.dto.EmailDTO;
+import com.awesome.testing.dto.email.EmailDTO;
 import com.awesome.testing.jms.JmsSender;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

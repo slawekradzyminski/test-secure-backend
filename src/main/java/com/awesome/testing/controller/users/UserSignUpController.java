@@ -1,38 +1,38 @@
-package com.awesome.testing.controller;
+package com.awesome.testing.controller.users;
 
-import com.awesome.testing.dto.UserResponseDTO;
+import com.awesome.testing.dto.users.UserRegisterDTO;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 @CrossOrigin(origins = {"http://localhost:8081", "http://127.0.0.1:8081"}, maxAge = 36000, allowCredentials = "true")
 @RestController
 @RequestMapping("/users")
 @Tag(name = "users")
 @RequiredArgsConstructor
-public class UserMeController {
+public class UserSignUpController {
 
     private final UserService userService;
 
-    @GetMapping(value = "/me")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
-    @Operation(summary = "${UserController.me}",
-            security = {@SecurityRequirement(name = "Authorization")})
+    @PostMapping("/signup")
+    @Operation(summary = "${UserController.signup}")
+    @ResponseStatus(HttpStatus.CREATED)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "403", description = "Expired or invalid JWT token"),
+            @ApiResponse(responseCode = "400", description = "Field validation failed"),
             @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "422", description = "Username is already in use"),
             @ApiResponse(responseCode = "500", description = "Something went wrong")
     })
-    public UserResponseDTO whoAmI(HttpServletRequest req) {
-        return UserResponseDTO.from(userService.whoAmI(req));
+    public void signup(
+            @Parameter(description = "Signup user") @Valid @RequestBody UserRegisterDTO user) {
+        userService.signUp(user);
     }
 
 }

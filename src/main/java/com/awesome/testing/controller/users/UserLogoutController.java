@@ -1,4 +1,4 @@
-package com.awesome.testing.controller;
+package com.awesome.testing.controller.users;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletResponse;

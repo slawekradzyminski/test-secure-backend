@@ -1,33 +1,44 @@
-package com.awesome.testing.dto;
+package com.awesome.testing.dto.users;
+
+import java.util.List;
 
 import com.awesome.testing.model.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.*;
-
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
-import java.util.List;
+import jakarta.validation.constraints.NotEmpty;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
-@Value
+@Setter
+@Getter
 @Builder
-public class UserEditDTO {
+public class UserRegisterDTO {
+
+    @Size(min = 3, max = 255, message = "Minimum username length: 3 characters")
+    @Schema(description = "Username", example = "user", required = true)
+    private String username;
 
     @NotEmpty
     @Email
     @Schema(description = "Email", example = "user@example.com", required = true)
-    String email;
+    private String email;
+
+    @Size(min = 3, max = 255, message = "Minimum password length: 3 characters")
+    @Schema(description = "Password", example = "pass", required = true)
+    private String password;
 
     @NotEmpty(message = "Please pick at least one role")
     @Schema(description = "List of roles", required = true)
-    List<Role> roles;
+    private List<Role> roles;
 
     @Size(min = 3, max = 255, message = "Minimum firstName length: 3 characters")
     @Schema(description = "First name", example = "John", required = true)
-    String firstName;
+    private String firstName;
 
     @Size(min = 3, max = 255, message = "Minimum lastName length: 3 characters")
     @Schema(description = "Last name", example = "Doe", required = true)
-    String lastName;
+    private String lastName;
 
 }

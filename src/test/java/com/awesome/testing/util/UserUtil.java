@@ -1,6 +1,6 @@
 package com.awesome.testing.util;
 
-import com.awesome.testing.dto.UserRegisterDTO;
+import com.awesome.testing.dto.users.UserRegisterDTO;
 import com.awesome.testing.model.Role;
 import net.bytebuddy.utility.RandomString;
 

@@ -1,6 +1,6 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.LoginDTO;
+import com.awesome.testing.dto.users.LoginDTO;
 import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;

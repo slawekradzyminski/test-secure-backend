@@ -1,4 +1,4 @@
-package com.awesome.testing.dto;
+package com.awesome.testing.dto.users;
 
 import com.awesome.testing.model.Role;
 import com.awesome.testing.model.UserEntity;
