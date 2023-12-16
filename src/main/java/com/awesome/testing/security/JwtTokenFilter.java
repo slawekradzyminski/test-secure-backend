@@ -20,7 +20,14 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse,
+                                    FilterChain filterChain) throws ServletException, IOException {
+        String requestURI = httpServletRequest.getRequestURI();
+        if ("/users/logout".equals(requestURI)) {
+            filterChain.doFilter(httpServletRequest, httpServletResponse);
+            return;
+        }
+
         String token = jwtTokenProvider.extractTokenFromRequest(httpServletRequest);
         try {
             if (token != null && jwtTokenProvider.validateToken(token)) {
