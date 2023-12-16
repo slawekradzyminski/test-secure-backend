@@ -2,12 +2,12 @@ package com.awesome.testing.security;
 
 import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.model.Role;
+import io.jsonwebtoken.JwtParser;
+import io.jsonwebtoken.Jwts;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -15,19 +15,18 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 public class JwtTokenProviderTest {
 
-    @Mock
-    private MyUserDetails myUserDetails;
-
-    @InjectMocks
     private JwtTokenProvider jwtTokenProvider;
 
     @BeforeEach
     public void setup() {
-        ReflectionTestUtils.setField(jwtTokenProvider, "secretKey", "4DZ3+asC4/EOVmPdsSFizGMBlxnws+CLgiX9I1hl3AA=");
+        SecretKeyProvider secretKeyProvider = new SecretKeyProvider("4DZ3+asC4/EOVmPdsSFizGMBlxnws+CLgiX9I1hl3AA=");
+        JwtParser jwtParser = Jwts.parser().verifyWith(secretKeyProvider.getSecretKey()).build();
+        jwtTokenProvider = new JwtTokenProvider(jwtParser, secretKeyProvider, mock(MyUserDetails.class));
         ReflectionTestUtils.setField(jwtTokenProvider, "validityInMilliseconds", 3600000L);
     }
 
@@ -50,7 +49,7 @@ public class JwtTokenProviderTest {
     }
 
     @Test
-    public void testValidateTokenWithInvalidToken() {
+    public void testValidateInvalidToken() {
         // given
         String invalidToken = "invalidToken";
 

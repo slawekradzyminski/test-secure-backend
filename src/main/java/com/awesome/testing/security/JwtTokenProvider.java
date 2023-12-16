@@ -1,15 +1,11 @@
 package com.awesome.testing.security;
 
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -25,29 +21,16 @@ import org.springframework.stereotype.Component;
 
 import com.awesome.testing.model.Role;
 
-import javax.crypto.SecretKey;
-
 @Component
 @RequiredArgsConstructor
 public class JwtTokenProvider {
 
-    /**
-     * THIS IS NOT A SECURE PRACTICE! For simplicity, we are storing a static key
-     * here. Ideally, in a
-     * microservices environment, this key would be kept on a config-server.
-     */
-    @Value("${security.jwt.token.secret-key:secret-key}")
-    private String secretKey;
-
     @Value("${security.jwt.token.expire-length:3600000}")
     private long validityInMilliseconds; // 1h
 
+    private final JwtParser jwtParser;
+    private final SecretKeyProvider secretKeyProvider;
     private final MyUserDetails myUserDetails;
-
-    @PostConstruct
-    protected void init() {
-        secretKey = Base64.getEncoder().encodeToString(secretKey.getBytes());
-    }
 
     public String createToken(String username, List<Role> roles) {
         return Jwts.builder()
@@ -55,7 +38,7 @@ public class JwtTokenProvider {
                 .claim("auth", getRoles(roles))
                 .issuedAt(new Date())
                 .expiration(getExpirationDate())
-                .signWith(getKey())
+                .signWith(secretKeyProvider.getSecretKey())
                 .compact();
     }
 
@@ -65,8 +48,7 @@ public class JwtTokenProvider {
     }
 
     public String getUsername(String token) {
-        JwtParser parser = Jwts.parser().verifyWith(getKey()).build();
-        return parser.parseSignedClaims(token).getPayload().getSubject();
+        return jwtParser.parseSignedClaims(token).getPayload().getSubject();
     }
 
     public String extractTokenFromRequest(HttpServletRequest req) {
@@ -81,17 +63,11 @@ public class JwtTokenProvider {
 
     public boolean validateToken(String token) {
         try {
-            JwtParser parser = Jwts.parser().verifyWith(getKey()).build();
-            parser.parseSignedClaims(token);
+            jwtParser.parseSignedClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             throw new CustomException("Expired or invalid JWT token", HttpStatus.FORBIDDEN);
         }
-    }
-
-    private SecretKey getKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     private Date getExpirationDate() {

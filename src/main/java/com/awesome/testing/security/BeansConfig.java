@@ -1,5 +1,7 @@
 package com.awesome.testing.security;
 
+import io.jsonwebtoken.JwtParser;
+import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,5 +33,10 @@ public class BeansConfig {
     @Bean
     public AuthenticationManager authenticationManager(DaoAuthenticationProvider daoAuthenticationProvider) {
         return new ProviderManager(List.of(daoAuthenticationProvider));
+    }
+
+    @Bean
+    public JwtParser jwtParser(SecretKeyProvider secretKeyProvider) {
+        return Jwts.parser().verifyWith(secretKeyProvider.getSecretKey()).build();
     }
 }
