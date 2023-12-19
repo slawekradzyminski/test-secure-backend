@@ -59,4 +59,10 @@ public abstract class DomainHelper extends HttpHelper {
         return headers;
     }
 
+    public HttpHeaders getImageHeadersWith(String token) {
+        HttpHeaders headers = getImageHeaders();
+        headers.add(HttpHeaders.COOKIE, "token=" + token);
+        return headers;
+    }
+
 }

@@ -3,10 +3,7 @@ package com.awesome.testing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class HttpHelper {
@@ -45,8 +42,15 @@ public abstract class HttpHelper {
 
     protected HttpHeaders getJsonOnlyHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.ACCEPT, "application/json");
-        headers.add(HttpHeaders.CONTENT_TYPE, "application/json");
+        headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+        headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        return headers;
+    }
+
+    protected HttpHeaders getImageHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.ACCEPT, MediaType.IMAGE_PNG_VALUE);
+        headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
         return headers;
     }
 

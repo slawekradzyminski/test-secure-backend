@@ -33,7 +33,6 @@ public class WebSecurityConfig {
                                 "/users/signin",
                                 "/users/signup",
                                 "/users/logout",
-                                "/qr/create",
                                 "/actuator/**",
                                 "/swagger-resources/**",
                                 "/v3/api-docs/**",

@@ -1,4 +1,4 @@
-package com.awesome.testing.endpoints;
+package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.users.UserRegisterDTO;
