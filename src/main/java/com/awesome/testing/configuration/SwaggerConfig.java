@@ -20,7 +20,7 @@ public class SwaggerConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .components(new Components().addSecuritySchemes("Authorization",
-                        new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))
+                        new SecurityScheme().type(SecurityScheme.Type.APIKEY).in(SecurityScheme.In.COOKIE).name("token")))
                 .info(new Info().title("JSON Web Token Authentication API")
                         .description(
                                 "This is a sample JWT authentication service. You can find out more about JWT at [https://jwt.io/](https://jwt.io/)." +
