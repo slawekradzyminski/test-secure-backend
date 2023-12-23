@@ -1,7 +1,6 @@
 package com.awesome.testing.dbsetup;
 
 import com.awesome.testing.service.DoctorTypeService;
-import com.awesome.testing.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
