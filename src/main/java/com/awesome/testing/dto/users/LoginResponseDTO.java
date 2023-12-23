@@ -1,10 +1,11 @@
 package com.awesome.testing.dto.users;
 
-import com.awesome.testing.entities.UserEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.util.List;
+
+import com.awesome.testing.entities.user.UserEntity;
 
 @Setter
 @Getter

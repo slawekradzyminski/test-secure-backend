@@ -3,6 +3,7 @@ package com.awesome.testing.exception;
 import java.util.HashMap;
 import java.util.Map;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,11 @@ public class GlobalExceptionHandlerController {
         Map<String, String> bodyOfResponse = new HashMap<>();
         bodyOfResponse.put("message", ex.getMessage());
         return new ResponseEntity<>(bodyOfResponse, new HttpHeaders(), ex.getHttpStatus());
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    protected ResponseEntity<Object> handleEntityNotFoundException(EntityNotFoundException ex, WebRequest request) {
+        return ResponseEntity.notFound().build();
     }
 
     @ExceptionHandler(AccessDeniedException.class)

@@ -1,11 +1,13 @@
 package com.awesome.testing.service;
 
 import com.awesome.testing.dto.users.*;
-import com.awesome.testing.entities.UserEntity;
+import com.awesome.testing.entities.user.UserEntity;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.repository.UserRepository;
+import com.awesome.testing.security.AuthenticationHandler;
 import com.awesome.testing.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

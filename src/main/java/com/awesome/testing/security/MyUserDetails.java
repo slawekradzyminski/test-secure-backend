@@ -1,6 +1,6 @@
 package com.awesome.testing.security;
 
-import com.awesome.testing.entities.UserEntity;
+import com.awesome.testing.entities.user.UserEntity;
 import com.awesome.testing.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;

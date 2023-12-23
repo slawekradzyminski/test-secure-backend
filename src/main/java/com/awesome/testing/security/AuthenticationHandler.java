@@ -1,9 +1,9 @@
-package com.awesome.testing.service;
+package com.awesome.testing.security;
 
 import com.awesome.testing.dto.users.LoginDTO;
 import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.repository.UserRepository;
-import com.awesome.testing.security.JwtTokenProvider;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,7 +19,7 @@ public class AuthenticationHandler {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
 
-    String authenticateUserAndGetToken(LoginDTO loginDTO) {
+    public String authenticateUserAndGetToken(LoginDTO loginDTO) {
         String username = loginDTO.getUsername();
         String password = loginDTO.getPassword();
         try {

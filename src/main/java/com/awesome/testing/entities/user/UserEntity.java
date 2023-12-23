@@ -1,7 +1,9 @@
-package com.awesome.testing.entities;
+package com.awesome.testing.entities.user;
 
 import com.awesome.testing.dto.users.Role;
 import com.awesome.testing.dto.users.UserRegisterDTO;
+import com.awesome.testing.entities.doctor.DoctorTypeEntity;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -43,6 +45,13 @@ public class UserEntity {
     @Size(min = 3, message = "Minimum lastName length: 3 characters")
     @Column(nullable = false)
     private String lastName;
+
+    @ManyToMany
+    @JoinTable(
+        name = "user_doctor_type",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "doctor_type_id"))
+    private List<DoctorTypeEntity> doctorTypes;
 
     public static UserEntity from(UserRegisterDTO userRegisterDTO, String encryptedPassword) {
         return UserEntity.builder()
