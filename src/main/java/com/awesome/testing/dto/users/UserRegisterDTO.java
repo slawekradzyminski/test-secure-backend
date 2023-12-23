@@ -2,7 +2,6 @@ package com.awesome.testing.dto.users;
 
 import java.util.List;
 
-import com.awesome.testing.model.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;

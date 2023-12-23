@@ -1,6 +1,6 @@
 package com.awesome.testing.repository;
 
-import com.awesome.testing.model.UserEntity;
+import com.awesome.testing.entities.UserEntity;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 

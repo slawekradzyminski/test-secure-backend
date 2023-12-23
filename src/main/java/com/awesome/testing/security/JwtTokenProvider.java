@@ -19,7 +19,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import com.awesome.testing.model.Role;
+import com.awesome.testing.dto.users.Role;
 
 @Component
 @RequiredArgsConstructor

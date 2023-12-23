@@ -3,7 +3,7 @@ package com.awesome.testing.endpoints.qr;
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.qr.CreateQrDto;
 import com.awesome.testing.dto.users.UserRegisterDTO;
-import com.awesome.testing.model.Role;
+import com.awesome.testing.dto.users.Role;
 import com.awesome.testing.qr.QrGenerator;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;

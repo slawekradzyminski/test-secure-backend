@@ -1,6 +1,5 @@
 package com.awesome.testing.dto.users;
 
-import com.awesome.testing.model.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 

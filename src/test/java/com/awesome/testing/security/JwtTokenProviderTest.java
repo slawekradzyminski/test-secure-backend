@@ -1,7 +1,7 @@
 package com.awesome.testing.security;
 
 import com.awesome.testing.exception.CustomException;
-import com.awesome.testing.model.Role;
+import com.awesome.testing.dto.users.Role;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;

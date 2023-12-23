@@ -4,7 +4,7 @@ import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.users.ErrorDTO;
 import com.awesome.testing.dto.users.UserRegisterDTO;
 import com.awesome.testing.dto.users.UserResponseDTO;
-import com.awesome.testing.model.Role;
+import com.awesome.testing.dto.users.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

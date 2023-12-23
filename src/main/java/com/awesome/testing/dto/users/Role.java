@@ -1,4 +1,4 @@
-package com.awesome.testing.model;
+package com.awesome.testing.dto.users;
 
 import org.springframework.security.core.GrantedAuthority;
 

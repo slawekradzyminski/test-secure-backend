@@ -5,7 +5,7 @@ import com.awesome.testing.dto.users.LoginDTO;
 import com.awesome.testing.dto.users.LoginResponseDTO;
 import com.awesome.testing.dto.users.UserEditDTO;
 import com.awesome.testing.dto.users.UserRegisterDTO;
-import com.awesome.testing.model.Role;
+import com.awesome.testing.dto.users.Role;
 import net.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;

@@ -1,5 +1,6 @@
-package com.awesome.testing.model;
+package com.awesome.testing.entities;
 
+import com.awesome.testing.dto.users.Role;
 import com.awesome.testing.dto.users.UserRegisterDTO;
 import jakarta.persistence.*;
 import lombok.*;

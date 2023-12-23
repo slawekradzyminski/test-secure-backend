@@ -2,7 +2,7 @@ package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.users.*;
-import com.awesome.testing.model.Role;
+import com.awesome.testing.dto.users.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.*;

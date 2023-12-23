@@ -1,7 +1,7 @@
 package com.awesome.testing.util;
 
 import com.awesome.testing.dto.users.UserRegisterDTO;
-import com.awesome.testing.model.Role;
+import com.awesome.testing.dto.users.Role;
 import net.bytebuddy.utility.RandomString;
 
 import java.text.MessageFormat;
