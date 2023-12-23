@@ -23,14 +23,17 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private static final List<String> EXCLUDED_ENDPOINTS = List.of(
             "/users/logout",
             "/users/signin",
-            "/users/signup"
+            "/users/signup",
+            "/h2-console",
+            "/swagger-ui",
+            "/swagger-resources",
+            "/v3/api-docs"
     );
 
     @Override
     protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse,
                                     FilterChain filterChain) throws ServletException, IOException {
-        String requestURI = httpServletRequest.getRequestURI();
-        if (EXCLUDED_ENDPOINTS.contains(requestURI)) {
+        if (shouldBeBypassed(httpServletRequest.getRequestURI())) {
             filterChain.doFilter(httpServletRequest, httpServletResponse);
             return;
         }
@@ -47,6 +50,11 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             return;
         }
         filterChain.doFilter(httpServletRequest, httpServletResponse);
+    }
+
+    private boolean shouldBeBypassed(String requestURI) {
+        return EXCLUDED_ENDPOINTS.stream()
+                .anyMatch(requestURI::contains);
     }
 
 }

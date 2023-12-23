@@ -3,6 +3,8 @@ package com.awesome.testing.entities.user;
 import com.awesome.testing.dto.users.Role;
 import com.awesome.testing.dto.users.UserRegisterDTO;
 import com.awesome.testing.entities.doctor.DoctorTypeEntity;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,6 +21,9 @@ import jakarta.validation.constraints.Size;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id")
 public class UserEntity {
 
     @Id
@@ -48,9 +53,9 @@ public class UserEntity {
 
     @ManyToMany
     @JoinTable(
-        name = "user_doctor_type",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "doctor_type_id"))
+            name = "user_doctor_type",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "doctor_type_id"))
     private List<DoctorTypeEntity> doctorTypes;
 
     public static UserEntity from(UserRegisterDTO userRegisterDTO, String encryptedPassword) {

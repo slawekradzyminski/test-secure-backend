@@ -1,8 +1,10 @@
 package com.awesome.testing.service;
 
 import com.awesome.testing.dto.users.*;
+import com.awesome.testing.entities.doctor.DoctorTypeEntity;
 import com.awesome.testing.entities.user.UserEntity;
 
+import com.awesome.testing.repository.DoctorTypeRepository;
 import jakarta.servlet.http.HttpServletRequest;
 
 import com.awesome.testing.exception.CustomException;
@@ -11,6 +13,7 @@ import com.awesome.testing.security.AuthenticationHandler;
 import com.awesome.testing.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +28,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationHandler authenticationHandler;
+    private final DoctorTypeRepository doctorTypeRepository;
 
     public LoginResponseDTO signIn(LoginDTO loginDetails) {
         String token = authenticationHandler.authenticateUserAndGetToken(loginDetails);
@@ -74,5 +78,14 @@ public class UserService {
         userEntity.setEmail(userEditBody.getEmail());
         userEntity.setRoles(userEditBody.getRoles());
         userRepository.save(userEntity);
+    }
+
+    public UserResponseDTO updateDoctorTypes(List<Integer> doctorTypeIds) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        UserEntity user = userRepository.findByUsername(username);
+        List<DoctorTypeEntity> doctorTypes = doctorTypeRepository.findAllById(doctorTypeIds);
+        user.setDoctorTypes(doctorTypes);
+        userRepository.save(user);
+        return UserResponseDTO.from(user);
     }
 }

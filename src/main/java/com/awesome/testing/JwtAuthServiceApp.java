@@ -2,6 +2,7 @@ package com.awesome.testing;
 
 import java.awt.image.BufferedImage;
 
+import com.awesome.testing.dbsetup.DbInitialDataSetup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;

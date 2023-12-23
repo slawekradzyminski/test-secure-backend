@@ -1,7 +1,5 @@
-package com.awesome.testing;
+package com.awesome.testing.dbsetup;
 
-import com.awesome.testing.dto.users.Role;
-import com.awesome.testing.dto.users.UserRegisterDTO;
 import com.awesome.testing.service.DoctorTypeService;
 import com.awesome.testing.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +9,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class DbInitialDataSetup {
+public class DoctorTypesSetup {
 
     private static final List<String> SPECIALTIES = List.of(
             "Pediatrician",
@@ -45,33 +43,10 @@ public class DbInitialDataSetup {
             "Otolaryngologist"
     );
 
-    private final UserService userService;
     private final DoctorTypeService doctorTypeService;
 
-    public void setupData() {
-        UserRegisterDTO admin = UserRegisterDTO.builder()
-                .username("admin")
-                .password("admin")
-                .email("admin@email.com")
-                .firstName("Slawomir")
-                .lastName("Radzyminski")
-                .roles(List.of(Role.ROLE_ADMIN, Role.ROLE_CLIENT))
-                .build();
-        userService.signUp(admin);
-
-        UserRegisterDTO client = UserRegisterDTO.builder()
-                .username("client")
-                .password("client")
-                .email("client@email.com")
-                .firstName("Gosia")
-                .lastName("Radzyminska")
-                .roles(List.of(Role.ROLE_CLIENT))
-                .build();
-        userService.signUp(client);
-
+    public void setupDoctorTypes() {
         SPECIALTIES.forEach(doctorTypeService::addDoctorType);
     }
-
-
 
 }

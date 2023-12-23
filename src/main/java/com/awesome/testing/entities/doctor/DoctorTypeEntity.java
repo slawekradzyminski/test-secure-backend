@@ -6,6 +6,9 @@ import lombok.*;
 import java.util.List;
 
 import com.awesome.testing.entities.user.UserEntity;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 @Entity
 @Setter
@@ -14,6 +17,9 @@ import com.awesome.testing.entities.user.UserEntity;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id")
 public class DoctorTypeEntity {
 
     @Id
@@ -23,6 +29,7 @@ public class DoctorTypeEntity {
     @Column(unique = true, nullable = false)
     private String doctorType;
 
+    @JsonBackReference
     @ManyToMany(mappedBy = "doctorTypes")
     private List<UserEntity> doctors;
 }
