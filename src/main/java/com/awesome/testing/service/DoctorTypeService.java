@@ -20,7 +20,7 @@ public class DoctorTypeService {
     }
 
     public void deleteDoctorType(Integer id) {
-        DoctorTypeEntity doctorTypeEntity = search(id);
+        search(id);
         doctorTypeRepository.deleteById(id);
     }
 
