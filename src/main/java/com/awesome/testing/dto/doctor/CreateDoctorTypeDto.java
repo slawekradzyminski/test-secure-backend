@@ -1,6 +1,5 @@
 package com.awesome.testing.dto.doctor;
 
-import com.awesome.testing.entities.doctor.DoctorType;
 import lombok.*;
 
 @Setter
@@ -10,6 +9,6 @@ import lombok.*;
 @AllArgsConstructor
 public class CreateDoctorTypeDto {
 
-    DoctorType doctorType;
+    String doctorType;
 
 }

@@ -20,9 +20,8 @@ public class DoctorTypeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Enumerated(EnumType.STRING)
     @Column(unique = true, nullable = false)
-    private DoctorType doctorType;
+    private String doctorType;
 
     @ManyToMany(mappedBy = "doctorTypes")
     private List<UserEntity> doctors;

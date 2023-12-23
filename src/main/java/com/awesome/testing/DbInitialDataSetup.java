@@ -2,18 +2,48 @@ package com.awesome.testing;
 
 import com.awesome.testing.dto.users.Role;
 import com.awesome.testing.dto.users.UserRegisterDTO;
-import com.awesome.testing.entities.doctor.DoctorType;
 import com.awesome.testing.service.DoctorTypeService;
 import com.awesome.testing.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class DbInitialDataSetup {
+
+    private static final List<String> SPECIALTIES = List.of(
+            "Pediatrician",
+            "Psychiatrist",
+            "Cardiologist",
+            "Endocrinologist",
+            "Neurologist",
+            "Gastroenterologist",
+            "Dermatologist",
+            "Radiologist",
+            "Pathologist",
+            "Surgeon",
+            "Anesthesiologist",
+            "Ophthalmologist",
+            "Orthopedist",
+            "Urologist",
+            "Obstetrician gynecologist",
+            "Oncologist",
+            "Pulmonologist",
+            "Nephrologist",
+            "Allergist immunologist",
+            "Infectious disease specialist",
+            "Rheumatologist",
+            "Geriatrician",
+            "Sports medicine specialist",
+            "Physical medicine rehabilitation",
+            "Pain management specialist",
+            "Palliative care specialist",
+            "Sleep medicine specialist",
+            "Plastic surgeon",
+            "Otolaryngologist"
+    );
 
     private final UserService userService;
     private final DoctorTypeService doctorTypeService;
@@ -39,7 +69,9 @@ public class DbInitialDataSetup {
                 .build();
         userService.signUp(client);
 
-        Arrays.stream(DoctorType.values()).forEach(doctorTypeService::addDoctorType);
+        SPECIALTIES.forEach(doctorTypeService::addDoctorType);
     }
+
+
 
 }
