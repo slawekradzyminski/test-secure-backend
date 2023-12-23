@@ -1,6 +1,7 @@
 package com.awesome.testing.security;
 
 import java.io.IOException;
+import java.util.List;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -19,11 +20,17 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
 
+    private static final List<String> EXCLUDED_ENDPOINTS = List.of(
+            "/users/logout",
+            "/users/signin",
+            "/users/signup"
+    );
+
     @Override
     protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse,
                                     FilterChain filterChain) throws ServletException, IOException {
         String requestURI = httpServletRequest.getRequestURI();
-        if ("/users/logout".equals(requestURI)) {
+        if (EXCLUDED_ENDPOINTS.contains(requestURI)) {
             filterChain.doFilter(httpServletRequest, httpServletResponse);
             return;
         }
