@@ -32,3 +32,8 @@ docker run -p4001:4001 slawekradzyminski/backend:1.2
 
 - client/client (CLIENT role)
 - admin/admin (ADMIN role)
+
+## Baked in frontend
+
+https://developer.okta.com/blog/2022/06/17/simple-crud-react-and-spring-boot
+`./mvnw spring-boot:run -Pprod`
