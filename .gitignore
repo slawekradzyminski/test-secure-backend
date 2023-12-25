@@ -27,3 +27,6 @@ nbdist/
 
 ### VS CODE ###
 .vscode
+
+frontend/node_modules
+frontend/node
