@@ -1,7 +1,6 @@
 package com.awesome.testing.security;
 
 import java.io.IOException;
-import java.util.List;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -13,22 +12,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import org.springframework.util.AntPathMatcher;
+import org.springframework.util.PathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import static com.awesome.testing.security.PublicPaths.PUBLIC_PATHS;
 
 @RequiredArgsConstructor
 public class JwtTokenFilter extends OncePerRequestFilter {
+    private static final PathMatcher PATH_MATCHER = new AntPathMatcher();
 
     private final JwtTokenProvider jwtTokenProvider;
-
-    private static final List<String> EXCLUDED_ENDPOINTS = List.of(
-            "/users/logout",
-            "/users/signin",
-            "/users/signup",
-            "/h2-console",
-            "/swagger-ui",
-            "/swagger-resources",
-            "/v3/api-docs"
-    );
 
     @Override
     protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse,
@@ -53,8 +47,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     }
 
     private boolean shouldBeBypassed(String requestURI) {
-        return EXCLUDED_ENDPOINTS.stream()
-                .anyMatch(requestURI::contains);
+        return PUBLIC_PATHS.stream()
+                .anyMatch(pattern -> PATH_MATCHER.match(pattern, requestURI));
     }
 
 }
