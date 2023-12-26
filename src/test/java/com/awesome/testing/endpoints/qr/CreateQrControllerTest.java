@@ -2,7 +2,7 @@ package com.awesome.testing.endpoints.qr;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.qr.CreateQrDto;
-import com.awesome.testing.dto.users.UserRegisterDTO;
+import com.awesome.testing.dto.users.UserRegisterDto;
 import com.awesome.testing.dto.users.Role;
 import com.awesome.testing.qr.QrGenerator;
 import lombok.SneakyThrows;
@@ -31,7 +31,7 @@ public class CreateQrControllerTest extends DomainHelper {
     @Test
     public void shouldGenerateQrCodeAsAdmin() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String apiToken = registerAndThenLoginSavingToken(user);
         String randomText = getRandomText();
         CreateQrDto createQrDto = new CreateQrDto(randomText);

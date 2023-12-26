@@ -1,8 +1,8 @@
 package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.users.LoginResponseDTO;
-import com.awesome.testing.dto.users.UserRegisterDTO;
+import com.awesome.testing.dto.users.LoginResponseDto;
+import com.awesome.testing.dto.users.UserRegisterDto;
 import com.awesome.testing.dto.users.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -21,20 +21,20 @@ public class RefreshControllerTest extends DomainHelper {
     @Test
     public void shouldRefreshTwice() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String apiToken = registerAndThenLoginSavingToken(user);
 
         // when
         String refreshedToken =
-                executeGet(REFRESH_ENDPOINT, getHeadersWith(apiToken), LoginResponseDTO.class)
+                executeGet(REFRESH_ENDPOINT, getHeadersWith(apiToken), LoginResponseDto.class)
                         .getHeaders().get("Set-Cookie").get(0);
 
-        ResponseEntity<LoginResponseDTO> response = executeGet(REFRESH_ENDPOINT,
-                getHeadersWith(getTokenValueFromCookie(refreshedToken)), LoginResponseDTO.class);
+        ResponseEntity<LoginResponseDto> response = executeGet(REFRESH_ENDPOINT,
+                getHeadersWith(getTokenValueFromCookie(refreshedToken)), LoginResponseDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isInstanceOf(LoginResponseDTO.class);
+        assertThat(response.getBody()).isInstanceOf(LoginResponseDto.class);
     }
 
     @Test

@@ -1,6 +1,6 @@
 package com.awesome.testing.controller.users;
 
-import com.awesome.testing.dto.users.UserResponseDTO;
+import com.awesome.testing.dto.users.UserResponseDto;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,7 +33,7 @@ public class UserGetController {
             @ApiResponse(responseCode = "404", description = "The user doesn't exist"),
             @ApiResponse(responseCode = "500", description = "Something went wrong")
     })
-    public List<UserResponseDTO> search() {
+    public List<UserResponseDto> search() {
         return userService.getAll();
     }
 
@@ -47,8 +47,8 @@ public class UserGetController {
             @ApiResponse(responseCode = "404", description = "The user doesn't exist"),
             @ApiResponse(responseCode = "500", description = "Something went wrong")
     })
-    public UserResponseDTO search(@Parameter(description = "Username") @PathVariable String username) {
-        return UserResponseDTO.from(userService.search(username));
+    public UserResponseDto search(@Parameter(description = "Username") @PathVariable String username) {
+        return UserResponseDto.from(userService.search(username));
     }
 
 }

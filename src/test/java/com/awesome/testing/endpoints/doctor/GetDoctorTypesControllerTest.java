@@ -2,7 +2,7 @@ package com.awesome.testing.endpoints.doctor;
 
 import com.awesome.testing.dto.doctor.DoctorTypeDto;
 import com.awesome.testing.dto.users.Role;
-import com.awesome.testing.dto.users.UserRegisterDTO;
+import com.awesome.testing.dto.users.UserRegisterDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +17,7 @@ public class GetDoctorTypesControllerTest extends AbstractDoctorTypeControllerTe
     @Test
     public void shouldGetDoctorTypes() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
         String doctorToken = registerAndThenLoginSavingToken(user);
 
         // when

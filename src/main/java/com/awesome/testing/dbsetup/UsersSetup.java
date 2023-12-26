@@ -1,7 +1,7 @@
 package com.awesome.testing.dbsetup;
 
 import com.awesome.testing.dto.users.Role;
-import com.awesome.testing.dto.users.UserRegisterDTO;
+import com.awesome.testing.dto.users.UserRegisterDto;
 import com.awesome.testing.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,8 +20,8 @@ public class UsersSetup {
         userService.signUp(getDoctor());
     }
 
-    private UserRegisterDTO getDoctor() {
-        return UserRegisterDTO.builder()
+    private UserRegisterDto getDoctor() {
+        return UserRegisterDto.builder()
                 .username("doctor")
                 .password("doctor")
                 .email("doctor@email.com")
@@ -31,8 +31,8 @@ public class UsersSetup {
                 .build();
     }
 
-    private UserRegisterDTO getClient() {
-        return UserRegisterDTO.builder()
+    private UserRegisterDto getClient() {
+        return UserRegisterDto.builder()
                 .username("client")
                 .password("client")
                 .email("client@email.com")
@@ -42,8 +42,8 @@ public class UsersSetup {
                 .build();
     }
 
-    private UserRegisterDTO getAdmin() {
-        return UserRegisterDTO.builder()
+    private UserRegisterDto getAdmin() {
+        return UserRegisterDto.builder()
                 .username("admin")
                 .password("admin")
                 .email("admin@email.com")

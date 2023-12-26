@@ -1,8 +1,8 @@
 package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.users.ErrorDTO;
-import com.awesome.testing.dto.users.UserRegisterDTO;
+import com.awesome.testing.dto.users.ErrorDto;
+import com.awesome.testing.dto.users.UserRegisterDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -21,7 +21,7 @@ public class SignUpControllerTest extends DomainHelper {
     @Test
     public void shouldRegister() {
         // given
-        UserRegisterDTO userRegisterDTO = getRandomUser();
+        UserRegisterDto userRegisterDTO = getRandomUser();
 
         // when
         ResponseEntity<?> response = registerUser(userRegisterDTO, Object.class);
@@ -35,12 +35,12 @@ public class SignUpControllerTest extends DomainHelper {
     @Test
     public void shouldFailToRegisterExistingUsername() {
         // given
-        UserRegisterDTO firstUser = getRandomUser();
+        UserRegisterDto firstUser = getRandomUser();
         registerUser(firstUser, String.class);
-        UserRegisterDTO secondUser = getRandomUserWithUsername(firstUser.getUsername());
+        UserRegisterDto secondUser = getRandomUserWithUsername(firstUser.getUsername());
 
         // when
-        ResponseEntity<ErrorDTO> response = registerUser(secondUser, ErrorDTO.class);
+        ResponseEntity<ErrorDto> response = registerUser(secondUser, ErrorDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
@@ -51,7 +51,7 @@ public class SignUpControllerTest extends DomainHelper {
     @Test
     public void shouldFailToRegisterUsernameTooShort() {
         // given
-        UserRegisterDTO user = getRandomUserWithUsername("on");
+        UserRegisterDto user = getRandomUserWithUsername("on");
 
         // when
         ResponseEntity<Map<String, String>> response =  restTemplate.exchange(
@@ -69,7 +69,7 @@ public class SignUpControllerTest extends DomainHelper {
     @Test
     public void shouldFailToRegisterWithEmptyRoles() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of());
+        UserRegisterDto user = getRandomUserWithRoles(List.of());
 
         // when
         ResponseEntity<Map<String, String>> response =  restTemplate.exchange(
@@ -83,7 +83,7 @@ public class SignUpControllerTest extends DomainHelper {
         assertThat(response.getBody().get("roles")).contains("at least");
     }
 
-    private <T> ResponseEntity<T> registerUser(UserRegisterDTO userRegisterDTO, Class<T> clazz) {
+    private <T> ResponseEntity<T> registerUser(UserRegisterDto userRegisterDTO, Class<T> clazz) {
         return executePost(
                 REGISTER_ENDPOINT,
                 userRegisterDTO,

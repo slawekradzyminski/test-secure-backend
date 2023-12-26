@@ -1,8 +1,8 @@
 package com.awesome.testing;
 
-import com.awesome.testing.dto.users.LoginDTO;
-import com.awesome.testing.dto.users.LoginResponseDTO;
-import com.awesome.testing.dto.users.UserRegisterDTO;
+import com.awesome.testing.dto.users.LoginDto;
+import com.awesome.testing.dto.users.LoginResponseDto;
+import com.awesome.testing.dto.users.UserRegisterDto;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
@@ -16,7 +16,7 @@ public abstract class DomainHelper extends HttpHelper {
 
     protected static final String MISSING_USER = "The user doesn't exist";
 
-    protected <T> ResponseEntity<T> attemptLogin(LoginDTO loginDetails, Class<T> clazz) {
+    protected <T> ResponseEntity<T> attemptLogin(LoginDto loginDetails, Class<T> clazz) {
         return executePost(
                 LOGIN_ENDPOINT,
                 loginDetails,
@@ -25,7 +25,7 @@ public abstract class DomainHelper extends HttpHelper {
     }
 
     @SuppressWarnings("ConstantConditions")
-    protected String registerAndThenLoginSavingToken(UserRegisterDTO userRegisterDTO) {
+    protected String registerAndThenLoginSavingToken(UserRegisterDto userRegisterDTO) {
         executePost(
                 REGISTER_ENDPOINT,
                 userRegisterDTO,
@@ -34,9 +34,9 @@ public abstract class DomainHelper extends HttpHelper {
 
         String cookie = executePost(
                 LOGIN_ENDPOINT,
-                new LoginDTO(userRegisterDTO.getUsername(), userRegisterDTO.getPassword()),
+                new LoginDto(userRegisterDTO.getUsername(), userRegisterDTO.getPassword()),
                 getJsonOnlyHeaders(),
-                LoginResponseDTO.class)
+                LoginResponseDto.class)
                 .getHeaders()
                 .get("Set-Cookie")
                 .get(0);

@@ -1,6 +1,6 @@
 package com.awesome.testing.controller.users;
 
-import com.awesome.testing.dto.users.UserEditDTO;
+import com.awesome.testing.dto.users.UserEditDto;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,7 +34,7 @@ public class UserEditController {
             @ApiResponse(responseCode = "500", description = "Something went wrong")
     })
     public void edit(@Parameter(description = "Username") @PathVariable String username,
-                     @Parameter(description = "User details") @Valid @RequestBody UserEditDTO userEditBody) {
+                     @Parameter(description = "User details") @Valid @RequestBody UserEditDto userEditBody) {
         userService.edit(username, userEditBody);
     }
 

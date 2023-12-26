@@ -10,7 +10,7 @@ import jakarta.validation.constraints.NotBlank;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class EmailDTO {
+public class EmailDto {
 
     @Email
     String to;

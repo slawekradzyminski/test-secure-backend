@@ -1,6 +1,6 @@
 package com.awesome.testing.controller.users;
 
-import com.awesome.testing.dto.users.UserResponseDTO;
+import com.awesome.testing.dto.users.UserResponseDto;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -31,8 +31,8 @@ public class UserMeController {
             @ApiResponse(responseCode = "403", description = "Access denied"),
             @ApiResponse(responseCode = "500", description = "Something went wrong")
     })
-    public UserResponseDTO whoAmI(HttpServletRequest req) {
-        return UserResponseDTO.from(userService.whoAmI(req));
+    public UserResponseDto whoAmI(HttpServletRequest req) {
+        return UserResponseDto.from(userService.whoAmI(req));
     }
 
 }

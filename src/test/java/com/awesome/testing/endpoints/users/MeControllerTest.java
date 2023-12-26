@@ -1,8 +1,8 @@
 package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.users.UserRegisterDTO;
-import com.awesome.testing.dto.users.UserResponseDTO;
+import com.awesome.testing.dto.users.UserRegisterDto;
+import com.awesome.testing.dto.users.UserResponseDto;
 import com.awesome.testing.dto.users.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ public class MeControllerTest extends DomainHelper {
 
     @BeforeEach
     public void prepareUserForTest() {
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         validUsername = user.getUsername();
         apiToken = registerAndThenLoginSavingToken(user);
     }
@@ -32,8 +32,8 @@ public class MeControllerTest extends DomainHelper {
     @Test
     public void shouldReturnMyData() {
         // when
-        ResponseEntity<UserResponseDTO> response =
-                executeGet(ME_ENDPOINT, getHeadersWith(apiToken), UserResponseDTO.class);
+        ResponseEntity<UserResponseDto> response =
+                executeGet(ME_ENDPOINT, getHeadersWith(apiToken), UserResponseDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -44,8 +44,8 @@ public class MeControllerTest extends DomainHelper {
     @Test
     public void shouldGet403AsUnauthorized() {
         // when
-        ResponseEntity<UserResponseDTO> response =
-                executeGet(ME_ENDPOINT, getJsonOnlyHeaders(), UserResponseDTO.class);
+        ResponseEntity<UserResponseDto> response =
+                executeGet(ME_ENDPOINT, getJsonOnlyHeaders(), UserResponseDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);

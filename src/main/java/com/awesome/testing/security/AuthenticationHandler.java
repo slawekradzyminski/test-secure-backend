@@ -1,6 +1,6 @@
 package com.awesome.testing.security;
 
-import com.awesome.testing.dto.users.LoginDTO;
+import com.awesome.testing.dto.users.LoginDto;
 import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.repository.UserRepository;
 
@@ -19,7 +19,7 @@ public class AuthenticationHandler {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
 
-    public String authenticateUserAndGetToken(LoginDTO loginDTO) {
+    public String authenticateUserAndGetToken(LoginDto loginDTO) {
         String username = loginDTO.getUsername();
         String password = loginDTO.getPassword();
         try {

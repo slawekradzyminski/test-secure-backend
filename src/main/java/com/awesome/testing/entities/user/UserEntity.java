@@ -1,7 +1,7 @@
 package com.awesome.testing.entities.user;
 
 import com.awesome.testing.dto.users.Role;
-import com.awesome.testing.dto.users.UserRegisterDTO;
+import com.awesome.testing.dto.users.UserRegisterDto;
 import com.awesome.testing.entities.doctor.DoctorTypeEntity;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
@@ -58,7 +58,7 @@ public class UserEntity {
             inverseJoinColumns = @JoinColumn(name = "doctor_type_id"))
     private List<DoctorTypeEntity> doctorTypes;
 
-    public static UserEntity from(UserRegisterDTO userRegisterDTO, String encryptedPassword) {
+    public static UserEntity from(UserRegisterDto userRegisterDTO, String encryptedPassword) {
         return UserEntity.builder()
                 .username(userRegisterDTO.getUsername())
                 .password(encryptedPassword)
@@ -69,7 +69,7 @@ public class UserEntity {
                 .build();
     }
 
-    public static UserEntity from(UserRegisterDTO randomUser) {
+    public static UserEntity from(UserRegisterDto randomUser) {
         return from(randomUser, randomUser.getPassword());
     }
 }

@@ -1,6 +1,6 @@
 package com.awesome.testing.controller.users;
 
-import com.awesome.testing.dto.users.UserRegisterDTO;
+import com.awesome.testing.dto.users.UserRegisterDto;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,7 +31,7 @@ public class UserSignUpController {
             @ApiResponse(responseCode = "500", description = "Something went wrong")
     })
     public void signup(
-            @Parameter(description = "Signup user") @Valid @RequestBody UserRegisterDTO user) {
+            @Parameter(description = "Signup user") @Valid @RequestBody UserRegisterDto user) {
         userService.signUp(user);
     }
 

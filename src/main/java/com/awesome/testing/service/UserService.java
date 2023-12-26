@@ -30,13 +30,13 @@ public class UserService {
     private final AuthenticationHandler authenticationHandler;
     private final DoctorTypeRepository doctorTypeRepository;
 
-    public LoginResponseDTO signIn(LoginDTO loginDetails) {
+    public LoginResponseDto signIn(LoginDto loginDetails) {
         String token = authenticationHandler.authenticateUserAndGetToken(loginDetails);
         UserEntity userEntity = search(loginDetails.getUsername());
-        return LoginResponseDTO.from(userEntity, token);
+        return LoginResponseDto.from(userEntity, token);
     }
 
-    public void signUp(UserRegisterDTO userRegisterDTO) {
+    public void signUp(UserRegisterDto userRegisterDTO) {
         if (userRepository.existsByUsername(userRegisterDTO.getUsername())) {
             throw new CustomException("Username is already in use", HttpStatus.UNPROCESSABLE_ENTITY);
         }
@@ -55,10 +55,10 @@ public class UserService {
                 .orElseThrow(() -> new CustomException("The user doesn't exist", HttpStatus.NOT_FOUND));
     }
 
-    public List<UserResponseDTO> getAll() {
+    public List<UserResponseDto> getAll() {
         return userRepository.findAll()
                 .stream()
-                .map(UserResponseDTO::from)
+                .map(UserResponseDto::from)
                 .toList();
     }
 
@@ -71,7 +71,7 @@ public class UserService {
         return jwtTokenProvider.createToken(username, userRepository.findByUsername(username).getRoles());
     }
 
-    public void edit(String username, UserEditDTO userEditBody) {
+    public void edit(String username, UserEditDto userEditBody) {
         UserEntity userEntity = search(username);
         userEntity.setFirstName(userEditBody.getFirstName());
         userEntity.setLastName(userEditBody.getLastName());
@@ -80,12 +80,12 @@ public class UserService {
         userRepository.save(userEntity);
     }
 
-    public UserResponseDTO updateDoctorTypes(List<Integer> doctorTypeIds) {
+    public UserResponseDto updateDoctorTypes(List<Integer> doctorTypeIds) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         UserEntity user = userRepository.findByUsername(username);
         List<DoctorTypeEntity> doctorTypes = doctorTypeRepository.findAllById(doctorTypeIds);
         user.setDoctorTypes(doctorTypes);
         userRepository.save(user);
-        return UserResponseDTO.from(user);
+        return UserResponseDto.from(user);
     }
 }

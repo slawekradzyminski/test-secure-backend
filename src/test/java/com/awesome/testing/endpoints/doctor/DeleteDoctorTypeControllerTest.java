@@ -1,7 +1,7 @@
 package com.awesome.testing.endpoints.doctor;
 
 import com.awesome.testing.dto.users.Role;
-import com.awesome.testing.dto.users.UserRegisterDTO;
+import com.awesome.testing.dto.users.UserRegisterDto;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -18,7 +18,7 @@ public class DeleteDoctorTypeControllerTest extends AbstractDoctorTypeController
     @SuppressWarnings("ConstantConditions")
     public void shouldDeleteDoctorType() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
         String token = registerAndThenLoginSavingToken(user);
         String doctorType = RandomStringUtils.randomAlphanumeric(10);
         Integer id = createDoctorType(token, doctorType);
@@ -35,7 +35,7 @@ public class DeleteDoctorTypeControllerTest extends AbstractDoctorTypeController
     @Test
     public void shouldReturn404ForUnknown() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
         String token = registerAndThenLoginSavingToken(user);
 
         // when

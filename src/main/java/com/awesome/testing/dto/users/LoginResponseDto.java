@@ -13,7 +13,7 @@ import com.awesome.testing.entities.user.UserEntity;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginResponseDTO {
+public class LoginResponseDto {
 
     @Schema(description = "Username", example = "user", required = true)
     String username;
@@ -35,8 +35,8 @@ public class LoginResponseDTO {
 
     List<DoctorTypeDto> doctorTypes;
 
-    public static LoginResponseDTO from(UserEntity userEntity, String token) {
-        return LoginResponseDTO.builder()
+    public static LoginResponseDto from(UserEntity userEntity, String token) {
+        return LoginResponseDto.builder()
                 .username(userEntity.getUsername())
                 .firstName(userEntity.getFirstName())
                 .lastName(userEntity.getLastName())

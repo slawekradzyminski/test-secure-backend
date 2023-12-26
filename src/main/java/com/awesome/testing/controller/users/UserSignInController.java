@@ -1,7 +1,7 @@
 package com.awesome.testing.controller.users;
 
-import com.awesome.testing.dto.users.LoginDTO;
-import com.awesome.testing.dto.users.LoginResponseDTO;
+import com.awesome.testing.dto.users.LoginDto;
+import com.awesome.testing.dto.users.LoginResponseDto;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,10 +32,10 @@ public class UserSignInController {
             @ApiResponse(responseCode = "422", description = "Invalid username/password supplied"),
             @ApiResponse(responseCode = "500", description = "Something went wrong")
     })
-    public ResponseEntity<LoginResponseDTO> login(
-            @Parameter(description = "Login details") @Valid @RequestBody LoginDTO loginDetails,
+    public ResponseEntity<LoginResponseDto> login(
+            @Parameter(description = "Login details") @Valid @RequestBody LoginDto loginDetails,
             HttpServletResponse response) {
-        LoginResponseDTO loginResponseDTO = userService.signIn(loginDetails);
+        LoginResponseDto loginResponseDTO = userService.signIn(loginDetails);
         String cookie = "token=" + loginResponseDTO.getToken() + 
         "; Max-Age=3600; Path=/; HttpOnly; SameSite=None; Secure";
         response.addHeader("Set-Cookie", cookie);

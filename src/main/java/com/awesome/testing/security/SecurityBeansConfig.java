@@ -13,9 +13,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 
+@SuppressWarnings("unused")
 @Configuration
 @RequiredArgsConstructor
-public class BeansConfig {
+public class SecurityBeansConfig {
 
     @Bean
     public DaoAuthenticationProvider daoAuthenticationProvider(PasswordEncoder passwordEncoder, MyUserDetails userDetailsService) {

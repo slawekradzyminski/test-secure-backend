@@ -1,9 +1,9 @@
 package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.users.ErrorDTO;
-import com.awesome.testing.dto.users.UserRegisterDTO;
-import com.awesome.testing.dto.users.UserResponseDTO;
+import com.awesome.testing.dto.users.ErrorDto;
+import com.awesome.testing.dto.users.UserRegisterDto;
+import com.awesome.testing.dto.users.UserResponseDto;
 import com.awesome.testing.dto.users.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.*;
@@ -18,14 +18,14 @@ public class GetSingleUserControllerTest extends DomainHelper {
     @Test
     public void shouldGetUserAsAdmin() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String adminToken = registerAndThenLoginSavingToken(user);
 
         // when
-        ResponseEntity<UserResponseDTO> response =
+        ResponseEntity<UserResponseDto> response =
                 executeGet(getUserEndpoint(user.getUsername()),
                         getHeadersWith(adminToken),
-                        UserResponseDTO.class);
+                        UserResponseDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -34,15 +34,15 @@ public class GetSingleUserControllerTest extends DomainHelper {
     @Test
     public void shouldGet403AsUnauthorized() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         registerAndThenLoginSavingToken(user);
 
         // when
-        ResponseEntity<ErrorDTO> userResponseEntity = restTemplate.exchange(
+        ResponseEntity<ErrorDto> userResponseEntity = restTemplate.exchange(
                 getUserEndpoint(user.getUsername()),
                 HttpMethod.GET,
                 new HttpEntity<>(getJsonOnlyHeaders()),
-                ErrorDTO.class);
+                ErrorDto.class);
 
         // then
         assertThat(userResponseEntity.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -52,14 +52,14 @@ public class GetSingleUserControllerTest extends DomainHelper {
     @Test
     public void shouldGet404ForNonExistingUser() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String token = registerAndThenLoginSavingToken(user);
 
         // when
-        ResponseEntity<ErrorDTO> response =
+        ResponseEntity<ErrorDto> response =
                 executeGet(getUserEndpoint("nonexisting"),
                         getHeadersWith(token),
-                        ErrorDTO.class);
+                        ErrorDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);

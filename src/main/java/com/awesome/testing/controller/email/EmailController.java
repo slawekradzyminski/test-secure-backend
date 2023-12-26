@@ -1,6 +1,6 @@
 package com.awesome.testing.controller.email;
 
-import com.awesome.testing.dto.email.EmailDTO;
+import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.jms.JmsSender;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -28,7 +28,7 @@ public class EmailController {
     @Operation(summary = "Send email",
             description = "Send an email message to the specified destination",
             security = {@SecurityRequirement(name = "Authorization")})
-    public void sendMessage(@RequestBody @Validated EmailDTO email) {
+    public void sendMessage(@RequestBody @Validated EmailDto email) {
         jmsSender.asyncSendTo(destination, email);
     }
 

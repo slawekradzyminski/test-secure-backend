@@ -9,7 +9,7 @@ import java.time.Instant;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ErrorDTO {
+public class ErrorDto {
 
     Instant timestamp;
     int status;

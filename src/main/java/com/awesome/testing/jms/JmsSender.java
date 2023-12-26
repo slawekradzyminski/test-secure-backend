@@ -1,6 +1,6 @@
 package com.awesome.testing.jms;
 
-import com.awesome.testing.dto.email.EmailDTO;
+import com.awesome.testing.dto.email.EmailDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.core.JmsTemplate;
@@ -15,7 +15,7 @@ public class JmsSender {
     private JmsTemplate jmsTemplate;
 
     @Async
-    public void asyncSendTo(String destination, EmailDTO email) {
+    public void asyncSendTo(String destination, EmailDto email) {
         jmsTemplate.convertAndSend(destination, email);
         log.info("Message {} sent successfully", email);
     }

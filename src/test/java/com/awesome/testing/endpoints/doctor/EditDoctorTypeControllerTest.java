@@ -3,7 +3,7 @@ package com.awesome.testing.endpoints.doctor;
 import com.awesome.testing.dto.doctor.CreateDoctorTypeDto;
 import com.awesome.testing.dto.doctor.DoctorTypeDto;
 import com.awesome.testing.dto.users.Role;
-import com.awesome.testing.dto.users.UserRegisterDTO;
+import com.awesome.testing.dto.users.UserRegisterDto;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -20,7 +20,7 @@ public class EditDoctorTypeControllerTest extends AbstractDoctorTypeControllerTe
     @SuppressWarnings("ConstantConditions")
     public void shouldEditDoctorType() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
         String token = registerAndThenLoginSavingToken(user);
         String initialDoctorType = RandomStringUtils.randomAlphanumeric(10);
         Integer id = createDoctorType(token, initialDoctorType);
@@ -42,7 +42,7 @@ public class EditDoctorTypeControllerTest extends AbstractDoctorTypeControllerTe
     @Test
     public void shouldReturn404ForUnknown() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
         String token = registerAndThenLoginSavingToken(user);
         String newDoctorType = RandomStringUtils.randomAlphanumeric(10);
 

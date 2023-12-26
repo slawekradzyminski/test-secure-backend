@@ -1,7 +1,7 @@
 package com.awesome.testing.controller.users;
 
 import com.awesome.testing.dto.doctor.DoctorTypeUpdateDto;
-import com.awesome.testing.dto.users.UserResponseDTO;
+import com.awesome.testing.dto.users.UserResponseDto;
 import com.awesome.testing.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,7 +23,7 @@ public class UserAssignDoctorTypesController {
     @Operation(summary = "Assign Doctor types to doctor",
             security = {@SecurityRequirement(name = "Authorization")})
     @PutMapping("/doctortypes")
-    public UserResponseDTO updateDoctorTypes(@RequestBody DoctorTypeUpdateDto doctorTypeUpdateDTO) {
+    public UserResponseDto updateDoctorTypes(@RequestBody DoctorTypeUpdateDto doctorTypeUpdateDTO) {
         return userService.updateDoctorTypes(doctorTypeUpdateDTO.getDoctorTypeIds());
     }
 }

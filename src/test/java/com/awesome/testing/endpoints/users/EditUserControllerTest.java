@@ -1,11 +1,7 @@
 package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.users.LoginDTO;
-import com.awesome.testing.dto.users.LoginResponseDTO;
-import com.awesome.testing.dto.users.UserEditDTO;
-import com.awesome.testing.dto.users.UserRegisterDTO;
-import com.awesome.testing.dto.users.Role;
+import com.awesome.testing.dto.users.*;
 import net.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -23,10 +19,10 @@ public class EditUserControllerTest extends DomainHelper {
     @Test
     public void shouldUpdateUserAsAdmin() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String username = user.getUsername();
         String token = registerAndThenLoginSavingToken(user);
-        UserEditDTO userEditDTO = getRandomUserEditBody();
+        UserEditDto userEditDTO = getRandomUserEditBody();
 
         // when
         ResponseEntity<Object> response = executePut(getUserEndpoint(username),
@@ -35,9 +31,9 @@ public class EditUserControllerTest extends DomainHelper {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        LoginResponseDTO loginResponse =
-                attemptLogin(new LoginDTO(user.getUsername(), user.getPassword()),
-                        LoginResponseDTO.class)
+        LoginResponseDto loginResponse =
+                attemptLogin(new LoginDto(user.getUsername(), user.getPassword()),
+                        LoginResponseDto.class)
                         .getBody();
 
         assertThat(loginResponse.getLastName()).isEqualTo(userEditDTO.getLastName());
@@ -49,10 +45,10 @@ public class EditUserControllerTest extends DomainHelper {
     @Test
     public void shouldGet400IfInvalidBody() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String username = user.getUsername();
         String clientToken = registerAndThenLoginSavingToken(user);
-        UserEditDTO userEditDTO = UserEditDTO.builder()
+        UserEditDto userEditDTO = UserEditDto.builder()
                 .email("")
                 .roles(List.of(Role.ROLE_ADMIN))
                 .firstName("abcde")
@@ -71,10 +67,10 @@ public class EditUserControllerTest extends DomainHelper {
     @Test
     public void shouldGet200AsClient() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
         String clientToken = registerAndThenLoginSavingToken(user);
-        UserEditDTO userEditDTO = getRandomUserEditBody();
+        UserEditDto userEditDTO = getRandomUserEditBody();
 
         // when
         ResponseEntity<Object> response = executePut(getUserEndpoint(username),
@@ -88,9 +84,9 @@ public class EditUserControllerTest extends DomainHelper {
     @Test
     public void shouldGet403AsUnauthorized() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
-        UserEditDTO userEditDTO = getRandomUserEditBody();
+        UserEditDto userEditDTO = getRandomUserEditBody();
 
         // when
         ResponseEntity<Object> response = executePut(getUserEndpoint(username),
@@ -104,9 +100,9 @@ public class EditUserControllerTest extends DomainHelper {
     @Test
     public void shouldGet404ForNonExistingUser() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String clientToken = registerAndThenLoginSavingToken(user);
-        UserEditDTO userEditDTO = getRandomUserEditBody();
+        UserEditDto userEditDTO = getRandomUserEditBody();
 
         // when
         ResponseEntity<Object> response = executePut(getUserEndpoint("nonexisting"),
@@ -117,8 +113,8 @@ public class EditUserControllerTest extends DomainHelper {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
-    private UserEditDTO getRandomUserEditBody() {
-        return UserEditDTO.builder()
+    private UserEditDto getRandomUserEditBody() {
+        return UserEditDto.builder()
                 .email(getRandomEmail())
                 .roles(List.of(Role.ROLE_ADMIN))
                 .firstName(RandomString.make(10))

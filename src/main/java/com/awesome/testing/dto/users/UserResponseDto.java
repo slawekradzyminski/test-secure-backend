@@ -14,7 +14,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserResponseDTO {
+public class UserResponseDto {
 
     @Schema(description = "User ID", example = "1", required = true)
     private Integer id;
@@ -36,8 +36,8 @@ public class UserResponseDTO {
 
     private List<DoctorTypeDto> doctorTypes;
 
-    public static UserResponseDTO from(UserEntity entity) {
-        return UserResponseDTO.builder()
+    public static UserResponseDto from(UserEntity entity) {
+        return UserResponseDto.builder()
                 .id(entity.getId())
                 .username(entity.getUsername())
                 .firstName(entity.getFirstName())

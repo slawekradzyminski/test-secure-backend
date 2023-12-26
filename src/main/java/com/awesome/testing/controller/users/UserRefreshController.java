@@ -1,6 +1,6 @@
 package com.awesome.testing.controller.users;
 
-import com.awesome.testing.dto.users.LoginResponseDTO;
+import com.awesome.testing.dto.users.LoginResponseDto;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -38,7 +38,7 @@ public class UserRefreshController {
         String cookie = "token=" + token +
                 "; Max-Age=3600; Path=/; HttpOnly; SameSite=None; Secure";
         response.addHeader("Set-Cookie", cookie);
-        return ResponseEntity.ok(LoginResponseDTO.from(userService.search(remoteUser), token));
+        return ResponseEntity.ok(LoginResponseDto.from(userService.search(remoteUser), token));
     }
 
 }

@@ -1,9 +1,9 @@
 package com.awesome.testing.endpoints.email;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.email.EmailDTO;
-import com.awesome.testing.dto.users.ErrorDTO;
-import com.awesome.testing.dto.users.UserRegisterDTO;
+import com.awesome.testing.dto.email.EmailDto;
+import com.awesome.testing.dto.users.ErrorDto;
+import com.awesome.testing.dto.users.UserRegisterDto;
 import com.awesome.testing.dto.users.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,9 +32,9 @@ public class EmailControllerTest extends DomainHelper {
     @Test
     public void shouldSentEmail() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String token = registerAndThenLoginSavingToken(user);
-        EmailDTO emailDTO = new EmailDTO("slawek@gmail.com", "Important", "Read carefully");
+        EmailDto emailDTO = new EmailDto("slawek@gmail.com", "Important", "Read carefully");
 
         // when
         ResponseEntity<Void> response =
@@ -48,11 +48,11 @@ public class EmailControllerTest extends DomainHelper {
     @Test
     public void shouldGet403AsUnauthorized() {
         // given
-        EmailDTO emailDTO = new EmailDTO("slawek@gmail.com", "Important", "Read carefully");
+        EmailDto emailDTO = new EmailDto("slawek@gmail.com", "Important", "Read carefully");
 
         // when
-        ResponseEntity<ErrorDTO> response =
-                executePost(EMAIL_ENDPOINT, emailDTO, getJsonOnlyHeaders(), ErrorDTO.class);
+        ResponseEntity<ErrorDto> response =
+                executePost(EMAIL_ENDPOINT, emailDTO, getJsonOnlyHeaders(), ErrorDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
