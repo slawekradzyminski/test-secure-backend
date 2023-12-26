@@ -6,4 +6,6 @@ import com.awesome.testing.entities.doctor.DoctorTypeEntity;
 
 public interface DoctorTypeRepository extends JpaRepository<DoctorTypeEntity, Integer> {
 
+    DoctorTypeEntity findByDoctorType(String doctorType);
+
 }

@@ -1,6 +1,7 @@
 package com.awesome.testing.service;
 
 import com.awesome.testing.dto.doctor.DoctorTypeDto;
+import com.awesome.testing.dto.doctor.DoctorTypeIdDto;
 import com.awesome.testing.entities.doctor.DoctorTypeEntity;
 import com.awesome.testing.repository.DoctorTypeRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -16,8 +17,10 @@ public class DoctorTypeService {
 
     private final DoctorTypeRepository doctorTypeRepository;
 
-    public void addDoctorType(String doctorType) {
+    public DoctorTypeIdDto addDoctorType(String doctorType) {
         doctorTypeRepository.save(DoctorTypeEntity.builder().doctorType(doctorType).build());
+        Integer id = doctorTypeRepository.findByDoctorType(doctorType).getId();
+        return new DoctorTypeIdDto(id);
     }
 
     public void deleteDoctorType(Integer id) {

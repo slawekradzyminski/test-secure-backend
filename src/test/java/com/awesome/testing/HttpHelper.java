@@ -21,6 +21,14 @@ public abstract class HttpHelper {
         return execute(HttpMethod.PUT, url, body, httpHeaders, Object.class);
     }
 
+    protected <T> ResponseEntity<T> executePut(String url, Object body, HttpHeaders httpHeaders, Class<T> responseType) {
+        return execute(HttpMethod.PUT, url, body, httpHeaders, responseType);
+    }
+
+    protected ResponseEntity<?> executeDelete(String url, HttpHeaders httpHeaders) {
+        return execute(HttpMethod.DELETE, url, null, httpHeaders, Object.class);
+    }
+
     protected <T> ResponseEntity<T> executeDelete(String url, HttpHeaders httpHeaders, Class<T> responseType) {
         return execute(HttpMethod.DELETE, url, null, httpHeaders, responseType);
     }

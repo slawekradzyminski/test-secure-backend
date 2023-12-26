@@ -23,8 +23,8 @@ public class DeleteControllerTest extends DomainHelper {
         String apiToken = registerAndThenLoginSavingToken(user);
 
         // when
-        ResponseEntity<String> response =
-                executeDelete(getUserEndpoint(username), getHeadersWith(apiToken), String.class);
+        ResponseEntity<?> response =
+                executeDelete(getUserEndpoint(username), getHeadersWith(apiToken));
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
@@ -37,7 +37,7 @@ public class DeleteControllerTest extends DomainHelper {
         String username = user.getUsername();
 
         // when
-        ResponseEntity<ErrorDTO> response =
+        ResponseEntity<?> response =
                 executeDelete(getUserEndpoint(username),
                         getJsonOnlyHeaders(),
                         ErrorDTO.class);

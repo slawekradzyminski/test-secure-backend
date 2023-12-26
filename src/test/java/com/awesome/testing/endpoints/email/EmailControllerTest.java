@@ -1,4 +1,4 @@
-package com.awesome.testing.endpoints.users;
+package com.awesome.testing.endpoints.email;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.email.EmailDTO;

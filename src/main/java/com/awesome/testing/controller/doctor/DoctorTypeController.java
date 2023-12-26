@@ -2,6 +2,7 @@ package com.awesome.testing.controller.doctor;
 
 import com.awesome.testing.dto.doctor.CreateDoctorTypeDto;
 import com.awesome.testing.dto.doctor.DoctorTypeDto;
+import com.awesome.testing.dto.doctor.DoctorTypeIdDto;
 import com.awesome.testing.service.DoctorTypeService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,8 +29,8 @@ public class DoctorTypeController {
             security = {@SecurityRequirement(name = "Authorization")})
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void addDoctorType(@RequestBody @Valid CreateDoctorTypeDto createDoctorTypeDto) {
-        doctorTypeService.addDoctorType(createDoctorTypeDto.getDoctorType());
+    public DoctorTypeIdDto addDoctorType(@RequestBody @Valid CreateDoctorTypeDto createDoctorTypeDto) {
+        return doctorTypeService.addDoctorType(createDoctorTypeDto.getDoctorType());
     }
 
     @Operation(summary = "Delete doctor type",
