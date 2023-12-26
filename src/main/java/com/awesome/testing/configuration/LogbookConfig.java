@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.zalando.logbook.core.DefaultSink;
 import org.zalando.logbook.json.JsonHttpLogFormatter;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
@@ -22,11 +23,12 @@ import org.zalando.logbook.HttpLogFormatter;
 public class LogbookConfig {
 
     private static final Pattern NEWLINE_PATTERN = Pattern.compile("(?m)^");
-    
+
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return mapper;
     }
 
