@@ -1,11 +1,15 @@
 package com.awesome.testing.dto.users;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.Size;
 
-@Value
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class LoginDTO {
 
     @Size(min = 3, max = 255, message = "Minimum username length: 3 characters")

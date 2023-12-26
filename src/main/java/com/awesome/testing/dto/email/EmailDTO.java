@@ -1,11 +1,15 @@
 package com.awesome.testing.dto.email;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-@Value
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class EmailDTO {
 
     @Email

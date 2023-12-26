@@ -12,9 +12,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.converter.BufferedImageHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.zalando.logbook.HeaderFilter;
-
-import static org.zalando.logbook.HeaderFilter.none;
 
 @SpringBootApplication
 @EnableAsync
@@ -27,10 +24,6 @@ public class JwtAuthServiceApp implements CommandLineRunner {
         SpringApplication.run(JwtAuthServiceApp.class, args);
     }
 
-    @Bean
-    public HeaderFilter headerFilter() {
-        return none();
-    }
 
     @Bean
     public HttpMessageConverter<BufferedImage> createImageHttpMessageConverter() {

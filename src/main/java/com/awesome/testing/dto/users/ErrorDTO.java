@@ -1,10 +1,14 @@
 package com.awesome.testing.dto.users;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
-@Value
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ErrorDTO {
 
     Instant timestamp;
