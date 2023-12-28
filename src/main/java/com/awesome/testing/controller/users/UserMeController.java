@@ -24,7 +24,7 @@ public class UserMeController {
 
     @GetMapping(value = "/me")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
-    @Operation(summary = "${UserController.me}",
+    @Operation(summary = "Returns current user's data",
             security = {@SecurityRequirement(name = "Authorization")})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "403", description = "Expired or invalid JWT token"),

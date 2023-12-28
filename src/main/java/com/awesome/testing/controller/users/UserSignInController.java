@@ -26,7 +26,7 @@ public class UserSignInController {
     private final UserService userService;
 
     @PostMapping("/signin")
-    @Operation(summary = "${UserController.signin}")
+    @Operation(summary = "Authenticates user and returns its JWT token")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "400", description = "Field validation failed"),
             @ApiResponse(responseCode = "422", description = "Invalid username/password supplied"),

@@ -15,9 +15,11 @@ public class UsersSetup {
     private final UserService userService;
 
     public void setupUsers() {
-        userService.signUp(getAdmin());
-        userService.signUp(getClient());
-        userService.signUp(getDoctor());
+        if (userService.getAll().isEmpty()) {
+            userService.signUp(getAdmin());
+            userService.signUp(getClient());
+            userService.signUp(getDoctor());
+        }
     }
 
     private UserRegisterDto getDoctor() {

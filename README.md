@@ -2,14 +2,13 @@
 
 ```commandline
 ./mvnw clean package spring-boot:repackage
-java -jar target/jwt-auth-service-1.0.0.jar
+java -Dspring.profiles.active=dev -jar target/jwt-auth-service-1.0.0.jar
 ```
 
 ## Docker local run
 
 ```commandline
-docker build --tag=backend:latest .
-docker run -p4001:4001 backend:latest
+docker-compose up
 ```
 
 ## Docker remote run (warning: may be outdated)

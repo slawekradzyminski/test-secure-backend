@@ -1,21 +1,4 @@
 spring:
-  datasource:
-    url: jdbc:h2:mem:testdb
-    username: root
-    password: root
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
-        format_sql: true
-        id:
-          new_generator_mappings: false
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
   activemq:
     in-memory: false
     broker-url: tcp://host.docker.internal:61616
@@ -38,15 +21,11 @@ server:
       enabled: true
       force: true
 
-
 security:
   jwt:
     token:
       secret-key: 4DZ3+asC4/EOVmPdsSFizGMBlxnws+CLgiX9I1hl3AA= # WARN: do not do this for real apps :)
       expire-length: 300000 # 5 minutes duration by default: 5 minutes * 60 seconds * 1000 miliseconds
-
-logbook:
-  include: "**/users**"
 
 logging:
   level:
@@ -55,16 +34,6 @@ logging:
         security: DEBUG
       zalando:
         logbook: TRACE
-
-UserController:
-  signin: Authenticates user and returns its JWT token.
-  signup: Creates user and returns its JWT token
-  delete: Deletes specific user by username
-  search: Returns specific user by username
-  me: Returns current user's data
-  refresh: Refreshes token for logged in user
-  getAll: Get all users
-  edit: Edits user details
 
 JmsSender:
   sendEmail: Sending email to Active MQ

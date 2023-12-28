@@ -25,7 +25,7 @@ public class UserGetController {
 
     @GetMapping
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
-    @Operation(summary = "${UserController.getAll}",
+    @Operation(summary = "Get all users",
             security = {@SecurityRequirement(name = "Authorization")})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "403", description = "Expired or invalid JWT token"),
@@ -39,7 +39,7 @@ public class UserGetController {
 
     @GetMapping(value = "/{username}")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
-    @Operation(summary = "${UserController.search}",
+    @Operation(summary = "Returns specific user by username",
             security = {@SecurityRequirement(name = "Authorization")})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "403", description = "Expired or invalid JWT token"),

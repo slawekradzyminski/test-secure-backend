@@ -1,6 +1,8 @@
 package com.awesome.testing.configuration;
 
 import static org.zalando.logbook.HeaderFilter.none;
+import static org.zalando.logbook.core.Conditions.exclude;
+import static org.zalando.logbook.core.Conditions.requestTo;
 
 import java.util.regex.Pattern;
 
@@ -58,6 +60,13 @@ public class LogbookConfig {
     public Logbook logbook(BodyFilter bodyFilter, HttpLogWriter writer, HttpLogFormatter formatter) {
         return Logbook.builder()
                 .sink(new DefaultSink(formatter, writer))
+                .condition(exclude(
+                        requestTo("/actuator/**"),
+                        requestTo("/admin/**"),
+                        requestTo("**/swagger-ui/**"),
+                        requestTo("**/api-docs/**"),
+                        requestTo("**/swagger/**"))
+                )
                 .bodyFilter(bodyFilter)
                 .build();
     }

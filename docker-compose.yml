@@ -1,0 +1,34 @@
+version: "3.7"
+services:
+  api_service:
+    build: .
+    restart: always
+    ports:
+      - 4001:4001
+    networks:
+      - springapimysql-net
+    environment:
+      - spring.datasource.url=jdbc:mysql://mysqldb:3306/table?allowPublicKeyRetrieval=true
+    depends_on:
+      - mysqldb
+
+  mysqldb:
+    image: "mysql:8.2"
+    restart: always
+    ports:
+      - 3306:3306
+    networks:
+      - springapimysql-net
+    environment:
+      MYSQL_DATABASE: table
+      MYSQL_USER: bobo
+      MYSQL_PASSWORD: bobo
+      MYSQL_ROOT_PASSWORD: bobo
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
+
+networks:
+  springapimysql-net:

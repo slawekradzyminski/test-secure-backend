@@ -45,7 +45,9 @@ public class DoctorTypesSetup {
     private final DoctorTypeService doctorTypeService;
 
     public void setupDoctorTypes() {
-        SPECIALTIES.forEach(doctorTypeService::addDoctorType);
+        if (doctorTypeService.getAll().isEmpty()) {
+            SPECIALTIES.forEach(doctorTypeService::addDoctorType);
+        }
     }
 
 }

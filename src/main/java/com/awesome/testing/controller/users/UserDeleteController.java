@@ -23,7 +23,7 @@ public class UserDeleteController {
 
     @DeleteMapping(value = "/{username}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "${UserController.delete}",
+    @Operation(summary = "Deletes specific user by username",
             security = {@SecurityRequirement(name = "Authorization")})
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiResponses(value = {

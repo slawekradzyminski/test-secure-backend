@@ -22,7 +22,7 @@ public class UserSignUpController {
     private final UserService userService;
 
     @PostMapping("/signup")
-    @Operation(summary = "${UserController.signup}")
+    @Operation(summary = "Creates user")
     @ResponseStatus(HttpStatus.CREATED)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "400", description = "Field validation failed"),

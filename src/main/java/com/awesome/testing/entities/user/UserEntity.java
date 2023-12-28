@@ -51,7 +51,7 @@ public class UserEntity {
     @Column(nullable = false)
     private String lastName;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_doctor_type",
             joinColumns = @JoinColumn(name = "user_id"),

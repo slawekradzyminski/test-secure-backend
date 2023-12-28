@@ -25,7 +25,7 @@ public class UserRefreshController {
     private final UserService userService;
 
     @GetMapping("/refresh")
-    @Operation(summary = "${UserController.refresh}",
+    @Operation(summary = "Refreshes token for logged in user",
             security = {@SecurityRequirement(name = "Authorization")})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "302", description = "Redirect to login page"),
