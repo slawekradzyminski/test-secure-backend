@@ -1,11 +1,16 @@
 ## Direct run
 
+Requires [Java 21](https://docs.papermc.io/misc/java-install)
+
 ```commandline
 ./mvnw clean package spring-boot:repackage -DskipTests=true
 java -jar target/jwt-auth-service-1.0.0.jar
 ```
 
 ## Docker local run
+
+Requires [docker](https://docs.docker.com/engine/install/)
+and [docker-compose](https://docs.docker.com/compose/install/) installed
 
 ```commandline
 docker build --tag=backend:latest .
