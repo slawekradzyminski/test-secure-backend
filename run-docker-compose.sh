@@ -27,3 +27,20 @@ while ! nc -z localhost 4001; do
 done
 
 echo "Application started successfully."
+
+# Run smoke test
+RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X 'POST' \
+  'http://localhost:4001/users/signin' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "username": "admin",
+  "password": "admin"
+}')
+
+if [ $RESPONSE_CODE -ne 200 ]; then
+  echo "Smoke test failed. Response code: $RESPONSE_CODE. Exiting."
+  exit 1
+fi
+
+echo "Smoke test passed successfully."
