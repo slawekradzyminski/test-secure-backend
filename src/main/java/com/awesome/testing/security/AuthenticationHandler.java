@@ -19,9 +19,9 @@ public class AuthenticationHandler {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
 
-    public String authenticateUserAndGetToken(LoginDto loginDTO) {
-        String username = loginDTO.getUsername();
-        String password = loginDTO.getPassword();
+    public String authenticateUserAndGetToken(LoginDto loginDto) {
+        String username = loginDto.getUsername();
+        String password = loginDto.getPassword();
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
             return jwtTokenProvider.createToken(username, userRepository.findByUsername(username).getRoles());

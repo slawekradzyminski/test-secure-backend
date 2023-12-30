@@ -19,14 +19,13 @@ import static com.awesome.testing.security.PublicPaths.PUBLIC_PATHS;
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@SuppressWarnings("unused")
 public class WebSecurityConfig {
 
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenFilter jwtTokenFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        JwtTokenFilter customFilter = new JwtTokenFilter(jwtTokenProvider);
-
         http
                 .headers(headers -> headers.frameOptions(FrameOptionsConfig::sameOrigin))
                 .cors(Customizer.withDefaults())
@@ -38,7 +37,7 @@ public class WebSecurityConfig {
                         .permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e.accessDeniedPage("/login"))
-                .addFilterBefore(customFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
