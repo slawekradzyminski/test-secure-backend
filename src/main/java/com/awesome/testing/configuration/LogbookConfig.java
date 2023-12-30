@@ -63,6 +63,7 @@ public class LogbookConfig {
                 .condition(exclude(
                         requestTo("/actuator/**"),
                         requestTo("/admin/**"),
+                        requestTo("**/h2-console/**"),
                         requestTo("**/swagger-ui/**"),
                         requestTo("**/api-docs/**"),
                         requestTo("**/swagger/**"))

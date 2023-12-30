@@ -1,11 +1,15 @@
 ## Direct run
 
+Requires [Java 21](https://docs.papermc.io/misc/java-install)
+
 ```commandline
-./mvnw clean package spring-boot:repackage
-java -Dspring.profiles.active=dev -jar target/jwt-auth-service-1.0.0.jar
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 ## Docker local run
+
+Requires [docker](https://docs.docker.com/engine/install/)
+and [docker-compose](https://docs.docker.com/compose/install/) installed
 
 ```commandline
 docker-compose up

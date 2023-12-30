@@ -25,14 +25,15 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse,
-                                    FilterChain filterChain) throws ServletException, IOException {
-        if (shouldBeBypassed(httpServletRequest.getRequestURI())) {
-            filterChain.doFilter(httpServletRequest, httpServletResponse);
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                    FilterChain chain) throws ServletException, IOException {
+
+        if (shouldBeBypassed(request.getRequestURI())) {
+            chain.doFilter(request, response);
             return;
         }
 
-        String token = jwtTokenProvider.extractTokenFromRequest(httpServletRequest);
+        String token = jwtTokenProvider.extractTokenFromRequest(request);
         try {
             if (token != null && jwtTokenProvider.validateToken(token)) {
                 Authentication auth = jwtTokenProvider.getAuthentication(token);
@@ -40,10 +41,10 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             }
         } catch (CustomException ex) {
             SecurityContextHolder.clearContext();
-            httpServletResponse.sendError(ex.getHttpStatus().value(), ex.getMessage());
+            response.sendError(ex.getHttpStatus().value(), ex.getMessage());
             return;
         }
-        filterChain.doFilter(httpServletRequest, httpServletResponse);
+        chain.doFilter(request, response);
     }
 
     private boolean shouldBeBypassed(String requestURI) {
