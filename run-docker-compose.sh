@@ -7,11 +7,18 @@ docker-compose up -d
 ELAPSED_TIME=0
 
 # Wait for the application to start
-while ! nc -z localhost 4001; do
+while true; do
   # If the elapsed time reaches 1800 seconds (30 minutes), exit with error
   if [ $ELAPSED_TIME -eq 1800 ]; then
     echo "Application did not start within 30 minutes. Exiting."
     exit 1
+  fi
+
+  # Check if the application is up by making a request to the swagger UI
+  RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" 'http://localhost:4001/swagger-ui/index.html')
+
+  if [ $RESPONSE_CODE -eq 200 ]; then
+    break
   fi
 
   # Sleep for 1 second

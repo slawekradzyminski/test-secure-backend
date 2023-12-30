@@ -10,12 +10,19 @@ APP_PID=$!
 ELAPSED_TIME=0
 
 # Wait for the application to start
-while ! nc -z localhost 4001; do
+while true; do
   # If the elapsed time reaches 300 seconds (5 minutes), kill the process and exit
   if [ $ELAPSED_TIME -eq 300 ]; then
     echo "Application did not start within 5 minutes. Exiting."
     kill $APP_PID
     exit 1
+  fi
+
+  # Check if the application is up by making a request to the swagger UI
+  RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" 'http://localhost:4001/swagger-ui/index.html')
+
+  if [ $RESPONSE_CODE -eq 200 ]; then
+    break
   fi
 
   # Sleep for 1 second
