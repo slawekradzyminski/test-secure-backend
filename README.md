@@ -12,7 +12,7 @@ Requires [docker](https://docs.docker.com/engine/install/)
 and [docker-compose](https://docs.docker.com/compose/install/) installed
 
 ```commandline
-docker-compose up
+docker-compose up --build
 ```
 
 ## Docker remote run (warning: may be outdated)
