@@ -43,13 +43,13 @@ public class H2ConsoleTest extends DomainHelper {
         // given successful login
         ResponseEntity<String> responseWithToken =
                 executeGet("/h2-console", new HttpHeaders(), String.class);
-        String jsessionId = extractSessionId(responseWithToken.getBody());
+        String jsessionid = extractSessionId(responseWithToken.getBody());
         restTemplate.postForEntity(
-                "/h2-console/login.do?jsessionid=" + jsessionId, getLoginRequest(), String.class);
+                "/h2-console/login.do?jsessionid=" + jsessionid, getLoginRequest(), String.class);
 
         // when request for tables
         ResponseEntity<String> tablesResponse =
-                executeGet("/h2-console/tables.do?jsessionid=" + jsessionId, new HttpHeaders(), String.class);
+                executeGet("/h2-console/tables.do?jsessionid=" + jsessionid, new HttpHeaders(), String.class);
 
         // then
         assertThat(tablesResponse.getBody()).contains(
@@ -61,16 +61,16 @@ public class H2ConsoleTest extends DomainHelper {
 
     @Test
     public void shouldFailToLoginToH2Console() {
-        // given successful login
+        // given invalid login
         ResponseEntity<String> responseWithToken =
                 executeGet("/h2-console", new HttpHeaders(), String.class);
-        String jsessionId = extractSessionId(responseWithToken.getBody());
+        String jsessionid = extractSessionId(responseWithToken.getBody());
         restTemplate.postForEntity(
-                "/h2-console/login.do?jsessionid=" + jsessionId, getInvalidLoginRequest(), String.class);
+                "/h2-console/login.do?jsessionid=" + jsessionid, getInvalidLoginRequest(), String.class);
 
         // when request for tables
         ResponseEntity<String> tablesResponse =
-                executeGet("/h2-console/tables.do?jsessionid=" + jsessionId, new HttpHeaders(), String.class);
+                executeGet("/h2-console/tables.do?jsessionid=" + jsessionid, new HttpHeaders(), String.class);
 
         // then
         assertThat(tablesResponse.getBody()).doesNotContain(
@@ -82,15 +82,17 @@ public class H2ConsoleTest extends DomainHelper {
     }
 
     private HttpEntity<MultiValueMap<String, String>> getInvalidLoginRequest() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        return new HttpEntity<>(getFormData("wrong"), headers);
+        return new HttpEntity<>(getFormData("wrong"), formUrlEncodedHeaders());
     }
 
     private HttpEntity<MultiValueMap<String, String>> getLoginRequest() {
+        return new HttpEntity<>(getFormData(user), formUrlEncodedHeaders());
+    }
+
+    private HttpHeaders formUrlEncodedHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        return new HttpEntity<>(getFormData(user), headers);
+        return headers;
     }
 
     private MultiValueMap<String, String> getFormData(String username) {
