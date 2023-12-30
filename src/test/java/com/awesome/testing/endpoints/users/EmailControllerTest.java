@@ -5,6 +5,8 @@ import com.awesome.testing.dto.email.EmailDTO;
 import com.awesome.testing.dto.users.ErrorDTO;
 import com.awesome.testing.dto.users.UserRegisterDTO;
 import com.awesome.testing.dto.users.Role;
+import com.awesome.testing.jms.DelayProvider;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -16,8 +18,7 @@ import java.util.List;
 
 import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 public class EmailControllerTest extends DomainHelper {
 
@@ -29,9 +30,13 @@ public class EmailControllerTest extends DomainHelper {
     @MockBean
     private JmsTemplate jmsTemplate;
 
+    @MockBean
+    private DelayProvider delayProvider;
+
     @Test
     public void shouldSentEmail() {
         // given
+        when(delayProvider.getRandomDelayInSeconds()).thenReturn(1L);
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String token = registerAndThenLoginSavingToken(user);
         EmailDTO emailDTO = new EmailDTO("slawek@gmail.com", "Important", "Read carefully");
@@ -42,7 +47,26 @@ public class EmailControllerTest extends DomainHelper {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(jmsTemplate, timeout(500)).convertAndSend(destination, emailDTO);
+        verify(jmsTemplate, timeout(2000)).convertAndSend(destination, emailDTO);
+    }
+
+    @SneakyThrows
+    @Test
+    public void shouldReturn200AndDoNotSendEmail() {
+        // given
+        when(delayProvider.getRandomDelayInSeconds()).thenReturn(60L);
+        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        String token = registerAndThenLoginSavingToken(user);
+        EmailDTO emailDTO = new EmailDTO("slawek@gmail.com", "Important", "Read carefully");
+
+        // when
+        ResponseEntity<Void> response =
+                executePost(EMAIL_ENDPOINT, emailDTO, getHeadersWith(token), Void.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Thread.sleep(1000);
+        verify(jmsTemplate, never()).convertAndSend(destination, emailDTO);
     }
 
     @Test

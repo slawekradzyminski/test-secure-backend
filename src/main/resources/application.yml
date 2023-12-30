@@ -51,8 +51,6 @@ logbook:
 logging:
   level:
     org:
-      springframework:
-        security: DEBUG
       zalando:
         logbook: TRACE
 
