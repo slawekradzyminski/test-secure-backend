@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Start the application in the background
-docker-compose up
+docker-compose up -d
 
 # Initialize elapsed time
 ELAPSED_TIME=0
