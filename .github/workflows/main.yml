@@ -41,4 +41,4 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build and run Docker Compose
-      run: bash ./run-docker.sh
+      run: bash ./run-docker-compose.sh
