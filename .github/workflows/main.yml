@@ -19,8 +19,7 @@ jobs:
     - name: Run tests
       run: ./mvnw clean package
 
-  run:
-    needs: build
+  runDev:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -29,5 +28,17 @@ jobs:
       with:
         java-version: '21'
         distribution: 'temurin'
-    - name: Run
+    - name: Run dev build
       run: bash ./run-app.sh
+  
+  runDocker:
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:stable
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build and run Docker Compose
+      run: bash ./run-docker.sh
