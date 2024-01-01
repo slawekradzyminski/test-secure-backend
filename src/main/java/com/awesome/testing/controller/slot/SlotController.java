@@ -2,9 +2,15 @@ package com.awesome.testing.controller.slot;
 
 import com.awesome.testing.dto.slot.CreateSlotRangeDto;
 import com.awesome.testing.dto.slot.SlotDto;
+import com.awesome.testing.dto.users.Role;
+import com.awesome.testing.entities.user.UserEntity;
+import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.service.SlotService;
+import com.awesome.testing.service.UserService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,12 +27,28 @@ import java.util.List;
 public class SlotController {
 
     private final SlotService slotService;
+    private final UserService userService;
 
     @Operation(summary = "Create slots by providing availability",
             security = {@SecurityRequirement(name = "Authorization")})
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public List<SlotDto> createSlots(@RequestBody @Valid CreateSlotRangeDto createSlotRangeDto) {
+    public List<SlotDto> createSlots(@RequestBody @Valid CreateSlotRangeDto createSlotRangeDto, HttpServletRequest req) {
+        String currentUsername = req.getRemoteUser();
+        UserEntity currentUser = userService.search(currentUsername);
+
+        if (currentUser.getRoles().contains(Role.ROLE_DOCTOR) &&
+                !currentUsername.equals(createSlotRangeDto.getUsername())) {
+            throw new CustomException("Doctors can only create slots for themselves", HttpStatus.FORBIDDEN);
+        }
+
+        if (currentUser.getRoles().contains(Role.ROLE_ADMIN)) {
+            UserEntity targetUser = userService.search(createSlotRangeDto.getUsername());
+            if (!targetUser.getRoles().contains(Role.ROLE_DOCTOR)) {
+                throw new CustomException("Admins can only create slots for doctors", HttpStatus.BAD_REQUEST);
+            }
+        }
+
         return slotService.createSlots(createSlotRangeDto);
     }
 

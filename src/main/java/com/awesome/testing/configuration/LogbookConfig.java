@@ -6,6 +6,7 @@ import static org.zalando.logbook.core.Conditions.requestTo;
 
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.zalando.logbook.HttpLogWriter;
 import org.zalando.logbook.Logbook;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +31,7 @@ public class LogbookConfig {
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        mapper.registerModule(new JavaTimeModule());
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return mapper;
     }

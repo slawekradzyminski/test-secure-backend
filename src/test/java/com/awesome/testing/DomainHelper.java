@@ -26,11 +26,7 @@ public abstract class DomainHelper extends HttpHelper {
 
     @SuppressWarnings("ConstantConditions")
     protected String registerAndThenLoginSavingToken(UserRegisterDto userRegisterDTO) {
-        executePost(
-                REGISTER_ENDPOINT,
-                userRegisterDTO,
-                getJsonOnlyHeaders(),
-                Void.class);
+        register(userRegisterDTO);
 
         String cookie = executePost(
                 LOGIN_ENDPOINT,
@@ -39,9 +35,17 @@ public abstract class DomainHelper extends HttpHelper {
                 LoginResponseDto.class)
                 .getHeaders()
                 .get("Set-Cookie")
-                .get(0);
+                .getFirst();
 
         return getTokenValueFromCookie(cookie);
+    }
+
+    public void register(UserRegisterDto userRegisterDTO) {
+        executePost(
+                REGISTER_ENDPOINT,
+                userRegisterDTO,
+                getJsonOnlyHeaders(),
+                Void.class);
     }
 
     protected String getTokenValueFromCookie(String cookie) {

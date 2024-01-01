@@ -1,8 +1,9 @@
-package com.awesome.testing.exception;
+package com.awesome.testing.controller.exception;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import com.awesome.testing.exception.CustomException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -37,12 +38,19 @@ public class GlobalExceptionHandlerController {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    protected ResponseEntity<Object> handleValidationExceptions(MethodArgumentNotValidException ex, WebRequest request) {
+    protected ResponseEntity<Object> handleValidationExceptions(MethodArgumentNotValidException ex,
+            WebRequest request) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
+            if (error instanceof FieldError) {
+                String fieldName = ((FieldError) error).getField();
+                String errorMessage = error.getDefaultMessage();
+                errors.put(fieldName, errorMessage);
+            } else {
+                if (error.getDefaultMessage() != null) { // replace with actual error code or condition
+                    errors.put("message", error.getDefaultMessage());
+                }
+            }
         });
         return new ResponseEntity<>(errors, new HttpHeaders(), HttpStatus.BAD_REQUEST);
     }

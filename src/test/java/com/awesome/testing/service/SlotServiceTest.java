@@ -48,6 +48,7 @@ public class SlotServiceTest extends AbstractUnitTest {
                 .build();
         when(userRepository.findByUsername(doctor.getUsername())).thenReturn(UserEntity.from(doctor));
         when(slotRepository.save(any(SlotEntity.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(slotRepository.existsByDoctorAndStartTimeBetween(any(), any(), any())).thenReturn(false);
 
         // when
         List<SlotDto> slots = slotService.createSlots(createSlotRangeDto);

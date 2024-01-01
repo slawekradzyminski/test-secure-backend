@@ -5,10 +5,12 @@ import com.awesome.testing.dto.slot.SlotDto;
 import com.awesome.testing.entities.slot.SlotEntity;
 import com.awesome.testing.entities.slot.SlotStatus;
 import com.awesome.testing.entities.user.UserEntity;
+import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.repository.SlotRepository;
 import com.awesome.testing.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -26,15 +28,19 @@ public class SlotService {
 
     public List<SlotDto> createSlots(CreateSlotRangeDto createSlotRangeDto) {
         UserEntity doctor = getUser(createSlotRangeDto.getUsername());
-        int numOfSlots = calculateTheNumberOfSlots(createSlotRangeDto);
 
-        return IntStream.range(0, numOfSlots)
+        if (slotRepository.existsByDoctorAndStartTimeBetween(doctor, createSlotRangeDto.getStartAvailability(), createSlotRangeDto.getEndAvailability())) {
+            throw new CustomException("Slots already exist in the provided time range", HttpStatus.BAD_REQUEST);
+        }
+
+        return IntStream.range(0, calculateTheNumberOfSlots(createSlotRangeDto))
                 .mapToObj(i -> {
                     LocalDateTime start = calculateSlotStartTime(createSlotRangeDto, i);
                     return slotRepository.save(SlotEntity.builder()
                             .doctor(doctor)
                             .startTime(start)
                             .endTime(start.plus(createSlotRangeDto.getSlotDuration()))
+                            .status(SlotStatus.AVAILABLE)
                             .build());
                 })
                 .map(SlotDto::from)

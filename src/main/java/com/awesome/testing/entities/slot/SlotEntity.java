@@ -10,7 +10,7 @@ import com.awesome.testing.entities.user.UserEntity;
 @Entity
 @Setter
 @Getter
-@Table(name = "slots")
+@Table(name = "slots", uniqueConstraints = @UniqueConstraint(columnNames = {"doctor_id", "start_time"}))
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

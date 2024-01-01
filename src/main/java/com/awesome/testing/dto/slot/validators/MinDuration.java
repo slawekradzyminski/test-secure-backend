@@ -1,4 +1,4 @@
-package com.awesome.testing.dto.slot;
+package com.awesome.testing.dto.slot.validators;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
