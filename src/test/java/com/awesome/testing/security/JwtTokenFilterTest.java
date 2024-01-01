@@ -1,23 +1,21 @@
 package com.awesome.testing.security;
 
+import com.awesome.testing.AbstractUnitTest;
 import com.awesome.testing.exception.CustomException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
 
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
-public class JwtTokenFilterTest {
+public class JwtTokenFilterTest extends AbstractUnitTest {
 
     private static final String LOGOUT_EXCLUDED_ENDPOINT = "/users/logout";
 

@@ -10,11 +10,11 @@ import com.awesome.testing.entities.user.UserEntity;
 @Entity
 @Setter
 @Getter
-@Table(name = "appointment_slots")
-@Builder
+@Table(name = "slots")
 @NoArgsConstructor
 @AllArgsConstructor
-public class AppointmentSlotEntity {
+@Builder
+public class SlotEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,5 +37,5 @@ public class AppointmentSlotEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SlotStatus status;
-    
+
 }

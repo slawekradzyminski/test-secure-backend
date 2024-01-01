@@ -1,5 +1,6 @@
 package com.awesome.testing.security;
 
+import com.awesome.testing.AbstractUnitTest;
 import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.dto.users.Role;
 import io.jsonwebtoken.JwtParser;
@@ -7,18 +8,19 @@ import io.jsonwebtoken.Jwts;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
-@ExtendWith(MockitoExtension.class)
-public class JwtTokenProviderTest {
+public class JwtTokenProviderTest extends AbstractUnitTest {
 
     private JwtTokenProvider jwtTokenProvider;
 
@@ -31,24 +33,6 @@ public class JwtTokenProviderTest {
     }
 
     @Test
-    public void testValidateToken() {
-        // given
-        String token1 = jwtTokenProvider.createToken("slawek", List.of());
-        String token2 = jwtTokenProvider.createToken("slawek", List.of(Role.ROLE_ADMIN));
-        String token3 = jwtTokenProvider.createToken("slawek", List.of(Role.ROLE_ADMIN, Role.ROLE_CLIENT));
-
-        // when
-        boolean validationResult1 = jwtTokenProvider.validateToken(token1);
-        boolean validationResult2 = jwtTokenProvider.validateToken(token2);
-        boolean validationResult3 = jwtTokenProvider.validateToken(token3);
-
-        // then
-        assertThat(validationResult1).isTrue();
-        assertThat(validationResult2).isTrue();
-        assertThat(validationResult3).isTrue();
-    }
-
-    @Test
     public void testValidateInvalidToken() {
         // given
         String invalidToken = "invalidToken";
@@ -58,6 +42,28 @@ public class JwtTokenProviderTest {
 
         // then
         assertThatThrownBy(throwingCallable).isInstanceOf(CustomException.class);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideRolesForTest")
+    public void testValidateToken(List<Role> roles) {
+        // given
+        String token = jwtTokenProvider.createToken("slawek", roles);
+
+        // when
+        boolean validationResult = jwtTokenProvider.validateToken(token);
+
+        // then
+        assertThat(validationResult).isTrue();
+    }
+
+    private static Stream<Arguments> provideRolesForTest() {
+        return Stream.of(
+                Arguments.of(List.of()),
+                Arguments.of(List.of(Role.ROLE_ADMIN)),
+                Arguments.of(List.of(Role.ROLE_ADMIN, Role.ROLE_CLIENT)),
+                Arguments.of(List.of(Role.ROLE_DOCTOR))
+        );
     }
 
 }

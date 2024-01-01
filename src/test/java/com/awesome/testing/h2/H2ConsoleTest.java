@@ -53,7 +53,7 @@ public class H2ConsoleTest extends DomainHelper {
 
         // then
         assertThat(tablesResponse.getBody()).contains(
-                "'table', 'APPOINTMENT_SLOTS',",
+                "'table', 'SLOTS',",
                 "'table', 'DOCTOR_TYPES'",
                 "'table', 'USERS'"
         );
@@ -74,7 +74,7 @@ public class H2ConsoleTest extends DomainHelper {
 
         // then
         assertThat(tablesResponse.getBody()).doesNotContain(
-                "'table', 'APPOINTMENT_SLOTS',",
+                "'table', 'SLOTS',",
                 "'table', 'DOCTOR_TYPES'",
                 "'table', 'USERS'"
         );
@@ -107,6 +107,7 @@ public class H2ConsoleTest extends DomainHelper {
         return formData;
     }
 
+    @SuppressWarnings("ConstantConditions")
     private String extractSessionId(String body) {
         Document doc = Jsoup.parse(body);
         Element scriptElement = doc.select("script").first();
