@@ -9,7 +9,7 @@ import io.jsonwebtoken.*;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
-import com.awesome.testing.exception.CustomException;
+import com.awesome.testing.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -66,7 +66,7 @@ public class JwtTokenUtil {
             jwtParser.parseSignedClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
-            throw new CustomException("Expired or invalid JWT token", HttpStatus.FORBIDDEN);
+            throw new ApiException("Expired or invalid JWT token", HttpStatus.FORBIDDEN);
         }
     }
 

@@ -1,7 +1,7 @@
 package com.awesome.testing.security;
 
 import com.awesome.testing.dto.users.LoginDto;
-import com.awesome.testing.exception.CustomException;
+import com.awesome.testing.exception.ApiException;
 import com.awesome.testing.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ public class AuthenticationHandler {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
             return jwtTokenUtil.createToken(username, userRepository.findByUsername(username).getRoles());
         } catch (AuthenticationException e) {
-            throw new CustomException("Invalid username/password supplied", HttpStatus.UNPROCESSABLE_ENTITY);
+            throw new ApiException("Invalid username/password supplied", HttpStatus.UNPROCESSABLE_ENTITY);
         }
     }
 

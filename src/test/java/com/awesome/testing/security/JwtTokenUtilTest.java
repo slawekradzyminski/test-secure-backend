@@ -1,7 +1,7 @@
 package com.awesome.testing.security;
 
 import com.awesome.testing.AbstractUnitTest;
-import com.awesome.testing.exception.CustomException;
+import com.awesome.testing.exception.ApiException;
 import com.awesome.testing.dto.users.Role;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
@@ -41,7 +41,7 @@ public class JwtTokenUtilTest extends AbstractUnitTest {
         ThrowingCallable throwingCallable = () -> jwtTokenUtil.validateToken(invalidToken);
 
         // then
-        assertThatThrownBy(throwingCallable).isInstanceOf(CustomException.class);
+        assertThatThrownBy(throwingCallable).isInstanceOf(ApiException.class);
     }
 
     @ParameterizedTest

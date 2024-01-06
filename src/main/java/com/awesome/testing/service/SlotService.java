@@ -5,7 +5,7 @@ import com.awesome.testing.dto.slot.SlotDto;
 import com.awesome.testing.entities.slot.SlotEntity;
 import com.awesome.testing.entities.slot.SlotStatus;
 import com.awesome.testing.entities.user.UserEntity;
-import com.awesome.testing.exception.CustomException;
+import com.awesome.testing.exception.ApiException;
 import com.awesome.testing.repository.SlotRepository;
 import com.awesome.testing.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -30,7 +30,7 @@ public class SlotService {
         UserEntity doctor = getUser(createSlotRangeDto.getUsername());
 
         if (slotRepository.existsByDoctorAndStartTimeBetween(doctor, createSlotRangeDto.getStartAvailability(), createSlotRangeDto.getEndAvailability())) {
-            throw new CustomException("Slots already exist in the provided time range", HttpStatus.BAD_REQUEST);
+            throw new ApiException("Slots already exist in the provided time range", HttpStatus.BAD_REQUEST);
         }
 
         return IntStream.range(0, calculateTheNumberOfSlots(createSlotRangeDto))

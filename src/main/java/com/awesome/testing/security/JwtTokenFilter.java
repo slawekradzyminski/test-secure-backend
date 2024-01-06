@@ -7,7 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import com.awesome.testing.exception.CustomException;
+import com.awesome.testing.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -39,7 +39,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
         String token = jwtTokenUtil.extractTokenFromRequest(request);
         if (tokenBlacklistService.isBlacklisted(token)) {
-            forbid(response, new CustomException("Blacklisted JWT Token", HttpStatus.FORBIDDEN));
+            forbid(response, new ApiException("Blacklisted JWT Token", HttpStatus.FORBIDDEN));
             return;
         }
 
@@ -49,14 +49,14 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 Authentication auth = jwtTokenUtil.getAuthentication(token);
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
-        } catch (CustomException ex) {
+        } catch (ApiException ex) {
             forbid(response, ex);
             return;
         }
         chain.doFilter(request, response);
     }
 
-    private void forbid(HttpServletResponse response, CustomException ex) throws IOException {
+    private void forbid(HttpServletResponse response, ApiException ex) throws IOException {
         SecurityContextHolder.clearContext();
         response.sendError(ex.getHttpStatus().value(), ex.getMessage());
     }

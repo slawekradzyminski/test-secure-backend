@@ -1,7 +1,7 @@
 package com.awesome.testing.security;
 
 import com.awesome.testing.AbstractUnitTest;
-import com.awesome.testing.exception.CustomException;
+import com.awesome.testing.exception.ApiException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -72,7 +72,7 @@ public class JwtTokenFilterTest extends AbstractUnitTest {
         String invalidToken = "invalidToken";
         when(jwtTokenUtil.extractTokenFromRequest(httpServletRequest)).thenReturn(invalidToken);
         when(jwtTokenUtil.validateToken(invalidToken)).thenThrow(
-                new CustomException("Expired or invalid JWT token", HttpStatus.FORBIDDEN));
+                new ApiException("Expired or invalid JWT token", HttpStatus.FORBIDDEN));
 
         // when
         jwtTokenFilter.doFilterInternal(httpServletRequest, httpServletResponse, filterChain);

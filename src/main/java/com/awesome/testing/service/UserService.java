@@ -7,7 +7,7 @@ import com.awesome.testing.entities.user.UserEntity;
 import com.awesome.testing.repository.DoctorTypeRepository;
 import jakarta.servlet.http.HttpServletRequest;
 
-import com.awesome.testing.exception.CustomException;
+import com.awesome.testing.exception.ApiException;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.AuthenticationHandler;
 import com.awesome.testing.security.JwtTokenUtil;
@@ -38,7 +38,7 @@ public class UserService {
 
     public void signUp(UserRegisterDto userRegisterDTO) {
         if (userRepository.existsByUsername(userRegisterDTO.getUsername())) {
-            throw new CustomException("Username is already in use", HttpStatus.UNPROCESSABLE_ENTITY);
+            throw new ApiException("Username is already in use", HttpStatus.UNPROCESSABLE_ENTITY);
         }
 
         String encryptedPassword = passwordEncoder.encode(userRegisterDTO.getPassword());
@@ -52,7 +52,7 @@ public class UserService {
 
     public UserEntity search(String username) {
         return Optional.ofNullable(userRepository.findByUsername(username))
-                .orElseThrow(() -> new CustomException("The user doesn't exist", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new ApiException("The user doesn't exist", HttpStatus.NOT_FOUND));
     }
 
     public List<UserResponseDto> getAll() {

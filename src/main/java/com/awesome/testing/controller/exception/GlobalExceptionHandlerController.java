@@ -3,7 +3,7 @@ package com.awesome.testing.controller.exception;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.awesome.testing.exception.CustomException;
+import com.awesome.testing.exception.ApiException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,8 +18,8 @@ import org.springframework.web.context.request.WebRequest;
 @ControllerAdvice
 public class GlobalExceptionHandlerController {
 
-    @ExceptionHandler(CustomException.class)
-    protected ResponseEntity<Object> handleCustomException(CustomException ex, WebRequest request) {
+    @ExceptionHandler(ApiException.class)
+    protected ResponseEntity<Object> handleCustomException(ApiException ex, WebRequest request) {
         Map<String, String> bodyOfResponse = new HashMap<>();
         bodyOfResponse.put("message", ex.getMessage());
         return new ResponseEntity<>(bodyOfResponse, new HttpHeaders(), ex.getHttpStatus());

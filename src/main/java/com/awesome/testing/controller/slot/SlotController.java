@@ -4,7 +4,7 @@ import com.awesome.testing.dto.slot.CreateSlotRangeDto;
 import com.awesome.testing.dto.slot.SlotDto;
 import com.awesome.testing.dto.users.Role;
 import com.awesome.testing.entities.user.UserEntity;
-import com.awesome.testing.exception.CustomException;
+import com.awesome.testing.exception.ApiException;
 import com.awesome.testing.service.SlotService;
 import com.awesome.testing.service.UserService;
 
@@ -39,13 +39,13 @@ public class SlotController {
 
         if (currentUser.getRoles().contains(Role.ROLE_DOCTOR) &&
                 !currentUsername.equals(createSlotRangeDto.getUsername())) {
-            throw new CustomException("Doctors can only create slots for themselves", HttpStatus.FORBIDDEN);
+            throw new ApiException("Doctors can only create slots for themselves", HttpStatus.FORBIDDEN);
         }
 
         if (currentUser.getRoles().contains(Role.ROLE_ADMIN)) {
             UserEntity targetUser = userService.search(createSlotRangeDto.getUsername());
             if (!targetUser.getRoles().contains(Role.ROLE_DOCTOR)) {
-                throw new CustomException("Admins can only create slots for doctors", HttpStatus.BAD_REQUEST);
+                throw new ApiException("Admins can only create slots for doctors", HttpStatus.BAD_REQUEST);
             }
         }
 
