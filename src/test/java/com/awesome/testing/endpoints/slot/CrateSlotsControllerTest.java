@@ -64,6 +64,26 @@ public class CrateSlotsControllerTest extends DomainHelper {
     }
 
     @Test
+    public void shouldReturn400ForTooBigAvailability() {
+        // given
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
+        String token = registerAndThenLoginSavingToken(user);
+        CreateSlotRangeDto createSlotRangeDto = CreateSlotRangeDto.builder()
+                .username(user.getUsername())
+                .slotDuration(Duration.ofMinutes(30))
+                .startAvailability(LocalDateTime.of(2033, 12, 1, 7, 0))
+                .endAvailability(LocalDateTime.of(2033, 12, 1, 16, 0))
+                .build();
+
+        // when
+        ResponseEntity<?> response =
+                executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token), Object.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     public void shouldReturn403IfDoctorWantsToSetSlotsForAnotherUser() {
         // given
         UserRegisterDto userToSetSlots = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
