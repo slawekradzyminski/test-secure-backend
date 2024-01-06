@@ -1,6 +1,6 @@
 package com.awesome.testing.service;
 
-import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
+import static com.awesome.testing.testutil.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;

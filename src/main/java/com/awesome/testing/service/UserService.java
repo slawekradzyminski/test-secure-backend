@@ -10,7 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.AuthenticationHandler;
-import com.awesome.testing.security.JwtTokenProvider;
+import com.awesome.testing.security.JwtTokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,7 +26,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenUtil jwtTokenUtil;
     private final AuthenticationHandler authenticationHandler;
     private final DoctorTypeRepository doctorTypeRepository;
 
@@ -63,12 +63,12 @@ public class UserService {
     }
 
     public UserEntity whoAmI(HttpServletRequest req) {
-        String token = jwtTokenProvider.extractTokenFromRequest(req);
-        return userRepository.findByUsername(jwtTokenProvider.getUsername(token));
+        String token = jwtTokenUtil.extractTokenFromRequest(req);
+        return userRepository.findByUsername(jwtTokenUtil.getUsername(token));
     }
 
     public String refreshToken(String username) {
-        return jwtTokenProvider.createToken(username, userRepository.findByUsername(username).getRoles());
+        return jwtTokenUtil.createToken(username, userRepository.findByUsername(username).getRoles());
     }
 
     public void edit(String username, UserEditDto userEditBody) {

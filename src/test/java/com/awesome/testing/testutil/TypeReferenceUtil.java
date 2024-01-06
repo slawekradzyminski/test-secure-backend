@@ -1,4 +1,4 @@
-package com.awesome.testing.util;
+package com.awesome.testing.testutil;
 
 import org.springframework.core.ParameterizedTypeReference;
 

@@ -12,8 +12,8 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 import java.util.Map;
 
-import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
-import static com.awesome.testing.util.UserUtil.*;
+import static com.awesome.testing.testutil.TypeReferenceUtil.mapTypeReference;
+import static com.awesome.testing.testutil.UserUtil.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SignUpControllerTest extends DomainHelper {

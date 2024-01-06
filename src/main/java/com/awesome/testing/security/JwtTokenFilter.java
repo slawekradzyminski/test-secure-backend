@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import com.awesome.testing.exception.CustomException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -24,7 +25,8 @@ import static com.awesome.testing.security.PublicPaths.PUBLIC_PATHS;
 public class JwtTokenFilter extends OncePerRequestFilter {
     private static final PathMatcher PATH_MATCHER = new AntPathMatcher();
 
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenUtil jwtTokenUtil;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -35,18 +37,28 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token = jwtTokenProvider.extractTokenFromRequest(request);
+        String token = jwtTokenUtil.extractTokenFromRequest(request);
+        if (tokenBlacklistService.isBlacklisted(token)) {
+            forbid(response, new CustomException("Blacklisted JWT Token", HttpStatus.FORBIDDEN));
+            return;
+        }
+
         try {
-            if (token != null && jwtTokenProvider.validateToken(token)) {
-                Authentication auth = jwtTokenProvider.getAuthentication(token);
+            if (token != null) {
+                jwtTokenUtil.validateToken(token);
+                Authentication auth = jwtTokenUtil.getAuthentication(token);
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
         } catch (CustomException ex) {
-            SecurityContextHolder.clearContext();
-            response.sendError(ex.getHttpStatus().value(), ex.getMessage());
+            forbid(response, ex);
             return;
         }
         chain.doFilter(request, response);
+    }
+
+    private void forbid(HttpServletResponse response, CustomException ex) throws IOException {
+        SecurityContextHolder.clearContext();
+        response.sendError(ex.getHttpStatus().value(), ex.getMessage());
     }
 
     private boolean shouldBeBypassed(String requestURI) {

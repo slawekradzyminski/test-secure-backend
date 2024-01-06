@@ -1,6 +1,7 @@
 package com.awesome.testing.controller.users;
 
 import com.awesome.testing.dto.users.LoginResponseDto;
+import com.awesome.testing.security.JwtTokenUtil;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import static com.awesome.testing.util.TokenCookieUtil.buildTokenCookie;
+
 @CrossOrigin(origins = {"http://localhost:8081", "http://127.0.0.1:8081"}, maxAge = 36000, allowCredentials = "true")
 @RestController
 @RequestMapping("/users")
@@ -23,6 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 public class UserRefreshController {
 
     private final UserService userService;
+    private final JwtTokenUtil jwtTokenUtil;
 
     @GetMapping("/refresh")
     @Operation(summary = "Refreshes token for logged in user",
@@ -35,9 +39,7 @@ public class UserRefreshController {
     public ResponseEntity<?> refresh(HttpServletRequest req, HttpServletResponse response) {
         String remoteUser = req.getRemoteUser();
         String token = userService.refreshToken(remoteUser);
-        String cookie = "token=" + token +
-                "; Max-Age=3600; Path=/; HttpOnly; SameSite=None; Secure";
-        response.addHeader("Set-Cookie", cookie);
+        response.addHeader("Set-Cookie", buildTokenCookie(token, jwtTokenUtil.getTokenValidityInSeconds()));
         return ResponseEntity.ok(LoginResponseDto.from(userService.search(remoteUser), token));
     }
 

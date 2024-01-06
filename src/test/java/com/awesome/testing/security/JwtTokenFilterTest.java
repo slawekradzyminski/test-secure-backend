@@ -20,13 +20,16 @@ public class JwtTokenFilterTest extends AbstractUnitTest {
     private static final String LOGOUT_EXCLUDED_ENDPOINT = "/users/logout";
 
     @Mock
-    private JwtTokenProvider jwtTokenProvider;
+    private JwtTokenUtil jwtTokenUtil;
 
     @Mock
     private HttpServletRequest httpServletRequest;
 
     @Mock
     private HttpServletResponse httpServletResponse;
+
+    @Mock
+    private TokenBlacklistService tokenBlacklistService;
 
     @Mock
     private FilterChain filterChain;
@@ -51,8 +54,9 @@ public class JwtTokenFilterTest extends AbstractUnitTest {
         // given
         when(httpServletRequest.getRequestURI()).thenReturn("/users/other");
         String validToken = "validToken";
-        when(jwtTokenProvider.extractTokenFromRequest(httpServletRequest)).thenReturn(validToken);
-        when(jwtTokenProvider.validateToken(validToken)).thenReturn(true);
+        when(jwtTokenUtil.extractTokenFromRequest(httpServletRequest)).thenReturn(validToken);
+        when(jwtTokenUtil.validateToken(validToken)).thenReturn(true);
+        when(tokenBlacklistService.isBlacklisted(validToken)).thenReturn(false);
 
         // when
         jwtTokenFilter.doFilterInternal(httpServletRequest, httpServletResponse, filterChain);
@@ -66,8 +70,8 @@ public class JwtTokenFilterTest extends AbstractUnitTest {
         // given
         when(httpServletRequest.getRequestURI()).thenReturn("/users/other");
         String invalidToken = "invalidToken";
-        when(jwtTokenProvider.extractTokenFromRequest(httpServletRequest)).thenReturn(invalidToken);
-        when(jwtTokenProvider.validateToken(invalidToken)).thenThrow(
+        when(jwtTokenUtil.extractTokenFromRequest(httpServletRequest)).thenReturn(invalidToken);
+        when(jwtTokenUtil.validateToken(invalidToken)).thenThrow(
                 new CustomException("Expired or invalid JWT token", HttpStatus.FORBIDDEN));
 
         // when
@@ -75,6 +79,22 @@ public class JwtTokenFilterTest extends AbstractUnitTest {
 
         // then
         verify(httpServletResponse).sendError(HttpStatus.FORBIDDEN.value(), "Expired or invalid JWT token");
+        verify(filterChain, never()).doFilter(httpServletRequest, httpServletResponse);
+    }
+
+    @Test
+    public void blacklistedTokenShouldThrow() throws ServletException, IOException {
+        // given
+        when(httpServletRequest.getRequestURI()).thenReturn("/users/other");
+        String blacklistedToken = "invalidToken";
+        when(jwtTokenUtil.extractTokenFromRequest(httpServletRequest)).thenReturn(blacklistedToken);
+        when(tokenBlacklistService.isBlacklisted(blacklistedToken)).thenReturn(true);
+
+        // when
+        jwtTokenFilter.doFilterInternal(httpServletRequest, httpServletResponse, filterChain);
+
+        // then
+        verify(httpServletResponse).sendError(HttpStatus.FORBIDDEN.value(), "Blacklisted JWT Token");
         verify(filterChain, never()).doFilter(httpServletRequest, httpServletResponse);
     }
 

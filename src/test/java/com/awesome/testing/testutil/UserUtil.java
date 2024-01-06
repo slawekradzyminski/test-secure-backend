@@ -1,4 +1,4 @@
-package com.awesome.testing.util;
+package com.awesome.testing.testutil;
 
 import com.awesome.testing.dto.users.UserRegisterDto;
 import com.awesome.testing.dto.users.Role;

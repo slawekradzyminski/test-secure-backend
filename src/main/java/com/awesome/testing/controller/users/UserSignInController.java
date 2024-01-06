@@ -2,6 +2,7 @@ package com.awesome.testing.controller.users;
 
 import com.awesome.testing.dto.users.LoginDto;
 import com.awesome.testing.dto.users.LoginResponseDto;
+import com.awesome.testing.security.JwtTokenUtil;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
+import static com.awesome.testing.util.TokenCookieUtil.buildTokenCookie;
+
 @CrossOrigin(origins = {"http://localhost:8081", "http://127.0.0.1:8081"}, maxAge = 36000, allowCredentials = "true")
 @RestController
 @RequestMapping("/users")
@@ -24,6 +27,7 @@ import jakarta.validation.Valid;
 public class UserSignInController {
 
     private final UserService userService;
+    private final JwtTokenUtil jwtTokenUtil;
 
     @PostMapping("/signin")
     @Operation(summary = "Authenticates user and returns its JWT token")
@@ -35,11 +39,10 @@ public class UserSignInController {
     public ResponseEntity<LoginResponseDto> login(
             @Parameter(description = "Login details") @Valid @RequestBody LoginDto loginDetails,
             HttpServletResponse response) {
-        LoginResponseDto loginResponseDTO = userService.signIn(loginDetails);
-        String cookie = "token=" + loginResponseDTO.getToken() + 
-        "; Max-Age=3600; Path=/; HttpOnly; SameSite=None; Secure";
-        response.addHeader("Set-Cookie", cookie);
-        return ResponseEntity.ok(loginResponseDTO);
+        LoginResponseDto loginResponseDto = userService.signIn(loginDetails);
+        response.addHeader("Set-Cookie",
+                buildTokenCookie(loginResponseDto.getToken(), jwtTokenUtil.getTokenValidityInSeconds()));
+        return ResponseEntity.ok(loginResponseDto);
     }
 
 }

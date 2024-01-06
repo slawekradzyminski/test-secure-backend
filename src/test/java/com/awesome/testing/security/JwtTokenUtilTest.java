@@ -20,16 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
-public class JwtTokenProviderTest extends AbstractUnitTest {
+public class JwtTokenUtilTest extends AbstractUnitTest {
 
-    private JwtTokenProvider jwtTokenProvider;
+    private JwtTokenUtil jwtTokenUtil;
 
     @BeforeEach
     public void setup() {
         SecretKeyProvider secretKeyProvider = new SecretKeyProvider("4DZ3+asC4/EOVmPdsSFizGMBlxnws+CLgiX9I1hl3AA=");
         JwtParser jwtParser = Jwts.parser().verifyWith(secretKeyProvider.getSecretKey()).build();
-        jwtTokenProvider = new JwtTokenProvider(jwtParser, secretKeyProvider, mock(MyUserDetails.class));
-        ReflectionTestUtils.setField(jwtTokenProvider, "validityInMilliseconds", 3600000L);
+        jwtTokenUtil = new JwtTokenUtil(jwtParser, secretKeyProvider, mock(MyUserDetails.class));
+        ReflectionTestUtils.setField(jwtTokenUtil, "validityInMilliseconds", 3600000L);
     }
 
     @Test
@@ -38,7 +38,7 @@ public class JwtTokenProviderTest extends AbstractUnitTest {
         String invalidToken = "invalidToken";
 
         // when
-        ThrowingCallable throwingCallable = () -> jwtTokenProvider.validateToken(invalidToken);
+        ThrowingCallable throwingCallable = () -> jwtTokenUtil.validateToken(invalidToken);
 
         // then
         assertThatThrownBy(throwingCallable).isInstanceOf(CustomException.class);
@@ -48,10 +48,10 @@ public class JwtTokenProviderTest extends AbstractUnitTest {
     @MethodSource("provideRolesForTest")
     public void testValidateToken(List<Role> roles) {
         // given
-        String token = jwtTokenProvider.createToken("slawek", roles);
+        String token = jwtTokenUtil.createToken("slawek", roles);
 
         // when
-        boolean validationResult = jwtTokenProvider.validateToken(token);
+        boolean validationResult = jwtTokenUtil.validateToken(token);
 
         // then
         assertThat(validationResult).isTrue();

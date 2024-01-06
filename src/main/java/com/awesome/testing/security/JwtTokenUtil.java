@@ -23,7 +23,7 @@ import com.awesome.testing.dto.users.Role;
 
 @Component
 @RequiredArgsConstructor
-public class JwtTokenProvider {
+public class JwtTokenUtil {
 
     @Value("${security.jwt.token.expire-length:3600000}")
     private long validityInMilliseconds; // 1h
@@ -68,6 +68,10 @@ public class JwtTokenProvider {
         } catch (JwtException | IllegalArgumentException e) {
             throw new CustomException("Expired or invalid JWT token", HttpStatus.FORBIDDEN);
         }
+    }
+
+    public long getTokenValidityInSeconds() {
+        return validityInMilliseconds / 1000;
     }
 
     private Date getExpirationDate() {

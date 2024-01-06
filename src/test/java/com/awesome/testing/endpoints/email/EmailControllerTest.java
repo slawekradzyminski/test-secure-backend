@@ -16,7 +16,7 @@ import org.springframework.jms.core.JmsTemplate;
 
 import java.util.List;
 
-import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
+import static com.awesome.testing.testutil.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
