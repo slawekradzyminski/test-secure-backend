@@ -2,7 +2,7 @@ package com.awesome.testing;
 
 import java.awt.image.BufferedImage;
 
-import com.awesome.testing.dbsetup.DbInitialDataSetup;
+import com.awesome.testing.dbsetup.DbSetup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -18,7 +18,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @RequiredArgsConstructor
 public class JwtAuthServiceApp implements CommandLineRunner {
 
-    private final DbInitialDataSetup dbInitialDataSetup;
+    private final DbSetup dbSetup;
 
     public static void main(String[] args) {
         SpringApplication.run(JwtAuthServiceApp.class, args);
@@ -32,7 +32,7 @@ public class JwtAuthServiceApp implements CommandLineRunner {
 
     @Override
     public void run(String... params) {
-        dbInitialDataSetup.setupData();
+        dbSetup.setupData();
     }
 
 }

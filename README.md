@@ -35,3 +35,4 @@ docker run -p4001:4001 slawekradzyminski/backend:1.2
 
 - client/client (CLIENT role)
 - admin/admin (ADMIN role)
+- doctor/doctor (DOCTOR role)

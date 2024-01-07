@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -36,8 +37,8 @@ public class CrateSlotsControllerTest extends DomainHelper {
                 .build();
 
         // when
-        ResponseEntity<?> response =
-                executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token), Object.class);
+        ResponseEntity<?> response = executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token),
+                Object.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -56,8 +57,8 @@ public class CrateSlotsControllerTest extends DomainHelper {
                 .build();
 
         // when
-        ResponseEntity<?> response =
-                executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token), Object.class);
+        ResponseEntity<?> response = executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token),
+                Object.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -76,8 +77,8 @@ public class CrateSlotsControllerTest extends DomainHelper {
                 .build();
 
         // when
-        ResponseEntity<?> response =
-                executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token), Object.class);
+        ResponseEntity<?> response = executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token),
+                Object.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -98,8 +99,8 @@ public class CrateSlotsControllerTest extends DomainHelper {
                 .build();
 
         // when
-        ResponseEntity<?> response =
-                executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token), Object.class);
+        ResponseEntity<?> response = executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token),
+                Object.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -120,8 +121,8 @@ public class CrateSlotsControllerTest extends DomainHelper {
                 .build();
 
         // when
-        ResponseEntity<?> response =
-                executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token), Object.class);
+        ResponseEntity<?> response = executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token),
+                Object.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -140,8 +141,8 @@ public class CrateSlotsControllerTest extends DomainHelper {
                 .build();
 
         // when
-        ResponseEntity<SlotDto[]> response =
-                executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token), SlotDto[].class);
+        ResponseEntity<SlotDto[]> response = executePost(SLOTS_ENDPOINT, createSlotRangeDto,
+                getHeadersWith(token), SlotDto[].class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -163,8 +164,8 @@ public class CrateSlotsControllerTest extends DomainHelper {
                 .build();
 
         // when
-        ResponseEntity<SlotDto[]> response =
-                executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token), SlotDto[].class);
+        ResponseEntity<SlotDto[]> response = executePost(SLOTS_ENDPOINT, createSlotRangeDto,
+                getHeadersWith(token), SlotDto[].class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -191,8 +192,8 @@ public class CrateSlotsControllerTest extends DomainHelper {
                 .build();
 
         // when
-        ResponseEntity<?> response =
-                executePost(SLOTS_ENDPOINT, overlappingCreateSlotRangeDto, getHeadersWith(token), Object.class);
+        ResponseEntity<?> response = executePost(SLOTS_ENDPOINT, overlappingCreateSlotRangeDto,
+                getHeadersWith(token), Object.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -211,8 +212,8 @@ public class CrateSlotsControllerTest extends DomainHelper {
                 .build();
 
         // when
-        ResponseEntity<?> response =
-                executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token), Object.class);
+        ResponseEntity<?> response = executePost(SLOTS_ENDPOINT, createSlotRangeDto, getHeadersWith(token),
+                Object.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -231,8 +232,8 @@ public class CrateSlotsControllerTest extends DomainHelper {
                 .build();
 
         // when
-        ResponseEntity<?> response =
-                executePost(SLOTS_ENDPOINT, createSlotRangeDto, getJsonOnlyHeaders(), Object.class);
+        ResponseEntity<?> response = executePost(SLOTS_ENDPOINT, createSlotRangeDto, getJsonOnlyHeaders(),
+                Object.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -243,14 +244,15 @@ public class CrateSlotsControllerTest extends DomainHelper {
         assertThat(slots).hasSize(14);
 
         LocalDateTime startTime = LocalDateTime.of(2033, 12, 1, 8, 0);
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
 
         IntStream.range(0, slots.size()).forEach(i -> {
             SlotDto slot = slots.get(i);
             assertThat(slot.getId()).isPositive();
             assertThat(slot.getDoctorUsername()).isEqualTo(username);
             assertThat(slot.getClientUsername()).isNull();
-            assertThat(slot.getStartTime()).isEqualTo(startTime.plusMinutes(30 * i));
-            assertThat(slot.getEndTime()).isEqualTo(startTime.plusMinutes(30).plusMinutes(30 * i));
+            assertThat(slot.getStartTime()).isEqualTo(startTime.plusMinutes(30L * i).format(formatter));
+            assertThat(slot.getEndTime()).isEqualTo(startTime.plusMinutes(30L * i).plusMinutes(30).format(formatter));
             assertThat(slot.getStatus()).isEqualTo(SlotStatus.AVAILABLE);
         });
     }

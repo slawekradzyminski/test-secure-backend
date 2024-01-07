@@ -23,7 +23,7 @@ public class UserAssignDoctorTypesController {
     @Operation(summary = "Assign Doctor types to doctor",
             security = {@SecurityRequirement(name = "Authorization")})
     @PutMapping("/doctortypes")
-    public UserResponseDto updateDoctorTypes(@RequestBody DoctorTypeUpdateDto doctorTypeUpdateDTO) {
-        return userService.updateDoctorTypes(doctorTypeUpdateDTO.getDoctorTypeIds());
+    public UserResponseDto updateDoctorTypes(@RequestBody DoctorTypeUpdateDto doctorTypeUpdateDto) {
+        return userService.updateDoctorTypes(doctorTypeUpdateDto.getDoctorTypeIds());
     }
 }

@@ -1,28 +1,13 @@
-package com.awesome.testing.dbsetup;
+package com.awesome.testing.dbsetup.h2;
 
 import com.awesome.testing.dto.users.Role;
 import com.awesome.testing.dto.users.UserRegisterDto;
-import com.awesome.testing.service.UserService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
-@RequiredArgsConstructor
-public class UsersSetup {
+public class InitialUsers {
 
-    private final UserService userService;
-
-    public void setupUsers() {
-        if (userService.getAll().isEmpty()) {
-            userService.signUp(getAdmin());
-            userService.signUp(getClient());
-            userService.signUp(getDoctor());
-        }
-    }
-
-    private UserRegisterDto getDoctor() {
+    static UserRegisterDto getDoctor() {
         return UserRegisterDto.builder()
                 .username("doctor")
                 .password("doctor")
@@ -33,7 +18,7 @@ public class UsersSetup {
                 .build();
     }
 
-    private UserRegisterDto getClient() {
+    static UserRegisterDto getClient() {
         return UserRegisterDto.builder()
                 .username("client")
                 .password("client")
@@ -44,7 +29,7 @@ public class UsersSetup {
                 .build();
     }
 
-    private UserRegisterDto getAdmin() {
+    static UserRegisterDto getAdmin() {
         return UserRegisterDto.builder()
                 .username("admin")
                 .password("admin")

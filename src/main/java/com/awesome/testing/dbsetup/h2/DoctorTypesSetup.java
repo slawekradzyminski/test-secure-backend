@@ -1,20 +1,25 @@
-package com.awesome.testing.dbsetup;
+package com.awesome.testing.dbsetup.h2;
 
 import com.awesome.testing.service.DoctorTypeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import java.util.Set;
 
 @Component
+@Profile("dev")
 @RequiredArgsConstructor
 public class DoctorTypesSetup {
 
-    private static final List<String> SPECIALTIES = List.of(
+    static final Set<String> DOCTOR_SPECIALTIES = Set.of(
             "Pediatrician",
             "Psychiatrist",
             "Cardiologist",
-            "Endocrinologist",
+            "Endocrinologist"
+    );
+
+    static final Set<String> SPECIALTIES = Set.of(
             "Neurologist",
             "Gastroenterologist",
             "Dermatologist",
@@ -45,9 +50,8 @@ public class DoctorTypesSetup {
     private final DoctorTypeService doctorTypeService;
 
     public void setupDoctorTypes() {
-        if (doctorTypeService.getAll().isEmpty()) {
-            SPECIALTIES.forEach(doctorTypeService::addDoctorType);
-        }
+        DOCTOR_SPECIALTIES.forEach(doctorTypeService::addDoctorType);
+        SPECIALTIES.forEach(doctorTypeService::addDoctorType);
     }
 
 }

@@ -47,6 +47,21 @@ public class SlotService {
                 .toList();
     }
 
+    public SlotEntity bookSlot(String username, Integer slotId) {
+        UserEntity client = getUser(username);
+        SlotEntity slot = slotRepository.findById(slotId).orElseThrow(() -> new RuntimeException("Slot not found"));
+        slot.setClient(client);
+        slot.setStatus(SlotStatus.BOOKED);
+        return slotRepository.save(slot);
+    }
+
+    public List<SlotDto> getAvailableSlots(LocalDateTime startTime, LocalDateTime endTime, String doctorUsername, SlotStatus slotStatus, Integer doctorTypeId) {
+        List<SlotEntity> slots = slotRepository.findByCriteria(startTime, endTime, doctorUsername, slotStatus, doctorTypeId);
+        return slots.stream()
+                .map(SlotDto::from)
+                .toList();
+    }
+
     private LocalDateTime calculateSlotStartTime(CreateSlotRangeDto createSlotRangeDto, int i) {
         return createSlotRangeDto.getStartAvailability()
                 .plusMinutes(i * createSlotRangeDto.getSlotDuration().toMinutes());
@@ -56,14 +71,6 @@ public class SlotService {
         return (int) (Duration.between(createSlotRangeDto.getStartAvailability(),
                 createSlotRangeDto.getEndAvailability()).toMinutes()
                 / createSlotRangeDto.getSlotDuration().toMinutes());
-    }
-
-    public SlotEntity bookSlot(String username, Integer slotId) {
-        UserEntity client = getUser(username);
-        SlotEntity slot = slotRepository.findById(slotId).orElseThrow(() -> new RuntimeException("Slot not found"));
-        slot.setClient(client);
-        slot.setStatus(SlotStatus.BOOKED);
-        return slotRepository.save(slot);
     }
 
     private UserEntity getUser(String username) {

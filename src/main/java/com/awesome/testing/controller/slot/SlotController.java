@@ -19,21 +19,22 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(origins = {"http://localhost:8081", "http://127.0.0.1:8081"}, maxAge = 36000, allowCredentials = "true")
+@CrossOrigin(origins = { "http://localhost:8081", "http://127.0.0.1:8081" }, maxAge = 36000, allowCredentials = "true")
 @RestController
 @RequestMapping("/slots")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_DOCTOR')")
 public class SlotController {
 
     private final SlotService slotService;
     private final UserService userService;
 
-    @Operation(summary = "Create slots by providing availability",
-            security = {@SecurityRequirement(name = "Authorization")})
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_DOCTOR')")
+    @Operation(summary = "Create slots by providing availability", security = {
+            @SecurityRequirement(name = "Authorization") })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public List<SlotDto> createSlots(@RequestBody @Valid CreateSlotRangeDto createSlotRangeDto, HttpServletRequest req) {
+    public List<SlotDto> createSlots(@RequestBody @Valid CreateSlotRangeDto createSlotRangeDto,
+            HttpServletRequest req) {
         String currentUsername = req.getRemoteUser();
         UserEntity currentUser = userService.search(currentUsername);
 
@@ -50,6 +51,14 @@ public class SlotController {
         }
 
         return slotService.createSlots(createSlotRangeDto);
+    }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_DOCTOR') or hasRole('ROLE_DOCTOR')")
+    @Operation(summary = "Get available slots", security = { @SecurityRequirement(name = "Authorization") })
+    @GetMapping
+    public List<SlotDto> getAvailableSlots(@Valid SlotSearchCriteria criteria) {
+        return slotService.getAvailableSlots(criteria.getStartTime(), criteria.getEndTime(),
+                criteria.getDoctorUsername(), criteria.getSlotStatus(), criteria.getDoctorTypeId());
     }
 
 }
