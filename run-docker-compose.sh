@@ -35,19 +35,25 @@ done
 
 echo "Application started successfully."
 
-# Run smoke test
+# Run smoke test for registration
 RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X 'POST' \
-  'http://localhost:4001/users/signin' \
+  'http://localhost:4001/users/signup' \
   -H 'accept: */*' \
   -H 'Content-Type: application/json' \
   -d '{
-  "username": "admin",
-  "password": "admin"
+  "username": "user",
+  "email": "user@example.com",
+  "password": "pass",
+  "roles": [
+    "ROLE_ADMIN"
+  ],
+  "firstName": "John",
+  "lastName": "Doe"
 }')
 
-if [ $RESPONSE_CODE -ne 200 ]; then
-  echo "Smoke test failed. Response code: $RESPONSE_CODE. Exiting."
+if [ $RESPONSE_CODE -ne 201 ]; then
+  echo "Registration smoke test failed. Response code: $RESPONSE_CODE. Exiting."
   exit 1
 fi
 
-echo "Smoke test passed successfully."
+echo "Registration smoke test passed successfully."
