@@ -16,7 +16,11 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
@@ -43,7 +47,7 @@ public class SlotService {
                             .status(SlotStatus.AVAILABLE)
                             .build());
                 })
-                .map(SlotDto::from)
+                .map((SlotEntity slotEntity) -> SlotDto.from(slotEntity, doctor))
                 .toList();
     }
 
@@ -57,8 +61,14 @@ public class SlotService {
 
     public List<SlotDto> getAvailableSlots(LocalDateTime startTime, LocalDateTime endTime, String doctorUsername, SlotStatus slotStatus, Integer doctorTypeId) {
         List<SlotEntity> slots = slotRepository.findByCriteria(startTime, endTime, doctorUsername, slotStatus, doctorTypeId);
+        Set<String> doctorUsernames = slots.stream()
+                .map(slot -> slot.getDoctor().getUsername())
+                .collect(Collectors.toSet());
+        Map<String, UserEntity> doctorMap = userRepository.findAllWithDoctorTypesByUsername(doctorUsernames)
+                .stream()
+                .collect(Collectors.toMap(UserEntity::getUsername, Function.identity()));
         return slots.stream()
-                .map(SlotDto::from)
+                .map(slot -> SlotDto.from(slot, doctorMap.get(slot.getDoctor().getUsername())))
                 .toList();
     }
 

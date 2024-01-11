@@ -19,7 +19,7 @@ public class H2DbSetup implements DbSetup {
         usersSetup.setupUsers();
         doctorTypesSetup.setupDoctorTypes();
         assignDoctorTypesSetup.assignDoctorTypesForDoctor();
-        doctorSlotsSetup.setupSlotsForTomorrow();
+        doctorSlotsSetup.setupSlotsForMonthsAhead();
     }
 
 }

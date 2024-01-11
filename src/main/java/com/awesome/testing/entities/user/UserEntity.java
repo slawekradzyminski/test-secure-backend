@@ -58,18 +58,19 @@ public class UserEntity {
             inverseJoinColumns = @JoinColumn(name = "doctor_type_id"))
     private List<DoctorTypeEntity> doctorTypes;
 
-    public static UserEntity from(UserRegisterDto userRegisterDTO, String encryptedPassword) {
+    public static UserEntity from(UserRegisterDto userRegisterDto, String encryptedPassword) {
         return UserEntity.builder()
-                .username(userRegisterDTO.getUsername())
+                .username(userRegisterDto.getUsername())
                 .password(encryptedPassword)
-                .roles(userRegisterDTO.getRoles())
-                .email(userRegisterDTO.getEmail())
-                .firstName(userRegisterDTO.getFirstName())
-                .lastName(userRegisterDTO.getLastName())
+                .roles(userRegisterDto.getRoles())
+                .email(userRegisterDto.getEmail())
+                .firstName(userRegisterDto.getFirstName())
+                .lastName(userRegisterDto.getLastName())
+                .doctorTypes(List.of())
                 .build();
     }
 
-    public static UserEntity from(UserRegisterDto randomUser) {
-        return from(randomUser, randomUser.getPassword());
+    public static UserEntity from(UserRegisterDto userRegisterDto) {
+        return from(userRegisterDto, userRegisterDto.getPassword());
     }
 }

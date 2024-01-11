@@ -4,6 +4,11 @@ import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.awesome.testing.entities.user.UserEntity;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Set;
 
 public interface UserRepository extends JpaRepository<UserEntity, Integer> {
 
@@ -13,5 +18,8 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
 
     @Transactional
     void deleteByUsername(String username);
+
+    @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.doctorTypes WHERE u.username IN :usernames")
+    List<UserEntity> findAllWithDoctorTypesByUsername(@Param("usernames") Set<String> usernames);
 
 }

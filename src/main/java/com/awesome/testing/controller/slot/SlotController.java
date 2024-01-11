@@ -53,7 +53,7 @@ public class SlotController {
         return slotService.createSlots(createSlotRangeDto);
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_DOCTOR') or hasRole('ROLE_DOCTOR')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT') or hasRole('ROLE_DOCTOR')")
     @Operation(summary = "Get available slots", security = { @SecurityRequirement(name = "Authorization") })
     @GetMapping
     public List<SlotDto> getAvailableSlots(@Valid SlotSearchCriteria criteria) {

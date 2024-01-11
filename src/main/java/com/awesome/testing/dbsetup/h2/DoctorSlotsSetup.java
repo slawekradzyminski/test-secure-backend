@@ -6,10 +6,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.stream.Stream;
 
 import static com.awesome.testing.dbsetup.h2.InitialUsers.getDoctor;
 
@@ -18,24 +20,29 @@ import static com.awesome.testing.dbsetup.h2.InitialUsers.getDoctor;
 @RequiredArgsConstructor
 public class DoctorSlotsSetup {
 
-    static final LocalDateTime TOMORROW_MORNING = LocalDateTime.of(
-            LocalDate.now().plusDays(1),
-            LocalTime.of(7, 0)
-    );
-
-    static final LocalDateTime TOMORROW_AFTERNOON = LocalDateTime.of(
-            LocalDate.now().plusDays(1),
-            LocalTime.of(15, 0)
-    );
-
     private final SlotService slotService;
 
-    public void setupSlotsForTomorrow() {
+    public void setupSlotsForMonthsAhead() {
+        LocalDate today = LocalDate.now();
+        LocalDate fourMonthsAhead = today.plusMonths(4);
+
+        Stream.iterate(today.plusDays(1), date -> !date.isAfter(fourMonthsAhead), date -> date.plusDays(1))
+                .filter(DoctorSlotsSetup::isDayOfWeek)
+                .forEach(this::setupSlots);
+    }
+
+    private static boolean isDayOfWeek(LocalDate date) {
+        return date.getDayOfWeek() != DayOfWeek.SATURDAY && date.getDayOfWeek() != DayOfWeek.SUNDAY;
+    }
+
+    private void setupSlots(LocalDate date) {
+        LocalDateTime morningSlot = LocalDateTime.of(date, LocalTime.of(7, 0));
+        LocalDateTime afternoonSlot = LocalDateTime.of(date, LocalTime.of(15, 0));
         slotService.createSlots(CreateSlotRangeDto.builder()
                 .username(getDoctor().getUsername())
                 .slotDuration(Duration.ofMinutes(60))
-                .startAvailability(TOMORROW_MORNING)
-                .endAvailability(TOMORROW_AFTERNOON)
+                .startAvailability(morningSlot)
+                .endAvailability(afternoonSlot)
                 .build());
     }
 }
