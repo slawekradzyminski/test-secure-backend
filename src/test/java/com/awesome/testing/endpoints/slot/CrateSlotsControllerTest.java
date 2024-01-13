@@ -146,7 +146,7 @@ public class CrateSlotsControllerTest extends DomainHelper {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertSlots(response.getBody(), user.getUsername());
+        assertSlots(response.getBody(), user);
     }
 
     @Test
@@ -169,7 +169,7 @@ public class CrateSlotsControllerTest extends DomainHelper {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertSlots(response.getBody(), doctor.getUsername());
+        assertSlots(response.getBody(), doctor);
     }
 
     @Test
@@ -239,7 +239,7 @@ public class CrateSlotsControllerTest extends DomainHelper {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
-    private void assertSlots(SlotDto[] body, String username) {
+    private void assertSlots(SlotDto[] body, UserRegisterDto user) {
         List<SlotDto> slots = Arrays.asList(body);
         assertThat(slots).hasSize(14);
 
@@ -249,7 +249,7 @@ public class CrateSlotsControllerTest extends DomainHelper {
         IntStream.range(0, slots.size()).forEach(i -> {
             SlotDto slot = slots.get(i);
             assertThat(slot.getId()).isPositive();
-            assertThat(slot.getDoctorUsername()).isEqualTo(username);
+            assertThat(slot.getDoctorFullName()).isEqualTo(String.format("%s %s", user.getFirstName(), user.getLastName()));
             assertThat(slot.getClientUsername()).isNull();
             assertThat(slot.getStartTime()).isEqualTo(startTime.plusMinutes(30L * i).format(formatter));
             assertThat(slot.getEndTime()).isEqualTo(startTime.plusMinutes(30L * i).plusMinutes(30).format(formatter));

@@ -61,4 +61,12 @@ public class SlotController {
                 criteria.getDoctorUsername(), criteria.getSlotStatus(), criteria.getDoctorTypeId());
     }
 
+    @PreAuthorize("hasRole('ROLE_CLIENT')")
+    @Operation(summary = "Book a slot", security = { @SecurityRequirement(name = "Authorization") })
+    @PutMapping("/{slotId}/book")
+    public void bookSlot(@PathVariable Integer slotId, HttpServletRequest req) {
+        String currentUsername = req.getRemoteUser();
+        slotService.bookSlot(currentUsername, slotId);
+    }
+
 }

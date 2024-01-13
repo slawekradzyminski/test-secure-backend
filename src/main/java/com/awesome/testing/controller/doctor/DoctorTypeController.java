@@ -20,11 +20,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/doctortypes")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_DOCTOR')")
 public class DoctorTypeController {
 
     private final DoctorTypeService doctorTypeService;
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_DOCTOR')")
     @Operation(summary = "Add doctor type",
             security = {@SecurityRequirement(name = "Authorization")})
     @PostMapping
@@ -33,6 +33,7 @@ public class DoctorTypeController {
         return doctorTypeService.addDoctorType(createDoctorTypeDto.getDoctorType());
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_DOCTOR')")
     @Operation(summary = "Delete doctor type",
             security = {@SecurityRequirement(name = "Authorization")})
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -41,6 +42,7 @@ public class DoctorTypeController {
         doctorTypeService.deleteDoctorType(id);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_DOCTOR') or hasRole('ROLE_CLIENT')")
     @Operation(summary = "Get doctor type",
             security = {@SecurityRequirement(name = "Authorization")})
     @GetMapping("/{id}")
@@ -48,6 +50,7 @@ public class DoctorTypeController {
         return doctorTypeService.getDoctorType(id);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_DOCTOR') or hasRole('ROLE_CLIENT')")
     @Operation(summary = "Get all doctor types",
             security = {@SecurityRequirement(name = "Authorization")})
     @GetMapping
@@ -55,6 +58,7 @@ public class DoctorTypeController {
         return doctorTypeService.getAll();
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_DOCTOR')")
     @Operation(summary = "Edit doctor type",
             security = {@SecurityRequirement(name = "Authorization")})
     @PutMapping("/{id}")

@@ -17,7 +17,7 @@ import lombok.*;
 public class SlotDto {
 
     private Integer id;
-    private String doctorUsername;
+    private String doctorFullName;
     private String clientUsername;
     private String startTime;
     private String endTime;
@@ -27,7 +27,7 @@ public class SlotDto {
     public static SlotDto from(SlotEntity slotEntity, UserEntity doctor) {
         return SlotDto.builder()
                 .id(slotEntity.getId())
-                .doctorUsername(doctor.getUsername())
+                .doctorFullName(String.format("%s %s", doctor.getFirstName(), doctor.getLastName()))
                 .clientUsername(slotEntity.getClient() != null ? slotEntity.getClient().getUsername() : null)
                 .startTime(slotEntity.getStartTime().format(DateTimeFormatter.ISO_DATE_TIME))
                 .endTime(slotEntity.getEndTime().format(DateTimeFormatter.ISO_DATE_TIME))
