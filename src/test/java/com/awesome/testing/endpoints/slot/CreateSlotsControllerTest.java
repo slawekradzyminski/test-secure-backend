@@ -20,7 +20,7 @@ import java.util.stream.IntStream;
 import static com.awesome.testing.testutil.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CrateSlotsControllerTest extends DomainHelper {
+public class CreateSlotsControllerTest extends DomainHelper {
 
     private static final String SLOTS_ENDPOINT = "/slots";
 

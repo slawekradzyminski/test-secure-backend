@@ -10,16 +10,13 @@ import java.util.Set;
 @Component
 @Profile("dev")
 @RequiredArgsConstructor
-public class DoctorTypesSetup {
+public class SpecialtiesSetup {
 
-    static final Set<String> DOCTOR_SPECIALTIES = Set.of(
+    static final Set<String> SPECIALTIES = Set.of(
             "Pediatrician",
             "Psychiatrist",
             "Cardiologist",
-            "Endocrinologist"
-    );
-
-    static final Set<String> SPECIALTIES = Set.of(
+            "Endocrinologist",
             "Neurologist",
             "Gastroenterologist",
             "Dermatologist",
@@ -50,7 +47,6 @@ public class DoctorTypesSetup {
     private final DoctorTypeService doctorTypeService;
 
     public void setupDoctorTypes() {
-        DOCTOR_SPECIALTIES.forEach(doctorTypeService::addDoctorType);
         SPECIALTIES.forEach(doctorTypeService::addDoctorType);
     }
 

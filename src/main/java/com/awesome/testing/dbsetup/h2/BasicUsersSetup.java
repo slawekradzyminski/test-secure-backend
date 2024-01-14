@@ -10,14 +10,13 @@ import static com.awesome.testing.dbsetup.h2.InitialUsers.*;
 @Component
 @Profile("dev")
 @RequiredArgsConstructor
-public class UsersSetup {
+public class BasicUsersSetup {
 
     private final UserService userService;
 
     public void setupUsers() {
         userService.signUp(getAdmin());
         userService.signUp(getClient());
-        userService.signUp(getDoctor());
     }
 
 }

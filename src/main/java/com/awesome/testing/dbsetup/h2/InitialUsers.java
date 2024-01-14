@@ -5,16 +5,19 @@ import com.awesome.testing.dto.users.UserRegisterDto;
 
 import java.util.List;
 
+import static com.awesome.testing.dbsetup.h2.H2DbSetup.FAKER;
+
 public class InitialUsers {
 
-    static UserRegisterDto getDoctor() {
+    static UserRegisterDto getDoctor(String specialty) {
+        String username = specialty.replace(" ", "");
         return UserRegisterDto.builder()
-                .username("doctor")
-                .password("doctor")
-                .email("doctor@email.com")
-                .firstName("Ferdynant")
-                .lastName("Nowak")
-                .roles(List.of(Role.ROLE_DOCTOR, Role.ROLE_ADMIN))
+                .username(username)
+                .password("password")
+                .email(String.format("%s@email.com", username))
+                .firstName(FAKER.name().firstName())
+                .lastName(FAKER.name().lastName())
+                .roles(List.of(Role.ROLE_DOCTOR))
                 .build();
     }
 

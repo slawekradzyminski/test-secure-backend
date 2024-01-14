@@ -2,6 +2,7 @@ package com.awesome.testing.dbsetup.h2;
 
 import com.awesome.testing.dbsetup.DbSetup;
 import lombok.RequiredArgsConstructor;
+import net.datafaker.Faker;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -10,16 +11,18 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class H2DbSetup implements DbSetup {
 
-    private final UsersSetup usersSetup;
-    private final DoctorTypesSetup doctorTypesSetup;
-    private final AssignDoctorTypesSetup assignDoctorTypesSetup;
+    static final Faker FAKER = new Faker();
+
+    private final BasicUsersSetup basicUsersSetup;
+    private final SpecialtiesSetup specialtiesSetup;
+    private final DoctorsSetup doctorsSetup;
     private final DoctorSlotsSetup doctorSlotsSetup;
 
     public void setupData() {
-        usersSetup.setupUsers();
-        doctorTypesSetup.setupDoctorTypes();
-        assignDoctorTypesSetup.assignDoctorTypesForDoctor();
-        doctorSlotsSetup.setupSlotsForMonthsAhead();
+        specialtiesSetup.setupDoctorTypes();
+        basicUsersSetup.setupUsers();
+        doctorsSetup.assignDoctorTypesForDoctor();
+        doctorSlotsSetup.setupSlotsForDoctors();
     }
 
 }
