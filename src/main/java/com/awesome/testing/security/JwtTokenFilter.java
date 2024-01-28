@@ -38,7 +38,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         }
 
         String token = jwtTokenUtil.extractTokenFromRequest(request);
-        if (tokenBlacklistService.isBlacklisted(token)) {
+        if (token != null && tokenBlacklistService.isBlacklisted(token)) {
             forbid(response, new ApiException("Blacklisted JWT Token", HttpStatus.FORBIDDEN));
             return;
         }
