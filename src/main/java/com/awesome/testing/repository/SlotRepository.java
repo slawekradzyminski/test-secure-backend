@@ -15,6 +15,8 @@ public interface SlotRepository extends JpaRepository<SlotEntity, Integer> {
 
     boolean existsByDoctorAndStartTimeBetween(UserEntity doctor, LocalDateTime start, LocalDateTime end);
 
+    List<SlotEntity> findByClientAndStatus(UserEntity client, SlotStatus status);
+
     @Query("""
             SELECT s FROM SlotEntity s
             JOIN s.doctor d

@@ -41,7 +41,8 @@ public class SpecialtiesSetup {
             "Palliative care specialist",
             "Sleep medicine specialist",
             "Plastic surgeon",
-            "Otolaryngologist"
+            "Otolaryngologist",
+            "Physiotherapist"
     );
 
     private final DoctorTypeService doctorTypeService;

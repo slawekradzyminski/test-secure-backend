@@ -44,14 +44,12 @@ public class SlotService {
                 .toList();
     }
 
-    private SlotEntity saveSlotEntity(CreateSlotRangeDto createSlotRangeDto, int i, UserEntity doctor) {
-        LocalDateTime start = calculateSlotStartTime(createSlotRangeDto, i);
-        return slotRepository.save(SlotEntity.builder()
-                .doctor(doctor)
-                .startTime(start)
-                .endTime(start.plus(createSlotRangeDto.getSlotDuration()))
-                .status(SlotStatus.AVAILABLE)
-                .build());
+    public List<SlotDto> getBookedSlots(String username) {
+        UserEntity client = getUser(username);
+        List<SlotEntity> slots = slotRepository.findByClientAndStatus(client, SlotStatus.BOOKED);
+        return slots.stream()
+                .map(slot -> SlotDto.from(slot, slot.getDoctor()))
+                .toList();
     }
 
     public void bookSlot(String username, Integer slotId) {
@@ -60,6 +58,18 @@ public class SlotService {
                 .orElseThrow(() -> new RuntimeException("Slot not found"));
         slot.setClient(client);
         slot.setStatus(SlotStatus.BOOKED);
+        slotRepository.save(slot);
+    }
+
+    public void cancelBooking(String username, Integer slotId) {
+        UserEntity client = getUser(username);
+        SlotEntity slot = slotRepository.findById(slotId)
+                .orElseThrow(() -> new RuntimeException("Slot not found"));
+        if (!slot.getClient().equals(client)) {
+            throw new ApiException("You can only cancel your own bookings", HttpStatus.FORBIDDEN);
+        }
+        slot.setClient(null);
+        slot.setStatus(SlotStatus.AVAILABLE);
         slotRepository.save(slot);
     }
 
@@ -76,6 +86,16 @@ public class SlotService {
         return slots.stream()
                 .map(slot -> SlotDto.from(slot, doctorMap.get(slot.getDoctor().getUsername())))
                 .toList();
+    }
+
+    private SlotEntity saveSlotEntity(CreateSlotRangeDto createSlotRangeDto, int i, UserEntity doctor) {
+        LocalDateTime start = calculateSlotStartTime(createSlotRangeDto, i);
+        return slotRepository.save(SlotEntity.builder()
+                .doctor(doctor)
+                .startTime(start)
+                .endTime(start.plus(createSlotRangeDto.getSlotDuration()))
+                .status(SlotStatus.AVAILABLE)
+                .build());
     }
 
     private LocalDateTime calculateSlotStartTime(CreateSlotRangeDto createSlotRangeDto, int i) {

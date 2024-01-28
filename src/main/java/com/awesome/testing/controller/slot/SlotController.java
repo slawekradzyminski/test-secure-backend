@@ -69,4 +69,20 @@ public class SlotController {
         slotService.bookSlot(currentUsername, slotId);
     }
 
+    @PreAuthorize("hasRole('ROLE_CLIENT')")
+    @Operation(summary = "Get booked slots by client", security = { @SecurityRequirement(name = "Authorization") })
+    @GetMapping("/booked")
+    public List<SlotDto> getBookedSlots(HttpServletRequest req) {
+        String currentUsername = req.getRemoteUser();
+        return slotService.getBookedSlots(currentUsername);
+    }
+
+    @PreAuthorize("hasRole('ROLE_CLIENT')")
+    @Operation(summary = "Cancel a booking", security = { @SecurityRequirement(name = "Authorization") })
+    @PutMapping("/{slotId}/cancel")
+    public void cancelBooking(@PathVariable Integer slotId, HttpServletRequest req) {
+        String currentUsername = req.getRemoteUser();
+        slotService.cancelBooking(currentUsername, slotId);
+    }
+
 }
