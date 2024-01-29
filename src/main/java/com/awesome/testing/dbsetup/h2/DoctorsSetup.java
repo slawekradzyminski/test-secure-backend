@@ -30,10 +30,11 @@ public class DoctorsSetup {
     private final UserService userService;
 
     public void assignDoctorTypesForDoctor() {
-        Map<UserRegisterDto, String> doctorSpecialtyMap = SPECIALTIES.stream().collect(Collectors.toMap(
-                InitialUsers::getDoctor,
-                Function.identity()
-        ));
+        Map<UserRegisterDto, String> doctorSpecialtyMap = SPECIALTIES.stream()
+                .collect(Collectors.toMap(
+                        InitialUsers::getDoctor,
+                        Function.identity()
+                ));
         doctorSpecialtyMap.keySet().forEach(userService::signUp);
         doctorSpecialtyMap.forEach(this::setupSpecialties);
     }

@@ -1,15 +1,14 @@
 package com.awesome.testing.controller.users;
 
+import com.awesome.testing.controller.utils.authorization.OperationWithSecurity;
+import com.awesome.testing.controller.utils.authorization.PreAuthorizeForAllRoles;
 import com.awesome.testing.dto.users.UserResponseDto;
 import com.awesome.testing.service.UserService;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,9 +23,8 @@ public class UserGetController {
     private final UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
-    @Operation(summary = "Get all users",
-            security = {@SecurityRequirement(name = "Authorization")})
+    @PreAuthorizeForAllRoles
+    @OperationWithSecurity(summary = "Get all users")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "403", description = "Expired or invalid JWT token"),
             @ApiResponse(responseCode = "403", description = "Access denied"),
@@ -38,9 +36,8 @@ public class UserGetController {
     }
 
     @GetMapping(value = "/{username}")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
-    @Operation(summary = "Returns specific user by username",
-            security = {@SecurityRequirement(name = "Authorization")})
+    @PreAuthorizeForAllRoles
+    @OperationWithSecurity(summary = "Returns specific user by username")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "403", description = "Expired or invalid JWT token"),
             @ApiResponse(responseCode = "403", description = "Access denied"),

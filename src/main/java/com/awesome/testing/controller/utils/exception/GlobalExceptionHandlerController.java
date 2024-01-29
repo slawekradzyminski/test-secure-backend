@@ -1,4 +1,4 @@
-package com.awesome.testing.controller.exception;
+package com.awesome.testing.controller.utils.exception;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -47,7 +47,7 @@ public class GlobalExceptionHandlerController {
                 String errorMessage = error.getDefaultMessage();
                 errors.put(fieldName, errorMessage);
             } else {
-                if (error.getDefaultMessage() != null) { // replace with actual error code or condition
+                if (error.getDefaultMessage() != null) {
                     errors.put("message", error.getDefaultMessage());
                 }
             }

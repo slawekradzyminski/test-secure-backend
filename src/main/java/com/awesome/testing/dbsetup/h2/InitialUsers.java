@@ -2,11 +2,14 @@ package com.awesome.testing.dbsetup.h2;
 
 import com.awesome.testing.dto.users.Role;
 import com.awesome.testing.dto.users.UserRegisterDto;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import static com.awesome.testing.dbsetup.h2.H2DbSetup.FAKER;
 
+@Slf4j
 public class InitialUsers {
 
     static UserRegisterDto getDoctor(String specialty) {
@@ -15,8 +18,19 @@ public class InitialUsers {
                 .username(username)
                 .password("password")
                 .email(String.format("%s@email.com", username))
-                .firstName(FAKER.name().firstName())
-                .lastName(FAKER.name().lastName())
+                .firstName(draw(() -> FAKER.name().firstName()))
+                .lastName(draw(() -> FAKER.name().lastName()))
+                .roles(List.of(Role.ROLE_DOCTOR))
+                .build();
+    }
+
+    static UserRegisterDto getDoctor() {
+        return UserRegisterDto.builder()
+                .username("doctor")
+                .password("doctor")
+                .email(FAKER.internet().emailAddress())
+                .firstName(draw(() -> FAKER.name().firstName()))
+                .lastName(draw(() -> FAKER.name().lastName()))
                 .roles(List.of(Role.ROLE_DOCTOR))
                 .build();
     }
@@ -41,6 +55,18 @@ public class InitialUsers {
                 .lastName("Radzyminski")
                 .roles(List.of(Role.ROLE_ADMIN, Role.ROLE_CLIENT))
                 .build();
+    }
+
+    private static String draw(Supplier<String> supplier) {
+        int attempt = 1;
+        String result = "";
+        while (attempt <= 20) {
+            result = supplier.get();
+            if (result.length() >= 3) break;
+            attempt++;
+            log.info("Failed to draw a String which has at least 3 characters. Performing attempt {}", attempt);
+        }
+        return result;
     }
 
 }

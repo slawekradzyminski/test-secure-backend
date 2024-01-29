@@ -1,5 +1,9 @@
 package com.awesome.testing.controller.slot;
 
+import com.awesome.testing.controller.utils.authorization.OperationWithSecurity;
+import com.awesome.testing.controller.utils.authorization.PreAuthorizeForAllRoles;
+import com.awesome.testing.controller.utils.authorization.PreAuthorizeForClient;
+import com.awesome.testing.controller.utils.authorization.PreAuthorizeForDoctorAndAdmin;
 import com.awesome.testing.dto.slot.CreateSlotRangeDto;
 import com.awesome.testing.dto.slot.SlotDto;
 import com.awesome.testing.dto.users.Role;
@@ -8,13 +12,10 @@ import com.awesome.testing.exception.ApiException;
 import com.awesome.testing.service.SlotService;
 import com.awesome.testing.service.UserService;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,9 +29,16 @@ public class SlotController {
     private final SlotService slotService;
     private final UserService userService;
 
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_DOCTOR')")
-    @Operation(summary = "Create slots by providing availability", security = {
-            @SecurityRequirement(name = "Authorization") })
+    @PreAuthorizeForAllRoles
+    @OperationWithSecurity(summary = "Get available slots")
+    @GetMapping
+    public List<SlotDto> getAvailableSlots(@Valid SlotSearchCriteria criteria) {
+        return slotService.getAvailableSlots(criteria.getStartTime(), criteria.getEndTime(),
+                criteria.getDoctorUsername(), criteria.getSlotStatus(), criteria.getDoctorTypeId());
+    }
+
+    @PreAuthorizeForDoctorAndAdmin
+    @OperationWithSecurity(summary = "Create slots by providing availability")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public List<SlotDto> createSlots(@RequestBody @Valid CreateSlotRangeDto createSlotRangeDto,
@@ -53,32 +61,24 @@ public class SlotController {
         return slotService.createSlots(createSlotRangeDto);
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT') or hasRole('ROLE_DOCTOR')")
-    @Operation(summary = "Get available slots", security = { @SecurityRequirement(name = "Authorization") })
-    @GetMapping
-    public List<SlotDto> getAvailableSlots(@Valid SlotSearchCriteria criteria) {
-        return slotService.getAvailableSlots(criteria.getStartTime(), criteria.getEndTime(),
-                criteria.getDoctorUsername(), criteria.getSlotStatus(), criteria.getDoctorTypeId());
-    }
-
-    @PreAuthorize("hasRole('ROLE_CLIENT')")
-    @Operation(summary = "Book a slot", security = { @SecurityRequirement(name = "Authorization") })
+    @PreAuthorizeForClient
+    @OperationWithSecurity(summary = "Book a slot")
     @PutMapping("/{slotId}/book")
     public void bookSlot(@PathVariable Integer slotId, HttpServletRequest req) {
         String currentUsername = req.getRemoteUser();
         slotService.bookSlot(currentUsername, slotId);
     }
 
-    @PreAuthorize("hasRole('ROLE_CLIENT')")
-    @Operation(summary = "Get booked slots by client", security = { @SecurityRequirement(name = "Authorization") })
+    @PreAuthorizeForClient
+    @OperationWithSecurity(summary = "Get booked slots by client")
     @GetMapping("/booked")
     public List<SlotDto> getBookedSlots(HttpServletRequest req) {
         String currentUsername = req.getRemoteUser();
         return slotService.getBookedSlots(currentUsername);
     }
 
-    @PreAuthorize("hasRole('ROLE_CLIENT')")
-    @Operation(summary = "Cancel a booking", security = { @SecurityRequirement(name = "Authorization") })
+    @PreAuthorizeForClient
+    @OperationWithSecurity(summary = "Cancel a booking")
     @PutMapping("/{slotId}/cancel")
     public void cancelBooking(@PathVariable Integer slotId, HttpServletRequest req) {
         String currentUsername = req.getRemoteUser();

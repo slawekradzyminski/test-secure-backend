@@ -1,15 +1,14 @@
 package com.awesome.testing.controller.users;
 
+import com.awesome.testing.controller.utils.authorization.OperationWithSecurity;
+import com.awesome.testing.controller.utils.authorization.PreAuthorizeForAdmin;
 import com.awesome.testing.service.UserService;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = {"http://localhost:8081", "http://127.0.0.1:8081"}, maxAge = 36000, allowCredentials = "true")
@@ -22,9 +21,8 @@ public class UserDeleteController {
     private final UserService userService;
 
     @DeleteMapping(value = "/{username}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Deletes specific user by username",
-            security = {@SecurityRequirement(name = "Authorization")})
+    @PreAuthorizeForAdmin
+    @OperationWithSecurity(summary = "Deletes specific user by username")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ApiResponses(value = {
             @ApiResponse(responseCode = "403", description = "Expired or invalid JWT token"),

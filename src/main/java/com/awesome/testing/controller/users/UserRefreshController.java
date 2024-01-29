@@ -1,12 +1,12 @@
 package com.awesome.testing.controller.users;
 
+import com.awesome.testing.controller.utils.authorization.OperationWithSecurity;
+import com.awesome.testing.controller.utils.authorization.PreAuthorizeForAllRoles;
 import com.awesome.testing.dto.users.LoginResponseDto;
 import com.awesome.testing.security.JwtTokenUtil;
 import com.awesome.testing.service.UserService;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -28,9 +28,9 @@ public class UserRefreshController {
     private final UserService userService;
     private final JwtTokenUtil jwtTokenUtil;
 
+    @PreAuthorizeForAllRoles
     @GetMapping("/refresh")
-    @Operation(summary = "Refreshes token for logged in user",
-            security = {@SecurityRequirement(name = "Authorization")})
+    @OperationWithSecurity(summary = "Refreshes token for logged in user")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "302", description = "Redirect to login page"),
             @ApiResponse(responseCode = "403", description = "Access denied"),

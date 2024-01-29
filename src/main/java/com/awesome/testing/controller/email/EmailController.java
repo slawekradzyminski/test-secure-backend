@@ -1,13 +1,12 @@
 package com.awesome.testing.controller.email;
 
+import com.awesome.testing.controller.utils.authorization.OperationWithSecurity;
+import com.awesome.testing.controller.utils.authorization.PreAuthorizeForAllRoles;
 import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.jms.JmsSender;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,11 +22,9 @@ public class EmailController {
     @Value("${activemq.destination}")
     private String destination;
 
-    @PostMapping(value = "")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
-    @Operation(summary = "Send email",
-            description = "Send an email message to the specified destination",
-            security = {@SecurityRequirement(name = "Authorization")})
+    @PostMapping
+    @PreAuthorizeForAllRoles
+    @OperationWithSecurity(summary = "Send email to the specified destination")
     public void sendMessage(@RequestBody @Validated EmailDto email) {
         jmsSender.asyncSendTo(destination, email);
     }
