@@ -19,6 +19,7 @@ public class GetAllSpecialtiesControllerTest extends AbstractSpecialtiesControll
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
         String doctorToken = registerAndThenLoginSavingToken(user);
+        createSpecialty(doctorToken, "Physiotherapist");
 
         // when
         ResponseEntity<SpecialtyDto[]> response =
