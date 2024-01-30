@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
@@ -18,8 +19,13 @@ public class DoctorTypeService {
     private final DoctorTypeRepository doctorTypeRepository;
 
     public DoctorTypeIdDto addDoctorType(String doctorType) {
+        Optional<DoctorTypeEntity> doctorTypeEntity = doctorTypeRepository.findByDoctorType(doctorType);
+        if (doctorTypeEntity.isPresent()) {
+            return new DoctorTypeIdDto(doctorTypeEntity.get().getId());
+        }
+
         doctorTypeRepository.save(DoctorTypeEntity.builder().doctorType(doctorType).build());
-        Integer id = doctorTypeRepository.findByDoctorType(doctorType).getId();
+        Integer id = doctorTypeRepository.findByDoctorType(doctorType).orElseThrow().getId();
         return new DoctorTypeIdDto(id);
     }
 

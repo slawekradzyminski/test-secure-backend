@@ -32,7 +32,7 @@ public class DoctorsSetup {
     public void assignDoctorTypesForDoctor() {
         Map<UserRegisterDto, String> doctorSpecialtyMap = SPECIALTIES.stream()
                 .collect(Collectors.toMap(
-                        InitialUsers::getDoctor,
+                        StartupUsers::getDoctor,
                         Function.identity()
                 ));
         doctorSpecialtyMap.keySet().forEach(userService::signUp);

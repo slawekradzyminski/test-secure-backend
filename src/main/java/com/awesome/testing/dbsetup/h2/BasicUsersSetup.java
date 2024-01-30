@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import static com.awesome.testing.dbsetup.h2.InitialUsers.*;
+import static com.awesome.testing.dbsetup.h2.StartupUsers.*;
 
 @Component
 @Profile("dev")

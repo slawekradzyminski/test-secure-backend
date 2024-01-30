@@ -30,13 +30,8 @@ security:
 logging:
   level:
     org:
-      springframework:
-        security: DEBUG
       zalando:
         logbook: TRACE
-
-JmsSender:
-  sendEmail: Sending email to Active MQ
 
 management:
   endpoints:

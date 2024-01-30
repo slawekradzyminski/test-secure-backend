@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 import static com.awesome.testing.dbsetup.h2.H2DbSetup.FAKER;
 
 @Slf4j
-public class InitialUsers {
+public class StartupUsers {
 
     static UserRegisterDto getDoctor(String specialty) {
         String username = specialty.replace(" ", "");
@@ -65,6 +65,9 @@ public class InitialUsers {
             if (result.length() >= 3) break;
             attempt++;
             log.info("Failed to draw a String which has at least 3 characters. Performing attempt {}", attempt);
+        }
+        if (attempt > 1) {
+            log.info("Success on attempt {}", attempt);
         }
         return result;
     }
