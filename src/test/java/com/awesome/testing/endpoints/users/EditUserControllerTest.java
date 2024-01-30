@@ -17,9 +17,9 @@ public class EditUserControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldUpdateUserAsAdmin() {
+    public void shouldUpdateYourselfAsClient() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
         String token = registerAndThenLoginSavingToken(user);
         UserEditDto userEditDTO = getRandomUserEditBody();
@@ -40,6 +40,52 @@ public class EditUserControllerTest extends DomainHelper {
         assertThat(loginResponse.getFirstName()).isEqualTo(userEditDTO.getFirstName());
         assertThat(loginResponse.getRoles()).isEqualTo(userEditDTO.getRoles());
         assertThat(loginResponse.getEmail()).isEqualTo(userEditDTO.getEmail());
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void shouldUpdateAnyUserAsAdmin() {
+        // given
+        UserRegisterDto userToEdit = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        register(userToEdit);
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        String token = registerAndThenLoginSavingToken(user);
+        UserEditDto userEditDTO = getRandomUserEditBody();
+
+        // when
+        ResponseEntity<Object> response = executePut(getUserEndpoint(userToEdit.getUsername()),
+                userEditDTO,
+                getHeadersWith(token));
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        LoginResponseDto loginResponse =
+                attemptLogin(new LoginDto(userToEdit.getUsername(), userToEdit.getPassword()),
+                        LoginResponseDto.class)
+                        .getBody();
+
+        assertThat(loginResponse.getLastName()).isEqualTo(userEditDTO.getLastName());
+        assertThat(loginResponse.getFirstName()).isEqualTo(userEditDTO.getFirstName());
+        assertThat(loginResponse.getRoles()).isEqualTo(userEditDTO.getRoles());
+        assertThat(loginResponse.getEmail()).isEqualTo(userEditDTO.getEmail());
+    }
+
+    @Test
+    public void shouldGet403WhenUpdatingAnyUserAsNotAdmin() {
+        // given
+        UserRegisterDto userToEdit = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        register(userToEdit);
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
+        String token = registerAndThenLoginSavingToken(user);
+        UserEditDto userEditDTO = getRandomUserEditBody();
+
+        // when
+        ResponseEntity<Object> response = executePut(getUserEndpoint(userToEdit.getUsername()),
+                userEditDTO,
+                getHeadersWith(token));
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test

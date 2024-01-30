@@ -24,8 +24,7 @@ public class QrController {
     @PreAuthorizeForAllRoles
     @OperationWithSecurity(summary = "Generate QR Code")
     @PostMapping(value = "/create", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.IMAGE_PNG_VALUE)
-    public BufferedImage createQrCode(@RequestBody @Validated CreateQrDto createQrDto)
-            throws Exception {
+    public BufferedImage createQrCode(@RequestBody @Validated CreateQrDto createQrDto) {
         return qrService.generateQrCode(createQrDto.getText());
     }
 
