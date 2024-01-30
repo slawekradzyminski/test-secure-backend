@@ -54,7 +54,7 @@ public class H2ConsoleTest extends DomainHelper {
         // then
         assertThat(tablesResponse.getBody()).contains(
                 "'table', 'SLOTS',",
-                "'table', 'DOCTOR_TYPES'",
+                "'table', 'SPECIALTIES'",
                 "'table', 'USERS'"
         );
     }

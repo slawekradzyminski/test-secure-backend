@@ -2,7 +2,7 @@ package com.awesome.testing.entities.user;
 
 import com.awesome.testing.dto.users.Role;
 import com.awesome.testing.dto.users.UserRegisterDto;
-import com.awesome.testing.entities.doctor.DoctorTypeEntity;
+import com.awesome.testing.entities.doctor.SpecialtyEntity;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
@@ -53,10 +53,10 @@ public class UserEntity {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "user_doctor_type",
+            name = "user_specialty",
             joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "doctor_type_id"))
-    private List<DoctorTypeEntity> doctorTypes;
+            inverseJoinColumns = @JoinColumn(name = "specialty_id"))
+    private List<SpecialtyEntity> specialties;
 
     public static UserEntity from(UserRegisterDto userRegisterDto, String encryptedPassword) {
         return UserEntity.builder()
@@ -66,7 +66,7 @@ public class UserEntity {
                 .email(userRegisterDto.getEmail())
                 .firstName(userRegisterDto.getFirstName())
                 .lastName(userRegisterDto.getLastName())
-                .doctorTypes(List.of())
+                .specialties(List.of())
                 .build();
     }
 

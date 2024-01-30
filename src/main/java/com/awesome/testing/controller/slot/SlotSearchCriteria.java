@@ -36,7 +36,7 @@ public class SlotSearchCriteria {
 
     @Schema(example = "1")
     @Positive
-    private final Integer doctorTypeId;
+    private final Integer specialtyId;
 
     @Hidden
     @AssertTrue(message = "startTime must be before endTime")

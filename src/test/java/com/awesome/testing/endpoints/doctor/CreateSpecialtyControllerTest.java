@@ -1,7 +1,7 @@
 package com.awesome.testing.endpoints.doctor;
 
-import com.awesome.testing.dto.doctor.CreateDoctorTypeDto;
-import com.awesome.testing.dto.doctor.DoctorTypeIdDto;
+import com.awesome.testing.dto.specialty.CreateSpecialtyDto;
+import com.awesome.testing.dto.specialty.SpecialtyIdDto;
 import com.awesome.testing.dto.users.Role;
 import com.awesome.testing.dto.users.UserRegisterDto;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -14,22 +14,22 @@ import java.util.List;
 import static com.awesome.testing.testutil.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CreateDoctorTypeControllerTest extends AbstractDoctorTypeControllerTest {
+public class CreateSpecialtyControllerTest extends AbstractSpecialtiesControllerTest {
 
     @Test
     @SuppressWarnings("ConstantConditions")
-    public void shouldCreateDoctorType() {
+    public void shouldCreateSpecialty() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
         String token = registerAndThenLoginSavingToken(user);
-        String doctorType = RandomStringUtils.randomAlphanumeric(10);
+        String name = RandomStringUtils.randomAlphanumeric(10);
 
         // when
-        ResponseEntity<DoctorTypeIdDto> response = executePost(
-                DOCTOR_TYPES,
-                CreateDoctorTypeDto.builder().doctorType(doctorType).build(),
+        ResponseEntity<SpecialtyIdDto> response = executePost(
+                SPECIALTIES,
+                CreateSpecialtyDto.builder().name(name).build(),
                 getHeadersWith(token),
-                DoctorTypeIdDto.class);
+                SpecialtyIdDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -39,12 +39,12 @@ public class CreateDoctorTypeControllerTest extends AbstractDoctorTypeController
     @Test
     public void shouldReturn403AsUnauthorized() {
         // given
-        String doctorType = RandomStringUtils.randomAlphanumeric(10);
+        String name = RandomStringUtils.randomAlphanumeric(10);
 
         // when
         ResponseEntity<?> response = executePost(
-                DOCTOR_TYPES,
-                CreateDoctorTypeDto.builder().doctorType(doctorType).build(),
+                SPECIALTIES,
+                CreateSpecialtyDto.builder().name(name).build(),
                 getJsonOnlyHeaders(),
                 Object.class);
 

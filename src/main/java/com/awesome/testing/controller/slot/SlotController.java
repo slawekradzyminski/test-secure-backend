@@ -34,7 +34,7 @@ public class SlotController {
     @GetMapping
     public List<SlotDto> getAvailableSlots(@Valid SlotSearchCriteria criteria) {
         return slotService.getAvailableSlots(criteria.getStartTime(), criteria.getEndTime(),
-                criteria.getDoctorUsername(), criteria.getSlotStatus(), criteria.getDoctorTypeId());
+                criteria.getDoctorUsername(), criteria.getSlotStatus(), criteria.getSpecialtyId());
     }
 
     @PreAuthorizeForDoctorAndAdmin

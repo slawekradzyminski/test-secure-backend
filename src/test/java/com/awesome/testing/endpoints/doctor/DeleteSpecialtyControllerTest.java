@@ -12,20 +12,20 @@ import java.util.List;
 import static com.awesome.testing.testutil.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DeleteDoctorTypeControllerTest extends AbstractDoctorTypeControllerTest {
+public class DeleteSpecialtyControllerTest extends AbstractSpecialtiesControllerTest {
 
     @Test
     @SuppressWarnings("ConstantConditions")
-    public void shouldDeleteDoctorType() {
+    public void shouldDeleteSpecialty() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
         String token = registerAndThenLoginSavingToken(user);
-        String doctorType = RandomStringUtils.randomAlphanumeric(10);
-        Integer id = createDoctorType(token, doctorType);
+        String name = RandomStringUtils.randomAlphanumeric(10);
+        Integer id = createSpecialty(token, name);
 
         // when
         ResponseEntity<?> response =
-                executeDelete(DOCTOR_TYPES + "/" + id,
+                executeDelete(SPECIALTIES + "/" + id,
                         getHeadersWith(token));
 
         // then
@@ -40,7 +40,7 @@ public class DeleteDoctorTypeControllerTest extends AbstractDoctorTypeController
 
         // when
         ResponseEntity<?> response =
-                executeDelete(DOCTOR_TYPES + "/99999",
+                executeDelete(SPECIALTIES + "/99999",
                         getHeadersWith(token));
 
         // then
@@ -51,7 +51,7 @@ public class DeleteDoctorTypeControllerTest extends AbstractDoctorTypeController
     public void shouldReturn403AsUnauthorized() {
         // when
         ResponseEntity<?> response =
-                executeDelete(DOCTOR_TYPES + "/1",
+                executeDelete(SPECIALTIES + "/1",
                         getJsonOnlyHeaders());
 
         // then

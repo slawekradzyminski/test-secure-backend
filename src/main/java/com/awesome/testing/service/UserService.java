@@ -1,10 +1,9 @@
 package com.awesome.testing.service;
 
 import com.awesome.testing.dto.users.*;
-import com.awesome.testing.entities.doctor.DoctorTypeEntity;
 import com.awesome.testing.entities.user.UserEntity;
 
-import com.awesome.testing.repository.DoctorTypeRepository;
+import com.awesome.testing.repository.SpecialtiesRepository;
 import jakarta.servlet.http.HttpServletRequest;
 
 import com.awesome.testing.exception.ApiException;
@@ -28,7 +27,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenUtil jwtTokenUtil;
     private final AuthenticationHandler authenticationHandler;
-    private final DoctorTypeRepository doctorTypeRepository;
+    private final SpecialtiesRepository specialtiesRepository;
 
     public LoginResponseDto signIn(LoginDto loginDetails) {
         String token = authenticationHandler.authenticateUserAndGetToken(loginDetails);
@@ -80,11 +79,10 @@ public class UserService {
         userRepository.save(userEntity);
     }
 
-    public UserResponseDto updateDoctorTypes(List<Integer> doctorTypeIds) {
+    public UserResponseDto updateSpecialties(List<Integer> specialtyIds) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         UserEntity user = userRepository.findByUsername(username);
-        List<DoctorTypeEntity> doctorTypes = doctorTypeRepository.findAllById(doctorTypeIds);
-        user.setDoctorTypes(doctorTypes);
+        user.setSpecialties(specialtiesRepository.findAllById(specialtyIds));
         userRepository.save(user);
         return UserResponseDto.from(user);
     }

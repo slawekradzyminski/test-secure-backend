@@ -74,13 +74,13 @@ public class SlotService {
     }
 
     public List<SlotDto> getAvailableSlots(LocalDateTime startTime, LocalDateTime endTime, String doctorUsername,
-            SlotStatus slotStatus, Integer doctorTypeId) {
+            SlotStatus slotStatus, Integer specialtyId) {
         List<SlotEntity> slots = slotRepository.findByCriteria(startTime, endTime, doctorUsername, slotStatus,
-                doctorTypeId);
+                specialtyId);
         Set<String> doctorUsernames = slots.stream()
                 .map(slot -> slot.getDoctor().getUsername())
                 .collect(Collectors.toSet());
-        Map<String, UserEntity> doctorMap = userRepository.findAllWithDoctorTypesByUsername(doctorUsernames)
+        Map<String, UserEntity> doctorMap = userRepository.findAllWithSpecialtiesByUsername(doctorUsernames)
                 .stream()
                 .collect(Collectors.toMap(UserEntity::getUsername, Function.identity()));
         return slots.stream()

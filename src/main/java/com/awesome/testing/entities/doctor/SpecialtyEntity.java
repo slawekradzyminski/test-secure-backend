@@ -13,23 +13,23 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 @Entity
 @Setter
 @Getter
-@Table(name = "doctor_types")
+@Table(name = "specialties")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIdentityInfo(
         generator = ObjectIdGenerators.PropertyGenerator.class,
         property = "id")
-public class DoctorTypeEntity {
+public class SpecialtyEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(unique = true, nullable = false)
-    private String doctorType;
+    private String name;
 
     @JsonBackReference
-    @ManyToMany(mappedBy = "doctorTypes")
+    @ManyToMany(mappedBy = "specialties")
     private List<UserEntity> doctors;
 }

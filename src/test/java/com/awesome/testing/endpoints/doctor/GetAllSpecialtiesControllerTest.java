@@ -1,6 +1,6 @@
 package com.awesome.testing.endpoints.doctor;
 
-import com.awesome.testing.dto.doctor.DoctorTypeDto;
+import com.awesome.testing.dto.specialty.SpecialtyDto;
 import com.awesome.testing.dto.users.Role;
 import com.awesome.testing.dto.users.UserRegisterDto;
 import org.junit.jupiter.api.Test;
@@ -12,19 +12,19 @@ import java.util.List;
 import static com.awesome.testing.testutil.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class GetDoctorTypesControllerTest extends AbstractDoctorTypeControllerTest {
+public class GetAllSpecialtiesControllerTest extends AbstractSpecialtiesControllerTest {
 
     @Test
-    public void shouldGetDoctorTypes() {
+    public void shouldGetSpecialties() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
         String doctorToken = registerAndThenLoginSavingToken(user);
 
         // when
-        ResponseEntity<DoctorTypeDto[]> response =
-                executeGet(DOCTOR_TYPES,
+        ResponseEntity<SpecialtyDto[]> response =
+                executeGet(SPECIALTIES,
                         getHeadersWith(doctorToken),
-                        DoctorTypeDto[].class);
+                        SpecialtyDto[].class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -34,10 +34,10 @@ public class GetDoctorTypesControllerTest extends AbstractDoctorTypeControllerTe
     @Test
     public void shouldReturn403AsUnauthorized() {
         // when
-        ResponseEntity<DoctorTypeDto[]> response =
-                executeGet(DOCTOR_TYPES,
+        ResponseEntity<SpecialtyDto[]> response =
+                executeGet(SPECIALTIES,
                         getJsonOnlyHeaders(),
-                        DoctorTypeDto[].class);
+                        SpecialtyDto[].class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);

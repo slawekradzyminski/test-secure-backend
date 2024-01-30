@@ -1,6 +1,6 @@
 package com.awesome.testing.dbsetup.h2;
 
-import com.awesome.testing.service.DoctorTypeService;
+import com.awesome.testing.service.SpecialtiesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -45,10 +45,10 @@ public class SpecialtiesSetup {
             "Physiotherapist"
     );
 
-    private final DoctorTypeService doctorTypeService;
+    private final SpecialtiesService specialtiesService;
 
-    public void setupDoctorTypes() {
-        SPECIALTIES.forEach(doctorTypeService::addDoctorType);
+    public void setupSpecialties() {
+        SPECIALTIES.forEach(specialtiesService::addSpecialty);
     }
 
 }

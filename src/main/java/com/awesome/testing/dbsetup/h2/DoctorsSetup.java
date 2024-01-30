@@ -1,12 +1,11 @@
 package com.awesome.testing.dbsetup.h2;
 
-import com.awesome.testing.dto.doctor.DoctorTypeDto;
+import com.awesome.testing.dto.specialty.SpecialtyDto;
 import com.awesome.testing.dto.users.UserRegisterDto;
-import com.awesome.testing.entities.doctor.DoctorTypeEntity;
 import com.awesome.testing.entities.user.UserEntity;
-import com.awesome.testing.repository.DoctorTypeRepository;
+import com.awesome.testing.repository.SpecialtiesRepository;
 import com.awesome.testing.repository.UserRepository;
-import com.awesome.testing.service.DoctorTypeService;
+import com.awesome.testing.service.SpecialtiesService;
 import com.awesome.testing.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -24,12 +23,12 @@ import static com.awesome.testing.dbsetup.h2.SpecialtiesSetup.SPECIALTIES;
 @RequiredArgsConstructor
 public class DoctorsSetup {
 
-    private final DoctorTypeService doctorTypeService;
-    private final DoctorTypeRepository doctorTypeRepository;
+    private final SpecialtiesService specialtiesService;
+    private final SpecialtiesRepository specialtiesRepository;
     private final UserRepository userRepository;
     private final UserService userService;
 
-    public void assignDoctorTypesForDoctor() {
+    public void assignSpecialtiesForDoctor() {
         Map<UserRegisterDto, String> doctorSpecialtyMap = SPECIALTIES.stream()
                 .collect(Collectors.toMap(
                         StartupUsers::getDoctor,
@@ -40,14 +39,13 @@ public class DoctorsSetup {
     }
 
     private void setupSpecialties(UserRegisterDto doctor, String specialty) {
-        List<DoctorTypeDto> allDoctorTypes = doctorTypeService.getAll();
         UserEntity user = userRepository.findByUsername(doctor.getUsername());
-        List<Integer> doctorTypeIds = allDoctorTypes.stream()
-                .filter(it -> it.getDoctorType().equals(specialty))
-                .map(DoctorTypeDto::getId)
+        List<Integer> specialtiesIds = specialtiesService.getAll()
+                .stream()
+                .filter(it -> it.getName().equals(specialty))
+                .map(SpecialtyDto::getId)
                 .toList();
-        List<DoctorTypeEntity> doctorTypes = doctorTypeRepository.findAllById(doctorTypeIds);
-        user.setDoctorTypes(doctorTypes);
+        user.setSpecialties(specialtiesRepository.findAllById(specialtiesIds));
         userRepository.save(user);
     }
 

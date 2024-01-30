@@ -19,9 +19,9 @@ public class H2DbSetup implements DbSetup {
     private final DoctorSlotsSetup doctorSlotsSetup;
 
     public void setupData() {
-        specialtiesSetup.setupDoctorTypes();
+        specialtiesSetup.setupSpecialties();
         basicUsersSetup.setupUsers();
-        doctorsSetup.assignDoctorTypesForDoctor();
+        doctorsSetup.assignSpecialtiesForDoctor();
         doctorSlotsSetup.setupSlotsForDoctors();
     }
 

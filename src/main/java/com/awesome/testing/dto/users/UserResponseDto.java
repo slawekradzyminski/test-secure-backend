@@ -2,7 +2,7 @@ package com.awesome.testing.dto.users;
 
 import java.util.List;
 
-import com.awesome.testing.dto.doctor.DoctorTypeDto;
+import com.awesome.testing.dto.specialty.SpecialtyDto;
 import com.awesome.testing.entities.user.UserEntity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -34,7 +34,7 @@ public class UserResponseDto {
     @Schema(description = "Last name", example = "Doe", required = true)
     private String lastName;
 
-    private List<DoctorTypeDto> doctorTypes;
+    private List<SpecialtyDto> specialties;
 
     public static UserResponseDto from(UserEntity entity) {
         return UserResponseDto.builder()
@@ -44,7 +44,7 @@ public class UserResponseDto {
                 .lastName(entity.getLastName())
                 .email(entity.getEmail())
                 .roles(entity.getRoles())
-                .doctorTypes(DoctorTypeDto.from(entity.getDoctorTypes()))
+                .specialties(SpecialtyDto.from(entity.getSpecialties()))
                 .build();
     }
 

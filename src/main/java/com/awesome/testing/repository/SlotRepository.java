@@ -20,16 +20,16 @@ public interface SlotRepository extends JpaRepository<SlotEntity, Integer> {
     @Query("""
             SELECT s FROM SlotEntity s
             JOIN s.doctor d
-            LEFT JOIN d.doctorTypes dt
+            LEFT JOIN d.specialties dt
             WHERE s.startTime >= :startTime AND s.endTime <= :endTime
             AND (:doctorUsername IS NULL OR d.username = :doctorUsername)
             AND (:slotStatus IS NULL OR s.status = :slotStatus)
-            AND (:doctorTypeId IS NULL OR dt.id = :doctorTypeId)
+            AND (:specialtyId IS NULL OR dt.id = :specialtyId)
             """)
     List<SlotEntity> findByCriteria(
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime,
             @Param("doctorUsername") String doctorUsername,
             @Param("slotStatus") SlotStatus slotStatus,
-            @Param("doctorTypeId") Integer doctorTypeId);
+            @Param("specialtyId") Integer specialtyId);
 }

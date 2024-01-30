@@ -1,6 +1,6 @@
 package com.awesome.testing.dto.slot;
 
-import com.awesome.testing.entities.doctor.DoctorTypeEntity;
+import com.awesome.testing.entities.doctor.SpecialtyEntity;
 import com.awesome.testing.entities.slot.SlotEntity;
 import com.awesome.testing.entities.slot.SlotStatus;
 import java.time.format.DateTimeFormatter;
@@ -32,15 +32,15 @@ public class SlotDto {
                 .clientUsername(slotEntity.getClient() != null ? slotEntity.getClient().getUsername() : null)
                 .startTime(slotEntity.getStartTime().format(DateTimeFormatter.ISO_DATE_TIME))
                 .endTime(slotEntity.getEndTime().format(DateTimeFormatter.ISO_DATE_TIME))
-                .doctorSpecialties(getDoctorTypes(doctor))
+                .doctorSpecialties(getSpecialties(doctor))
                 .status(slotEntity.getStatus())
                 .build();
     }
 
-    private static Set<String> getDoctorTypes(UserEntity doctor) {
-        return Optional.ofNullable(doctor.getDoctorTypes())
+    private static Set<String> getSpecialties(UserEntity doctor) {
+        return Optional.ofNullable(doctor.getSpecialties())
                 .map(types -> types.stream()
-                        .map(DoctorTypeEntity::getDoctorType)
+                        .map(SpecialtyEntity::getName)
                         .collect(Collectors.toSet()))
                 .orElse(Set.of());
     }

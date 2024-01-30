@@ -1,4 +1,4 @@
-package com.awesome.testing.dto.doctor;
+package com.awesome.testing.dto.specialty;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,6 +11,6 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class DoctorTypeUpdateDto {
-    private List<Integer> doctorTypeIds;
+public class SpecialtiesUpdateDto {
+    private List<Integer> specialtyIds;
 }

@@ -1,7 +1,6 @@
 package com.awesome.testing.endpoints.doctor;
 
-import com.awesome.testing.dto.doctor.CreateDoctorTypeDto;
-import com.awesome.testing.dto.doctor.DoctorTypeDto;
+import com.awesome.testing.dto.specialty.SpecialtyDto;
 import com.awesome.testing.dto.users.Role;
 import com.awesome.testing.dto.users.UserRegisterDto;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -14,29 +13,26 @@ import java.util.List;
 import static com.awesome.testing.testutil.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class EditDoctorTypeControllerTest extends AbstractDoctorTypeControllerTest {
+public class GetSpecialtiesControllerTest extends AbstractSpecialtiesControllerTest {
 
     @Test
     @SuppressWarnings("ConstantConditions")
-    public void shouldEditDoctorType() {
+    public void shouldGetSpecialty() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
         String token = registerAndThenLoginSavingToken(user);
-        String initialDoctorType = RandomStringUtils.randomAlphanumeric(10);
-        Integer id = createDoctorType(token, initialDoctorType);
-        String newDoctorType = RandomStringUtils.randomAlphanumeric(10);
+        String name = RandomStringUtils.randomAlphanumeric(10);
+        Integer id = createSpecialty(token, name);
 
         // when
-        ResponseEntity<DoctorTypeDto> response =
-                executePut(DOCTOR_TYPES + "/" + id,
-                        CreateDoctorTypeDto.builder().doctorType(newDoctorType).build(),
+        ResponseEntity<SpecialtyDto> response =
+                executeGet(SPECIALTIES + "/" + id,
                         getHeadersWith(token),
-                        DoctorTypeDto.class);
+                        SpecialtyDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().getDoctorType()).isEqualTo(newDoctorType);
-        assertThat(response.getBody().getId()).isEqualTo(id);
+        assertThat(response.getBody().getName()).isEqualTo(name);
     }
 
     @Test
@@ -44,13 +40,12 @@ public class EditDoctorTypeControllerTest extends AbstractDoctorTypeControllerTe
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
         String token = registerAndThenLoginSavingToken(user);
-        String newDoctorType = RandomStringUtils.randomAlphanumeric(10);
 
         // when
         ResponseEntity<?> response =
-                executePut(DOCTOR_TYPES + "/9999999",
-                        CreateDoctorTypeDto.builder().doctorType(newDoctorType).build(),
-                        getHeadersWith(token));
+                executeGet(SPECIALTIES + "/99999",
+                        getHeadersWith(token),
+                        Object.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -59,10 +54,10 @@ public class EditDoctorTypeControllerTest extends AbstractDoctorTypeControllerTe
     @Test
     public void shouldReturn403AsUnauthorized() {
         // when
-        ResponseEntity<?> response =
-                executePut(DOCTOR_TYPES + "/1",
-                        CreateDoctorTypeDto.builder().doctorType("any").build(),
-                        getJsonOnlyHeaders());
+        ResponseEntity<SpecialtyDto[]> response =
+                executeGet(SPECIALTIES + "/1",
+                        getJsonOnlyHeaders(),
+                        SpecialtyDto[].class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);

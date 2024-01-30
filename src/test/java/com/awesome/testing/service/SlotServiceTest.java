@@ -73,30 +73,30 @@ public class SlotServiceTest extends AbstractUnitTest {
         LocalDateTime endTime = LocalDateTime.of(2022, 12, 1, 15, 0);
         String doctorUsername = "doctorUsername";
         SlotStatus slotStatus = SlotStatus.AVAILABLE;
-        Integer doctorTypeId = 1;
+        Integer specialtyId = 1;
 
         UserEntity userEntity = new UserEntity();
         userEntity.setUsername(doctorUsername);
-        userEntity.setDoctorTypes(List.of());
+        userEntity.setSpecialties(List.of());
 
         SlotEntity slot1 = createSlotEntityWithDoctor(doctorUsername);
         SlotEntity slot2 = createSlotEntityWithDoctor(doctorUsername);
 
         List<SlotEntity> slotEntities = List.of(slot1, slot2);
-        when(slotRepository.findByCriteria(startTime, endTime, doctorUsername, slotStatus, doctorTypeId))
+        when(slotRepository.findByCriteria(startTime, endTime, doctorUsername, slotStatus, specialtyId))
                 .thenReturn(slotEntities);
 
-        when(userRepository.findAllWithDoctorTypesByUsername(Set.of(doctorUsername)))
+        when(userRepository.findAllWithSpecialtiesByUsername(Set.of(doctorUsername)))
                 .thenReturn(List.of(userEntity));
 
         // when
         List<SlotDto> slots = slotService.getAvailableSlots(startTime, endTime, doctorUsername, slotStatus,
-                doctorTypeId);
+                specialtyId);
 
         // then
         assertThat(slots).hasSize(2);
-        verify(slotRepository, times(1)).findByCriteria(startTime, endTime, doctorUsername, slotStatus, doctorTypeId);
-        verify(userRepository, times(1)).findAllWithDoctorTypesByUsername(Set.of(doctorUsername));
+        verify(slotRepository, times(1)).findByCriteria(startTime, endTime, doctorUsername, slotStatus, specialtyId);
+        verify(userRepository, times(1)).findAllWithSpecialtiesByUsername(Set.of(doctorUsername));
     }
 
     @Test

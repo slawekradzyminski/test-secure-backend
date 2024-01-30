@@ -1,4 +1,4 @@
-package com.awesome.testing.dto.doctor;
+package com.awesome.testing.dto.specialty;
 
 import lombok.*;
 
@@ -7,7 +7,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DoctorTypeIdDto {
+public class SpecialtyIdDto {
 
     Integer id;
 
