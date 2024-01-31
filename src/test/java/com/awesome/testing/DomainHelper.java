@@ -57,13 +57,13 @@ public abstract class DomainHelper extends HttpHelper {
         return MessageFormat.format("/users/{0}", username);
     }
 
-    public HttpHeaders getHeadersWith(String token) {
+    protected HttpHeaders getHeadersWith(String token) {
         HttpHeaders headers = getJsonOnlyHeaders();
         headers.add(HttpHeaders.COOKIE, "token=" + token);
         return headers;
     }
 
-    public HttpHeaders getImageHeadersWith(String token) {
+    protected HttpHeaders getImageHeadersWith(String token) {
         HttpHeaders headers = getImageHeaders();
         headers.add(HttpHeaders.COOKIE, "token=" + token);
         return headers;

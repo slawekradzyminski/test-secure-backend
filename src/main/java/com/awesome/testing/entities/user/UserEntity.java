@@ -51,6 +51,10 @@ public class UserEntity {
     @Column(nullable = false)
     private String lastName;
 
+    @Lob
+    @Column(name = "profile_picture")
+    private byte[] profilePicture;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_specialty",
