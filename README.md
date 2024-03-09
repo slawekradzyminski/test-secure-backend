@@ -1,15 +1,18 @@
 ## Direct run
 
+Requires [Java 21](https://docs.papermc.io/misc/java-install)
+
 ```commandline
-./mvnw clean package spring-boot:repackage
-java -jar target/jwt-auth-service-1.0.0.jar
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 ## Docker local run
 
+Requires [docker](https://docs.docker.com/engine/install/)
+and [docker-compose](https://docs.docker.com/compose/install/) installed
+
 ```commandline
-docker build --tag=backend:latest .
-docker run -p4001:4001 backend:latest
+docker-compose up --build
 ```
 
 ## Docker remote run (warning: may be outdated)
@@ -32,3 +35,4 @@ docker run -p4001:4001 slawekradzyminski/backend:1.2
 
 - client/client (CLIENT role)
 - admin/admin (ADMIN role)
+- doctor/doctor (DOCTOR role)

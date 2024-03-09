@@ -1,18 +1,25 @@
 package com.awesome.testing.repository;
 
-import javax.transaction.Transactional;
-
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.awesome.testing.model.User;
+import com.awesome.testing.entities.user.UserEntity;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-public interface UserRepository extends JpaRepository<User, Integer> {
+import java.util.List;
+import java.util.Set;
+
+public interface UserRepository extends JpaRepository<UserEntity, Integer> {
 
     boolean existsByUsername(String username);
 
-    User findByUsername(String username);
+    UserEntity findByUsername(String username);
 
     @Transactional
     void deleteByUsername(String username);
+
+    @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.specialties WHERE u.username IN :usernames")
+    List<UserEntity> findAllWithSpecialtiesByUsername(@Param("usernames") Set<String> usernames);
 
 }
