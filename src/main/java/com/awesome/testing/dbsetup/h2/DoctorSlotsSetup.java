@@ -31,7 +31,7 @@ public class DoctorSlotsSetup {
 
     private void setupSlotsForTwoMonthsAhead(UserResponseDto doctor) {
         LocalDate today = LocalDate.now();
-        LocalDate fourMonthsAhead = today.plusMonths(4);
+        LocalDate fourMonthsAhead = today.plusMonths(2);
 
         Stream.iterate(today.plusDays(1), date -> !date.isAfter(fourMonthsAhead), date -> date.plusDays(1))
                 .filter(DoctorSlotsSetup::isDayOfWeek)
