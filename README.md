@@ -9,7 +9,7 @@ java -jar target/jwt-auth-service-1.0.0.jar
 
 ```commandline
 docker build --tag=backend:latest .
-docker run -p4001:4001 backend:latest
+docker run -d -p4001:4001 backend:latest
 ```
 
 ## Docker remote run (warning: may be outdated)
