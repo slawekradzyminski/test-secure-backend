@@ -1,0 +1,21 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build-docker:
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:stable
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build image
+        run: docker build --tag=backend:latest .
+      - name: Run image
+        run : docker run -d -p4001:4001 backend:latest
+      - name: Wait for backend
+        run: ./wait_for_backend.sh
