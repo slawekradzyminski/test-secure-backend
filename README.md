@@ -21,6 +21,12 @@ docker-compose up --build
 docker run -p4001:4001 slawekradzyminski/backend:1.2
 ```
 
+## Deploy to Google Cloud Engine
+
+```commandline
+./mvnw -DskipTests package appengine:deploy
+```
+
 ## Publish image
 
 [https://docs.docker.com/docker-hub/repos/](https://docs.docker.com/docker-hub/repos/)

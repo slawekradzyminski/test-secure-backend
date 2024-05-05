@@ -1,10 +1,7 @@
 package com.awesome.testing.configuration;
 
-import java.util.Collections;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
@@ -12,6 +9,10 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.tags.Tag;
+import io.swagger.v3.oas.models.servers.Server;
+
+import java.util.Collections;
+import java.util.List;
 
 @Configuration
 public class SwaggerConfig {
@@ -30,7 +31,7 @@ public class SwaggerConfig {
                                 .url("http://opensource.org/licenses/MIT"))
                         .contact(new Contact().email("slawekradz@gmail.com")))
                 .addTagsItem(new Tag().name("users").description("Operations about users"))
-                .addSecurityItem(new SecurityRequirement().addList("Authorization", Collections.emptyList()));
+                .addSecurityItem(new SecurityRequirement().addList("Authorization", Collections.emptyList()))
+                .servers(List.of(new Server().url("https://awesome-testing-1681473100176.ew.r.appspot.com").description("Prod server")));
     }
-
 }

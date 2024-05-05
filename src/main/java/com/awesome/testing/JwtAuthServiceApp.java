@@ -24,7 +24,6 @@ public class JwtAuthServiceApp implements CommandLineRunner {
         SpringApplication.run(JwtAuthServiceApp.class, args);
     }
 
-
     @Bean
     public HttpMessageConverter<BufferedImage> createImageHttpMessageConverter() {
         return new BufferedImageHttpMessageConverter();

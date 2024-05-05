@@ -9,7 +9,7 @@ activemq:
   destination: email
 
 server:
-  port: 4001
+  port: 8081
   error:
     include-message: always
     include-binding-errors: always
