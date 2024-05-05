@@ -4,7 +4,7 @@ services:
     build: .
     restart: always
     ports:
-      - 4001:4001
+      - "8081:8081"
     networks:
       - springapimysql-net
     environment:
@@ -16,7 +16,7 @@ services:
     image: "mysql:8.2"
     restart: always
     ports:
-      - 3306:3306
+      - "3306:3306"
     networks:
       - springapimysql-net
     environment:

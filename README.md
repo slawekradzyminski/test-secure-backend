@@ -18,7 +18,7 @@ docker-compose up --build
 ## Docker remote run (warning: may be outdated)
 
 ```commandline
-docker run -p4001:4001 slawekradzyminski/backend:1.2
+docker run -p8081:8081 slawekradzyminski/backend:1.2
 ```
 
 ## Deploy to Google Cloud Engine
@@ -33,9 +33,9 @@ docker run -p4001:4001 slawekradzyminski/backend:1.2
 
 ## Verification
 
-[Swagger](http://localhost:4001/swagger-ui.html)
+[Swagger](http://localhost:8081/swagger-ui/index.html)
 
-[Database](http://localhost:4001/h2-console) login as root/root
+[Database](http://localhost:8081/h2-console) login as root/root
 
 ## Existing users
 

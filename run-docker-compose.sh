@@ -15,7 +15,7 @@ while true; do
   fi
 
   # Check if the application is up by making a request to the swagger UI
-  RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" 'http://localhost:4001/swagger-ui/index.html')
+  RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" 'http://localhost:8081/swagger-ui/index.html')
 
   if [ $RESPONSE_CODE -eq 200 ]; then
     break
@@ -37,7 +37,7 @@ echo "Application started successfully."
 
 # Run smoke test for registration
 RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X 'POST' \
-  'http://localhost:4001/users/signup' \
+  'http://localhost:8081/users/signup' \
   -H 'accept: */*' \
   -H 'Content-Type: application/json' \
   -d '{
