@@ -15,7 +15,7 @@ import lombok.Setter;
 @Builder
 public class UserRegisterDTO {
 
-    @Size(min = 3, max = 255, message = "Minimum username length: 3 characters")
+    @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
     @Schema(description = "Username", example = "user", required = true)
     private String username;
 
@@ -24,7 +24,7 @@ public class UserRegisterDTO {
     @Schema(description = "Email", example = "user@example.com", required = true)
     private String email;
 
-    @Size(min = 3, max = 255, message = "Minimum password length: 3 characters")
+    @Size(min = 4, max = 255, message = "Minimum password length: 4 characters")
     @Schema(description = "Password", example = "pass", required = true)
     private String password;
 
@@ -32,11 +32,11 @@ public class UserRegisterDTO {
     @Schema(description = "List of roles", required = true)
     private List<Role> roles;
 
-    @Size(min = 3, max = 255, message = "Minimum firstName length: 3 characters")
+    @Size(min = 4, max = 255, message = "Minimum firstName length: 4 characters")
     @Schema(description = "First name", example = "John", required = true)
     private String firstName;
 
-    @Size(min = 3, max = 255, message = "Minimum lastName length: 3 characters")
+    @Size(min = 4, max = 255, message = "Minimum lastName length: 4 characters")
     @Schema(description = "Last name", example = "Doe", required = true)
     private String lastName;
 

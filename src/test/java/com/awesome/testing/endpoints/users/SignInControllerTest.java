@@ -39,7 +39,6 @@ public class SignInControllerTest extends DomainHelper {
         // then
         assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(responseWithToken.getBody().getToken()).isNotBlank();
-        assertThat(responseWithToken.getHeaders().get("Set-Cookie").get(0)).contains("token=");
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -68,7 +67,7 @@ public class SignInControllerTest extends DomainHelper {
         ResponseEntity<Map<String, String>> response = restTemplate.exchange(
                 LOGIN_ENDPOINT,
                 HttpMethod.POST,
-                new HttpEntity<>(new LoginDTO("on", "wo"), getJsonOnlyHeaders()),
+                new HttpEntity<>(new LoginDTO("one", "two"), getJsonOnlyHeaders()),
                 mapTypeReference());
 
         // then

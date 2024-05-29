@@ -18,38 +18,35 @@ import org.springframework.security.config.Customizer;
 @RequiredArgsConstructor
 public class WebSecurityConfig {
 
-        private final JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenProvider jwtTokenProvider;
 
-        @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                JwtTokenFilter customFilter = new JwtTokenFilter(jwtTokenProvider);
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        JwtTokenFilter customFilter = new JwtTokenFilter(jwtTokenProvider);
 
-                http
-                                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
-                                .cors(Customizer.withDefaults())
-                                .csrf(AbstractHttpConfigurer::disable)
-                                .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                                .authorizeHttpRequests(authorize -> authorize
-                                                .requestMatchers(
-                                                                "/users/signin",
-                                                                "/users/signup",
-                                                                "/users/logout",
-                                                                "/actuator/**",
-                                                                "/swagger-resources/**",
-                                                                "/v3/api-docs/**",
-                                                                "/swagger-ui/**",
-                                                                "/swagger-ui.html",
-                                                                "/configuration/**",
-                                                                "/webjars/**",
-                                                                "/public",
-                                                                "/h2-console/**")
-                                                .permitAll()
-                                                .anyRequest().authenticated())
-                                .exceptionHandling(e -> e.accessDeniedPage("/login"))
-                                .addFilterBefore(customFilter, UsernamePasswordAuthenticationFilter.class);
+        http
+                .cors(Customizer.withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(
+                                "/users/signin",
+                                "/users/signup",
+                                "/actuator/**",
+                                "/swagger-resources/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/configuration/**",
+                                "/webjars/**",
+                                "/public",
+                                "/h2-console/**"
+                        ).permitAll()
+                        .anyRequest().authenticated())
+                .exceptionHandling(e -> e.accessDeniedPage("/login"))
+                .addFilterBefore(customFilter, UsernamePasswordAuthenticationFilter.class);
 
-                return http.build();
-        }
+        return http.build();
+    }
 
 }

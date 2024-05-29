@@ -25,24 +25,24 @@ public class UserEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Size(min = 3, max = 255, message = "Minimum username length: 3 characters")
+    @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
     @Column(unique = true, nullable = false)
     private String username;
 
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Size(min = 3, message = "Minimum password length: 3 characters")
+    @Size(min = 4, message = "Minimum password length: 4 characters")
     private String password;
 
     @ElementCollection(fetch = FetchType.EAGER)
     private List<Role> roles;
 
-    @Size(min = 3, message = "Minimum firstName length: 3 characters")
+    @Size(min = 4, message = "Minimum firstName length: 4 characters")
     @Column(nullable = false)
     private String firstName;
 
-    @Size(min = 3, message = "Minimum lastName length: 3 characters")
+    @Size(min = 4, message = "Minimum lastName length: 4 characters")
     @Column(nullable = false)
     private String lastName;
 

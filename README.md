@@ -24,7 +24,7 @@ docker run -p4001:4001 slawekradzyminski/backend:1.2
 
 ## Verification
 
-[Swagger](http://localhost:4001/swagger-ui.html)
+[Swagger](http://localhost:4001/swagger-ui/index.htm)
 
 [Database](http://localhost:4001/h2-console) login as root/root
 
