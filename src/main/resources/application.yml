@@ -30,7 +30,7 @@ server:
   error:
     include-message: always
     include-binding-errors: always
-    include-stacktrace: on_trace_param
+    include-stacktrace: NEVER
     include-exception: false
   servlet:
     encoding:
@@ -42,7 +42,7 @@ server:
 security:
   jwt:
     token:
-      secret-key: secret-key
+      secret-key: 4DZ3+asC4/EOVmPdsSFizGMBlxnws+CLgiX9I1hl3AA= # WARN: do not do this for real apps :)
       expire-length: 300000 # 5 minutes duration by default: 5 minutes * 60 seconds * 1000 miliseconds
 
 logbook:
@@ -51,6 +51,8 @@ logbook:
 logging:
   level:
     org:
+      springframework:
+        security: DEBUG
       zalando:
         logbook: TRACE
 
