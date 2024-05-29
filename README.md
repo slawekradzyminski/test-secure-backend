@@ -1,7 +1,7 @@
 ## Direct run
 
 ```commandline
-./mvnw clean package spring-boot:repackage
+./mvnw clean package spring-boot:repackage -DskipTests=true
 java -jar target/jwt-auth-service-1.0.0.jar
 ```
 
