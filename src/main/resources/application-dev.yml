@@ -16,3 +16,8 @@ spring:
     console:
       enabled: true
       path: /h2-console
+  
+management:
+  endpoint:
+    health:
+      show-details: always

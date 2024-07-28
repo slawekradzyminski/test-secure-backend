@@ -1,12 +1,4 @@
 spring:
-  activemq:
-    in-memory: false
-    broker-url: tcp://host.docker.internal:61616
-    user: admin
-    password: admin
-
-activemq:
-  destination: email
 
 server:
   port: 8081
