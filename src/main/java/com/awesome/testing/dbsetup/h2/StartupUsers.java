@@ -12,29 +12,6 @@ import static com.awesome.testing.dbsetup.h2.H2DbSetup.FAKER;
 @Slf4j
 public class StartupUsers {
 
-    static UserRegisterDto getDoctor(String specialty) {
-        String username = specialty.replace(" ", "");
-        return UserRegisterDto.builder()
-                .username(username)
-                .password("password")
-                .email(String.format("%s@email.com", username))
-                .firstName(draw(() -> FAKER.name().firstName()))
-                .lastName(draw(() -> FAKER.name().lastName()))
-                .roles(List.of(Role.ROLE_DOCTOR))
-                .build();
-    }
-
-    static UserRegisterDto getDoctor() {
-        return UserRegisterDto.builder()
-                .username("doctor")
-                .password("doctor")
-                .email(FAKER.internet().emailAddress())
-                .firstName(draw(() -> FAKER.name().firstName()))
-                .lastName(draw(() -> FAKER.name().lastName()))
-                .roles(List.of(Role.ROLE_DOCTOR))
-                .build();
-    }
-
     static UserRegisterDto getClient() {
         return UserRegisterDto.builder()
                 .username("client")

@@ -31,7 +31,6 @@ public class SwaggerConfig {
                                 .url("http://opensource.org/licenses/MIT"))
                         .contact(new Contact().email("slawekradz@gmail.com")))
                 .addTagsItem(new Tag().name("users").description("Operations about users"))
-                .addSecurityItem(new SecurityRequirement().addList("Authorization", Collections.emptyList()))
-                .servers(List.of(new Server().url("https://awesome-testing-1681473100176.ew.r.appspot.com").description("Prod server")));
+                .addSecurityItem(new SecurityRequirement().addList("Authorization", List.of()));
     }
 }

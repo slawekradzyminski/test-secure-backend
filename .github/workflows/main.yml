@@ -2,9 +2,7 @@ name: Java CI
 
 on:
   push:
-    branches: [ master, springboot3.1 ]
-  pull_request:
-    branches: [ master ]
+    branches: [ dynamo, master ]
 
 jobs:
   build:

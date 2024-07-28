@@ -61,8 +61,7 @@ public class JwtTokenUtilTest extends AbstractUnitTest {
         return Stream.of(
                 Arguments.of(List.of()),
                 Arguments.of(List.of(Role.ROLE_ADMIN)),
-                Arguments.of(List.of(Role.ROLE_ADMIN, Role.ROLE_CLIENT)),
-                Arguments.of(List.of(Role.ROLE_DOCTOR))
+                Arguments.of(List.of(Role.ROLE_ADMIN, Role.ROLE_CLIENT))
         );
     }
 

@@ -1,6 +1,5 @@
 package com.awesome.testing.dto.users;
 
-import com.awesome.testing.dto.specialty.SpecialtyDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
@@ -33,8 +32,6 @@ public class LoginResponseDto {
     @Schema(description = "Email", example = "user@example.com", required = true)
     String email;
 
-    List<SpecialtyDto> specialties;
-
     public static LoginResponseDto from(UserEntity userEntity, String token) {
         return LoginResponseDto.builder()
                 .username(userEntity.getUsername())
@@ -43,7 +40,6 @@ public class LoginResponseDto {
                 .roles(userEntity.getRoles())
                 .token(token)
                 .email(userEntity.getEmail())
-                .specialties(SpecialtyDto.from(userEntity.getSpecialties()))
                 .build();
     }
 }

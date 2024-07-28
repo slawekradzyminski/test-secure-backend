@@ -53,8 +53,6 @@ public class H2ConsoleTest extends DomainHelper {
 
         // then
         assertThat(tablesResponse.getBody()).contains(
-                "'table', 'SLOTS',",
-                "'table', 'SPECIALTIES'",
                 "'table', 'USERS'"
         );
     }
@@ -74,8 +72,6 @@ public class H2ConsoleTest extends DomainHelper {
 
         // then
         assertThat(tablesResponse.getBody()).doesNotContain(
-                "'table', 'SLOTS',",
-                "'table', 'DOCTOR_TYPES'",
                 "'table', 'USERS'"
         );
         assertThat(tablesResponse.getBody()).contains("java.lang.NullPointerException");

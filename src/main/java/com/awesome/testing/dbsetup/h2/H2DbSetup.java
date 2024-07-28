@@ -14,15 +14,9 @@ public class H2DbSetup implements DbSetup {
     static final Faker FAKER = new Faker();
 
     private final BasicUsersSetup basicUsersSetup;
-    private final SpecialtiesSetup specialtiesSetup;
-    private final DoctorsSetup doctorsSetup;
-    private final DoctorSlotsSetup doctorSlotsSetup;
 
     public void setupData() {
-        specialtiesSetup.setupSpecialties();
         basicUsersSetup.setupUsers();
-        doctorsSetup.assignSpecialtiesForDoctor();
-        doctorSlotsSetup.setupSlotsForDoctors();
     }
 
 }

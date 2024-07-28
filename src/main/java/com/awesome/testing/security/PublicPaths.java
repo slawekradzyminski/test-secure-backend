@@ -19,7 +19,6 @@ public class PublicPaths {
             "/h2-console/**",
             "/index*",
             "/static/**",
-            "/_ah/*",
             "/*.js",
             "/*.json",
             "/*.ico",

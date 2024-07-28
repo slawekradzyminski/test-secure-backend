@@ -3,7 +3,6 @@ package com.awesome.testing.service;
 import com.awesome.testing.dto.users.*;
 import com.awesome.testing.entities.user.UserEntity;
 
-import com.awesome.testing.repository.SpecialtiesRepository;
 import jakarta.servlet.http.HttpServletRequest;
 
 import com.awesome.testing.exception.ApiException;
@@ -12,12 +11,9 @@ import com.awesome.testing.security.AuthenticationHandler;
 import com.awesome.testing.security.JwtTokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,7 +25,6 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenUtil jwtTokenUtil;
     private final AuthenticationHandler authenticationHandler;
-    private final SpecialtiesRepository specialtiesRepository;
 
     public LoginResponseDto signIn(LoginDto loginDetails) {
         String token = authenticationHandler.authenticateUserAndGetToken(loginDetails);
@@ -81,37 +76,4 @@ public class UserService {
         userRepository.save(userEntity);
     }
 
-    public UserResponseDto updateSpecialties(List<Integer> specialtyIds) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        UserEntity user = userRepository.findByUsername(username);
-        user.setSpecialties(specialtiesRepository.findAllById(specialtyIds));
-        userRepository.save(user);
-        return UserResponseDto.from(user);
-    }
-
-    public void updateUserProfilePicture(String username, MultipartFile file) {
-        validateImage(file);
-        UserEntity user = search(username);
-        try {
-            byte[] bytes = file.getBytes();
-            user.setProfilePicture(bytes);
-            userRepository.save(user);
-        } catch (IOException e) {
-            throw new RuntimeException("Error saving file", e);
-        }
-    }
-
-    public byte[] getProfilePicture(String username) {
-        UserEntity user = search(username);
-        return user.getProfilePicture();
-    }
-
-    private void validateImage(MultipartFile file) {
-        if (!file.getContentType().matches("image/jpeg|image/png|image/gif")) {
-            throw new ApiException("Invalid file type", HttpStatus.BAD_REQUEST);
-        }
-        if (file.getSize() > 1024 * 1024) { // 1MB
-            throw new ApiException("File size exceeds limit", HttpStatus.BAD_REQUEST);
-        }
-    }
 }

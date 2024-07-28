@@ -19,7 +19,4 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
     @Transactional
     void deleteByUsername(String username);
 
-    @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.specialties WHERE u.username IN :usernames")
-    List<UserEntity> findAllWithSpecialtiesByUsername(@Param("usernames") Set<String> usernames);
-
 }

@@ -75,7 +75,7 @@ public class EditUserControllerTest extends DomainHelper {
         // given
         UserRegisterDto userToEdit = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         register(userToEdit);
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_DOCTOR));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String token = registerAndThenLoginSavingToken(user);
         UserEditDto userEditDTO = getRandomUserEditBody();
 

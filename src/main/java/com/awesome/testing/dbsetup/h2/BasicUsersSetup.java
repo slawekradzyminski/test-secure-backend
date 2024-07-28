@@ -17,7 +17,6 @@ public class BasicUsersSetup {
     public void setupUsers() {
         userService.signUp(getAdmin());
         userService.signUp(getClient());
-        userService.signUp(getDoctor());
     }
 
 }
