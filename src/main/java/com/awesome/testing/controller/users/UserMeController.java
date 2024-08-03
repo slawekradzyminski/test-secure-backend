@@ -19,7 +19,7 @@ import jakarta.servlet.http.HttpServletRequest;
 @RequiredArgsConstructor
 public class UserMeController {
 
-    private final UserService userService;
+    private final UserService<?> userService;
 
     @GetMapping(value = "/me")
     @PreAuthorizeForAllRoles

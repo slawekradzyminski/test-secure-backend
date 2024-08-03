@@ -1,5 +1,6 @@
 package com.awesome.testing.dbsetup.h2;
 
+import com.awesome.testing.entities.user.H2UserEntity;
 import com.awesome.testing.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -12,7 +13,7 @@ import static com.awesome.testing.dbsetup.h2.StartupUsers.*;
 @RequiredArgsConstructor
 public class BasicUsersSetup {
 
-    private final UserService userService;
+    private final UserService<H2UserEntity> userService;
 
     public void setupUsers() {
         userService.signUp(getAdmin());

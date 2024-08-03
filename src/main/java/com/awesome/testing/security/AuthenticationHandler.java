@@ -1,9 +1,10 @@
 package com.awesome.testing.security;
 
 import com.awesome.testing.dto.users.LoginDto;
+import com.awesome.testing.entities.user.UserEntity;
 import com.awesome.testing.exception.ApiException;
-import com.awesome.testing.repository.UserRepository;
 
+import com.awesome.testing.repository.IUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,11 +14,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class AuthenticationHandler {
+public class AuthenticationHandler<T extends UserEntity> {
 
-    private final JwtTokenUtil jwtTokenUtil;
+    private final JwtTokenUtil<T> jwtTokenUtil;
     private final AuthenticationManager authenticationManager;
-    private final UserRepository userRepository;
+    private final IUserRepository<T> userRepository;
 
     public String authenticateUserAndGetToken(LoginDto loginDto) {
         String username = loginDto.getUsername();

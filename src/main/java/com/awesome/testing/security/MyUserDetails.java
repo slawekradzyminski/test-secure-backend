@@ -1,7 +1,7 @@
 package com.awesome.testing.security;
 
 import com.awesome.testing.entities.user.UserEntity;
-import com.awesome.testing.repository.UserRepository;
+import com.awesome.testing.repository.IUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,13 +14,13 @@ import static org.springframework.security.core.userdetails.User.*;
 
 @Service
 @RequiredArgsConstructor
-public class MyUserDetails implements UserDetailsService {
+public class MyUserDetails<T extends UserEntity> implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    private final IUserRepository<T> userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        final UserEntity userEntity = userRepository.findByUsername(username);
+        UserEntity userEntity = userRepository.findByUsername(username);
 
         if (userEntity == null) {
             throw new UsernameNotFoundException(

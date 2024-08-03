@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserGetController {
 
-    private final UserService userService;
+    private final UserService<?> userService;
 
     @GetMapping
     @PreAuthorizeForAllRoles

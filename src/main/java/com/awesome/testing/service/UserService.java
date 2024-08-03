@@ -1,12 +1,13 @@
 package com.awesome.testing.service;
 
 import com.awesome.testing.dto.users.*;
-import com.awesome.testing.entities.user.UserEntity;
 
+import com.awesome.testing.entities.user.UserEntity;
+import com.awesome.testing.entities.user.UserEntityFactory;
+import com.awesome.testing.repository.IUserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 
 import com.awesome.testing.exception.ApiException;
-import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.AuthenticationHandler;
 import com.awesome.testing.security.JwtTokenUtil;
 import lombok.RequiredArgsConstructor;
@@ -19,16 +20,17 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class UserService<T extends UserEntity> {
 
-    private final UserRepository userRepository;
+    private final IUserRepository<T> userRepository;
+    private final UserEntityFactory<T> userEntityFactory;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenUtil jwtTokenUtil;
-    private final AuthenticationHandler authenticationHandler;
+    private final AuthenticationHandler<T> authenticationHandler;
 
     public LoginResponseDto signIn(LoginDto loginDetails) {
         String token = authenticationHandler.authenticateUserAndGetToken(loginDetails);
-        UserEntity userEntity = search(loginDetails.getUsername());
+        T userEntity = search(loginDetails.getUsername());
         return LoginResponseDto.from(userEntity, token);
     }
 
@@ -38,7 +40,8 @@ public class UserService {
         }
 
         String encryptedPassword = passwordEncoder.encode(userRegisterDTO.getPassword());
-        userRepository.save(UserEntity.from(userRegisterDTO, encryptedPassword));
+        T userEntity = userEntityFactory.createUser(userRegisterDTO, encryptedPassword);
+        userRepository.save(userEntity);
     }
 
     public void delete(String username) {
@@ -46,7 +49,7 @@ public class UserService {
         userRepository.deleteByUsername(username);
     }
 
-    public UserEntity search(String username) {
+    public T search(String username) {
         return Optional.ofNullable(userRepository.findByUsername(username))
                 .orElseThrow(() -> new ApiException("The user doesn't exist", HttpStatus.NOT_FOUND));
     }
@@ -58,7 +61,7 @@ public class UserService {
                 .toList();
     }
 
-    public UserEntity whoAmI(HttpServletRequest req) {
+    public T whoAmI(HttpServletRequest req) {
         String token = jwtTokenUtil.extractTokenFromRequest(req);
         return userRepository.findByUsername(jwtTokenUtil.getUsername(token));
     }
@@ -68,7 +71,7 @@ public class UserService {
     }
 
     public void edit(String username, UserEditDto userEditBody) {
-        UserEntity userEntity = search(username);
+        T userEntity = search(username);
         userEntity.setFirstName(userEditBody.getFirstName());
         userEntity.setLastName(userEditBody.getLastName());
         userEntity.setEmail(userEditBody.getEmail());

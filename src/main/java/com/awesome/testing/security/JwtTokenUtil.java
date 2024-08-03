@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import com.awesome.testing.entities.user.UserEntity;
 import io.jsonwebtoken.*;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,14 +24,14 @@ import com.awesome.testing.dto.users.Role;
 
 @Component
 @RequiredArgsConstructor
-public class JwtTokenUtil {
+public class JwtTokenUtil<T extends UserEntity> {
 
     @Value("${security.jwt.token.expire-length:3600000}")
     private long validityInMilliseconds; // 1h
 
     private final JwtParser jwtParser;
     private final SecretKeyProvider secretKeyProvider;
-    private final MyUserDetails myUserDetails;
+    private final MyUserDetails<T> myUserDetails;
 
     public String createToken(String username, List<Role> roles) {
         return Jwts.builder()

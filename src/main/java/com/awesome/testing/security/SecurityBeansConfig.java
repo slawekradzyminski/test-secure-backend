@@ -1,5 +1,6 @@
 package com.awesome.testing.security;
 
+import com.awesome.testing.entities.user.UserEntity;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +17,10 @@ import java.util.List;
 @SuppressWarnings("unused")
 @Configuration
 @RequiredArgsConstructor
-public class SecurityBeansConfig {
+public class SecurityBeansConfig<T extends UserEntity> {
 
     @Bean
-    public DaoAuthenticationProvider daoAuthenticationProvider(PasswordEncoder passwordEncoder, MyUserDetails userDetailsService) {
+    public DaoAuthenticationProvider daoAuthenticationProvider(PasswordEncoder passwordEncoder, MyUserDetails<T> userDetailsService) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setPasswordEncoder(passwordEncoder);
         provider.setUserDetailsService(userDetailsService);

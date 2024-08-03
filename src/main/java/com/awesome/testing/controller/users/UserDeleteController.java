@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserDeleteController {
 
-    private final UserService userService;
+    private final UserService<?> userService;
 
     @DeleteMapping(value = "/{username}")
     @PreAuthorizeForAdmin

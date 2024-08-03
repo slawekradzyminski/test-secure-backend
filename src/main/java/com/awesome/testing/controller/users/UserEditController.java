@@ -25,7 +25,7 @@ import jakarta.validation.Valid;
 @RequiredArgsConstructor
 public class UserEditController {
 
-    private final UserService userService;
+    private final UserService<?> userService;
 
     @PutMapping(value = "/{username}")
     @PreAuthorizeForAllRoles

@@ -1,67 +1,25 @@
 package com.awesome.testing.entities.user;
 
 import com.awesome.testing.dto.users.Role;
-import com.awesome.testing.dto.users.UserRegisterDto;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-
-import jakarta.persistence.*;
-import lombok.*;
 
 import java.util.List;
 
-import jakarta.validation.constraints.Size;
+public interface UserEntity {
 
-@Entity
-@ToString
-@Setter
-@Getter
-@Table(name = "users")
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@JsonIdentityInfo(
-        generator = ObjectIdGenerators.PropertyGenerator.class,
-        property = "id")
-public class UserEntity {
+    int getId();
+    String getUsername();
+    String getEmail();
+    List<Role> getRoles();
+    String getFirstName();
+    String getLastName();
+    String getPassword();
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    void setId(int id);
+    void setUsername(String username);
+    void setEmail(String email);
+    void setRoles(List<Role> roles);
+    void setFirstName(String firstName);
+    void setLastName(String lastName);
+    void setPassword(String password);
 
-    @Size(min = 3, max = 255, message = "Minimum username length: 3 characters")
-    @Column(unique = true, nullable = false)
-    private String username;
-
-    @Column(unique = true, nullable = false)
-    private String email;
-
-    @Size(min = 3, message = "Minimum password length: 3 characters")
-    private String password;
-
-    @ElementCollection(fetch = FetchType.EAGER)
-    private List<Role> roles;
-
-    @Size(min = 3, message = "Minimum firstName length: 3 characters")
-    @Column(nullable = false)
-    private String firstName;
-
-    @Size(min = 3, message = "Minimum lastName length: 3 characters")
-    @Column(nullable = false)
-    private String lastName;
-
-    public static UserEntity from(UserRegisterDto userRegisterDto, String encryptedPassword) {
-        return UserEntity.builder()
-                .username(userRegisterDto.getUsername())
-                .password(encryptedPassword)
-                .roles(userRegisterDto.getRoles())
-                .email(userRegisterDto.getEmail())
-                .firstName(userRegisterDto.getFirstName())
-                .lastName(userRegisterDto.getLastName())
-                .build();
-    }
-
-    public static UserEntity from(UserRegisterDto userRegisterDto) {
-        return from(userRegisterDto, userRegisterDto.getPassword());
-    }
 }

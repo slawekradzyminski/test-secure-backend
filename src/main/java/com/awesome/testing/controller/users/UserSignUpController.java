@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserSignUpController {
 
-    private final UserService userService;
+    private final UserService<?> userService;
 
     @PostMapping("/signup")
     @Operation(summary = "Creates user")

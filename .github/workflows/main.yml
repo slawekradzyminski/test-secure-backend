@@ -29,14 +29,14 @@ jobs:
     - name: Run dev build
       run: bash ./run-app.sh
   
-  runDocker:
-    runs-on: ubuntu-latest
-    services:
-      docker:
-        image: docker:stable
-        volumes:
-          - /var/run/docker.sock:/var/run/docker.sock
-    steps:
-    - uses: actions/checkout@v4
-    - name: Build and run Docker Compose
-      run: bash ./run-docker-compose.sh
+#  runDocker:
+#    runs-on: ubuntu-latest
+#    services:
+#      docker:
+#        image: docker:stable
+#        volumes:
+#          - /var/run/docker.sock:/var/run/docker.sock
+#    steps:
+#    - uses: actions/checkout@v4
+#    - name: Build and run Docker Compose
+#      run: bash ./run-docker-compose.sh

@@ -26,8 +26,8 @@ import static com.awesome.testing.util.TokenCookieUtil.buildTokenCookie;
 @RequiredArgsConstructor
 public class UserSignInController {
 
-    private final UserService userService;
-    private final JwtTokenUtil jwtTokenUtil;
+    private final UserService<?> userService;
+    private final JwtTokenUtil<?> jwtTokenUtil;
 
     @PostMapping("/signin")
     @Operation(summary = "Authenticates user and returns its JWT token")
