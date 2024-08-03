@@ -25,7 +25,7 @@ public class UserService<T extends UserEntity> {
     private final IUserRepository<T> userRepository;
     private final UserEntityFactory<T> userEntityFactory;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenUtil jwtTokenUtil;
+    private final JwtTokenUtil<T> jwtTokenUtil;
     private final AuthenticationHandler<T> authenticationHandler;
 
     public LoginResponseDto signIn(LoginDto loginDetails) {

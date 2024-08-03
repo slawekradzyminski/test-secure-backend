@@ -26,7 +26,7 @@ import static com.awesome.testing.util.TokenCookieUtil.buildTokenCookie;
 public class UserRefreshController {
 
     private final UserService<?> userService;
-    private final JwtTokenUtil jwtTokenUtil;
+    private final JwtTokenUtil<?> jwtTokenUtil;
 
     @PreAuthorizeForAllRoles
     @GetMapping("/refresh")

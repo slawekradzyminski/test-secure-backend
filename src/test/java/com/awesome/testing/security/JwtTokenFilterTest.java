@@ -20,7 +20,7 @@ public class JwtTokenFilterTest extends AbstractUnitTest {
     private static final String LOGOUT_EXCLUDED_ENDPOINT = "/users/logout";
 
     @Mock
-    private JwtTokenUtil jwtTokenUtil;
+    private JwtTokenUtil<?> jwtTokenUtil;
 
     @Mock
     private HttpServletRequest httpServletRequest;

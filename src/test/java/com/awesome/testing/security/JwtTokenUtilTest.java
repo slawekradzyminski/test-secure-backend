@@ -1,6 +1,7 @@
 package com.awesome.testing.security;
 
 import com.awesome.testing.AbstractUnitTest;
+import com.awesome.testing.entities.user.H2UserEntity;
 import com.awesome.testing.exception.ApiException;
 import com.awesome.testing.dto.users.Role;
 import io.jsonwebtoken.JwtParser;
@@ -22,13 +23,14 @@ import static org.mockito.Mockito.mock;
 
 public class JwtTokenUtilTest extends AbstractUnitTest {
 
-    private JwtTokenUtil jwtTokenUtil;
+    private JwtTokenUtil<?> jwtTokenUtil;
 
+    @SuppressWarnings("unchecked")
     @BeforeEach
     public void setup() {
         SecretKeyProvider secretKeyProvider = new SecretKeyProvider("4DZ3+asC4/EOVmPdsSFizGMBlxnws+CLgiX9I1hl3AA=");
         JwtParser jwtParser = Jwts.parser().verifyWith(secretKeyProvider.getSecretKey()).build();
-        jwtTokenUtil = new JwtTokenUtil(jwtParser, secretKeyProvider, mock(MyUserDetails.class));
+        jwtTokenUtil = new JwtTokenUtil<H2UserEntity>(jwtParser, secretKeyProvider, mock(MyUserDetails.class));
         ReflectionTestUtils.setField(jwtTokenUtil, "validityInMilliseconds", 3600000L);
     }
 

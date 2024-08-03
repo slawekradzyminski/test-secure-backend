@@ -25,7 +25,7 @@ import static com.awesome.testing.security.PublicPaths.PUBLIC_PATHS;
 public class JwtTokenFilter extends OncePerRequestFilter {
     private static final PathMatcher PATH_MATCHER = new AntPathMatcher();
 
-    private final JwtTokenUtil jwtTokenUtil;
+    private final JwtTokenUtil<?> jwtTokenUtil;
     private final TokenBlacklistService tokenBlacklistService;
 
     @Override

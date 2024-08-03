@@ -19,7 +19,7 @@ import static com.awesome.testing.util.TokenCookieUtil.buildTokenCookie;
 @RequestMapping("/users")
 public class UserLogoutController {
 
-    private final JwtTokenUtil jwtTokenUtil;
+    private final JwtTokenUtil<?> jwtTokenUtil;
     private final TokenBlacklistService tokenBlacklistService;
 
     @Operation(summary = "Logouts customer by expiring the HttpOnly cookie")
