@@ -30,16 +30,37 @@ public abstract class HttpHelper {
                 responseType);
     }
 
-    protected ResponseEntity<Object> executePut(String url, Object body, HttpHeaders httpHeaders) {
-        return execute(HttpMethod.PUT, url, body, httpHeaders, Object.class);
+    protected <T, V> ResponseEntity<T> executePut(String url, V body, HttpHeaders httpHeaders, Class<T> responseType) {
+        return execute(HttpMethod.PUT, url, body, httpHeaders, responseType);
+    }
+
+    protected <T, V> ResponseEntity<T> executePut(String url, V body, HttpHeaders httpHeaders, ParameterizedTypeReference<T> responseType) {
+        return restTemplate.exchange(url,
+                HttpMethod.PUT,
+                new HttpEntity<>(body, httpHeaders),
+                responseType);
     }
 
     protected <T> ResponseEntity<T> executeDelete(String url, HttpHeaders httpHeaders, Class<T> responseType) {
         return execute(HttpMethod.DELETE, url, null, httpHeaders, responseType);
     }
 
+    protected <T> ResponseEntity<T> executeDelete(String url, HttpHeaders httpHeaders, ParameterizedTypeReference<T> responseType) {
+        return restTemplate.exchange(url,
+                HttpMethod.DELETE,
+                new HttpEntity<>(null, httpHeaders),
+                responseType);
+    }
+
     protected <T, V> ResponseEntity<T> executePost(String url, V body, HttpHeaders httpHeaders, Class<T> responseType) {
         return execute(HttpMethod.POST, url, body, httpHeaders, responseType);
+    }
+
+    protected <T, V> ResponseEntity<T> executePost(String url, V body, HttpHeaders httpHeaders, ParameterizedTypeReference<T> responseType) {
+        return restTemplate.exchange(url,
+                HttpMethod.POST,
+                new HttpEntity<>(body, httpHeaders),
+                responseType);
     }
 
     protected <T, V> ResponseEntity<T> execute(HttpMethod httpMethod,

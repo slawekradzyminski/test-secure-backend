@@ -7,11 +7,11 @@ import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 
@@ -28,7 +28,7 @@ public class EmailControllerTest extends DomainHelper {
     @Value("${activemq.destination}")
     private String destination;
 
-    @MockBean
+    @MockitoBean
     private JmsTemplate jmsTemplate;
 
     private String authToken;

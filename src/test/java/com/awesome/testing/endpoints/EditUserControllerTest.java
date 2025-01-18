@@ -10,7 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
+import java.util.Map;
 
+import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static com.awesome.testing.util.UserUtil.getRandomEmail;
 import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,9 +30,11 @@ public class EditUserControllerTest extends DomainHelper {
         UserEditDTO userEditDTO = getRandomUserEditBody();
 
         // when
-        ResponseEntity<Object> response = executePut(getUserEndpoint(username),
+        ResponseEntity<UserResponseDTO> response = executePut(
+                getUserEndpoint(username),
                 userEditDTO,
-                getHeadersWith(token));
+                getHeadersWith(token),
+                UserResponseDTO.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -59,9 +63,11 @@ public class EditUserControllerTest extends DomainHelper {
                 .build();
 
         // when
-        ResponseEntity<Object> response = executePut(getUserEndpoint(username),
+        ResponseEntity<Map<String, String>> response = executePut(
+                getUserEndpoint(username),
                 userEditDTO,
-                getHeadersWith(clientToken));
+                getHeadersWith(clientToken),
+                mapTypeReference());
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -76,9 +82,11 @@ public class EditUserControllerTest extends DomainHelper {
         UserEditDTO userEditDTO = getRandomUserEditBody();
 
         // when
-        ResponseEntity<Object> response = executePut(getUserEndpoint(username),
+        ResponseEntity<UserResponseDTO> response = executePut(
+                getUserEndpoint(username),
                 userEditDTO,
-                getHeadersWith(clientToken));
+                getHeadersWith(clientToken),
+                UserResponseDTO.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -92,9 +100,11 @@ public class EditUserControllerTest extends DomainHelper {
         UserEditDTO userEditDTO = getRandomUserEditBody();
 
         // when
-        ResponseEntity<Object> response = executePut(getUserEndpoint(username),
+        ResponseEntity<ErrorDTO> response = executePut(
+                getUserEndpoint(username),
                 userEditDTO,
-                getJsonOnlyHeaders());
+                getJsonOnlyHeaders(),
+                ErrorDTO.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
@@ -108,9 +118,11 @@ public class EditUserControllerTest extends DomainHelper {
         UserEditDTO userEditDTO = getRandomUserEditBody();
 
         // when
-        ResponseEntity<Object> response = executePut(getUserEndpoint("nonexisting"),
+        ResponseEntity<ErrorDTO> response = executePut(
+                getUserEndpoint("nonexisting"),
                 userEditDTO,
-                getHeadersWith(clientToken));
+                getHeadersWith(clientToken),
+                ErrorDTO.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -124,5 +136,4 @@ public class EditUserControllerTest extends DomainHelper {
                 .lastName(RandomString.make(10))
                 .build();
     }
-
 }

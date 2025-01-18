@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -25,7 +24,6 @@ import jakarta.validation.Valid;
 public class UserSignInController {
 
     private final UserService userService;
-    private final ModelMapper modelMapper;
 
     @PostMapping("/signin")
     @Operation(summary = "Authenticate user and return JWT token")
