@@ -2,42 +2,37 @@ package com.awesome.testing;
 
 import java.util.List;
 
-import lombok.RequiredArgsConstructor;
+import com.awesome.testing.model.Role;
+import com.awesome.testing.model.User;
+import com.awesome.testing.service.UserService;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
-import com.awesome.testing.model.Role;
-import com.awesome.testing.model.User;
-import com.awesome.testing.service.UserService;
-import org.springframework.scheduling.annotation.EnableAsync;
-import org.zalando.logbook.HeaderFilter;
-
-import static org.zalando.logbook.HeaderFilter.none;
-
 @SpringBootApplication
-@RequiredArgsConstructor
-@EnableAsync
 public class JwtAuthServiceApp implements CommandLineRunner {
 
-    private final UserService userService;
+    @Autowired
+    UserService userService;
 
     public static void main(String[] args) {
         SpringApplication.run(JwtAuthServiceApp.class, args);
     }
 
-    @SuppressWarnings("unused")
-    @Bean
-    public HeaderFilter headerFilter() {
-        return none();
-    }
-
-    @SuppressWarnings("unused")
     @Bean
     public ModelMapper modelMapper() {
-        return new ModelMapper();
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration()
+                .setMatchingStrategy(MatchingStrategies.STRICT)
+                .setFieldMatchingEnabled(true)
+                .setFieldAccessLevel(org.modelmapper.config.Configuration.AccessLevel.PRIVATE)
+                .setSkipNullEnabled(true)
+                .setPropertyCondition(context -> context.getSource() != null);
+        return modelMapper;
     }
 
     @Override
@@ -48,17 +43,8 @@ public class JwtAuthServiceApp implements CommandLineRunner {
         admin.setEmail("admin@email.com");
         admin.setFirstName("Slawomir");
         admin.setLastName("Radzyminski");
-        admin.setRoles(List.of(Role.ROLE_ADMIN, Role.ROLE_CLIENT));
-        userService.signUp(admin);
+        admin.setRoles(List.of(Role.ROLE_ADMIN));
 
-        User client = new User();
-        client.setUsername("client");
-        client.setPassword("client");
-        client.setEmail("client@email.com");
-        client.setFirstName("Gosia");
-        client.setLastName("Radzyminska");
-        client.setRoles(List.of(Role.ROLE_CLIENT));
-        userService.signUp(client);
+        userService.signup(admin);
     }
-
 }

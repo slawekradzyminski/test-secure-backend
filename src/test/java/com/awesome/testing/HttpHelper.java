@@ -3,6 +3,7 @@ package com.awesome.testing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -18,6 +19,15 @@ public abstract class HttpHelper {
                                                HttpHeaders httpHeaders,
                                                Class<T> responseType) {
         return execute(HttpMethod.GET, url, null, httpHeaders, responseType);
+    }
+
+    protected <T> ResponseEntity<T> executeGet(String url,
+                                               HttpHeaders httpHeaders,
+                                               ParameterizedTypeReference<T> responseType) {
+        return restTemplate.exchange(url,
+                HttpMethod.GET,
+                new HttpEntity<>(null, httpHeaders),
+                responseType);
     }
 
     protected ResponseEntity<Object> executePut(String url, Object body, HttpHeaders httpHeaders) {

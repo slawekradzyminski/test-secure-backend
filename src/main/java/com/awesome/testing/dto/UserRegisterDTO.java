@@ -1,45 +1,41 @@
 package com.awesome.testing.dto;
 
+import com.awesome.testing.model.Role;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
+import lombok.Data;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 
-import com.awesome.testing.model.Role;
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.Size;
-
-@Setter
-@Getter
+@Data
 @Builder
 public class UserRegisterDTO {
 
     @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
-    @ApiModelProperty(position = 0)
+    @Schema(description = "Username", example = "johndoe")
     private String username;
 
-    @NotEmpty
-    @Email
-    @ApiModelProperty(position = 1)
+    @Email(message = "Email should be valid")
+    @Schema(description = "Email address", example = "john.doe@example.com")
     private String email;
 
-    @Size(min = 4, max = 255, message = "Minimum password length: 4 characters")
-    @ApiModelProperty(position = 2)
+    @Size(min = 4, message = "Minimum password length: 4 characters")
+    @Schema(description = "Password", example = "password123")
     private String password;
 
-    @NotEmpty(message = "Please pick at least one role")
-    @ApiModelProperty(position = 3)
-    private List<Role> roles;
-
-    @Size(min = 4, max = 255, message = "Minimum firstName length: 4 characters")
-    @ApiModelProperty(position = 4)
+    @Size(max = 255)
+    @Schema(description = "First name", example = "John")
     private String firstName;
 
-    @Size(min = 4, max = 255, message = "Minimum firstName length: 4 characters")
-    @ApiModelProperty(position = 5)
+    @Size(max = 255)
+    @Schema(description = "Last name", example = "Doe")
     private String lastName;
+
+    @Schema(description = "User roles", example = "[\"ROLE_USER\"]")
+    @NotEmpty(message = "User must have at least one role")
+    private List<Role> roles;
 
 }

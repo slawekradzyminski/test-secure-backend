@@ -1,33 +1,41 @@
 package com.awesome.testing.dto;
 
 import com.awesome.testing.model.Role;
-import io.swagger.annotations.ApiModelProperty;
-import lombok.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Builder;
+import lombok.Data;
 
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 
-@Value
+@Data
 @Builder
 public class UserEditDTO {
 
-    @NotEmpty
-    @Email
-    @ApiModelProperty(position = 0)
-    String email;
+    @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
+    @Schema(description = "Username", example = "johndoe")
+    private String username;
 
-    @NotEmpty(message = "Please pick at least one role")
-    @ApiModelProperty(position = 1)
-    List<Role> roles;
+    @Email(message = "Email should be valid")
+    @NotBlank(message = "Email is required")
+    @Schema(description = "Email address", example = "john.doe@example.com")
+    private String email;
 
-    @Size(min = 4, max = 255, message = "Minimum firstName length: 4 characters")
-    @ApiModelProperty(position = 2)
-    String firstName;
+    @Size(min = 8, message = "Minimum password length: 8 characters")
+    @Schema(description = "Password", example = "password123")
+    private String password;
 
-    @Size(min = 4, max = 255, message = "Minimum lastName length: 4 characters")
-    @ApiModelProperty(position = 3)
-    String lastName;
+    @Size(max = 255)
+    @Schema(description = "First name", example = "John")
+    private String firstName;
+
+    @Size(max = 255)
+    @Schema(description = "Last name", example = "Doe")
+    private String lastName;
+
+    @Schema(description = "User roles", example = "[\"ROLE_USER\"]")
+    private List<Role> roles;
 
 }

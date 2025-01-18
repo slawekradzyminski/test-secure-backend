@@ -1,0 +1,54 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: sa
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        id:
+          new_generator_mappings: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  activemq:
+    in-memory: true
+    broker-url: vm://localhost?broker.persistent=false
+    packages:
+      trust-all: true
+
+activemq:
+  destination: email
+
+server:
+  port: 0
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: ON_PARAM
+    include-exception: false
+
+security:
+  jwt:
+    token:
+      secret-key: test-key
+      expire-length: 300000
+
+logging:
+  level:
+    org:
+      springframework:
+        test: DEBUG
+        security: DEBUG
+        web: DEBUG
+    hibernate:
+      SQL: DEBUG
+      type:
+        descriptor:
+          sql:
+            BasicBinder: TRACE 

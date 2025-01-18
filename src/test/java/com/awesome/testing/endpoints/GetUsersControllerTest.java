@@ -8,25 +8,28 @@ import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
+import static com.awesome.testing.util.TypeReferenceUtil.userListTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ActiveProfiles("test")
 public class GetUsersControllerTest extends DomainHelper {
 
     @Test
     public void shouldGetUsersAsAdmin() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
-        String adminToken = registerAndGetToken(user);
+        String adminToken = getToken(user);
 
         // when
-        ResponseEntity<UserResponseDTO[]> response =
+        ResponseEntity<List<UserResponseDTO>> response =
                 executeGet(USERS_ENDPOINT,
                         getHeadersWith(adminToken),
-                        UserResponseDTO[].class);
+                        userListTypeReference());
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -34,16 +37,16 @@ public class GetUsersControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet403AsUnauthorized() {
+    public void shouldGet401AsUnauthorized() {
         // when
-        ResponseEntity<ErrorDTO> userResponseEntity = executeGet(
+        ResponseEntity<ErrorDTO> response = executeGet(
                 USERS_ENDPOINT,
                 getJsonOnlyHeaders(),
                 ErrorDTO.class
         );
 
         // then
-        assertThat(userResponseEntity.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody().getMessage()).isEqualTo("Unauthorized");
     }
-
 }

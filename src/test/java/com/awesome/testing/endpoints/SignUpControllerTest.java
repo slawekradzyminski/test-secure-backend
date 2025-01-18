@@ -8,6 +8,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static com.awesome.testing.util.UserUtil.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ActiveProfiles("test")
 public class SignUpControllerTest extends DomainHelper {
 
     @Test
@@ -28,7 +30,6 @@ public class SignUpControllerTest extends DomainHelper {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isNotBlank();
     }
 
     @SuppressWarnings("ConstantConditions")

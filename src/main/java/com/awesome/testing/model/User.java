@@ -1,24 +1,20 @@
 package com.awesome.testing.model;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.validation.constraints.Size;
-
 @Entity
-@ToString
-@Setter
-@Getter
+@Data
+@NoArgsConstructor
+@RequiredArgsConstructor
+@Table(name = "app_user")
 public class User {
 
     @Id
@@ -27,23 +23,31 @@ public class User {
 
     @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
     @Column(unique = true, nullable = false)
+    @NonNull
     private String username;
 
     @Column(unique = true, nullable = false)
+    @NonNull
     private String email;
 
-    @Size(min = 4, message = "Minimum password length: 4 characters")
+    @Size(min = 8, message = "Minimum password length: 8 characters")
+    @NonNull
     private String password;
 
     @ElementCollection(fetch = FetchType.EAGER)
-    private List<Role> roles;
+    List<Role> roles;
 
-    @Size(min = 4, message = "Minimum firstName length: 4 characters")
-    @Column(nullable = false)
+    @Size(max = 255)
+    @Column(name = "first_name")
     private String firstName;
 
-    @Size(min = 4, message = "Minimum lastName length: 4 characters")
-    @Column(nullable = false)
+    @Size(max = 255)
+    @Column(name = "last_name")
     private String lastName;
+
+    @JsonIgnore
+    public String getPassword() {
+        return password;
+    }
 
 }

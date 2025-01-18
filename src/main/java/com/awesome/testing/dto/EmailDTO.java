@@ -1,20 +1,22 @@
 package com.awesome.testing.dto;
 
-import lombok.Value;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotBlank;
-
-@Value
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class EmailDTO {
-
-    @Email
-    String to;
-
-    @NotBlank
-    String subject;
-
-    @NotBlank
-    String message;
-
+    @Schema(description = "Email recipient", example = "user@example.com")
+    private String recipient;
+    
+    @Schema(description = "Email subject", example = "Important message")
+    private String subject;
+    
+    @Schema(description = "Email content", example = "Please read this message carefully")
+    private String content;
 }

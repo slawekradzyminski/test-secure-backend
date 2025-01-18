@@ -4,17 +4,23 @@ import com.awesome.testing.dto.LoginDTO;
 import com.awesome.testing.dto.LoginResponseDTO;
 import com.awesome.testing.model.User;
 import com.awesome.testing.service.UserService;
-import io.swagger.annotations.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 @CrossOrigin(origins = "http://localhost:8081", maxAge = 3600)
 @RestController
 @RequestMapping("/users")
-@Api(tags = "users")
+@Tag(name = "users", description = "User management endpoints")
 @RequiredArgsConstructor
 public class UserSignInController {
 
@@ -22,15 +28,17 @@ public class UserSignInController {
     private final ModelMapper modelMapper;
 
     @PostMapping("/signin")
-    @ApiOperation(value = "${UserController.signin}", response = LoginResponseDTO.class)
+    @Operation(summary = "Authenticate user and return JWT token")
     @ApiResponses(value = {
-            @ApiResponse(code = 400, message = "Field validation failed"),
-            @ApiResponse(code = 422, message = "Invalid username/password supplied"),
-            @ApiResponse(code = 500, message = "Something went wrong")
+            @ApiResponse(responseCode = "200", description = "Successfully authenticated",
+                    content = @Content(schema = @Schema(implementation = LoginResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Field validation failed", content = @Content),
+            @ApiResponse(responseCode = "422", description = "Invalid username/password supplied", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Something went wrong", content = @Content)
     })
     public LoginResponseDTO login(
-            @ApiParam("Login details") @Valid @RequestBody LoginDTO loginDetails) {
-        String token = userService.signIn(modelMapper.map(loginDetails, LoginDTO.class));
+            @Parameter(description = "Login details") @Valid @RequestBody LoginDTO loginDetails) {
+        String token = userService.signIn(loginDetails.getUsername(), loginDetails.getPassword());
         User user = userService.search(loginDetails.getUsername());
 
         return LoginResponseDTO.builder()

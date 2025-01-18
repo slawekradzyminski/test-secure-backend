@@ -1,16 +1,14 @@
 package com.awesome.testing.dto;
 
-import lombok.Value;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.time.Instant;
-
-@Value
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ErrorDTO {
-
-    Instant timestamp;
-    int status;
-    String error;
-    String message;
-    String path;
-
+    @Schema(description = "Error message", example = "Something went wrong")
+    private String message;
 }

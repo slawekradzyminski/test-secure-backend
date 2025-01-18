@@ -30,7 +30,7 @@ server:
   error:
     include-message: always
     include-binding-errors: always
-    include-stacktrace: on_trace_param
+    include-stacktrace: ON_PARAM
     include-exception: false
   servlet:
     encoding:

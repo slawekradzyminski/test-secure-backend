@@ -6,6 +6,7 @@ import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.*;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ActiveProfiles("test")
 public class SignInControllerTest extends DomainHelper {
 
     private String validUsername;
@@ -26,7 +28,7 @@ public class SignInControllerTest extends DomainHelper {
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         validUsername = user.getUsername();
         validPassword = user.getPassword();
-        registerAndGetToken(user);
+        getToken(user);
     }
 
     @SuppressWarnings("ConstantConditions")

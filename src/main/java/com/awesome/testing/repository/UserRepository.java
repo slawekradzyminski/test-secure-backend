@@ -1,10 +1,8 @@
 package com.awesome.testing.repository;
 
-import javax.transaction.Transactional;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import com.awesome.testing.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import jakarta.transaction.Transactional;
 
 public interface UserRepository extends JpaRepository<User, Integer> {
 

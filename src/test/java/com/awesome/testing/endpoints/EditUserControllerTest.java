@@ -7,6 +7,7 @@ import net.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
@@ -14,6 +15,7 @@ import static com.awesome.testing.util.UserUtil.getRandomEmail;
 import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ActiveProfiles("test")
 public class EditUserControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
@@ -22,7 +24,7 @@ public class EditUserControllerTest extends DomainHelper {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String username = user.getUsername();
-        String token = registerAndGetToken(user);
+        String token = getToken(user);
         UserEditDTO userEditDTO = getRandomUserEditBody();
 
         // when
@@ -48,7 +50,7 @@ public class EditUserControllerTest extends DomainHelper {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String username = user.getUsername();
-        String clientToken = registerAndGetToken(user);
+        String clientToken = getToken(user);
         UserEditDTO userEditDTO = UserEditDTO.builder()
                 .email("")
                 .roles(List.of(Role.ROLE_ADMIN))
@@ -70,7 +72,7 @@ public class EditUserControllerTest extends DomainHelper {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
-        String clientToken = registerAndGetToken(user);
+        String clientToken = getToken(user);
         UserEditDTO userEditDTO = getRandomUserEditBody();
 
         // when
@@ -83,7 +85,7 @@ public class EditUserControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet403AsUnauthorized() {
+    public void shouldGet401AsUnauthorized() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
@@ -95,14 +97,14 @@ public class EditUserControllerTest extends DomainHelper {
                 getJsonOnlyHeaders());
 
         // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
     public void shouldGet404ForNonExistingUser() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
-        String clientToken = registerAndGetToken(user);
+        String clientToken = getToken(user);
         UserEditDTO userEditDTO = getRandomUserEditBody();
 
         // when

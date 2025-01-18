@@ -7,19 +7,21 @@ import com.awesome.testing.dto.UserResponseDTO;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.*;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ActiveProfiles("test")
 public class GetSingleUserControllerTest extends DomainHelper {
 
     @Test
     public void shouldGetUserAsAdmin() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
-        String adminToken = registerAndGetToken(user);
+        String adminToken = getToken(user);
 
         // when
         ResponseEntity<UserResponseDTO> response =
@@ -32,20 +34,10 @@ public class GetSingleUserControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet403AsUnauthorized() {
-        // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        registerAndGetToken(user);
-
-        // when
-        ResponseEntity<ErrorDTO> userResponseEntity = restTemplate.exchange(
-                getUserEndpoint(user.getUsername()),
-                HttpMethod.GET,
-                new HttpEntity<>(getJsonOnlyHeaders()),
-                ErrorDTO.class);
-
-        // then
-        assertThat(userResponseEntity.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    public void shouldGet401AsUnauthorized() {
+        ResponseEntity<ErrorDTO> response = executeGet(getUserEndpoint("nonexisting"), getJsonOnlyHeaders(), ErrorDTO.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody().getMessage()).isEqualTo("Unauthorized");
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -53,7 +45,7 @@ public class GetSingleUserControllerTest extends DomainHelper {
     public void shouldGet404ForNonExistingUser() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
-        String token = registerAndGetToken(user);
+        String token = getToken(user);
 
         // when
         ResponseEntity<ErrorDTO> response =

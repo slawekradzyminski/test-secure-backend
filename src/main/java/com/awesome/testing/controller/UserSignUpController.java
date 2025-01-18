@@ -1,21 +1,26 @@
 package com.awesome.testing.controller;
 
 import com.awesome.testing.dto.UserRegisterDTO;
-import com.awesome.testing.dto.UserRegisterResponseDTO;
 import com.awesome.testing.model.User;
 import com.awesome.testing.service.UserService;
-import io.swagger.annotations.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 @CrossOrigin(origins = "http://localhost:8081", maxAge = 3600)
 @RestController
 @RequestMapping("/users")
-@Api(tags = "users")
+@Tag(name = "users", description = "User management endpoints")
 @RequiredArgsConstructor
 public class UserSignUpController {
 
@@ -23,16 +28,18 @@ public class UserSignUpController {
     private final ModelMapper modelMapper;
 
     @PostMapping("/signup")
-    @ApiOperation(value = "${UserController.signup}")
-    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create a new user account")
     @ApiResponses(value = {
-            @ApiResponse(code = 400, message = "Field validation failed"),
-            @ApiResponse(code = 403, message = "Access denied"),
-            @ApiResponse(code = 422, message = "Username is already in use"),
-            @ApiResponse(code = 500, message = "Something went wrong")
+            @ApiResponse(responseCode = "201", description = "User was successfully created",
+                    content = @Content(schema = @Schema(type = "string", example = "eyJhbGciOiJIUzI1NiJ9..."))),
+            @ApiResponse(responseCode = "400", description = "Something went wrong", content = @Content),
+            @ApiResponse(responseCode = "422", description = "Username is already in use", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Something went wrong", content = @Content)
     })
-    public UserRegisterResponseDTO signup(@ApiParam("Signup user") @Valid @RequestBody UserRegisterDTO user) {
-        return userService.signUp(modelMapper.map(user, User.class));
+    @ResponseStatus(HttpStatus.CREATED)
+    public void signup(
+            @Parameter(description = "Signup User") @Valid @RequestBody UserRegisterDTO user) {
+        userService.signup(modelMapper.map(user, User.class));
     }
 
 }

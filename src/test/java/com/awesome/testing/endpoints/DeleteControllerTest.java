@@ -7,12 +7,14 @@ import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ActiveProfiles("test")
 public class DeleteControllerTest extends DomainHelper {
 
     @Test
@@ -20,7 +22,7 @@ public class DeleteControllerTest extends DomainHelper {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String username = user.getUsername();
-        String apiToken = registerAndGetToken(user);
+        String apiToken = getToken(user);
 
         // when
         ResponseEntity<String> response =
@@ -31,19 +33,17 @@ public class DeleteControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet403AsUnauthorized() {
-        // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String username = user.getUsername();
-
+    public void shouldGet401AsUnauthorized() {
         // when
-        ResponseEntity<ErrorDTO> response =
-                executeDelete(getUserEndpoint(username),
-                        getJsonOnlyHeaders(),
-                        ErrorDTO.class);
+        ResponseEntity<ErrorDTO> response = executeDelete(
+                getUserEndpoint("nonexisting"),
+                getJsonOnlyHeaders(),
+                ErrorDTO.class
+        );
 
         // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody().getMessage()).isEqualTo("Unauthorized");
     }
 
     @Test
@@ -51,7 +51,7 @@ public class DeleteControllerTest extends DomainHelper {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
-        String apiToken = registerAndGetToken(user);
+        String apiToken = getToken(user);
 
         // when
         ResponseEntity<ErrorDTO> response =
@@ -68,7 +68,7 @@ public class DeleteControllerTest extends DomainHelper {
     public void shouldGet404Nonexisting() {
         // given
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
-        String apiToken = registerAndGetToken(user);
+        String apiToken = getToken(user);
 
         // when
         ResponseEntity<ErrorDTO> response =

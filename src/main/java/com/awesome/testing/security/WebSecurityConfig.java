@@ -4,56 +4,73 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity
 @RequiredArgsConstructor
-public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+public class WebSecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.cors();
-        http.csrf().disable();
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        // Disable CSRF as we use JWT
+        http.csrf(csrf -> csrf.disable());
+        
+        // Enable CORS
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
+        
+        // No session will be created or used by Spring Security
+        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        
+        // Entry points
+        http.authorizeHttpRequests(auth -> auth
+            .requestMatchers("/users/signin").permitAll()
+            .requestMatchers("/users/signup").permitAll()
+            .requestMatchers("/h2-console/**").permitAll()
+            // Swagger endpoints
+            .requestMatchers("/v3/api-docs/**").permitAll()
+            .requestMatchers("/swagger-ui/**").permitAll()
+            .requestMatchers("/swagger-resources/**").permitAll()
+            .requestMatchers("/webjars/**").permitAll()
+            // All other endpoints require authentication
+            .anyRequest().authenticated()
+        );
 
-        http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+        // Handle errors
+        http.exceptionHandling(ex -> ex
+            .accessDeniedHandler((request, response, accessDeniedException) -> {
+                response.setContentType("application/json;charset=UTF-8");
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.getWriter().write("{\"message\":\"Access denied\"}");
+            })
+            .authenticationEntryPoint((request, response, authException) -> {
+                response.setContentType("application/json;charset=UTF-8");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("{\"message\":\"Unauthorized\"}");
+            })
+        );
 
-        http.authorizeRequests()
-                .antMatchers("/users/signin").permitAll()
-                .antMatchers("/actuator/**").permitAll()
-                .antMatchers("/users/signup").permitAll()
-                .antMatchers("/email").permitAll()
-                .antMatchers("/h2-console/**/**").permitAll()
-                .antMatchers("/h2-console").permitAll()
-                .anyRequest().authenticated();
+        // Apply JWT security filter
+        http.addFilterBefore(new JwtTokenFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
 
-        http.exceptionHandling().accessDeniedPage("/login");
-
-        http.apply(new JwtTokenFilterConfigurer(jwtTokenProvider));
-    }
-
-    @Override
-    public void configure(WebSecurity web) {
-        web.ignoring().antMatchers("/v2/api-docs")
-                .antMatchers("/swagger-resources/**")
-                .antMatchers("/swagger-ui.html")
-                .antMatchers("/configuration/**")
-                .antMatchers("/webjars/**")
-                .antMatchers("/public")
-                .and()
-                .ignoring()
-                .antMatchers("/h2-console/**/**")
-                .antMatchers("/h2-console");
+        return http.build();
     }
 
     @Bean
@@ -61,10 +78,21 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         return new BCryptPasswordEncoder(12);
     }
 
-    @Override
     @Bean
-    public AuthenticationManager authenticationManagerBean() throws Exception {
-        return super.authenticationManagerBean();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
     }
 
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:8081"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept"));
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 }

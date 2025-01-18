@@ -1,32 +1,36 @@
 package com.awesome.testing.dto;
 
+import com.awesome.testing.model.Role;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
 
-import io.swagger.annotations.ApiModelProperty;
-import lombok.*;
-import com.awesome.testing.model.Role;
-
-@Setter
-@Getter
-@ToString
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserResponseDTO {
 
-    @ApiModelProperty(position = 0)
-    private Integer id;
+    @Schema(description = "User ID", example = "1")
+    Integer id;
 
-    @ApiModelProperty(position = 1)
-    private String username;
+    @Schema(description = "Username", example = "johndoe")
+    String username;
 
-    @ApiModelProperty(position = 2)
-    private String email;
+    @Schema(description = "Email address", example = "john.doe@example.com")
+    String email;
 
-    @ApiModelProperty(position = 3)
-    private List<Role> roles;
+    @Schema(description = "User roles", example = "[\"ROLE_USER\"]")
+    List<Role> roles;
 
-    @ApiModelProperty(position = 5)
-    private String firstName;
+    @Schema(description = "First name", example = "John")
+    String firstName;
 
-    @ApiModelProperty(position = 6)
-    private String lastName;
+    @Schema(description = "Last name", example = "Doe")
+    String lastName;
 
 }
