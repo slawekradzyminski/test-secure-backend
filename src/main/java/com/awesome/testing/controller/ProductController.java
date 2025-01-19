@@ -21,13 +21,12 @@ import java.util.List;
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
 @Tag(name = "Products", description = "Product management endpoints")
-@SecurityRequirement(name = "Bearer Authentication")
 public class ProductController {
 
     private final ProductService productService;
 
     @GetMapping
-    @Operation(summary = "Get all products")
+    @Operation(summary = "Get all products", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved products"),
         @ApiResponse(responseCode = "401", description = "Unauthorized")
@@ -37,7 +36,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get product by ID")
+    @Operation(summary = "Get product by ID", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved product"),
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -51,7 +50,7 @@ public class ProductController {
 
     @PostMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Create new product")
+    @Operation(summary = "Create new product", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Product created successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid input"),
@@ -65,7 +64,7 @@ public class ProductController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Update existing product")
+    @Operation(summary = "Update existing product", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Product updated successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid input"),
@@ -83,7 +82,7 @@ public class ProductController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Delete product")
+    @Operation(summary = "Delete product", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         return productService.deleteProduct(id)
                 ? ResponseEntity.noContent().build()

@@ -1,8 +1,7 @@
 package com.awesome.testing;
 
-import com.awesome.testing.model.User;
-import com.awesome.testing.service.UserService;
-import com.awesome.testing.util.UserDataUtil;
+import com.awesome.testing.fakedata.SetupData;
+
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,7 @@ import org.springframework.context.annotation.Bean;
 public class JwtAuthServiceApp implements CommandLineRunner {
 
     @Autowired
-    UserService userService;
+    private SetupData setupData;
 
     public static void main(String[] args) {
         SpringApplication.run(JwtAuthServiceApp.class, args);
@@ -35,50 +34,6 @@ public class JwtAuthServiceApp implements CommandLineRunner {
 
     @Override
     public void run(String... params) {
-        // Use UserDataUtil to create users
-        User admin = UserDataUtil.createAdminUser(
-                "admin",
-                "admin",
-                "awesome@testing.com",
-                "Slawomir",
-                "Radzyminski"
-        );
-        userService.signup(admin);
-
-        User admin2 = UserDataUtil.createAdminUser(
-                "admin2",
-                "admin2",
-                "john.doe@company.com",
-                "John",
-                "Doe"
-        );
-        userService.signup(admin2);
-
-        User client1 = UserDataUtil.createClientUser(
-                "client",
-                "client",
-                "alice.smith@yahoo.com",
-                "Alice",
-                "Smith"
-        );
-        userService.signup(client1);
-
-        User client2 = UserDataUtil.createClientUser(
-                "client2",
-                "client2",
-                "bob.johnson@google.com",
-                "Bob",
-                "Johnson"
-        );
-        userService.signup(client2);
-
-        User client3 = UserDataUtil.createClientUser(
-                "client3",
-                "client3",
-                "charlie.brown@example.com",
-                "Charlie",
-                "Brown"
-        );
-        userService.signup(client3);
+        setupData.setupData();
     }
 }

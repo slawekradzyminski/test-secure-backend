@@ -1,6 +1,7 @@
 package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
+import com.awesome.testing.config.TestConfig;
 import com.awesome.testing.dto.ProductDTO;
 import com.awesome.testing.dto.UserRegisterDTO;
 import com.awesome.testing.model.Product;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Import;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -23,6 +25,7 @@ import static com.awesome.testing.util.TypeReferenceUtil.productListTypeReferenc
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
+@Import(TestConfig.class)
 public class ProductControllerTest extends DomainHelper {
 
     private static final String PRODUCTS_ENDPOINT = "/api/products";

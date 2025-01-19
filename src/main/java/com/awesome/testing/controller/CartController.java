@@ -18,13 +18,12 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
 @Tag(name = "Cart", description = "Shopping cart management endpoints")
-@SecurityRequirement(name = "Bearer Authentication")
 public class CartController {
 
     private final CartService cartService;
 
     @GetMapping
-    @Operation(summary = "Get current user's cart")
+    @Operation(summary = "Get current user's cart", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved cart"),
         @ApiResponse(responseCode = "401", description = "Unauthorized")
@@ -34,7 +33,7 @@ public class CartController {
     }
 
     @PostMapping("/items")
-    @Operation(summary = "Add item to cart")
+    @Operation(summary = "Add item to cart", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Item added successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid input"),
@@ -48,7 +47,7 @@ public class CartController {
     }
 
     @PutMapping("/items/{productId}")
-    @Operation(summary = "Update item quantity")
+    @Operation(summary = "Update item quantity", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Item quantity updated successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid input"),
@@ -63,7 +62,7 @@ public class CartController {
     }
 
     @DeleteMapping("/items/{productId}")
-    @Operation(summary = "Remove item from cart")
+    @Operation(summary = "Remove item from cart", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Item removed successfully"),
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -76,7 +75,7 @@ public class CartController {
     }
 
     @DeleteMapping
-    @Operation(summary = "Clear cart")
+    @Operation(summary = "Clear cart", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Cart cleared successfully"),
         @ApiResponse(responseCode = "401", description = "Unauthorized")
