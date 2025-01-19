@@ -110,3 +110,25 @@ src/
         └── com/awesome/testing/
             └── endpoints/     # Integration tests
 ```
+
+### AI Debugging Tips
+
+When working with AI assistants, keep in mind:
+
+1. Test failures may be caused by recent changes since git HEAD is kept stable. To see the changes use:
+   ```bash
+   git --no-pager diff
+   ```
+
+2. To run a single test and save the output to the testlogs folder, use JUnit notation:
+   ```bash
+   mvn test -Dtest=TestClassName#testMethodName > ./testlogs/test-output.log
+   ```
+   This helps in analyzing test failures by providing detailed logs.
+
+3. The test logs can be read and analyzed by AI to help diagnose issues.
+
+4. When making changes, always verify that all tests pass using:
+   ```bash
+   mvn test
+   ```

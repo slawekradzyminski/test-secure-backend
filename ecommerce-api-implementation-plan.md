@@ -113,16 +113,26 @@
    ```
 
 ## Phase 3: Shopping Cart
-1. Implement CartController with endpoints:
+1. ✅ Implement CartService with methods:
+   ```java
+   CartDTO getCart(String username);
+   CartDTO addToCart(String username, CartItemDTO cartItemDTO);
+   CartDTO updateCartItem(String username, Long productId, CartItemDTO cartItemDTO);
+   CartDTO removeFromCart(String username, Long productId);
+   void clearCart(String username);
+   ```
+   Service layer will handle business logic and transactions.
+
+2. ✅ Implement CartController with endpoints:
    ```http
-   GET    /api/cart
-   POST   /api/cart/items
-   PUT    /api/cart/items/{productId}
-   DELETE /api/cart/items/{productId}
-   DELETE /api/cart
+   GET    /api/cart                        - Get current user's cart
+   POST   /api/cart/items                  - Add item to cart
+   PUT    /api/cart/items/{productId}      - Update item quantity
+   DELETE /api/cart/items/{productId}      - Remove item from cart
+   DELETE /api/cart                        - Clear cart
    ```
 
-2. Create CartControllerTest:
+3. ✅ Create CartControllerTest:
    ```java
    @Test
    void shouldGetEmptyCart() {
@@ -148,8 +158,57 @@
        // Assert 200 OK and updated cart
    }
    
-   // Similar patterns for other cart operations
+   @Test
+   void shouldUpdateCartItemQuantity() {
+       // given
+       // Create user token and cart with item
+       
+       // when
+       // PUT /api/cart/items/{productId}
+       
+       // then
+       // Assert 200 OK and updated quantity
+   }
+   
+   @Test
+   void shouldRemoveItemFromCart() {
+       // given
+       // Create user token and cart with item
+       
+       // when
+       // DELETE /api/cart/items/{productId}
+       
+       // then
+       // Assert 200 OK and item removed
+   }
+   
+   @Test
+   void shouldClearCart() {
+       // given
+       // Create user token and cart with items
+       
+       // when
+       // DELETE /api/cart
+       
+       // then
+       // Assert 200 OK and empty cart
+   }
+   
+   @Test
+   void shouldFailToGetCartWhenNotAuthenticated() {
+       // when
+       // GET /api/cart without token
+       
+       // then
+       // Assert 401 UNAUTHORIZED
+   }
    ```
+
+4. ✅ Add Swagger/OpenAPI documentation:
+   - Added @Tag annotations for controller grouping
+   - Added @Operation annotations for endpoint descriptions
+   - Added @ApiResponses for documenting response codes
+   - Added @SecurityRequirement for JWT authentication
 
 ## Phase 4: Order Management
 1. Implement OrderController with endpoints:
@@ -263,4 +322,12 @@
 3. Phase 3: Shopping Cart (2-3 days)
 4. Phase 4: Order Management (2-3 days)
 
-Total estimated time: 8-12 days depending on complexity and issues encountered. 
+Total estimated time: 8-12 days depending on complexity and issues encountered.
+
+## Next Steps:
+1. Implement Order functionality:
+   - Create Order and OrderItem entities
+   - Implement OrderService
+   - Create OrderController with endpoints
+   - Add comprehensive tests
+   - Add Swagger documentation 
