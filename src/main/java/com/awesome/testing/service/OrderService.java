@@ -38,22 +38,24 @@ public class OrderService {
                 .totalAmount(BigDecimal.ZERO)
                 .build();
 
-        cartItems.forEach(cartItem -> {
-            OrderItem orderItem = OrderItem.builder()
-                    .product(cartItem.getProduct())
-                    .quantity(cartItem.getQuantity())
-                    .price(cartItem.getPrice())
-                    .build();
-            order.addItem(orderItem);
-            order.setTotalAmount(order.getTotalAmount().add(
-                    cartItem.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()))
-            ));
-        });
+        cartItems.forEach(cartItem -> updateOrder(cartItem, order));
 
         Order savedOrder = orderRepository.save(order);
         cartItemRepository.deleteByUsername(username);
 
         return mapToOrderDTO(savedOrder);
+    }
+
+    private void updateOrder(CartItem cartItem, Order order) {
+        OrderItem orderItem = OrderItem.builder()
+                .product(cartItem.getProduct())
+                .quantity(cartItem.getQuantity())
+                .price(cartItem.getPrice())
+                .build();
+        order.addItem(orderItem);
+        order.setTotalAmount(order.getTotalAmount().add(
+                cartItem.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()))
+        ));
     }
 
     @Transactional(readOnly = true)
