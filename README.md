@@ -53,7 +53,7 @@ mvn test
 ## API Documentation
 
 Once the application is running, you can access the Swagger UI at:
-`http://localhost:8080/swagger-ui/index.html`
+`http://localhost:4001/swagger-ui/index.html`
 
 ## API Endpoints
 

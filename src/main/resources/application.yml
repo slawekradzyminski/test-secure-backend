@@ -21,6 +21,9 @@ spring:
     broker-url: tcp://host.docker.internal:61616
     user: admin
     password: admin
+  jackson:
+    serialization:
+      indent-output: true
 
 activemq:
   destination: email
@@ -46,13 +49,26 @@ security:
       expire-length: 300000 # 5 minutes duration by default: 5 minutes * 60 seconds * 1000 miliseconds
 
 logbook:
-  include: "**/users**"
+  include: "/**"
+  exclude: 
+    - "/swagger-ui/**"
+    - "/v3/api-docs/**"
+  format:
+    style: json
+  write:
+    chunk-size: 1000
+  filter.enabled: true
+  obfuscate:
+    headers:
+      - x-secret
+      - cookie
 
 logging:
   level:
-    org:
-      zalando:
-        logbook: TRACE
+    root: INFO
+    org.zalando.logbook: TRACE
+  pattern:
+    console: "%msg%n"
 
 UserController:
   signin: Authenticates user and returns its JWT token.
