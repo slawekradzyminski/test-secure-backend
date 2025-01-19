@@ -9,7 +9,6 @@ import org.zalando.logbook.HttpLogFormatter;
 @Configuration
 public class LogbookConfig {
 
-    @Bean
     public ObjectMapper logbookObjectMapper() {
         return new ObjectMapper()
                 .enable(SerializationFeature.INDENT_OUTPUT)
