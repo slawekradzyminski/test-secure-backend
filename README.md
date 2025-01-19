@@ -1,6 +1,6 @@
-# Secure Backend API
+# Secure Backend API with E-commerce Features
 
-A secure backend API built with Spring Boot that provides user authentication, authorization, and email functionality.
+A secure backend API built with Spring Boot that provides user authentication, authorization, email functionality, and e-commerce features.
 
 ## Features
 
@@ -8,6 +8,9 @@ A secure backend API built with Spring Boot that provides user authentication, a
 - Role-based authorization (ADMIN and CLIENT roles)
 - User management (signup, signin, edit, delete)
 - Email sending functionality via ActiveMQ
+- Product management
+- Shopping cart functionality
+- Order management
 - Swagger/OpenAPI documentation
 - Comprehensive test coverage
 
@@ -65,6 +68,27 @@ Once the application is running, you can access the Swagger UI at:
 - GET `/users/{username}` - Get user by username
 - PUT `/users/{username}` - Update user
 - DELETE `/users/{username}` - Delete user (ADMIN only)
+
+### Products
+- GET `/api/products` - Get all products (authenticated)
+- GET `/api/products/{id}` - Get product by ID (authenticated)
+- POST `/api/products` - Create new product (ADMIN only)
+- PUT `/api/products/{id}` - Update product (ADMIN only)
+- DELETE `/api/products/{id}` - Delete product (ADMIN only)
+
+### Shopping Cart
+- GET `/api/cart` - Get current user's cart
+- POST `/api/cart/items` - Add item to cart
+- PUT `/api/cart/items/{productId}` - Update item quantity
+- DELETE `/api/cart/items/{productId}` - Remove item from cart
+- DELETE `/api/cart` - Clear cart
+
+### Orders
+- POST `/api/orders` - Create a new order
+- GET `/api/orders` - Get user's orders
+- GET `/api/orders/{id}` - Get order by ID
+- PUT `/api/orders/{id}/status` - Update order status (ADMIN only)
+- POST `/api/orders/{id}/cancel` - Cancel order
 
 ### Email
 - POST `/email` - Send an email (authenticated users only)
