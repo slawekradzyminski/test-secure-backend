@@ -8,9 +8,15 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import com.awesome.testing.service.delay.DelayGenerator;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class HttpHelper {
+
+    @MockitoBean
+    private DelayGenerator delayGenerator;
 
     @Autowired
     protected TestRestTemplate restTemplate;
