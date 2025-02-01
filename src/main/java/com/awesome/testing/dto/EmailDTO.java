@@ -12,11 +12,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class EmailDTO {
     @Schema(description = "Email recipient", example = "user@example.com")
-    private String recipient;
+    private String to;
     
     @Schema(description = "Email subject", example = "Important message")
     private String subject;
     
     @Schema(description = "Email content", example = "Please read this message carefully")
-    private String content;
+    private String message;
 }

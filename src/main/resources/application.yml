@@ -16,11 +16,17 @@ spring:
     console:
       enabled: true
       path: /h2-console
-  activemq:
-    in-memory: false
-    broker-url: tcp://host.docker.internal:61616
+  artemis:
+    mode: native
+#    broker-url: tcp://host.docker.internal:61616
+    broker-url: tcp://localhost:61616
     user: admin
     password: admin
+    pool:
+      enabled: true
+      max-connections: 10
+    packages:
+      trust-all: true
   jackson:
     serialization:
       indent-output: true
@@ -52,7 +58,10 @@ logbook:
   include: "/**"
   exclude: 
     - "/swagger-ui/**"
+    - "/v3/api-docs"
     - "/v3/api-docs/**"
+    - "/actuator/**"
+    - "/favicon.ico"
   format:
     style: json
   write:

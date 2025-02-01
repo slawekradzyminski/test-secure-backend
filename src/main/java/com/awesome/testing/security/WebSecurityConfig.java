@@ -49,6 +49,8 @@ public class WebSecurityConfig {
             .requestMatchers("/swagger-ui/**").permitAll()
             .requestMatchers("/swagger-resources/**").permitAll()
             .requestMatchers("/webjars/**").permitAll()
+            // Actuator endpoints
+            .requestMatchers("/actuator/**").permitAll()
             // All other endpoints require authentication
             .anyRequest().authenticated()
         );

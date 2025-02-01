@@ -20,14 +20,20 @@ public class EmailService {
         Thread.ofVirtual().start(() -> {
             try {
                 long delay = delayGenerator.getDelayMillis();
-                log.info("Delaying email send by {} ms", delay);
+                logDelay(delay);
                 Thread.sleep(delay);
                 jmsTemplate.convertAndSend(destination, emailDTO);
-                log.info("Email sent to {}", emailDTO.getRecipient());
+                log.info("Email sent to {}", emailDTO.getTo());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.error("Email sending was interrupted", e);
             }
         });
     }
-} 
+
+    private void logDelay(long delay) {
+        long minutes = delay / 60000;
+        long seconds = (delay % 60000) / 1000;
+        log.info("Delaying email send by {} minutes and {} seconds", minutes, seconds);
+    }
+}

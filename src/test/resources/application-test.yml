@@ -16,11 +16,22 @@ spring:
     console:
       enabled: true
       path: /h2-console
-  activemq:
-    in-memory: true
-    broker-url: vm://localhost?broker.persistent=false
-    packages:
-      trust-all: true
+  artemis:
+    mode: embedded
+    embedded:
+      enabled: true
+      queues: email
+      persistent: false
+    broker-url: vm://0
+    user: admin
+    password: admin
+  jms:
+    pub-sub-domain: false
+    template:
+      default-destination: email
+      receive-timeout: 2000
+  main:
+    allow-bean-definition-overriding: true
 
 activemq:
   destination: email
@@ -41,12 +52,12 @@ security:
 
 logging:
   level:
-    org:
-      springframework:
-        test: DEBUG
-        security: DEBUG
-        web: DEBUG
-    hibernate:
+    root: INFO
+    com.awesome.testing.config: DEBUG
+    org.springframework.transaction: DEBUG
+    org.springframework.orm.jpa: DEBUG
+    org.springframework.jms: DEBUG
+    org.hibernate:
       SQL: DEBUG
       type:
         descriptor:

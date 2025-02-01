@@ -3,6 +3,7 @@ package com.awesome.testing.fakedata;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.awesome.testing.model.Role;
 import com.awesome.testing.model.User;
@@ -11,11 +12,13 @@ import com.awesome.testing.service.UserService;
 import lombok.RequiredArgsConstructor;
 
 @Component
+@Transactional
 @RequiredArgsConstructor
 public class SetupUsers {
 
     private final UserService userService;
 
+    @Transactional
     public void createUsers() {
         User admin = SetupUsers.createAdminUser(
                 "admin",
