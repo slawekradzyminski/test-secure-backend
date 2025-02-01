@@ -18,8 +18,7 @@ spring:
       path: /h2-console
   artemis:
     mode: native
-#    broker-url: tcp://host.docker.internal:61616
-    broker-url: tcp://localhost:61616
+    broker-url: tcp://host.docker.internal:61616
     user: admin
     password: admin
     pool:
