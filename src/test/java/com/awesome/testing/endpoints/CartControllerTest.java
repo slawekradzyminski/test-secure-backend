@@ -1,7 +1,6 @@
 package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.config.TestConfig;
 import com.awesome.testing.dto.CartDTO;
 import com.awesome.testing.dto.CartItemDTO;
 import com.awesome.testing.dto.ErrorDTO;
@@ -14,18 +13,14 @@ import com.awesome.testing.util.UserUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ActiveProfiles("test")
-@Import(TestConfig.class)
 public class CartControllerTest extends DomainHelper {
 
     private static final String CART_ENDPOINT = "/api/cart";

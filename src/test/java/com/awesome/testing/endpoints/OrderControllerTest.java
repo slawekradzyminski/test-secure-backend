@@ -1,7 +1,6 @@
 package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.config.TestConfig;
 import com.awesome.testing.dto.*;
 import com.awesome.testing.model.OrderStatus;
 import com.awesome.testing.model.Product;
@@ -15,21 +14,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(TestConfig.class)
-@ActiveProfiles("test")
 class OrderControllerTest extends DomainHelper {
 
     private static final String ORDERS_ENDPOINT = "/api/orders";

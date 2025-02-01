@@ -1,23 +1,17 @@
 package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.config.TestConfig;
 import com.awesome.testing.dto.EmailDTO;
 import com.awesome.testing.dto.UserRegisterDTO;
 import com.awesome.testing.model.Role;
-import com.awesome.testing.service.delay.DelayGenerator;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jms.core.JmsTemplate;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 
@@ -25,9 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(TestConfig.class)
-@ActiveProfiles("test")
 public class EmailControllerTest extends DomainHelper {
 
     private static final String EMAIL_ENDPOINT = "/email";
@@ -38,16 +29,12 @@ public class EmailControllerTest extends DomainHelper {
     @Autowired
     private JmsTemplate jmsTemplate;
 
-    @MockitoBean
-    private DelayGenerator delayGenerator;
-
     private String authToken;
 
     @BeforeEach
     public void setup() {
         UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         authToken = getToken(user);
-        when(delayGenerator.getDelayMillis()).thenReturn(0L);
     }
 
     @Test

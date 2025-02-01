@@ -53,13 +53,3 @@ security:
 logging:
   level:
     root: INFO
-    com.awesome.testing.config: DEBUG
-    org.springframework.transaction: DEBUG
-    org.springframework.orm.jpa: DEBUG
-    org.springframework.jms: DEBUG
-    org.hibernate:
-      SQL: DEBUG
-      type:
-        descriptor:
-          sql:
-            BasicBinder: TRACE 
