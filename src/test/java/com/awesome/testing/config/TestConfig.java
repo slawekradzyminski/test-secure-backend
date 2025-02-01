@@ -12,6 +12,7 @@ import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
 import org.springframework.jms.support.converter.MessageConverter;
@@ -24,6 +25,7 @@ import org.springframework.jms.connection.CachingConnectionFactory;
 
 @Slf4j
 @TestConfiguration
+@Profile("test")
 public class TestConfig {
 
     @SneakyThrows
