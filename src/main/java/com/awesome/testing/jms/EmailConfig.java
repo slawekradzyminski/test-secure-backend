@@ -3,6 +3,7 @@ package com.awesome.testing.jms;
 import jakarta.jms.ConnectionFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
 import org.springframework.jms.support.converter.MessageConverter;
@@ -12,6 +13,7 @@ import org.springframework.jms.annotation.EnableJms;
 @SuppressWarnings("unused")
 @Configuration
 @EnableJms
+@Profile("!local")
 public class EmailConfig {
 
     @Bean

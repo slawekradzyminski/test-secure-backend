@@ -1,4 +1,8 @@
 spring:
+  profiles:
+    active: docker
+  main:
+    allow-bean-definition-overriding: true
   datasource:
     url: jdbc:h2:mem:testdb
     username: root
@@ -45,7 +49,6 @@ server:
       charset: UTF-8
       enabled: true
       force: true
-
 
 security:
   jwt:

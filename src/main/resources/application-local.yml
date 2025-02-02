@@ -1,0 +1,68 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: sa
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        id:
+          new_generator_mappings: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  artemis:
+    mode: embedded
+    embedded:
+      enabled: true
+      queues: email
+      persistent: false
+    broker-url: vm://0
+    user: admin
+    password: admin
+  jms:
+    pub-sub-domain: false
+    template:
+      default-destination: email
+      receive-timeout: 2000
+  jackson:
+    serialization:
+      indent-output: true
+
+activemq:
+  destination: email
+
+server:
+  port: 4001
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: ON_PARAM
+    include-exception: false
+
+security:
+  jwt:
+    token:
+      secret-key: secret-key
+      expire-length: 300000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+logging:
+  level:
+    root: INFO
+    org.zalando.logbook: TRACE
+    org.springframework.transaction: DEBUG
+    org.springframework.jms: DEBUG
+    org.springframework.orm: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" 
