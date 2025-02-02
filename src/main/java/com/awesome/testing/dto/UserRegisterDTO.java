@@ -7,6 +7,7 @@ import lombok.Data;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
@@ -14,15 +15,18 @@ import java.util.List;
 @Builder
 public class UserRegisterDTO {
 
+    @NotNull(message = "Username is required")
     @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
     @Schema(description = "Username", example = "johndoe")
     private String username;
 
+    @NotNull(message = "Email is required")
     @Email(message = "Email should be valid")
     @Schema(description = "Email address", example = "john.doe@example.com")
     private String email;
 
-    @Size(min = 4, message = "Minimum password length: 4 characters")
+    @NotNull(message = "Password is required")
+    @Size(min = 8, message = "Minimum password length: 8 characters")
     @Schema(description = "Password", example = "password123")
     private String password;
 
@@ -31,11 +35,11 @@ public class UserRegisterDTO {
     private String firstName;
 
     @Size(max = 255)
-    @Schema(description = "Last name", example = "Doe")
+    @Schema(description = "Last name", example = "Boyd")
     private String lastName;
 
-    @Schema(description = "User roles", example = "[\"ROLE_USER\"]")
-    @NotEmpty(message = "User must have at least one role")
+    @NotEmpty(message = "At least one role must be specified")
+    @Schema(description = "User roles", example = "[\"ROLE_CLIENT\"]")
     private List<Role> roles;
 
 }

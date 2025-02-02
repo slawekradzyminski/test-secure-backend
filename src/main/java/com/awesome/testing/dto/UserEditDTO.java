@@ -35,7 +35,7 @@ public class UserEditDTO {
     @Schema(description = "Last name", example = "Doe")
     private String lastName;
 
-    @Schema(description = "User roles", example = "[\"ROLE_USER\"]")
+    @Schema(description = "User roles", example = "[\"ROLE_CLIENT\"]")
     private List<Role> roles;
 
 }

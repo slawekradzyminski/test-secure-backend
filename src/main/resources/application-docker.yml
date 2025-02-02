@@ -35,8 +35,6 @@ server:
   error:
     include-message: always
     include-binding-errors: always
-    include-stacktrace: ON_PARAM
-    include-exception: false
 
 security:
   jwt:
@@ -54,8 +52,5 @@ logging:
   level:
     root: INFO
     org.zalando.logbook: TRACE
-    org.springframework.transaction: DEBUG
-    org.springframework.jms: DEBUG
-    org.springframework.orm: DEBUG
   pattern:
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" 

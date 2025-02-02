@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 import com.awesome.testing.dto.ErrorDTO;
+import org.modelmapper.MappingException;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
 import org.springframework.web.context.request.WebRequest;
@@ -46,6 +47,26 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
+        return ResponseEntity
+                .badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(errors);
+    }
+
+    @ExceptionHandler(MappingException.class)
+    public ResponseEntity<Map<String, String>> handleMappingException(MappingException ex) {
+        Map<String, String> errors = new HashMap<>();
+        errors.put("error", "Invalid data format: " + ex.getMessage());
+        return ResponseEntity
+                .badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(errors);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        Map<String, String> errors = new HashMap<>();
+        errors.put("error", ex.getMessage());
         return ResponseEntity
                 .badRequest()
                 .contentType(MediaType.APPLICATION_JSON)

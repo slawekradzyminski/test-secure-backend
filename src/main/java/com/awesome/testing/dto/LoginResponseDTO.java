@@ -26,7 +26,7 @@ public class LoginResponseDTO {
     @Schema(description = "Last name", example = "Doe")
     String lastName;
 
-    @Schema(description = "User roles", example = "[\"ROLE_USER\"]")
+    @Schema(description = "User roles", example = "[\"ROLE_CLIENT\"]")
     List<Role> roles;
 
 }
