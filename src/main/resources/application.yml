@@ -1,58 +1,15 @@
 spring:
   profiles:
     active: docker
-  datasource:
-    url: jdbc:h2:mem:testdb
-    username: root
-    password: root
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
-        format_sql: true
-        id:
-          new_generator_mappings: false
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-  artemis:
-    mode: native
-    broker-url: tcp://host.docker.internal:61616
-    user: admin
-    password: admin
-    pool:
-      enabled: true
-      max-connections: 10
-    packages:
-      trust-all: true
-  jackson:
-    serialization:
-      indent-output: true
-
-activemq:
-  destination: email
+  main:
+    allow-bean-definition-overriding: true
 
 server:
-  port: 4001
-  error:
-    include-message: always
-    include-binding-errors: always
-    include-stacktrace: ON_PARAM
-    include-exception: false
   servlet:
     encoding:
       charset: UTF-8
       enabled: true
       force: true
-
-security:
-  jwt:
-    token:
-      secret-key: secret-key
-      expire-length: 300000 # 5 minutes duration by default: 5 minutes * 60 seconds * 1000 miliseconds
 
 logbook:
   include: "/**"
@@ -72,13 +29,6 @@ logbook:
       - x-secret
       - cookie
 
-logging:
-  level:
-    root: INFO
-    org.zalando.logbook: TRACE
-  pattern:
-    console: "%msg%n"
-
 UserController:
   signin: Authenticates user and returns its JWT token.
   signup: Creates user and returns its JWT token
@@ -91,10 +41,4 @@ UserController:
 
 JmsSender:
   sendEmail: Sending email to Active MQ
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
 

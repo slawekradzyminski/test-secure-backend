@@ -1,6 +1,6 @@
 services:
   backend:
-    image: slawekradzyminski/backend:2.3
+    build: .
     platform: linux/amd64
     restart: always
     ports:
@@ -9,8 +9,27 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_ARTEMIS_BROKER_URL: tcp://activemq:61616
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/testdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
     depends_on:
       - activemq
+      - postgres
+    networks:
+      - my-private-ntwk
+
+  postgres:
+    image: postgres:16.1
+    platform: linux/amd64
+    restart: always
+    environment:
+      POSTGRES_DB: testdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
     networks:
       - my-private-ntwk
 
@@ -41,6 +60,9 @@ services:
     hostname: activemq
     networks:
       - my-private-ntwk
+
+volumes:
+  postgres-data:
 
 networks:
   my-private-ntwk:

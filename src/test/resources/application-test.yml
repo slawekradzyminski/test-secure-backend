@@ -53,3 +53,5 @@ security:
 logging:
   level:
     root: INFO
+    org.apache.activemq: WARN
+    org.apache.activemq.artemis: WARN
