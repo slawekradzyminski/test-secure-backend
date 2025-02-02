@@ -1,6 +1,98 @@
-# Secure Backend API with E-commerce Features
+# Secure Backend Application
 
-A secure backend API built with Spring Boot that provides user authentication, authorization, email functionality, and e-commerce features.
+This is a secure backend application built with Spring Boot, featuring JWT authentication, PostgreSQL database, and ActiveMQ messaging.
+
+## Profiles
+
+The application supports two profiles:
+
+### Local Profile
+
+The local profile uses H2 in-memory database and is suitable for development and testing.
+
+To run with local profile:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+### Docker Profile
+
+The Docker profile uses PostgreSQL and is suitable for production-like environments.
+
+To run with Docker profile:
+
+```bash
+docker compose up --build
+```
+
+This will start:
+- Backend service on port 4001
+- Frontend service on port 8081
+- PostgreSQL database on port 5432
+- ActiveMQ on ports 61616 (broker) and 8161 (web console)
+
+## Database Access
+
+### Accessing PostgreSQL Database
+
+You can interact with the PostgreSQL database in several ways:
+
+1. Using docker exec and the psql command-line tool:
+```bash
+# Connect to the database
+docker exec -it test-secure-backend-postgres-1 psql -U postgres -d testdb
+
+# Common psql commands:
+\dt                 # List tables
+\d table_name       # Describe table
+\q                  # Quit psql
+
+# Example queries:
+SELECT * FROM app_user;
+SELECT * FROM products;
+SELECT * FROM cart_items;
+SELECT * FROM orders;
+```
+
+2. Using external tools:
+   - Host: localhost
+   - Port: 5432
+   - Database: testdb
+   - Username: postgres
+   - Password: postgres
+
+### Database Schema
+
+The main tables in the database:
+- `app_user`: Stores user information
+- `products`: Stores product catalog
+- `cart_items`: Stores shopping cart items
+- `orders`: Stores order information
+
+## API Documentation
+
+The API documentation is available at:
+- Swagger UI: http://localhost:4001/swagger-ui.html
+- OpenAPI JSON: http://localhost:4001/v3/api-docs
+
+## Initial Data
+
+The application automatically sets up initial data when started:
+- Admin users (username/password):
+  - admin/admin
+  - admin2/admin2
+- Client users:
+  - client/client
+  - client2/client2
+  - client3/client3
+- Sample products in various categories
+
+## Security
+
+The application uses JWT tokens for authentication. To access protected endpoints:
+1. Get a token using the `/users/signin` endpoint
+2. Include the token in the Authorization header: `Bearer <token>`
 
 ## Features
 

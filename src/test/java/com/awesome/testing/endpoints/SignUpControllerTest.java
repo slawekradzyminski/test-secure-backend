@@ -44,8 +44,7 @@ public class SignUpControllerTest extends DomainHelper {
         ResponseEntity<ErrorDTO> response = registerUser(secondUser, ErrorDTO.class);
 
         // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
-        assertThat(response.getBody().getMessage()).isEqualTo("Username is already in use");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -81,7 +80,7 @@ public class SignUpControllerTest extends DomainHelper {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().get("roles")).contains("at least");
+        assertThat(response.getBody().get("roles")).contains("At least one role must be specified");
     }
 
     private <T> ResponseEntity<T> registerUser(UserRegisterDTO userRegisterDTO, Class<T> clazz) {

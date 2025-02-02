@@ -30,14 +30,15 @@ spring:
     template:
       default-destination: email
       receive-timeout: 2000
-  main:
-    allow-bean-definition-overriding: true
+  jackson:
+    serialization:
+      indent-output: true
 
 activemq:
   destination: email
 
 server:
-  port: 0
+  port: 4001
   error:
     include-message: always
     include-binding-errors: always
@@ -45,11 +46,18 @@ server:
 security:
   jwt:
     token:
-      secret-key: test-key
+      secret-key: secret-key
       expire-length: 300000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
 
 logging:
   level:
     root: INFO
-    org.apache.activemq: WARN
-    org.apache.activemq.artemis: WARN
+    org.zalando.logbook: TRACE
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" 

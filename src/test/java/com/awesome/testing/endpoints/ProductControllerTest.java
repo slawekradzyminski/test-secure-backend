@@ -5,6 +5,8 @@ import com.awesome.testing.dto.ProductDTO;
 import com.awesome.testing.dto.UserRegisterDTO;
 import com.awesome.testing.model.Product;
 import com.awesome.testing.model.Role;
+import com.awesome.testing.repository.CartItemRepository;
+import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
 import com.awesome.testing.util.UserUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -28,13 +31,22 @@ public class ProductControllerTest extends DomainHelper {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private CartItemRepository cartItemRepository;
+
+    @Autowired
+    private OrderRepository orderRepository;
+
     private String adminToken;
     private String clientToken;
     private Product testProduct;
 
     @BeforeEach
+    @Transactional
     public void setUp() {
-        // given
+        // Clean up related data first
+        cartItemRepository.deleteAll();
+        orderRepository.deleteAll();
         productRepository.deleteAll();
 
         UserRegisterDTO admin = UserUtil.getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));

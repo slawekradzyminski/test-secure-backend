@@ -24,7 +24,7 @@ public class UserResponseDTO {
     @Schema(description = "Email address", example = "john.doe@example.com")
     String email;
 
-    @Schema(description = "User roles", example = "[\"ROLE_USER\"]")
+    @Schema(description = "User roles", example = "[\"ROLE_CLIENT\"]")
     List<Role> roles;
 
     @Schema(description = "First name", example = "John")

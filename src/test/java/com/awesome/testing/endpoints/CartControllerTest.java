@@ -8,6 +8,7 @@ import com.awesome.testing.dto.UserRegisterDTO;
 import com.awesome.testing.model.Product;
 import com.awesome.testing.model.Role;
 import com.awesome.testing.repository.CartItemRepository;
+import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
 import com.awesome.testing.util.UserUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,9 @@ public class CartControllerTest extends DomainHelper {
     @Autowired
     private CartItemRepository cartItemRepository;
 
+    @Autowired
+    private OrderRepository orderRepository;
+
     private String clientToken;
     private Product testProduct;
 
@@ -38,6 +42,7 @@ public class CartControllerTest extends DomainHelper {
     public void setUp() {
         // given
         cartItemRepository.deleteAll();
+        orderRepository.deleteAll();
         productRepository.deleteAll();
 
         UserRegisterDTO client = UserUtil.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));

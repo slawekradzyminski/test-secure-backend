@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -22,6 +23,7 @@ import jakarta.validation.Valid;
 @RequestMapping("/users")
 @Tag(name = "users", description = "User management endpoints")
 @RequiredArgsConstructor
+@Validated
 public class UserSignUpController {
 
     private final UserService userService;
@@ -32,14 +34,17 @@ public class UserSignUpController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "User was successfully created",
                     content = @Content(schema = @Schema(type = "string", example = "eyJhbGciOiJIUzI1NiJ9..."))),
-            @ApiResponse(responseCode = "400", description = "Something went wrong", content = @Content),
-            @ApiResponse(responseCode = "422", description = "Username is already in use", content = @Content),
-            @ApiResponse(responseCode = "500", description = "Something went wrong", content = @Content)
+            @ApiResponse(responseCode = "400", description = "Validation failed", content = @Content),
+            @ApiResponse(responseCode = "422", description = "Username is already in use", content = @Content)
     })
     @ResponseStatus(HttpStatus.CREATED)
-    public void signup(
-            @Parameter(description = "Signup User") @Valid @RequestBody UserRegisterDTO user) {
-        userService.signup(modelMapper.map(user, User.class));
+    public void signup(@Parameter(description = "Signup User") @Valid @RequestBody UserRegisterDTO userDto) {
+        try {
+            User user = modelMapper.map(userDto, User.class);
+            userService.signup(user);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid user data: " + e.getMessage());
+        }
     }
 
 }

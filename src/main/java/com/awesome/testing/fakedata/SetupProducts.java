@@ -1,9 +1,10 @@
 package com.awesome.testing.fakedata;
 
-import com.awesome.testing.dto.ProductDTO;
-import com.awesome.testing.service.ProductService;
+import com.awesome.testing.model.Product;
+import com.awesome.testing.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
@@ -11,9 +12,14 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class SetupProducts {
 
-    private final ProductService productService;
+    private final ProductRepository productRepository;
 
+    @Transactional
     public void createProducts() {
+        if (productRepository.count() > 0) {
+            return;
+        }
+
         // Electronics
         createProduct(
             "iPhone 13 Pro",
@@ -94,17 +100,15 @@ public class SetupProducts {
         );
     }
 
-    private void createProduct(String name, String description, BigDecimal price, 
-                             Integer stockQuantity, String category, String imageUrl) {
-        ProductDTO product = ProductDTO.builder()
-                .name(name)
-                .description(description)
-                .price(price)
-                .stockQuantity(stockQuantity)
-                .category(category)
-                .imageUrl(imageUrl)
-                .build();
-        
-        productService.createProduct(product);
+    private void createProduct(String name, String description, BigDecimal price, int quantity, String category, String imageUrl) {
+        Product product = Product.builder()
+            .name(name)
+            .description(description)
+            .price(price)
+            .stockQuantity(quantity)
+            .category(category)
+            .imageUrl(imageUrl)
+            .build();
+        productRepository.save(product);
     }
 } 
