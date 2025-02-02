@@ -1,8 +1,6 @@
 spring:
   profiles:
     active: docker
-  main:
-    allow-bean-definition-overriding: true
   datasource:
     url: jdbc:h2:mem:testdb
     username: root
