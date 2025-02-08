@@ -1,7 +1,6 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.dto.UserRegisterDTO;
-import com.awesome.testing.model.User;
+import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -35,10 +34,9 @@ public class UserSignUpController {
             @ApiResponse(responseCode = "400", description = "Validation failed", content = @Content),
     })
     @ResponseStatus(HttpStatus.CREATED)
-    public void signup(@Parameter(description = "Signup User") @Valid @RequestBody UserRegisterDTO userDto) {
+    public void signup(@Parameter(description = "Signup User") @Valid @RequestBody UserRegisterDto userDto) {
         try {
-            User user = modelMapper.map(userDto, User.class);
-            userService.signup(user);
+            userService.signup(userDto);
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid user data: " + e.getMessage());
         }

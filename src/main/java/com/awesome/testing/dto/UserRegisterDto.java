@@ -13,7 +13,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class UserRegisterDTO {
+public class UserRegisterDto {
 
     @NotNull(message = "Username is required")
     @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
