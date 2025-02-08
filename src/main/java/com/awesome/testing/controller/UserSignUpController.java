@@ -6,7 +6,6 @@ import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,10 +31,8 @@ public class UserSignUpController {
     @PostMapping("/signup")
     @Operation(summary = "Create a new user account")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "User was successfully created",
-                    content = @Content(schema = @Schema(type = "string", example = "eyJhbGciOiJIUzI1NiJ9..."))),
+            @ApiResponse(responseCode = "201", description = "User was successfully created"),
             @ApiResponse(responseCode = "400", description = "Validation failed", content = @Content),
-            @ApiResponse(responseCode = "422", description = "Username is already in use", content = @Content)
     })
     @ResponseStatus(HttpStatus.CREATED)
     public void signup(@Parameter(description = "Signup User") @Valid @RequestBody UserRegisterDTO userDto) {

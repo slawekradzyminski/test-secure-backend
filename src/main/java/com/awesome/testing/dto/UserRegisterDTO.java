@@ -30,11 +30,13 @@ public class UserRegisterDTO {
     @Schema(description = "Password", example = "password123")
     private String password;
 
-    @Size(max = 255)
+    @NotNull(message = "firstName is required")
+    @Size(min = 4, message = "Minimum firstName length: 4 characters")
     @Schema(description = "First name", example = "John")
     private String firstName;
 
-    @Size(max = 255)
+    @NotNull(message = "lastName is required")
+    @Size(min = 4, message = "Minimum lastName length: 4 characters")
     @Schema(description = "Last name", example = "Boyd")
     private String lastName;
 
