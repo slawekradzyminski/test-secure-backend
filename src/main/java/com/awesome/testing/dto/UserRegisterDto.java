@@ -9,11 +9,12 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
 import java.util.List;
 
 @Data
 @Builder
-public class UserRegisterDTO {
+public class UserRegisterDto {
 
     @NotNull(message = "Username is required")
     @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
@@ -26,15 +27,15 @@ public class UserRegisterDTO {
     private String email;
 
     @NotNull(message = "Password is required")
-    @Size(min = 8, message = "Minimum password length: 8 characters")
+    @Size(min = 8, max = 255, message = "Minimum password length: 8 characters")
     @Schema(description = "Password", example = "password123")
     private String password;
 
-    @Size(max = 255)
+    @Size(min = 4, max = 255, message = "Minimum firstName length: 4 characters")
     @Schema(description = "First name", example = "John")
     private String firstName;
 
-    @Size(max = 255)
+    @Size(min = 4, max = 255, message = "Minimum lastName length: 4 characters")
     @Schema(description = "Last name", example = "Boyd")
     private String lastName;
 

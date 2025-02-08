@@ -1,7 +1,7 @@
 package com.awesome.testing.controller;
 
 import com.awesome.testing.dto.UserEditDTO;
-import com.awesome.testing.model.User;
+import com.awesome.testing.model.UserEntity;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,7 +34,7 @@ public class UserEditController {
             @ApiResponse(responseCode = "403", description = "Access denied", content = @Content),
             @ApiResponse(responseCode = "404", description = "The user doesn't exist", content = @Content)
     })
-    public User edit(
+    public UserEntity edit(
             @Parameter(description = "Username") @PathVariable String username,
             @Parameter(description = "User details") @Valid @RequestBody UserEditDTO userDto) {
         return userService.edit(username, userDto);

@@ -73,7 +73,7 @@ The main tables in the database:
 ## API Documentation
 
 The API documentation is available at:
-- Swagger UI: http://localhost:4001/swagger-ui.html
+- Swagger UI: http://localhost:4001/swagger-ui/index.html
 - OpenAPI JSON: http://localhost:4001/v3/api-docs
 
 ## Initial Data
@@ -108,7 +108,7 @@ The application uses JWT tokens for authentication. To access protected endpoint
 
 ## Technologies
 
-- Java 17
+- Java 21
 - Spring Boot 3.x
 - Spring Security with JWT
 - Spring Data JPA
@@ -117,35 +117,11 @@ The application uses JWT tokens for authentication. To access protected endpoint
 - JUnit 5 for testing
 - Swagger/OpenAPI for documentation
 
-## Getting Started
-
-### Prerequisites
-
-- Java 17 or higher
-- Maven 3.x
-- ActiveMQ (for email functionality)
-
-### Running the Application
-
-1. Clone the repository
-2. Configure ActiveMQ connection in `application.yml`
-3. Run the application:
-   ```bash
-   mvn spring-boot:run
-   ```
-
-The application will start on `http://localhost:8080`
-
 ### Running Tests
 
 ```bash
 mvn test
 ```
-
-## API Documentation
-
-Once the application is running, you can access the Swagger UI at:
-`http://localhost:4001/swagger-ui/index.html`
 
 ## API Endpoints
 

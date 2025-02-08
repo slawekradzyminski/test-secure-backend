@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.awesome.testing.model.Role;
-import com.awesome.testing.model.User;
+import com.awesome.testing.model.UserEntity;
 import com.awesome.testing.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ public class SetupUsers {
             return;
         }
 
-        User admin = createAdminUser(
+        UserEntity admin = createAdminUser(
                 "admin",
                 "admin",
                 "awesome@testing.com",
@@ -35,7 +35,7 @@ public class SetupUsers {
         );
         userRepository.save(admin);
 
-        User admin2 = createAdminUser(
+        UserEntity admin2 = createAdminUser(
                 "admin2",
                 "admin2",
                 "john.doe@company.com",
@@ -44,7 +44,7 @@ public class SetupUsers {
         );
         userRepository.save(admin2);
 
-        User client1 = createClientUser(
+        UserEntity client1 = createClientUser(
                 "client",
                 "client",
                 "alice.smith@yahoo.com",
@@ -53,7 +53,7 @@ public class SetupUsers {
         );
         userRepository.save(client1);
 
-        User client2 = createClientUser(
+        UserEntity client2 = createClientUser(
                 "client2",
                 "client2",
                 "bob.johnson@google.com",
@@ -62,7 +62,7 @@ public class SetupUsers {
         );
         userRepository.save(client2);
 
-        User client3 = createClientUser(
+        UserEntity client3 = createClientUser(
                 "client3",
                 "client3",
                 "charlie.brown@example.com",
@@ -72,8 +72,8 @@ public class SetupUsers {
         userRepository.save(client3);
     }
 
-    private User createAdminUser(String username, String password, String email, String firstName, String lastName) {
-        User admin = new User();
+    private UserEntity createAdminUser(String username, String password, String email, String firstName, String lastName) {
+        UserEntity admin = new UserEntity();
         admin.setUsername(username);
         admin.setPassword(passwordEncoder.encode(password));
         admin.setEmail(email);
@@ -83,8 +83,8 @@ public class SetupUsers {
         return admin;
     }
 
-    private User createClientUser(String username, String password, String email, String firstName, String lastName) {
-        User client = new User();
+    private UserEntity createClientUser(String username, String password, String email, String firstName, String lastName) {
+        UserEntity client = new UserEntity();
         client.setUsername(username);
         client.setPassword(passwordEncoder.encode(password));
         client.setEmail(email);

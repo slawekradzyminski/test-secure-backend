@@ -25,7 +25,7 @@ public class SignInControllerTest extends DomainHelper {
 
     @BeforeEach
     public void prepareUserForTest() {
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         validUsername = user.getUsername();
         validPassword = user.getPassword();
         getToken(user);

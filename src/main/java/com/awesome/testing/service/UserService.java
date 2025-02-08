@@ -5,7 +5,7 @@ import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.exception.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import com.awesome.testing.model.Role;
-import com.awesome.testing.model.User;
+import com.awesome.testing.model.UserEntity;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class UserService {
     }
 
     @Transactional
-    public void signup(User user) {
+    public void signup(UserEntity user) {
         if (!userRepository.existsByUsername(user.getUsername())) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
             if (user.getRoles() == null || user.getRoles().isEmpty()) {
@@ -56,24 +56,24 @@ public class UserService {
     }
 
     public void delete(String username) {
-        User user = userRepository.findByUsername(username);
+        UserEntity user = userRepository.findByUsername(username);
         if (user == null) {
             throw new UserNotFoundException("The user doesn't exist");
         }
         userRepository.deleteByUsername(username);
     }
 
-    public User search(String username) {
-        User user = userRepository.findByUsername(username);
+    public UserEntity search(String username) {
+        UserEntity user = userRepository.findByUsername(username);
         if (user == null) {
             throw new UserNotFoundException("The user doesn't exist");
         }
         return user;
     }
 
-    public User whoami(HttpServletRequest req) {
+    public UserEntity whoami(HttpServletRequest req) {
         String username = jwtTokenProvider.getUsername(jwtTokenProvider.extractTokenFromRequest(req));
-        User user = userRepository.findByUsername(username);
+        UserEntity user = userRepository.findByUsername(username);
         if (user == null) {
             throw new UserNotFoundException("The user doesn't exist");
         }
@@ -84,12 +84,12 @@ public class UserService {
         return jwtTokenProvider.createToken(username, userRepository.findByUsername(username).getRoles());
     }
 
-    public List<User> getAll() {
+    public List<UserEntity> getAll() {
         return userRepository.findAll();
     }
 
-    public User edit(String username, UserEditDTO userDto) {
-        User existingUser = userRepository.findByUsername(username);
+    public UserEntity edit(String username, UserEditDTO userDto) {
+        UserEntity existingUser = userRepository.findByUsername(username);
         if (existingUser == null) {
             throw new UserNotFoundException("The user doesn't exist");
         }
@@ -111,14 +111,6 @@ public class UserService {
         }
         
         return userRepository.save(existingUser);
-    }
-
-    public boolean exists(String username) {
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new UserNotFoundException("User not found");
-        }
-        return true;
     }
 
 }

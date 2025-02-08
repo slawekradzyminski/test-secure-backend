@@ -2,7 +2,7 @@ package com.awesome.testing.controller;
 
 import com.awesome.testing.dto.LoginDTO;
 import com.awesome.testing.dto.LoginResponseDTO;
-import com.awesome.testing.model.User;
+import com.awesome.testing.model.UserEntity;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -37,7 +37,7 @@ public class UserSignInController {
     public LoginResponseDTO login(
             @Parameter(description = "Login details") @Valid @RequestBody LoginDTO loginDetails) {
         String token = userService.signIn(loginDetails.getUsername(), loginDetails.getPassword());
-        User user = userService.search(loginDetails.getUsername());
+        UserEntity user = userService.search(loginDetails.getUsername());
 
         return LoginResponseDTO.builder()
                 .username(user.getUsername())

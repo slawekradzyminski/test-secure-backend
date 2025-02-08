@@ -2,7 +2,7 @@ package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.ErrorDTO;
-import com.awesome.testing.dto.UserRegisterDTO;
+import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -20,7 +20,7 @@ public class DeleteControllerTest extends DomainHelper {
     @Test
     public void shouldDeleteUser() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String username = user.getUsername();
         String apiToken = getToken(user);
 
@@ -49,7 +49,7 @@ public class DeleteControllerTest extends DomainHelper {
     @Test
     public void shouldGet403AsClient() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
         String apiToken = getToken(user);
 
@@ -67,7 +67,7 @@ public class DeleteControllerTest extends DomainHelper {
     @Test
     public void shouldGet404Nonexisting() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String apiToken = getToken(user);
 
         // when

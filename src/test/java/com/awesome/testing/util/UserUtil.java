@@ -1,6 +1,6 @@
 package com.awesome.testing.util;
 
-import com.awesome.testing.dto.UserRegisterDTO;
+import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.model.Role;
 import lombok.experimental.UtilityClass;
 import net.bytebuddy.utility.RandomString;
@@ -11,8 +11,8 @@ import java.util.List;
 @UtilityClass
 public class UserUtil {
 
-    public static UserRegisterDTO getRandomUser() {
-        return UserRegisterDTO.builder()
+    public static UserRegisterDto getRandomUser() {
+        return UserRegisterDto.builder()
                 .username(RandomString.make(10))
                 .email(getRandomEmail())
                 .password(RandomString.make(10))
@@ -22,8 +22,8 @@ public class UserUtil {
                 .build();
     }
 
-    public static UserRegisterDTO getRandomUserWithUsername(String username) {
-        return UserRegisterDTO.builder()
+    public static UserRegisterDto getRandomUserWithUsername(String username) {
+        return UserRegisterDto.builder()
                 .username(username)
                 .email(getRandomEmail())
                 .password(RandomString.make(12))
@@ -33,8 +33,8 @@ public class UserUtil {
                 .build();
     }
 
-    public static UserRegisterDTO getRandomUserWithRoles(List<Role> roles) {
-        return UserRegisterDTO.builder()
+    public static UserRegisterDto getRandomUserWithRoles(List<Role> roles) {
+        return UserRegisterDto.builder()
                 .username(RandomString.make(10))
                 .email(getRandomEmail())
                 .password(RandomString.make(12))

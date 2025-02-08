@@ -15,13 +15,12 @@ import java.util.List;
 @NoArgsConstructor
 @RequiredArgsConstructor
 @Table(name = "app_user")
-public class User {
+public class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
     @Column(unique = true, nullable = false)
     @NonNull
     private String username;
@@ -30,7 +29,6 @@ public class User {
     @NonNull
     private String email;
 
-    @Size(min = 8, message = "Minimum password length: 8 characters")
     @NonNull
     private String password;
 

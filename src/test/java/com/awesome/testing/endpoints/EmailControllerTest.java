@@ -2,7 +2,7 @@ package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.EmailDTO;
-import com.awesome.testing.dto.UserRegisterDTO;
+import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.model.Role;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +33,7 @@ public class EmailControllerTest extends DomainHelper {
 
     @BeforeEach
     public void setup() {
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         authToken = getToken(user);
     }
 

@@ -4,7 +4,7 @@ import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.CartDTO;
 import com.awesome.testing.dto.CartItemDTO;
 import com.awesome.testing.dto.ErrorDTO;
-import com.awesome.testing.dto.UserRegisterDTO;
+import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.model.Product;
 import com.awesome.testing.model.Role;
 import com.awesome.testing.repository.CartItemRepository;
@@ -45,7 +45,7 @@ public class CartControllerTest extends DomainHelper {
         orderRepository.deleteAll();
         productRepository.deleteAll();
 
-        UserRegisterDTO client = UserUtil.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto client = UserUtil.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         clientToken = getToken(client);
 
         testProduct = Product.builder()
