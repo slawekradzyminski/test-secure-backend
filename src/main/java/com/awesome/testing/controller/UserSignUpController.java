@@ -35,11 +35,7 @@ public class UserSignUpController {
     })
     @ResponseStatus(HttpStatus.CREATED)
     public void signup(@Parameter(description = "Signup User") @Valid @RequestBody UserRegisterDto userDto) {
-        try {
-            userService.signup(userDto);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid user data: " + e.getMessage());
-        }
+        userService.signup(userDto);
     }
 
 }

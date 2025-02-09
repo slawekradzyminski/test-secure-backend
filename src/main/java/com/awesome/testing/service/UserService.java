@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -42,14 +43,19 @@ public class UserService {
     }
 
     @Transactional
-    public void signup(UserRegisterDto userRegisterDTO) {
-        if (!userRepository.existsByUsername(userRegisterDTO.getUsername())) {
-            User user = getUser(userRegisterDTO);
-            userRepository.save(user);
-        } else {
-            throw new CustomException("Username is already in use", HttpStatus.UNPROCESSABLE_ENTITY);
-        }
+    public void signup(UserRegisterDto userRegisterDto) {
+        User user = userRepository.findByUsername(userRegisterDto.getUsername());
+        Optional.ofNullable(user)
+                .ifPresentOrElse(
+                        it -> returnBadRequest(),
+                        () -> userRepository.save(getUser(userRegisterDto))
+                );
     }
+
+    private void returnBadRequest() {
+        throw new CustomException("Username is already in use", HttpStatus.BAD_REQUEST);
+    }
+
 
     public void delete(String username) {
         User user = userRepository.findByUsername(username);

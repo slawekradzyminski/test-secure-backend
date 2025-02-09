@@ -45,6 +45,7 @@ public class SignUpControllerTest extends DomainHelper {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().getMessage()).isEqualTo("username is already in use");
     }
 
     @SuppressWarnings("ConstantConditions")
