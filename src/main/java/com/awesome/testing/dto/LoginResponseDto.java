@@ -1,6 +1,7 @@
 package com.awesome.testing.dto;
 
 import com.awesome.testing.model.Role;
+import com.awesome.testing.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Value;
@@ -9,7 +10,7 @@ import java.util.List;
 
 @Value
 @Builder
-public class LoginResponseDTO {
+public class LoginResponseDto {
 
     @Schema(description = "JWT token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
     String token;
@@ -28,5 +29,16 @@ public class LoginResponseDTO {
 
     @Schema(description = "User roles", example = "[\"ROLE_CLIENT\"]")
     List<Role> roles;
+
+    public static LoginResponseDto from(String token, User user) {
+        return LoginResponseDto.builder()
+                .username(user.getUsername())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .roles(user.getRoles())
+                .token(token)
+                .email(user.getEmail())
+                .build();
+    }
 
 }

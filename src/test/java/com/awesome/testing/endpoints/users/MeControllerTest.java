@@ -1,9 +1,9 @@
-package com.awesome.testing.endpoints;
+package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.ErrorDTO;
-import com.awesome.testing.dto.UserRegisterDTO;
-import com.awesome.testing.dto.UserResponseDTO;
+import com.awesome.testing.dto.ErrorDto;
+import com.awesome.testing.dto.UserRegisterDto;
+import com.awesome.testing.dto.UserResponseDto;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ public class MeControllerTest extends DomainHelper {
 
     @BeforeEach
     public void prepareUserForTest() {
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         validUsername = user.getUsername();
         apiToken = getToken(user);
     }
@@ -35,8 +35,8 @@ public class MeControllerTest extends DomainHelper {
     @Test
     public void shouldReturnMyData() {
         // when
-        ResponseEntity<UserResponseDTO> response =
-                executeGet(ME_ENDPOINT, getHeadersWith(apiToken), UserResponseDTO.class);
+        ResponseEntity<UserResponseDto> response =
+                executeGet(ME_ENDPOINT, getHeadersWith(apiToken), UserResponseDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -44,9 +44,13 @@ public class MeControllerTest extends DomainHelper {
         assertThat(response.getBody().getRoles()).containsExactlyInAnyOrder(Role.ROLE_CLIENT);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldGet401AsUnauthorized() {
-        ResponseEntity<ErrorDTO> response = executeGet("/users/me", getJsonOnlyHeaders(), ErrorDTO.class);
+        // when
+        ResponseEntity<ErrorDto> response = executeGet("/users/me", getJsonOnlyHeaders(), ErrorDto.class);
+
+        // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(response.getBody().getMessage()).isEqualTo("Unauthorized");
     }

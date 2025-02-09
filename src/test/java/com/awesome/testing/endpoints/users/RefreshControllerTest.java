@@ -1,8 +1,8 @@
-package com.awesome.testing.endpoints;
+package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.ErrorDTO;
-import com.awesome.testing.dto.UserRegisterDTO;
+import com.awesome.testing.dto.ErrorDto;
+import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -22,7 +22,7 @@ public class RefreshControllerTest extends DomainHelper {
     @Test
     public void shouldRefreshTwice() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String apiToken = getToken(user);
 
         // when
@@ -37,9 +37,13 @@ public class RefreshControllerTest extends DomainHelper {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldGet401AsUnauthorized() {
-        ResponseEntity<ErrorDTO> response = executeGet("/users/refresh", getJsonOnlyHeaders(), ErrorDTO.class);
+        // when
+        ResponseEntity<ErrorDto> response = executeGet("/users/refresh", getJsonOnlyHeaders(), ErrorDto.class);
+
+        // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(response.getBody().getMessage()).isEqualTo("Unauthorized");
     }

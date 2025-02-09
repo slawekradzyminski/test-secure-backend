@@ -1,4 +1,4 @@
-package com.awesome.testing.endpoints;
+package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.*;
@@ -25,18 +25,18 @@ public class SignInControllerTest extends DomainHelper {
 
     @BeforeEach
     public void prepareUserForTest() {
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         validUsername = user.getUsername();
         validPassword = user.getPassword();
-        getToken(user);
+        registerUser(user);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldLoginUser() {
         // when
-        ResponseEntity<LoginResponseDTO> responseWithToken =
-                attemptLogin(new LoginDTO(validUsername, validPassword), LoginResponseDTO.class);
+        ResponseEntity<LoginResponseDto> responseWithToken =
+                attemptLogin(new LoginDto(validUsername, validPassword), LoginResponseDto.class);
 
         // then
         assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -47,15 +47,15 @@ public class SignInControllerTest extends DomainHelper {
     @Test
     public void loggingReturnsValidToken() {
         // given
-        String token = attemptLogin(new LoginDTO(validUsername, validPassword), LoginResponseDTO.class)
+        String token = attemptLogin(new LoginDto(validUsername, validPassword), LoginResponseDto.class)
                 .getBody()
                 .getToken();
 
         // when
-        ResponseEntity<UserResponseDTO> response =
+        ResponseEntity<UserResponseDto> response =
                 executeGet(getUserEndpoint(validUsername),
                         getHeadersWith(token),
-                        UserResponseDTO.class);
+                        UserResponseDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -69,7 +69,7 @@ public class SignInControllerTest extends DomainHelper {
         ResponseEntity<Map<String, String>> response = restTemplate.exchange(
                 LOGIN_ENDPOINT,
                 HttpMethod.POST,
-                new HttpEntity<>(new LoginDTO("one", "two"), getJsonOnlyHeaders()),
+                new HttpEntity<>(new LoginDto("one", "two"), getJsonOnlyHeaders()),
                 mapTypeReference());
 
         // then
@@ -82,8 +82,8 @@ public class SignInControllerTest extends DomainHelper {
     @Test
     public void shouldReturn422OnWrongPassword() {
         // when
-        ResponseEntity<ErrorDTO> responseWithToken =
-                attemptLogin(new LoginDTO(validUsername, "wrong"), ErrorDTO.class);
+        ResponseEntity<ErrorDto> responseWithToken =
+                attemptLogin(new LoginDto(validUsername, "wrong"), ErrorDto.class);
 
         // then
         assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
@@ -94,8 +94,8 @@ public class SignInControllerTest extends DomainHelper {
     @Test
     public void shouldReturn422OnWrongUsername() {
         // when
-        ResponseEntity<ErrorDTO> responseWithToken =
-                attemptLogin(new LoginDTO("wrong", validPassword), ErrorDTO.class);
+        ResponseEntity<ErrorDto> responseWithToken =
+                attemptLogin(new LoginDto("wrong", validPassword), ErrorDto.class);
 
         // then
         assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);

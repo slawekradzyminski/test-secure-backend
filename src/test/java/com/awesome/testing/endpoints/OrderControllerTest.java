@@ -51,8 +51,8 @@ class OrderControllerTest extends DomainHelper {
         orderRepository.deleteAll();
         productRepository.deleteAll();
 
-        UserRegisterDTO client = UserUtil.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        UserRegisterDTO admin = UserUtil.getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto client = UserUtil.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto admin = UserUtil.getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         clientToken = getToken(client);
         adminToken = getToken(admin);
 

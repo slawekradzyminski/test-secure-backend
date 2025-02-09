@@ -8,7 +8,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ErrorDTO {
+public class ErrorDto {
+
     @Schema(description = "Error message", example = "Something went wrong")
     private String message;
+
 }

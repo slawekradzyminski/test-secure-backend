@@ -1,9 +1,9 @@
-package com.awesome.testing.endpoints;
+package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.ErrorDTO;
-import com.awesome.testing.dto.UserRegisterDTO;
-import com.awesome.testing.dto.UserResponseDTO;
+import com.awesome.testing.dto.ErrorDto;
+import com.awesome.testing.dto.UserRegisterDto;
+import com.awesome.testing.dto.UserResponseDto;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -22,11 +22,11 @@ public class GetUsersControllerTest extends DomainHelper {
     @Test
     public void shouldGetUsersAsAdmin() {
         // given
-        UserRegisterDTO user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String adminToken = getToken(user);
 
         // when
-        ResponseEntity<List<UserResponseDTO>> response =
+        ResponseEntity<List<UserResponseDto>> response =
                 executeGet(USERS_ENDPOINT,
                         getHeadersWith(adminToken),
                         userListTypeReference());
@@ -36,13 +36,14 @@ public class GetUsersControllerTest extends DomainHelper {
         assertThat(response.getBody()).hasSizeGreaterThan(0);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldGet401AsUnauthorized() {
         // when
-        ResponseEntity<ErrorDTO> response = executeGet(
+        ResponseEntity<ErrorDto> response = executeGet(
                 USERS_ENDPOINT,
                 getJsonOnlyHeaders(),
-                ErrorDTO.class
+                ErrorDto.class
         );
 
         // then

@@ -1,7 +1,7 @@
-package com.awesome.testing.controller;
+package com.awesome.testing.controller.users;
 
-import com.awesome.testing.dto.LoginDTO;
-import com.awesome.testing.dto.LoginResponseDTO;
+import com.awesome.testing.dto.LoginDto;
+import com.awesome.testing.dto.LoginResponseDto;
 import com.awesome.testing.model.User;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,24 +29,16 @@ public class UserSignInController {
     @Operation(summary = "Authenticate user and return JWT token")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully authenticated",
-                    content = @Content(schema = @Schema(implementation = LoginResponseDTO.class))),
+                    content = @Content(schema = @Schema(implementation = LoginResponseDto.class))),
             @ApiResponse(responseCode = "400", description = "Field validation failed", content = @Content),
-            @ApiResponse(responseCode = "422", description = "Invalid username/password supplied", content = @Content),
-            @ApiResponse(responseCode = "500", description = "Something went wrong", content = @Content)
+            @ApiResponse(responseCode = "422", description = "Invalid username/password supplied", content = @Content)
     })
-    public LoginResponseDTO login(
-            @Parameter(description = "Login details") @Valid @RequestBody LoginDTO loginDetails) {
+    public LoginResponseDto login(
+            @Parameter(description = "Login details") @Valid @RequestBody LoginDto loginDetails) {
         String token = userService.signIn(loginDetails.getUsername(), loginDetails.getPassword());
         User user = userService.search(loginDetails.getUsername());
 
-        return LoginResponseDTO.builder()
-                .username(user.getUsername())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .roles(user.getRoles())
-                .token(token)
-                .email(user.getEmail())
-                .build();
+        return LoginResponseDto.from(token, user);
     }
 
 }

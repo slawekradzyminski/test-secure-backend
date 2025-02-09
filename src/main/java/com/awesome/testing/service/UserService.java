@@ -1,10 +1,10 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.UserEditDTO;
+import com.awesome.testing.dto.UserEditDto;
+import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.exception.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
-import com.awesome.testing.model.Role;
 import com.awesome.testing.model.User;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;
@@ -18,8 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.authentication.BadCredentialsException;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -43,17 +43,19 @@ public class UserService {
     }
 
     @Transactional
-    public void signup(User user) {
-        if (!userRepository.existsByUsername(user.getUsername())) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-            if (user.getRoles() == null || user.getRoles().isEmpty()) {
-                user.setRoles(Collections.singletonList(Role.ROLE_CLIENT));
-            }
-            userRepository.save(user);
-        } else {
-            throw new CustomException("Username is already in use", HttpStatus.UNPROCESSABLE_ENTITY);
-        }
+    public void signup(UserRegisterDto userRegisterDto) {
+        User user = userRepository.findByUsername(userRegisterDto.getUsername());
+        Optional.ofNullable(user)
+                .ifPresentOrElse(
+                        it -> returnBadRequest(),
+                        () -> userRepository.save(getUser(userRegisterDto))
+                );
     }
+
+    private void returnBadRequest() {
+        throw new CustomException("Username is already in use", HttpStatus.BAD_REQUEST);
+    }
+
 
     public void delete(String username) {
         User user = userRepository.findByUsername(username);
@@ -71,7 +73,7 @@ public class UserService {
         return user;
     }
 
-    public User whoami(HttpServletRequest req) {
+    public User whoAmI(HttpServletRequest req) {
         String username = jwtTokenProvider.getUsername(jwtTokenProvider.extractTokenFromRequest(req));
         User user = userRepository.findByUsername(username);
         if (user == null) {
@@ -88,12 +90,12 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public User edit(String username, UserEditDTO userDto) {
+    public User edit(String username, UserEditDto userDto) {
         User existingUser = userRepository.findByUsername(username);
         if (existingUser == null) {
             throw new UserNotFoundException("The user doesn't exist");
         }
-        
+
         if (userDto.getEmail() != null) {
             existingUser.setEmail(userDto.getEmail());
         }
@@ -106,19 +108,28 @@ public class UserService {
         if (userDto.getRoles() != null) {
             existingUser.setRoles(userDto.getRoles());
         }
-        if (userDto.getPassword() != null) {
-            existingUser.setPassword(passwordEncoder.encode(userDto.getPassword()));
-        }
-        
+
         return userRepository.save(existingUser);
     }
 
+    @SuppressWarnings("unused")
     public boolean exists(String username) {
         User user = userRepository.findByUsername(username);
         if (user == null) {
             throw new UserNotFoundException("User not found");
         }
         return true;
+    }
+
+    private User getUser(UserRegisterDto userRegisterDTO) {
+        User user = new User();
+        user.setUsername(userRegisterDTO.getUsername());
+        user.setFirstName(userRegisterDTO.getFirstName());
+        user.setLastName(userRegisterDTO.getLastName());
+        user.setRoles(userRegisterDTO.getRoles());
+        user.setEmail(userRegisterDTO.getEmail());
+        user.setPassword(passwordEncoder.encode(userRegisterDTO.getPassword()));
+        return user;
     }
 
 }
