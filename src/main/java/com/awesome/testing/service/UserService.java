@@ -21,6 +21,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import java.util.List;
 import java.util.Optional;
 
+import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -96,18 +98,10 @@ public class UserService {
             throw new UserNotFoundException("The user doesn't exist");
         }
 
-        if (userDto.getEmail() != null) {
-            existingUser.setEmail(userDto.getEmail());
-        }
-        if (userDto.getFirstName() != null) {
-            existingUser.setFirstName(userDto.getFirstName());
-        }
-        if (userDto.getLastName() != null) {
-            existingUser.setLastName(userDto.getLastName());
-        }
-        if (userDto.getRoles() != null) {
-            existingUser.setRoles(userDto.getRoles());
-        }
+        updateIfNotNull(userDto.getEmail(), User::setEmail, existingUser);
+        updateIfNotNull(userDto.getFirstName(), User::setFirstName, existingUser);
+        updateIfNotNull(userDto.getLastName(), User::setLastName, existingUser);
+        updateIfNotNull(userDto.getRoles(), User::setRoles, existingUser);
 
         return userRepository.save(existingUser);
     }

@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
+
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -53,24 +55,12 @@ public class ProductService {
     }
 
     private void toUpdatedProduct(ProductUpdateDto productUpdateDto, ProductEntity product) {
-        if (productUpdateDto.getName() != null) {
-            product.setName(productUpdateDto.getName());
-        }
-        if (productUpdateDto.getDescription() != null) {
-            product.setDescription(productUpdateDto.getDescription());
-        }
-        if (productUpdateDto.getPrice() != null) {
-            product.setPrice(productUpdateDto.getPrice());
-        }
-        if (productUpdateDto.getStockQuantity() != null) {
-            product.setStockQuantity(productUpdateDto.getStockQuantity());
-        }
-        if (productUpdateDto.getCategory() != null) {
-            product.setCategory(productUpdateDto.getCategory());
-        }
-        if (productUpdateDto.getImageUrl() != null) {
-            product.setImageUrl(productUpdateDto.getImageUrl());
-        }
+        updateIfNotNull(productUpdateDto.getName(), ProductEntity::setName, product);
+        updateIfNotNull(productUpdateDto.getDescription(), ProductEntity::setDescription, product);
+        updateIfNotNull(productUpdateDto.getPrice(), ProductEntity::setPrice, product);
+        updateIfNotNull(productUpdateDto.getStockQuantity(), ProductEntity::setStockQuantity, product);
+        updateIfNotNull(productUpdateDto.getCategory(), ProductEntity::setCategory, product);
+        updateIfNotNull(productUpdateDto.getImageUrl(), ProductEntity::setImageUrl, product);
     }
 
 }
