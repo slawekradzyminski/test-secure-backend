@@ -1,8 +1,8 @@
 package com.awesome.testing;
 
-import com.awesome.testing.dto.LoginDto;
-import com.awesome.testing.dto.LoginResponseDto;
-import com.awesome.testing.dto.UserRegisterDto;
+import com.awesome.testing.dto.user.LoginDto;
+import com.awesome.testing.dto.user.LoginResponseDto;
+import com.awesome.testing.dto.user.UserRegisterDto;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 

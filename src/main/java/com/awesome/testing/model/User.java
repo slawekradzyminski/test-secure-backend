@@ -1,5 +1,6 @@
 package com.awesome.testing.model;
 
+import com.awesome.testing.dto.user.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 

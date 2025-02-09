@@ -1,7 +1,7 @@
 package com.awesome.testing.factory;
 
-import com.awesome.testing.dto.ProductCreateDto;
-import com.awesome.testing.dto.ProductUpdateDto;
+import com.awesome.testing.dto.product.ProductCreateDto;
+import com.awesome.testing.dto.product.ProductUpdateDto;
 import com.awesome.testing.model.ProductEntity;
 import lombok.experimental.UtilityClass;
 

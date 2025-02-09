@@ -2,8 +2,8 @@ package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.EmailDTO;
-import com.awesome.testing.dto.UserRegisterDto;
-import com.awesome.testing.model.Role;
+import com.awesome.testing.dto.user.UserRegisterDto;
+import com.awesome.testing.dto.user.Role;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

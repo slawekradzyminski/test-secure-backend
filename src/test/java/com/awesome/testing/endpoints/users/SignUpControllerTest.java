@@ -2,7 +2,7 @@ package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.ErrorDto;
-import com.awesome.testing.dto.UserRegisterDto;
+import com.awesome.testing.dto.user.UserRegisterDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;

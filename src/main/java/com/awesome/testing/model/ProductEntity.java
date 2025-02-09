@@ -1,6 +1,6 @@
 package com.awesome.testing.model;
 
-import com.awesome.testing.dto.ProductCreateDto;
+import com.awesome.testing.dto.product.ProductCreateDto;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

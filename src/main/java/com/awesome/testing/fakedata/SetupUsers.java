@@ -6,7 +6,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.awesome.testing.model.Role;
+import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.model.User;
 import com.awesome.testing.repository.UserRepository;
 

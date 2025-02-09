@@ -1,7 +1,7 @@
 package com.awesome.testing.controller.users;
 
-import com.awesome.testing.dto.LoginDto;
-import com.awesome.testing.dto.LoginResponseDto;
+import com.awesome.testing.dto.user.LoginDto;
+import com.awesome.testing.dto.user.LoginResponseDto;
 import com.awesome.testing.model.User;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;

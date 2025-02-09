@@ -12,6 +12,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.springframework.beans.factory.annotation.Value;
 
+@SuppressWarnings("unused")
 @Configuration
 @Profile("!local")
 public class TransactionConfig {

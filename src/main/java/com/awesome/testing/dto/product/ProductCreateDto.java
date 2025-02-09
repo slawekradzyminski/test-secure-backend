@@ -1,4 +1,4 @@
-package com.awesome.testing.dto;
+package com.awesome.testing.dto.product;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;

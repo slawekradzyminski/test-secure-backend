@@ -22,6 +22,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.data.transaction.ChainedTransactionManager;
 import org.springframework.orm.jpa.JpaTransactionManager;
 
+@SuppressWarnings("unused")
 @Slf4j
 @Configuration
 @Profile("local")

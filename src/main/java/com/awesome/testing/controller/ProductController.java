@@ -1,8 +1,8 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.dto.ProductCreateDto;
-import com.awesome.testing.dto.ProductDto;
-import com.awesome.testing.dto.ProductUpdateDto;
+import com.awesome.testing.dto.product.ProductCreateDto;
+import com.awesome.testing.dto.product.ProductDto;
+import com.awesome.testing.dto.product.ProductUpdateDto;
 import com.awesome.testing.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

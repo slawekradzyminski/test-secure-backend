@@ -1,4 +1,4 @@
-package com.awesome.testing.dto;
+package com.awesome.testing.dto.product;
 
 import com.awesome.testing.model.ProductEntity;
 import lombok.AllArgsConstructor;

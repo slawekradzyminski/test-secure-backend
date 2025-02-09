@@ -1,7 +1,7 @@
 package com.awesome.testing.util;
 
-import com.awesome.testing.dto.ProductDto;
-import com.awesome.testing.dto.UserResponseDto;
+import com.awesome.testing.dto.product.ProductDto;
+import com.awesome.testing.dto.user.UserResponseDto;
 import org.springframework.core.ParameterizedTypeReference;
 
 import java.util.List;

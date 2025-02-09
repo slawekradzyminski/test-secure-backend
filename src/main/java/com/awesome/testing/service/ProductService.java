@@ -1,8 +1,8 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.ProductCreateDto;
-import com.awesome.testing.dto.ProductDto;
-import com.awesome.testing.dto.ProductUpdateDto;
+import com.awesome.testing.dto.product.ProductCreateDto;
+import com.awesome.testing.dto.product.ProductDto;
+import com.awesome.testing.dto.product.ProductUpdateDto;
 import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;

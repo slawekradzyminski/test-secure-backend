@@ -2,7 +2,8 @@ package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.*;
-import com.awesome.testing.model.Role;
+import com.awesome.testing.dto.user.*;
+import com.awesome.testing.dto.user.Role;
 import net.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;

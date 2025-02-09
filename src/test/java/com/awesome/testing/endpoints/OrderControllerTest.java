@@ -2,9 +2,10 @@ package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.*;
+import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.model.OrderStatus;
 import com.awesome.testing.model.ProductEntity;
-import com.awesome.testing.model.Role;
+import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;

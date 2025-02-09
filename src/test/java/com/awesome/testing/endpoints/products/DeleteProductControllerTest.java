@@ -1,8 +1,8 @@
 package com.awesome.testing.endpoints.products;
 
-import com.awesome.testing.dto.UserRegisterDto;
+import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.model.ProductEntity;
-import com.awesome.testing.model.Role;
+import com.awesome.testing.dto.user.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

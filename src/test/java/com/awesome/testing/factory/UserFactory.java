@@ -1,7 +1,7 @@
 package com.awesome.testing.factory;
 
-import com.awesome.testing.dto.UserRegisterDto;
-import com.awesome.testing.model.Role;
+import com.awesome.testing.dto.user.UserRegisterDto;
+import com.awesome.testing.dto.user.Role;
 import lombok.experimental.UtilityClass;
 import net.bytebuddy.utility.RandomString;
 
