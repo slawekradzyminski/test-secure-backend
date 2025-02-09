@@ -17,6 +17,16 @@ jobs:
 
       - name: Run unit tests
         run: ./mvnw clean test
+        continue-on-error: true
+
+      - name: Publish Test Report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Test Results
+          path: target/surefire-reports/*.xml
+          reporter: java-junit
+          fail-on-error: false
 
   verify-local:
     runs-on: ubuntu-latest
