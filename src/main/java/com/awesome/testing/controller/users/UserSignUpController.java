@@ -1,4 +1,4 @@
-package com.awesome.testing.controller;
+package com.awesome.testing.controller.users;
 
 import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.service.UserService;

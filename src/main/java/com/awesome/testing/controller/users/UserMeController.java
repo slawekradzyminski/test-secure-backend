@@ -1,5 +1,7 @@
-package com.awesome.testing.controller;
+package com.awesome.testing.controller.users;
 
+import com.awesome.testing.dto.UserResponseDto;
+import com.awesome.testing.model.User;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,19 +22,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/users")
 @Tag(name = "users", description = "User management endpoints")
 @RequiredArgsConstructor
-public class UserRefreshController {
+public class UserMeController {
 
     private final UserService userService;
 
-    @GetMapping("/refresh")
-    @Operation(summary = "Refresh JWT token", security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/me")
+    @Operation(summary = "Get current user information", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "New JWT token",
-                    content = @Content(schema = @Schema(type = "string", example = "eyJhbGciOiJIUzI1NiJ9..."))),
+            @ApiResponse(responseCode = "200", description = "Current user details",
+                    content = @Content(schema = @Schema(implementation = UserResponseDto.class))),
             @ApiResponse(responseCode = "401", description = "Access denied", content = @Content)
     })
-    public String refresh(HttpServletRequest req) {
-        return userService.refresh(userService.whoAmI(req).getUsername());
+    public UserResponseDto whoAmI(HttpServletRequest req) {
+        User user = userService.whoAmI(req);
+        return UserResponseDto.from(user);
     }
 
 }
