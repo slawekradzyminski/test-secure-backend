@@ -1,0 +1,100 @@
+package com.awesome.testing.endpoints.products;
+
+import com.awesome.testing.dto.ProductCreateDto;
+import com.awesome.testing.dto.ProductDto;
+import com.awesome.testing.dto.UserRegisterDto;
+import com.awesome.testing.model.ProductEntity;
+import com.awesome.testing.model.Role;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+
+import static com.awesome.testing.factory.ProductFactory.getRandomProductCreate;
+import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
+import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class CreateProductControllerTest extends AbstractProductTest {
+
+    @Test
+    public void shouldCreateProductAsAdmin() {
+        // given
+        UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        String adminToken = getToken(admin);
+        ProductCreateDto productCreateDto = getRandomProductCreate();
+
+        // when
+        ResponseEntity<ProductDto> response = executePost(
+                PRODUCTS_ENDPOINT,
+                productCreateDto,
+                getHeadersWith(adminToken),
+                ProductDto.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getName()).isEqualTo(productCreateDto.getName());
+        assertThat(response.getBody().getId()).isNotNull();
+        assertThat(response.getBody().getCreatedAt()).isNotNull();
+        assertThat(response.getBody().getUpdatedAt()).isNotNull();
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void shouldGet400ForInvalidBody() {
+        // given
+        UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        String adminToken = getToken(admin);
+        ProductCreateDto productCreateDto = getRandomProductCreate();
+        productCreateDto.setPrice(BigDecimal.valueOf(10.345));
+
+        // when
+        ResponseEntity<Map<String, String>> response = executePost(
+                PRODUCTS_ENDPOINT,
+                productCreateDto,
+                getHeadersWith(adminToken),
+                mapTypeReference());
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().get("price")).isEqualTo("Price must have at most 8 digits and 2 decimals");
+    }
+
+    @Test
+    public void shouldGet401AsUnauthorized() {
+        ProductCreateDto productCreateDto = getRandomProductCreate();
+
+        // when
+        ResponseEntity<Object> response = executePost(
+                PRODUCTS_ENDPOINT,
+                productCreateDto,
+                getJsonOnlyHeaders(),
+                Object.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    public void shouldGet403AsClient() {
+        // given
+        UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String clientToken = getToken(client);
+        ProductCreateDto productCreateDto = getRandomProductCreate();
+
+        // when
+        ResponseEntity<ProductEntity> response = executePost(
+                PRODUCTS_ENDPOINT,
+                productCreateDto,
+                getHeadersWith(clientToken),
+                ProductEntity.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+}

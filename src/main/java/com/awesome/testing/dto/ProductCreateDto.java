@@ -8,15 +8,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Product data transfer object")
-public class ProductDTO {
-    private Long id;
+@Schema(description = "Create product data transfer object")
+public class ProductCreateDto {
 
     @NotBlank(message = "Product name is required")
     @Size(min = 3, max = 100, message = "Product name must be between 3 and 100 characters")
@@ -46,6 +44,4 @@ public class ProductDTO {
     @Schema(description = "Product image URL", example = "https://example.com/iphone13.jpg")
     private String imageUrl;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-} 
+}

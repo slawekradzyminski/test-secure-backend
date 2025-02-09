@@ -1,7 +1,9 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.ProductDTO;
-import com.awesome.testing.model.Product;
+import com.awesome.testing.dto.ProductCreateDto;
+import com.awesome.testing.dto.ProductDto;
+import com.awesome.testing.dto.ProductUpdateDto;
+import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -10,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
+
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -17,40 +21,33 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     @Transactional(readOnly = true)
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    public List<ProductDto> getAllProducts() {
+        return productRepository.findAll()
+                .stream()
+                .map(ProductDto::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public Optional<Product> getProductById(Long id) {
-        return productRepository.findById(id);
+    public Optional<ProductDto> getProductById(Long id) {
+        return productRepository.findById(id)
+                .map(ProductDto::from);
     }
 
     @Transactional
-    public Product createProduct(ProductDTO productDTO) {
-        Product product = Product.builder()
-                .name(productDTO.getName())
-                .description(productDTO.getDescription())
-                .price(productDTO.getPrice())
-                .stockQuantity(productDTO.getStockQuantity())
-                .category(productDTO.getCategory())
-                .imageUrl(productDTO.getImageUrl())
-                .build();
-        
-        return productRepository.save(product);
+    public ProductDto createProduct(ProductCreateDto productCreateDto) {
+        ProductEntity product = ProductEntity.from(productCreateDto);
+        productRepository.save(product);
+        return ProductDto.from(product);
     }
 
     @Transactional
-    public Optional<Product> updateProduct(Long id, ProductDTO productDTO) {
+    public Optional<ProductDto> updateProduct(Long id, ProductUpdateDto productUpdateDto) {
         return productRepository.findById(id)
                 .map(product -> {
-                    product.setName(productDTO.getName());
-                    product.setDescription(productDTO.getDescription());
-                    product.setPrice(productDTO.getPrice());
-                    product.setStockQuantity(productDTO.getStockQuantity());
-                    product.setCategory(productDTO.getCategory());
-                    product.setImageUrl(productDTO.getImageUrl());
-                    return productRepository.save(product);
+                    toUpdatedProduct(productUpdateDto, product);
+                    productRepository.save(product);
+                    return ProductDto.from(product);
                 });
     }
 
@@ -63,4 +60,14 @@ public class ProductService {
                 })
                 .orElse(false);
     }
-} 
+
+    private void toUpdatedProduct(ProductUpdateDto productUpdateDto, ProductEntity product) {
+        updateIfNotNull(productUpdateDto.getName(), ProductEntity::setName, product);
+        updateIfNotNull(productUpdateDto.getDescription(), ProductEntity::setDescription, product);
+        updateIfNotNull(productUpdateDto.getPrice(), ProductEntity::setPrice, product);
+        updateIfNotNull(productUpdateDto.getStockQuantity(), ProductEntity::setStockQuantity, product);
+        updateIfNotNull(productUpdateDto.getCategory(), ProductEntity::setCategory, product);
+        updateIfNotNull(productUpdateDto.getImageUrl(), ProductEntity::setImageUrl, product);
+    }
+
+}

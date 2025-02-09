@@ -3,7 +3,7 @@ package com.awesome.testing.service;
 import com.awesome.testing.dto.CartDTO;
 import com.awesome.testing.dto.CartItemDTO;
 import com.awesome.testing.model.CartItem;
-import com.awesome.testing.model.Product;
+import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,7 @@ public class CartService {
 
     @Transactional
     public CartDTO addToCart(String username, CartItemDTO cartItemDTO) {
-        Product product = productRepository.findById(cartItemDTO.getProductId())
+        ProductEntity product = productRepository.findById(cartItemDTO.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
         CartItem cartItem = cartItemRepository.findByUsernameAndProductId(username, cartItemDTO.getProductId())
@@ -40,7 +40,7 @@ public class CartService {
         return createCartDTO(username, cartItems);
     }
 
-    private CartItem createItem(String username, CartItemDTO cartItemDTO, Product product) {
+    private CartItem createItem(String username, CartItemDTO cartItemDTO, ProductEntity product) {
         return CartItem.builder()
                 .username(username)
                 .product(product)
@@ -50,7 +50,7 @@ public class CartService {
                 .build();
     }
 
-    private CartItem updateItem(CartItemDTO cartItemDTO, CartItem existingItem, Product product) {
+    private CartItem updateItem(CartItemDTO cartItemDTO, CartItem existingItem, ProductEntity product) {
         existingItem.setQuantity(existingItem.getQuantity() + cartItemDTO.getQuantity());
         existingItem.setPrice(product.getPrice());
         return existingItem;

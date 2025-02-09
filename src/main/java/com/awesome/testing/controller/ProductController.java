@@ -1,7 +1,8 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.dto.ProductDTO;
-import com.awesome.testing.model.Product;
+import com.awesome.testing.dto.ProductCreateDto;
+import com.awesome.testing.dto.ProductDto;
+import com.awesome.testing.dto.ProductUpdateDto;
 import com.awesome.testing.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -31,7 +32,7 @@ public class ProductController {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved products"),
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<List<Product>> getAllProducts() {
+    public ResponseEntity<List<ProductDto>> getAllProducts() {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
@@ -42,7 +43,7 @@ public class ProductController {
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
         @ApiResponse(responseCode = "404", description = "Product not found")
     })
-    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
+    public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
         return productService.getProductById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -57,8 +58,8 @@ public class ProductController {
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
         @ApiResponse(responseCode = "403", description = "Forbidden - requires admin role")
     })
-    public ResponseEntity<Product> createProduct(@Valid @RequestBody ProductDTO productDTO) {
-        Product savedProduct = productService.createProduct(productDTO);
+    public ResponseEntity<ProductDto> createProduct(@Valid @RequestBody ProductCreateDto productCreateDto) {
+        ProductDto savedProduct = productService.createProduct(productCreateDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
     }
 
@@ -72,10 +73,10 @@ public class ProductController {
         @ApiResponse(responseCode = "403", description = "Forbidden - requires admin role"),
         @ApiResponse(responseCode = "404", description = "Product not found")
     })
-    public ResponseEntity<Product> updateProduct(
+    public ResponseEntity<ProductDto> updateProduct(
             @PathVariable Long id,
-            @Valid @RequestBody ProductDTO productDTO) {
-        return productService.updateProduct(id, productDTO)
+            @Valid @RequestBody ProductUpdateDto productUpdateDto) {
+        return productService.updateProduct(id, productUpdateDto)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -83,6 +84,12 @@ public class ProductController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Delete product", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Product deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - requires admin role"),
+            @ApiResponse(responseCode = "404", description = "Product not found")
+    })
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         return productService.deleteProduct(id)
                 ? ResponseEntity.noContent().build()

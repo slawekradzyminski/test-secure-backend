@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
-import static com.awesome.testing.util.UserUtil.getRandomEmail;
-import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
+import static com.awesome.testing.factory.UserFactory.getRandomEmail;
+import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class EditUserControllerTest extends DomainHelper {
@@ -45,6 +45,31 @@ public class EditUserControllerTest extends DomainHelper {
         assertThat(loginResponse.getFirstName()).isEqualTo(userEditDto.getFirstName());
         assertThat(loginResponse.getRoles()).isEqualTo(userEditDto.getRoles());
         assertThat(loginResponse.getEmail()).isEqualTo(userEditDto.getEmail());
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void shouldPartiallyUpdateUserAsAdmin() {
+        // given
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        String username = user.getUsername();
+        String token = getToken(user);
+        String newEmail = "newEmail@gmail.com";
+        UserEditDto userEditDto = UserEditDto.builder()
+                .email(newEmail)
+                .build();
+
+        // when
+        ResponseEntity<UserResponseDto> response = executePut(
+                getUserEndpoint(username),
+                userEditDto,
+                getHeadersWith(token),
+                UserResponseDto.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getUsername()).isEqualTo(username);
+        assertThat(response.getBody().getEmail()).isEqualTo(newEmail);
     }
 
     @Test
