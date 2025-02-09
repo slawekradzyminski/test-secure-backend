@@ -1,7 +1,7 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.CartDTO;
-import com.awesome.testing.dto.CartItemDTO;
+import com.awesome.testing.dto.cart.CartDto;
+import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.model.CartItem;
 import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.repository.CartItemRepository;
@@ -21,13 +21,13 @@ public class CartService {
     private final ProductRepository productRepository;
 
     @Transactional(readOnly = true)
-    public CartDTO getCart(String username) {
+    public CartDto getCart(String username) {
         List<CartItem> cartItems = cartItemRepository.findByUsername(username);
         return createCartDTO(username, cartItems);
     }
 
     @Transactional
-    public CartDTO addToCart(String username, CartItemDTO cartItemDTO) {
+    public CartDto addToCart(String username, CartItemDto cartItemDTO) {
         ProductEntity product = productRepository.findById(cartItemDTO.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
@@ -40,7 +40,7 @@ public class CartService {
         return createCartDTO(username, cartItems);
     }
 
-    private CartItem createItem(String username, CartItemDTO cartItemDTO, ProductEntity product) {
+    private CartItem createItem(String username, CartItemDto cartItemDTO, ProductEntity product) {
         return CartItem.builder()
                 .username(username)
                 .product(product)
@@ -50,14 +50,14 @@ public class CartService {
                 .build();
     }
 
-    private CartItem updateItem(CartItemDTO cartItemDTO, CartItem existingItem, ProductEntity product) {
+    private CartItem updateItem(CartItemDto cartItemDTO, CartItem existingItem, ProductEntity product) {
         existingItem.setQuantity(existingItem.getQuantity() + cartItemDTO.getQuantity());
         existingItem.setPrice(product.getPrice());
         return existingItem;
     }
 
     @Transactional
-    public CartDTO updateCartItem(String username, Long productId, CartItemDTO cartItemDTO) {
+    public CartDto updateCartItem(String username, Long productId, CartItemDto cartItemDTO) {
         CartItem cartItem = cartItemRepository.findByUsernameAndProductId(username, productId)
                 .orElseThrow(() -> new RuntimeException("Cart item not found"));
 
@@ -70,7 +70,7 @@ public class CartService {
     }
 
     @Transactional
-    public CartDTO removeFromCart(String username, Long productId) {
+    public CartDto removeFromCart(String username, Long productId) {
         cartItemRepository.deleteByUsernameAndProductId(username, productId);
         List<CartItem> cartItems = cartItemRepository.findByUsername(username);
         return createCartDTO(username, cartItems);
@@ -81,8 +81,8 @@ public class CartService {
         cartItemRepository.deleteByUsername(username);
     }
 
-    private CartDTO createCartDTO(String username, List<CartItem> cartItems) {
-        return CartDTO.builder()
+    private CartDto createCartDTO(String username, List<CartItem> cartItems) {
+        return CartDto.builder()
                 .username(username)
                 .items(getItems(cartItems))
                 .totalPrice(calculateTotalPrice(cartItems))
@@ -90,14 +90,14 @@ public class CartService {
                 .build();
     }
 
-    private List<CartItemDTO> getItems(List<CartItem> cartItems) {
+    private List<CartItemDto> getItems(List<CartItem> cartItems) {
         return cartItems.stream()
                 .map(this::convertToCartItemDTO)
                 .toList();
     }
 
-    private CartItemDTO convertToCartItemDTO(CartItem item) {
-        return CartItemDTO.builder()
+    private CartItemDto convertToCartItemDTO(CartItem item) {
+        return CartItemDto.builder()
                 .productId(item.getProduct().getId())
                 .quantity(item.getQuantity())
                 .build();

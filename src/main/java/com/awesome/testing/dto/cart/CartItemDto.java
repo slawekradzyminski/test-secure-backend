@@ -1,4 +1,4 @@
-package com.awesome.testing.dto;
+package com.awesome.testing.dto.cart;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -7,13 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CartItemDTO {
+public class CartItemDto {
     @NotNull
     private Long productId;
 
@@ -21,7 +19,4 @@ public class CartItemDTO {
     @Min(1)
     private Integer quantity;
 
-    private String productName;
-    private BigDecimal unitPrice;
-    private BigDecimal totalPrice;
-} 
+}

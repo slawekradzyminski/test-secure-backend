@@ -1,6 +1,6 @@
 package com.awesome.testing.security;
 
-import com.awesome.testing.exception.CustomException;
+import com.awesome.testing.controller.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;

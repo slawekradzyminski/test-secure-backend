@@ -2,8 +2,8 @@ package com.awesome.testing.service;
 
 import com.awesome.testing.dto.user.UserEditDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
-import com.awesome.testing.exception.CustomException;
-import com.awesome.testing.exception.UserNotFoundException;
+import com.awesome.testing.controller.exception.CustomException;
+import com.awesome.testing.controller.exception.UserNotFoundException;
 import com.awesome.testing.security.AuthenticationHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import com.awesome.testing.model.User;

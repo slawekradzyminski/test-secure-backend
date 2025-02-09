@@ -1,4 +1,4 @@
-package com.awesome.testing.dto;
+package com.awesome.testing.dto.cart;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,9 +12,9 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CartDTO {
+public class CartDto {
     private String username;
-    private List<CartItemDTO> items;
+    private List<CartItemDto> items;
     private BigDecimal totalPrice;
     private int totalItems;
 } 

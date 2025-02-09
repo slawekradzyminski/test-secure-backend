@@ -1,7 +1,7 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.dto.CartDTO;
-import com.awesome.testing.dto.CartItemDTO;
+import com.awesome.testing.dto.cart.CartDto;
+import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.service.CartService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -28,7 +28,7 @@ public class CartController {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved cart"),
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<CartDTO> getCart(@AuthenticationPrincipal Object principal) {
+    public ResponseEntity<CartDto> getCart(@AuthenticationPrincipal Object principal) {
         return ResponseEntity.ok(cartService.getCart(principal.toString()));
     }
 
@@ -40,9 +40,9 @@ public class CartController {
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
         @ApiResponse(responseCode = "404", description = "Product not found")
     })
-    public ResponseEntity<CartDTO> addToCart(
+    public ResponseEntity<CartDto> addToCart(
             @AuthenticationPrincipal Object principal,
-            @Valid @RequestBody CartItemDTO cartItemDTO) {
+            @Valid @RequestBody CartItemDto cartItemDTO) {
         return ResponseEntity.ok(cartService.addToCart(principal.toString(), cartItemDTO));
     }
 
@@ -54,10 +54,10 @@ public class CartController {
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
         @ApiResponse(responseCode = "404", description = "Cart item not found")
     })
-    public ResponseEntity<CartDTO> updateCartItem(
+    public ResponseEntity<CartDto> updateCartItem(
             @AuthenticationPrincipal Object principal,
             @PathVariable Long productId,
-            @Valid @RequestBody CartItemDTO cartItemDTO) {
+            @Valid @RequestBody CartItemDto cartItemDTO) {
         return ResponseEntity.ok(cartService.updateCartItem(principal.toString(), productId, cartItemDTO));
     }
 
@@ -68,7 +68,7 @@ public class CartController {
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
         @ApiResponse(responseCode = "404", description = "Cart item not found")
     })
-    public ResponseEntity<CartDTO> removeFromCart(
+    public ResponseEntity<CartDto> removeFromCart(
             @AuthenticationPrincipal Object principal,
             @PathVariable Long productId) {
         return ResponseEntity.ok(cartService.removeFromCart(principal.toString(), productId));

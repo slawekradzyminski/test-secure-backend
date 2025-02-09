@@ -3,7 +3,7 @@ package com.awesome.testing.service;
 import com.awesome.testing.dto.AddressDTO;
 import com.awesome.testing.dto.OrderDTO;
 import com.awesome.testing.dto.OrderItemDTO;
-import com.awesome.testing.exception.CustomException;
+import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.model.*;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;

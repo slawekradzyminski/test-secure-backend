@@ -1,6 +1,6 @@
 package com.awesome.testing.security;
 
-import com.awesome.testing.exception.CustomException;
+import com.awesome.testing.controller.exception.CustomException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

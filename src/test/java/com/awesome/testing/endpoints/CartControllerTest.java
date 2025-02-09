@@ -1,8 +1,8 @@
 package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.CartDTO;
-import com.awesome.testing.dto.CartItemDTO;
+import com.awesome.testing.dto.cart.CartDto;
+import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.model.ProductEntity;
@@ -61,10 +61,10 @@ public class CartControllerTest extends DomainHelper {
     @Test
     public void shouldGetEmptyCart() {
         // when
-        ResponseEntity<CartDTO> response = executeGet(
+        ResponseEntity<CartDto> response = executeGet(
                 CART_ENDPOINT,
                 getHeadersWith(clientToken),
-                CartDTO.class);
+                CartDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -77,17 +77,17 @@ public class CartControllerTest extends DomainHelper {
     @Test
     public void shouldAddItemToCart() {
         // given
-        CartItemDTO cartItemDTO = CartItemDTO.builder()
+        CartItemDto cartItemDTO = CartItemDto.builder()
                 .productId(testProduct.getId())
                 .quantity(2)
                 .build();
 
         // when
-        ResponseEntity<CartDTO> response = executePost(
+        ResponseEntity<CartDto> response = executePost(
                 CART_ENDPOINT + "/items",
                 cartItemDTO,
                 getHeadersWith(clientToken),
-                CartDTO.class);
+                CartDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -101,23 +101,23 @@ public class CartControllerTest extends DomainHelper {
     @Test
     public void shouldUpdateCartItemQuantity() {
         // given
-        CartItemDTO cartItemDTO = CartItemDTO.builder()
+        CartItemDto cartItemDTO = CartItemDto.builder()
                 .productId(testProduct.getId())
                 .quantity(2)
                 .build();
-        executePost(CART_ENDPOINT + "/items", cartItemDTO, getHeadersWith(clientToken), CartDTO.class);
+        executePost(CART_ENDPOINT + "/items", cartItemDTO, getHeadersWith(clientToken), CartDto.class);
 
-        CartItemDTO updateDTO = CartItemDTO.builder()
+        CartItemDto updateDTO = CartItemDto.builder()
                 .productId(testProduct.getId())
                 .quantity(3)
                 .build();
 
         // when
-        ResponseEntity<CartDTO> response = executePut(
+        ResponseEntity<CartDto> response = executePut(
                 CART_ENDPOINT + "/items/" + testProduct.getId(),
                 updateDTO,
                 getHeadersWith(clientToken),
-                CartDTO.class);
+                CartDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -131,17 +131,17 @@ public class CartControllerTest extends DomainHelper {
     @Test
     public void shouldRemoveItemFromCart() {
         // given
-        CartItemDTO cartItemDTO = CartItemDTO.builder()
+        CartItemDto cartItemDTO = CartItemDto.builder()
                 .productId(testProduct.getId())
                 .quantity(2)
                 .build();
-        executePost(CART_ENDPOINT + "/items", cartItemDTO, getHeadersWith(clientToken), CartDTO.class);
+        executePost(CART_ENDPOINT + "/items", cartItemDTO, getHeadersWith(clientToken), CartDto.class);
 
         // when
-        ResponseEntity<CartDTO> response = executeDelete(
+        ResponseEntity<CartDto> response = executeDelete(
                 CART_ENDPOINT + "/items/" + testProduct.getId(),
                 getHeadersWith(clientToken),
-                CartDTO.class);
+                CartDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -154,11 +154,11 @@ public class CartControllerTest extends DomainHelper {
     @Test
     public void shouldClearCart() {
         // given
-        CartItemDTO cartItemDTO = CartItemDTO.builder()
+        CartItemDto cartItemDTO = CartItemDto.builder()
                 .productId(testProduct.getId())
                 .quantity(2)
                 .build();
-        executePost(CART_ENDPOINT + "/items", cartItemDTO, getHeadersWith(clientToken), CartDTO.class);
+        executePost(CART_ENDPOINT + "/items", cartItemDTO, getHeadersWith(clientToken), CartDto.class);
 
         // when
         ResponseEntity<Void> response = executeDelete(
@@ -169,10 +169,10 @@ public class CartControllerTest extends DomainHelper {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        ResponseEntity<CartDTO> cartResponse = executeGet(
+        ResponseEntity<CartDto> cartResponse = executeGet(
                 CART_ENDPOINT,
                 getHeadersWith(clientToken),
-                CartDTO.class);
+                CartDto.class);
         assertThat(cartResponse.getBody()).isNotNull();
         assertThat(cartResponse.getBody().getItems()).isEmpty();
     }

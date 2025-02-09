@@ -1,4 +1,4 @@
-package com.awesome.testing.exception;
+package com.awesome.testing.controller.exception;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
