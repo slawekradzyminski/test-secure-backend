@@ -1,5 +1,6 @@
 package com.awesome.testing.endpoints.products;
 
+import com.awesome.testing.dto.ProductDto;
 import com.awesome.testing.dto.ProductUpdateDto;
 import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.model.ProductEntity;
@@ -28,11 +29,11 @@ public class UpdateProductControllerTest extends AbstractProductTest {
         ProductUpdateDto productUpdateDto = getRandomProductUpdate();
 
         // when
-        ResponseEntity<ProductEntity> response = executePut(
+        ResponseEntity<ProductDto> response = executePut(
                 PRODUCTS_ENDPOINT + "/" + testProduct.getId(),
                 productUpdateDto,
                 getHeadersWith(adminToken),
-                ProductEntity.class);
+                ProductDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -52,11 +53,11 @@ public class UpdateProductControllerTest extends AbstractProductTest {
                 .build();
 
         // when
-        ResponseEntity<ProductEntity> response = executePut(
+        ResponseEntity<ProductDto> response = executePut(
                 PRODUCTS_ENDPOINT + "/" + testProduct.getId(),
                 productUpdateDto,
                 getHeadersWith(adminToken),
-                ProductEntity.class);
+                ProductDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

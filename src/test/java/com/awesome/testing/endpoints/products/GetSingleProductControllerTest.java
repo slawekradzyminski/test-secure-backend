@@ -1,5 +1,6 @@
 package com.awesome.testing.endpoints.products;
 
+import com.awesome.testing.dto.ProductDto;
 import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.model.Role;
@@ -25,10 +26,10 @@ public class GetSingleProductControllerTest extends AbstractProductTest {
         productRepository.save(testProduct);
 
         // when
-        ResponseEntity<ProductEntity> response = executeGet(
+        ResponseEntity<ProductDto> response = executeGet(
                 PRODUCTS_ENDPOINT + "/" + testProduct.getId(),
                 getHeadersWith(clientToken),
-                ProductEntity.class);
+                ProductDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

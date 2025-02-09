@@ -1,6 +1,7 @@
 package com.awesome.testing.endpoints.products;
 
 import com.awesome.testing.dto.ProductCreateDto;
+import com.awesome.testing.dto.ProductDto;
 import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.model.Role;
@@ -27,11 +28,11 @@ public class CreateProductControllerTest extends AbstractProductTest {
         ProductCreateDto productCreateDto = getRandomProductCreate();
 
         // when
-        ResponseEntity<ProductEntity> response = executePost(
+        ResponseEntity<ProductDto> response = executePost(
                 PRODUCTS_ENDPOINT,
                 productCreateDto,
                 getHeadersWith(adminToken),
-                ProductEntity.class);
+                ProductDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);

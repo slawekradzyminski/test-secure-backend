@@ -1,5 +1,6 @@
 package com.awesome.testing.endpoints.products;
 
+import com.awesome.testing.dto.ProductDto;
 import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.model.Role;
@@ -29,7 +30,7 @@ public class GetAllProductsControllerTest extends AbstractProductTest {
         productRepository.save(testProduct2);
 
         // when
-        ResponseEntity<List<ProductEntity>> response = executeGet(
+        ResponseEntity<List<ProductDto>> response = executeGet(
                 PRODUCTS_ENDPOINT,
                 getHeadersWith(clientToken),
                 productListTypeReference());
@@ -37,7 +38,7 @@ public class GetAllProductsControllerTest extends AbstractProductTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).hasSize(2);
-        assertThat(response.getBody()).map(ProductEntity::getName)
+        assertThat(response.getBody()).map(ProductDto::getName)
                 .containsExactlyInAnyOrder(testProduct1.getName(), testProduct2.getName());
     }
 

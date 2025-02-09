@@ -1,6 +1,7 @@
 package com.awesome.testing.service;
 
 import com.awesome.testing.dto.ProductCreateDto;
+import com.awesome.testing.dto.ProductDto;
 import com.awesome.testing.dto.ProductUpdateDto;
 import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
@@ -20,27 +21,33 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     @Transactional(readOnly = true)
-    public List<ProductEntity> getAllProducts() {
-        return productRepository.findAll();
+    public List<ProductDto> getAllProducts() {
+        return productRepository.findAll()
+                .stream()
+                .map(ProductDto::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public Optional<ProductEntity> getProductById(Long id) {
-        return productRepository.findById(id);
+    public Optional<ProductDto> getProductById(Long id) {
+        return productRepository.findById(id)
+                .map(ProductDto::from);
     }
 
     @Transactional
-    public ProductEntity createProduct(ProductCreateDto productCreateDto) {
+    public ProductDto createProduct(ProductCreateDto productCreateDto) {
         ProductEntity product = ProductEntity.from(productCreateDto);
-        return productRepository.save(product);
+        productRepository.save(product);
+        return ProductDto.from(product);
     }
 
     @Transactional
-    public Optional<ProductEntity> updateProduct(Long id, ProductUpdateDto productUpdateDto) {
+    public Optional<ProductDto> updateProduct(Long id, ProductUpdateDto productUpdateDto) {
         return productRepository.findById(id)
                 .map(product -> {
                     toUpdatedProduct(productUpdateDto, product);
-                    return productRepository.save(product);
+                    productRepository.save(product);
+                    return ProductDto.from(product);
                 });
     }
 

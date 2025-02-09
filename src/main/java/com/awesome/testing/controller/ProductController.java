@@ -1,8 +1,8 @@
 package com.awesome.testing.controller;
 
 import com.awesome.testing.dto.ProductCreateDto;
+import com.awesome.testing.dto.ProductDto;
 import com.awesome.testing.dto.ProductUpdateDto;
-import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -32,7 +32,7 @@ public class ProductController {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved products"),
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<List<ProductEntity>> getAllProducts() {
+    public ResponseEntity<List<ProductDto>> getAllProducts() {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
@@ -43,7 +43,7 @@ public class ProductController {
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
         @ApiResponse(responseCode = "404", description = "Product not found")
     })
-    public ResponseEntity<ProductEntity> getProductById(@PathVariable Long id) {
+    public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
         return productService.getProductById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -58,8 +58,8 @@ public class ProductController {
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
         @ApiResponse(responseCode = "403", description = "Forbidden - requires admin role")
     })
-    public ResponseEntity<ProductEntity> createProduct(@Valid @RequestBody ProductCreateDto productCreateDto) {
-        ProductEntity savedProduct = productService.createProduct(productCreateDto);
+    public ResponseEntity<ProductDto> createProduct(@Valid @RequestBody ProductCreateDto productCreateDto) {
+        ProductDto savedProduct = productService.createProduct(productCreateDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
     }
 
@@ -73,7 +73,7 @@ public class ProductController {
         @ApiResponse(responseCode = "403", description = "Forbidden - requires admin role"),
         @ApiResponse(responseCode = "404", description = "Product not found")
     })
-    public ResponseEntity<ProductEntity> updateProduct(
+    public ResponseEntity<ProductDto> updateProduct(
             @PathVariable Long id,
             @Valid @RequestBody ProductUpdateDto productUpdateDto) {
         return productService.updateProduct(id, productUpdateDto)
