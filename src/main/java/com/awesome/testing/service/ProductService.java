@@ -1,7 +1,7 @@
 package com.awesome.testing.service;
 
 import com.awesome.testing.dto.ProductCreateDto;
-import com.awesome.testing.dto.ProductDto;
+import com.awesome.testing.dto.ProductUpdateDto;
 import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,15 +34,10 @@ public class ProductService {
     }
 
     @Transactional
-    public Optional<ProductEntity> updateProduct(Long id, ProductDto productDTO) {
+    public Optional<ProductEntity> updateProduct(Long id, ProductUpdateDto productUpdateDto) {
         return productRepository.findById(id)
                 .map(product -> {
-                    product.setName(productDTO.getName());
-                    product.setDescription(productDTO.getDescription());
-                    product.setPrice(productDTO.getPrice());
-                    product.setStockQuantity(productDTO.getStockQuantity());
-                    product.setCategory(productDTO.getCategory());
-                    product.setImageUrl(productDTO.getImageUrl());
+                    toUpdatedProduct(productUpdateDto, product);
                     return productRepository.save(product);
                 });
     }
@@ -56,4 +51,26 @@ public class ProductService {
                 })
                 .orElse(false);
     }
-} 
+
+    private void toUpdatedProduct(ProductUpdateDto productUpdateDto, ProductEntity product) {
+        if (productUpdateDto.getName() != null) {
+            product.setName(productUpdateDto.getName());
+        }
+        if (productUpdateDto.getDescription() != null) {
+            product.setDescription(productUpdateDto.getDescription());
+        }
+        if (productUpdateDto.getPrice() != null) {
+            product.setPrice(productUpdateDto.getPrice());
+        }
+        if (productUpdateDto.getStockQuantity() != null) {
+            product.setStockQuantity(productUpdateDto.getStockQuantity());
+        }
+        if (productUpdateDto.getCategory() != null) {
+            product.setCategory(productUpdateDto.getCategory());
+        }
+        if (productUpdateDto.getImageUrl() != null) {
+            product.setImageUrl(productUpdateDto.getImageUrl());
+        }
+    }
+
+}

@@ -47,6 +47,31 @@ public class EditUserControllerTest extends DomainHelper {
         assertThat(loginResponse.getEmail()).isEqualTo(userEditDto.getEmail());
     }
 
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void shouldPartiallyUpdateUserAsAdmin() {
+        // given
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        String username = user.getUsername();
+        String token = getToken(user);
+        String newEmail = "newEmail@gmail.com";
+        UserEditDto userEditDto = UserEditDto.builder()
+                .email(newEmail)
+                .build();
+
+        // when
+        ResponseEntity<UserResponseDto> response = executePut(
+                getUserEndpoint(username),
+                userEditDto,
+                getHeadersWith(token),
+                UserResponseDto.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getUsername()).isEqualTo(username);
+        assertThat(response.getBody().getEmail()).isEqualTo(newEmail);
+    }
+
     @Test
     public void shouldGet200AsClientEditingHimself() {
         // given

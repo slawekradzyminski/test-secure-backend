@@ -1,7 +1,7 @@
 package com.awesome.testing.controller;
 
 import com.awesome.testing.dto.ProductCreateDto;
-import com.awesome.testing.dto.ProductDto;
+import com.awesome.testing.dto.ProductUpdateDto;
 import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -75,8 +75,8 @@ public class ProductController {
     })
     public ResponseEntity<ProductEntity> updateProduct(
             @PathVariable Long id,
-            @Valid @RequestBody ProductDto productDTO) {
-        return productService.updateProduct(id, productDTO)
+            @Valid @RequestBody ProductUpdateDto productUpdateDto) {
+        return productService.updateProduct(id, productUpdateDto)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -84,6 +84,12 @@ public class ProductController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Delete product", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Product deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - requires admin role"),
+            @ApiResponse(responseCode = "404", description = "Product not found")
+    })
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         return productService.deleteProduct(id)
                 ? ResponseEntity.noContent().build()
