@@ -29,7 +29,7 @@ public class UserSignUpController {
     @Operation(summary = "Create a new user account")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "User was successfully created"),
-            @ApiResponse(responseCode = "400", description = "Validation failed", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Validation failed", content = @Content)
     })
     @ResponseStatus(HttpStatus.CREATED)
     public void signup(@Parameter(description = "Signup User") @Valid @RequestBody UserRegisterDto userDto) {

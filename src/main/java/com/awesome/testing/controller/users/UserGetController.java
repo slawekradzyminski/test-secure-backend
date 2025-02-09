@@ -30,8 +30,7 @@ public class UserGetController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "List of users",
                     content = @Content(schema = @Schema(implementation = UserResponseDto.class))),
-            @ApiResponse(responseCode = "401", description = "Access denied", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Users not found", content = @Content)
+            @ApiResponse(responseCode = "401", description = "Unauthorized – Missing or invalid token", content = @Content)
     })
     public List<UserResponseDto> getAll() {
         return userService.getAll().stream()
@@ -44,7 +43,7 @@ public class UserGetController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User details",
                     content = @Content(schema = @Schema(implementation = UserResponseDto.class))),
-            @ApiResponse(responseCode = "401", description = "Access denied", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized – Missing or invalid token", content = @Content),
             @ApiResponse(responseCode = "404", description = "The user doesn't exist", content = @Content)
     })
     public UserResponseDto getByUsername(@Parameter(description = "Username") @PathVariable String username) {

@@ -31,7 +31,7 @@ public class UserMeController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Current user details",
                     content = @Content(schema = @Schema(implementation = UserResponseDto.class))),
-            @ApiResponse(responseCode = "401", description = "Access denied", content = @Content)
+            @ApiResponse(responseCode = "401", description = "Unauthorized – Missing or invalid token", content = @Content)
     })
     public UserResponseDto whoAmI(HttpServletRequest req) {
         User user = userService.whoAmI(req);

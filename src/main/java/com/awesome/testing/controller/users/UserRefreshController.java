@@ -29,7 +29,7 @@ public class UserRefreshController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "New JWT token",
                     content = @Content(schema = @Schema(type = "string", example = "eyJhbGciOiJIUzI1NiJ9..."))),
-            @ApiResponse(responseCode = "401", description = "Access denied", content = @Content)
+            @ApiResponse(responseCode = "401", description = "Unauthorized – Missing or invalid token", content = @Content)
     })
     public String refresh(HttpServletRequest req) {
         return userService.refresh(userService.whoAmI(req).getUsername());

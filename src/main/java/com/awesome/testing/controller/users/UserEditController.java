@@ -30,8 +30,8 @@ public class UserEditController {
     @Operation(summary = "Update user", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User was updated"),
-            @ApiResponse(responseCode = "401", description = "Access denied", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized – Missing or invalid token", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden – Insufficient permissions", content = @Content),
             @ApiResponse(responseCode = "404", description = "The user doesn't exist", content = @Content)
     })
     public User edit(
