@@ -2,7 +2,7 @@
 set -e
 
 echo "Starting application with local profile..."
-./mvnw spring-boot:run -Dspring-boot.run.profiles=local &
+nohup ./mvnw spring-boot:run -Dspring-boot.run.profiles=local > app.log 2>&1 &
 APP_PID=$!
 
 echo "Waiting for application to start (max 5 minutes)..."
@@ -59,4 +59,4 @@ if echo "$LOGIN_RESPONSE" | grep -q "token"; then
 else
   echo "Verification failed! Login response did not contain token."
   exit 1
-fi 
+fi

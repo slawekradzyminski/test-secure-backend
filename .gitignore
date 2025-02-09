@@ -25,3 +25,5 @@ nbdist/
 .vscode/settings.json
 
 /testlogs/
+app.log
+docker.log

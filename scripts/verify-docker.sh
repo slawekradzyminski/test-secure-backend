@@ -2,7 +2,7 @@
 set -e
 
 echo "Starting Docker environment..."
-docker compose up -d
+nohup docker compose up -d > docker.log 2>&1 &
 
 echo "Waiting for application to start (max 5 minutes)..."
 TIMEOUT=300  # 5 minutes in seconds
@@ -58,4 +58,4 @@ if echo "$LOGIN_RESPONSE" | grep -q "token"; then
 else
   echo "Verification failed! Login response did not contain token."
   exit 1
-fi 
+fi
