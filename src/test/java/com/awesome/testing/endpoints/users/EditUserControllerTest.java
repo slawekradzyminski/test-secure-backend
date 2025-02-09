@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
-import static com.awesome.testing.util.UserUtil.getRandomEmail;
-import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
+import static com.awesome.testing.factory.UserFactory.getRandomEmail;
+import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class EditUserControllerTest extends DomainHelper {

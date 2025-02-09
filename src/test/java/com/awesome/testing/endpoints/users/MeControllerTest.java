@@ -13,7 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
-import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
+import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")

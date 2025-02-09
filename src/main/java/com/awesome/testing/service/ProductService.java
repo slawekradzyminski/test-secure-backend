@@ -1,7 +1,8 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.ProductDTO;
-import com.awesome.testing.model.Product;
+import com.awesome.testing.dto.ProductCreateDto;
+import com.awesome.testing.dto.ProductDto;
+import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,31 +18,23 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     @Transactional(readOnly = true)
-    public List<Product> getAllProducts() {
+    public List<ProductEntity> getAllProducts() {
         return productRepository.findAll();
     }
 
     @Transactional(readOnly = true)
-    public Optional<Product> getProductById(Long id) {
+    public Optional<ProductEntity> getProductById(Long id) {
         return productRepository.findById(id);
     }
 
     @Transactional
-    public Product createProduct(ProductDTO productDTO) {
-        Product product = Product.builder()
-                .name(productDTO.getName())
-                .description(productDTO.getDescription())
-                .price(productDTO.getPrice())
-                .stockQuantity(productDTO.getStockQuantity())
-                .category(productDTO.getCategory())
-                .imageUrl(productDTO.getImageUrl())
-                .build();
-        
+    public ProductEntity createProduct(ProductCreateDto productCreateDto) {
+        ProductEntity product = ProductEntity.from(productCreateDto);
         return productRepository.save(product);
     }
 
     @Transactional
-    public Optional<Product> updateProduct(Long id, ProductDTO productDTO) {
+    public Optional<ProductEntity> updateProduct(Long id, ProductDto productDTO) {
         return productRepository.findById(id)
                 .map(product -> {
                     product.setName(productDTO.getName());

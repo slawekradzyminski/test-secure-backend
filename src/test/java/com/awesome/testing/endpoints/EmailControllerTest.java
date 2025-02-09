@@ -17,7 +17,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
-import static com.awesome.testing.util.UserUtil.getRandomUserWithRoles;
+import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 
 public class EmailControllerTest extends DomainHelper {
 

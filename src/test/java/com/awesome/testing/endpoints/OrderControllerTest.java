@@ -3,12 +3,12 @@ package com.awesome.testing.endpoints;
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.*;
 import com.awesome.testing.model.OrderStatus;
-import com.awesome.testing.model.Product;
+import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.model.Role;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
-import com.awesome.testing.util.UserUtil;
+import com.awesome.testing.factory.UserFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +40,7 @@ class OrderControllerTest extends DomainHelper {
     @Autowired
     private CartItemRepository cartItemRepository;
 
-    private Product testProduct;
+    private ProductEntity testProduct;
     private AddressDTO testAddress;
     private String clientToken;
     private String adminToken;
@@ -51,12 +51,12 @@ class OrderControllerTest extends DomainHelper {
         orderRepository.deleteAll();
         productRepository.deleteAll();
 
-        UserRegisterDto client = UserUtil.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        UserRegisterDto admin = UserUtil.getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto client = UserFactory.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto admin = UserFactory.getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         clientToken = getToken(client);
         adminToken = getToken(admin);
 
-        testProduct = Product.builder()
+        testProduct = ProductEntity.builder()
                 .name("Test Product")
                 .description("Test Description")
                 .price(BigDecimal.valueOf(99.99))

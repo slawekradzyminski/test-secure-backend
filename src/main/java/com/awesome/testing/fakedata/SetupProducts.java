@@ -1,6 +1,6 @@
 package com.awesome.testing.fakedata;
 
-import com.awesome.testing.model.Product;
+import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -101,7 +101,7 @@ public class SetupProducts {
     }
 
     private void createProduct(String name, String description, BigDecimal price, int quantity, String category, String imageUrl) {
-        Product product = Product.builder()
+        ProductEntity product = ProductEntity.builder()
             .name(name)
             .description(description)
             .price(price)

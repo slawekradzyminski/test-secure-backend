@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Product data transfer object")
-public class ProductDTO {
+public class ProductDto {
     private Long id;
 
     @NotBlank(message = "Product name is required")

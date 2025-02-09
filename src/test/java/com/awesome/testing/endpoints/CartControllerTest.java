@@ -5,12 +5,12 @@ import com.awesome.testing.dto.CartDTO;
 import com.awesome.testing.dto.CartItemDTO;
 import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.UserRegisterDto;
-import com.awesome.testing.model.Product;
+import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.model.Role;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
-import com.awesome.testing.util.UserUtil;
+import com.awesome.testing.factory.UserFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +36,7 @@ public class CartControllerTest extends DomainHelper {
     private OrderRepository orderRepository;
 
     private String clientToken;
-    private Product testProduct;
+    private ProductEntity testProduct;
 
     @BeforeEach
     public void setUp() {
@@ -45,10 +45,10 @@ public class CartControllerTest extends DomainHelper {
         orderRepository.deleteAll();
         productRepository.deleteAll();
 
-        UserRegisterDto client = UserUtil.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto client = UserFactory.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         clientToken = getToken(client);
 
-        testProduct = Product.builder()
+        testProduct = ProductEntity.builder()
                 .name("Test Product")
                 .description("Test Description")
                 .price(BigDecimal.valueOf(99.99))

@@ -1,5 +1,6 @@
 package com.awesome.testing.model;
 
+import com.awesome.testing.dto.ProductCreateDto;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Product {
+public class ProductEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -43,4 +44,15 @@ public class Product {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    public static ProductEntity from(ProductCreateDto productCreateDto) {
+        return ProductEntity.builder()
+                .name(productCreateDto.getName())
+                .description(productCreateDto.getDescription())
+                .price(productCreateDto.getPrice())
+                .stockQuantity(productCreateDto.getStockQuantity())
+                .category(productCreateDto.getCategory())
+                .imageUrl(productCreateDto.getImageUrl())
+                .build();
+    }
 } 

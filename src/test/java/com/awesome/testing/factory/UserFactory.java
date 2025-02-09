@@ -1,4 +1,4 @@
-package com.awesome.testing.util;
+package com.awesome.testing.factory;
 
 import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.model.Role;
@@ -9,7 +9,7 @@ import java.text.MessageFormat;
 import java.util.List;
 
 @UtilityClass
-public class UserUtil {
+public class UserFactory {
 
     public static UserRegisterDto getRandomUser() {
         return UserRegisterDto.builder()
