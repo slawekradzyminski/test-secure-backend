@@ -1,6 +1,6 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.UserEditDTO;
+import com.awesome.testing.dto.UserEditDto;
 import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.exception.UserNotFoundException;
@@ -90,7 +90,7 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public User edit(String username, UserEditDTO userDto) {
+    public User edit(String username, UserEditDto userDto) {
         User existingUser = userRepository.findByUsername(username);
         if (existingUser == null) {
             throw new UserNotFoundException("The user doesn't exist");
@@ -107,9 +107,6 @@ public class UserService {
         }
         if (userDto.getRoles() != null) {
             existingUser.setRoles(userDto.getRoles());
-        }
-        if (userDto.getPassword() != null) {
-            existingUser.setPassword(passwordEncoder.encode(userDto.getPassword()));
         }
 
         return userRepository.save(existingUser);

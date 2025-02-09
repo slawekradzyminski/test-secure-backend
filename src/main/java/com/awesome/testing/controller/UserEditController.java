@@ -1,6 +1,6 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.dto.UserEditDTO;
+import com.awesome.testing.dto.UserEditDto;
 import com.awesome.testing.model.User;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,13 +30,13 @@ public class UserEditController {
     @Operation(summary = "Update user", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User was updated"),
-            @ApiResponse(responseCode = "400", description = "Something went wrong", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Access denied", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Access denied", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
             @ApiResponse(responseCode = "404", description = "The user doesn't exist", content = @Content)
     })
     public User edit(
             @Parameter(description = "Username") @PathVariable String username,
-            @Parameter(description = "User details") @Valid @RequestBody UserEditDTO userDto) {
+            @Parameter(description = "User details") @Valid @RequestBody UserEditDto userDto) {
         return userService.edit(username, userDto);
     }
 

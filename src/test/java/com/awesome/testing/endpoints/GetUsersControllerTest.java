@@ -36,6 +36,7 @@ public class GetUsersControllerTest extends DomainHelper {
         assertThat(response.getBody()).hasSizeGreaterThan(0);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldGet401AsUnauthorized() {
         // when

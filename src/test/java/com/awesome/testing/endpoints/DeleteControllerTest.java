@@ -32,6 +32,7 @@ public class DeleteControllerTest extends DomainHelper {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldGet401AsUnauthorized() {
         // when
@@ -65,7 +66,7 @@ public class DeleteControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet404Nonexisting() {
+    public void shouldGet404IfUserNotFound() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String apiToken = getToken(user);

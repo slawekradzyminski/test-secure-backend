@@ -27,8 +27,8 @@ public class UserDeleteController {
     @Operation(summary = "Delete user", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "User was deleted"),
-            @ApiResponse(responseCode = "400", description = "Something went wrong", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Access denied", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Access denied", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
             @ApiResponse(responseCode = "404", description = "The user doesn't exist", content = @Content)
     })
     @ResponseStatus(HttpStatus.NO_CONTENT)

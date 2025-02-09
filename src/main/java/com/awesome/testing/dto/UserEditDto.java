@@ -12,7 +12,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class UserEditDTO {
+public class UserEditDto {
 
     @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
     @Schema(description = "Username", example = "johndoe")
@@ -23,15 +23,11 @@ public class UserEditDTO {
     @Schema(description = "Email address", example = "john.doe@example.com")
     private String email;
 
-    @Size(min = 8, message = "Minimum password length: 8 characters")
-    @Schema(description = "Password", example = "password123")
-    private String password;
-
-    @Size(max = 255)
+    @Size(min = 4, max = 255, message = "Minimum firstName length: 4 characters")
     @Schema(description = "First name", example = "John")
     private String firstName;
 
-    @Size(max = 255)
+    @Size(min = 4, max = 255, message = "Minimum lastName length: 4 characters")
     @Schema(description = "Last name", example = "Doe")
     private String lastName;
 

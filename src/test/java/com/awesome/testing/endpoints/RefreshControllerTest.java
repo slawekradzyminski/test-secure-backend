@@ -40,7 +40,10 @@ public class RefreshControllerTest extends DomainHelper {
     @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldGet401AsUnauthorized() {
+        // when
         ResponseEntity<ErrorDto> response = executeGet("/users/refresh", getJsonOnlyHeaders(), ErrorDto.class);
+
+        // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(response.getBody().getMessage()).isEqualTo("Unauthorized");
     }

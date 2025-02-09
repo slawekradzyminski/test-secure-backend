@@ -26,17 +26,17 @@ public class UserRegisterDto {
     private String email;
 
     @NotNull(message = "Password is required")
-    @Size(min = 8, message = "Minimum password length: 8 characters")
+    @Size(min = 8, max = 255, message = "Minimum password length: 8 characters")
     @Schema(description = "Password", example = "password123")
     private String password;
 
     @NotNull(message = "firstName is required")
-    @Size(min = 4, message = "Minimum firstName length: 4 characters")
+    @Size(min = 4, max = 255, message = "Minimum firstName length: 4 characters")
     @Schema(description = "First name", example = "John")
     private String firstName;
 
     @NotNull(message = "lastName is required")
-    @Size(min = 4, message = "Minimum lastName length: 4 characters")
+    @Size(min = 4, max = 255, message = "Minimum lastName length: 4 characters")
     @Schema(description = "Last name", example = "Boyd")
     private String lastName;
 

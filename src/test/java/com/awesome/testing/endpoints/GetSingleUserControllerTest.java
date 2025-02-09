@@ -33,9 +33,13 @@ public class GetSingleUserControllerTest extends DomainHelper {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldGet401AsUnauthorized() {
+        // when
         ResponseEntity<ErrorDto> response = executeGet(getUserEndpoint("nonexisting"), getJsonOnlyHeaders(), ErrorDto.class);
+
+        // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(response.getBody().getMessage()).isEqualTo("Unauthorized");
     }
