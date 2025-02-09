@@ -3,7 +3,6 @@ package com.awesome.testing.security;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,6 +38,7 @@ public class JwtTokenProvider {
     private final MyUserDetails myUserDetails;
     private SecretKey key;
 
+    @SuppressWarnings("unused")
     @PostConstruct
     protected void init() {
         String longSecretKey = secretKey + secretKey + secretKey + secretKey; // Repeat 4 times to ensure length
@@ -62,16 +62,11 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    private List<SimpleGrantedAuthority> getRoles(List<Role> roles) {
-        return roles.stream()
-                .map(role -> new SimpleGrantedAuthority(role.getAuthority()))
-                .collect(Collectors.toList());
-    }
-
     public Authentication getAuthentication(String token) {
         String username = getUsername(token);
         UserDetails userDetails = myUserDetails.loadUserByUsername(username);
-        return new UsernamePasswordAuthenticationToken(new CustomPrincipal(username, userDetails), "", userDetails.getAuthorities());
+        CustomPrincipal principal = new CustomPrincipal(username, userDetails);
+        return new UsernamePasswordAuthenticationToken(principal, "", userDetails.getAuthorities());
     }
 
     public String getUsername(String token) {
@@ -100,5 +95,11 @@ public class JwtTokenProvider {
         } catch (JwtException | IllegalArgumentException e) {
             throw new CustomException("Invalid or expired token", HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    private List<SimpleGrantedAuthority> getRoles(List<Role> roles) {
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority(role.getAuthority()))
+                .toList();
     }
 }

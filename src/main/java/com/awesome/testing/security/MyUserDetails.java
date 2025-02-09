@@ -21,13 +21,12 @@ public class MyUserDetails implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        final User user = userRepository.findByUsername(username);
+        return userRepository.findByUsername(username)
+                .map(user -> toUserDetails(username, user))
+                .orElseThrow(() -> notFound(username));
+    }
 
-        if (user == null) {
-            throw new UsernameNotFoundException(
-                    MessageFormat.format("User ''{0}'' not found", username));
-        }
-
+    private UserDetails toUserDetails(String username, User user) {
         return withUsername(username)
                 .password(user.getPassword())
                 .authorities(user.getRoles())
@@ -36,6 +35,11 @@ public class MyUserDetails implements UserDetailsService {
                 .credentialsExpired(false)
                 .disabled(false)
                 .build();
+    }
+
+    private UsernameNotFoundException notFound(String username) {
+        return new UsernameNotFoundException(
+                MessageFormat.format("User ''{0}'' not found", username));
     }
 
 }

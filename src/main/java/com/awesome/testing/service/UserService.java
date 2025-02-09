@@ -4,22 +4,18 @@ import com.awesome.testing.dto.user.UserEditDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.exception.CustomException;
 import com.awesome.testing.exception.UserNotFoundException;
+import com.awesome.testing.security.AuthenticationHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import com.awesome.testing.model.User;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.authentication.BadCredentialsException;
 
 import java.util.List;
-import java.util.Optional;
 
 import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
 
@@ -31,61 +27,40 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
-    private final AuthenticationManager authenticationManager;
+    private final AuthenticationHandler authenticationHandler;
 
     public String signIn(String username, String password) {
-        try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
-            return jwtTokenProvider.createToken(username, userRepository.findByUsername(username).getRoles());
-        } catch (BadCredentialsException e) {
-            throw new CustomException("Invalid username/password supplied", HttpStatus.UNPROCESSABLE_ENTITY);
-        } catch (AuthenticationException e) {
-            throw new CustomException("Unauthorized", HttpStatus.UNAUTHORIZED);
-        }
+        authenticationHandler.authUser(username, password);
+        User user = getUser(username);
+        return jwtTokenProvider.createToken(username, user.getRoles());
     }
 
     @Transactional
     public void signup(UserRegisterDto userRegisterDto) {
-        User user = userRepository.findByUsername(userRegisterDto.getUsername());
-        Optional.ofNullable(user)
+        userRepository.findByUsername(userRegisterDto.getUsername())
                 .ifPresentOrElse(
                         it -> returnBadRequest(),
                         () -> userRepository.save(getUser(userRegisterDto))
                 );
     }
 
-    private void returnBadRequest() {
-        throw new CustomException("Username is already in use", HttpStatus.BAD_REQUEST);
-    }
-
-
     public void delete(String username) {
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new UserNotFoundException("The user doesn't exist");
-        }
+        getUser(username);
         userRepository.deleteByUsername(username);
     }
 
     public User search(String username) {
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new UserNotFoundException("The user doesn't exist");
-        }
-        return user;
+        return getUser(username);
     }
 
     public User whoAmI(HttpServletRequest req) {
         String username = jwtTokenProvider.getUsername(jwtTokenProvider.extractTokenFromRequest(req));
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new UserNotFoundException("The user doesn't exist");
-        }
-        return user;
+        return getUser(username);
     }
 
     public String refresh(String username) {
-        return jwtTokenProvider.createToken(username, userRepository.findByUsername(username).getRoles());
+        User user = getUser(username);
+        return jwtTokenProvider.createToken(username, user.getRoles());
     }
 
     public List<User> getAll() {
@@ -93,10 +68,7 @@ public class UserService {
     }
 
     public User edit(String username, UserEditDto userDto) {
-        User existingUser = userRepository.findByUsername(username);
-        if (existingUser == null) {
-            throw new UserNotFoundException("The user doesn't exist");
-        }
+        User existingUser = getUser(username);
 
         updateIfNotNull(userDto.getEmail(), User::setEmail, existingUser);
         updateIfNotNull(userDto.getFirstName(), User::setFirstName, existingUser);
@@ -108,10 +80,7 @@ public class UserService {
 
     @SuppressWarnings("unused")
     public boolean exists(String username) {
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new UserNotFoundException("User not found");
-        }
+        getUser(username);
         return true;
     }
 
@@ -124,6 +93,15 @@ public class UserService {
         user.setEmail(userRegisterDTO.getEmail());
         user.setPassword(passwordEncoder.encode(userRegisterDTO.getPassword()));
         return user;
+    }
+
+    private void returnBadRequest() {
+        throw new CustomException("Username is already in use", HttpStatus.BAD_REQUEST);
+    }
+
+    private User getUser(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("The user doesn't exist"));
     }
 
 }
