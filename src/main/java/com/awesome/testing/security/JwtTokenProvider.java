@@ -2,6 +2,7 @@ package com.awesome.testing.security;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import jakarta.annotation.PostConstruct;
@@ -83,11 +84,10 @@ public class JwtTokenProvider {
     }
 
     public String extractTokenFromRequest(HttpServletRequest req) {
-        String bearerToken = req.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        return null;
+        return Optional.ofNullable(req.getHeader("Authorization"))
+                .filter(token -> token.startsWith("Bearer "))
+                .map(token -> token.substring(7))
+                .orElse(null);
     }
 
     public boolean validateToken(String token) {

@@ -3,7 +3,7 @@ package com.awesome.testing.endpoints;
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.CartDTO;
 import com.awesome.testing.dto.CartItemDTO;
-import com.awesome.testing.dto.ErrorDTO;
+import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.model.Product;
 import com.awesome.testing.model.Role;
@@ -180,10 +180,10 @@ public class CartControllerTest extends DomainHelper {
     @Test
     public void shouldFailToGetCartWhenNotAuthenticated() {
         // when
-        ResponseEntity<ErrorDTO> response = executeGet(
+        ResponseEntity<ErrorDto> response = executeGet(
                 CART_ENDPOINT,
                 getJsonOnlyHeaders(),
-                ErrorDTO.class);
+                ErrorDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);

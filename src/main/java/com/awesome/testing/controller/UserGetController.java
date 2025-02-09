@@ -1,6 +1,6 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.dto.UserResponseDTO;
+import com.awesome.testing.dto.UserResponseDto;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,14 +33,14 @@ public class UserGetController {
     @Operation(summary = "Get all users", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "List of users",
-                    content = @Content(schema = @Schema(implementation = UserResponseDTO.class))),
+                    content = @Content(schema = @Schema(implementation = UserResponseDto.class))),
             @ApiResponse(responseCode = "400", description = "Something went wrong", content = @Content),
             @ApiResponse(responseCode = "403", description = "Access denied", content = @Content),
             @ApiResponse(responseCode = "404", description = "Users not found", content = @Content)
     })
-    public List<UserResponseDTO> getAll() {
+    public List<UserResponseDto> getAll() {
         return userService.getAll().stream()
-                .map(user -> modelMapper.map(user, UserResponseDTO.class))
+                .map(user -> modelMapper.map(user, UserResponseDto.class))
                 .collect(Collectors.toList());
     }
 
@@ -49,13 +49,13 @@ public class UserGetController {
     @Operation(summary = "Get user by username", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User details",
-                    content = @Content(schema = @Schema(implementation = UserResponseDTO.class))),
+                    content = @Content(schema = @Schema(implementation = UserResponseDto.class))),
             @ApiResponse(responseCode = "400", description = "Something went wrong", content = @Content),
             @ApiResponse(responseCode = "403", description = "Access denied", content = @Content),
             @ApiResponse(responseCode = "404", description = "The user doesn't exist", content = @Content)
     })
-    public UserResponseDTO getByUsername(@Parameter(description = "Username") @PathVariable String username) {
-        return modelMapper.map(userService.search(username), UserResponseDTO.class);
+    public UserResponseDto getByUsername(@Parameter(description = "Username") @PathVariable String username) {
+        return modelMapper.map(userService.search(username), UserResponseDto.class);
     }
 
 }

@@ -1,7 +1,7 @@
 package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.ErrorDTO;
+import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
@@ -37,9 +37,10 @@ public class RefreshControllerTest extends DomainHelper {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldGet401AsUnauthorized() {
-        ResponseEntity<ErrorDTO> response = executeGet("/users/refresh", getJsonOnlyHeaders(), ErrorDTO.class);
+        ResponseEntity<ErrorDto> response = executeGet("/users/refresh", getJsonOnlyHeaders(), ErrorDto.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(response.getBody().getMessage()).isEqualTo("Unauthorized");
     }

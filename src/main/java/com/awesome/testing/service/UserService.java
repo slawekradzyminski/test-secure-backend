@@ -73,7 +73,7 @@ public class UserService {
         return user;
     }
 
-    public User whoami(HttpServletRequest req) {
+    public User whoAmI(HttpServletRequest req) {
         String username = jwtTokenProvider.getUsername(jwtTokenProvider.extractTokenFromRequest(req));
         User user = userRepository.findByUsername(username);
         if (user == null) {

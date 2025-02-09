@@ -3,7 +3,7 @@ package com.awesome.testing.exception;
 import java.util.Map;
 import java.util.HashMap;
 
-import com.awesome.testing.dto.ErrorDTO;
+import com.awesome.testing.dto.ErrorDto;
 import org.modelmapper.MappingException;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
@@ -32,11 +32,11 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
     }
 
     @ExceptionHandler(CustomException.class)
-    public ResponseEntity<ErrorDTO> handleCustomException(CustomException ex) {
+    public ResponseEntity<ErrorDto> handleCustomException(CustomException ex) {
         return ResponseEntity
                 .status(ex.getHttpStatus())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorDTO(ex.getMessage()));
+                .body(new ErrorDto(ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -74,40 +74,40 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorDTO> handleAccessDeniedException(AccessDeniedException ex) {
+    public ResponseEntity<ErrorDto> handleAccessDeniedException(AccessDeniedException ex) {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorDTO("Access denied"));
+                .body(new ErrorDto("Access denied"));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorDTO> handleBadCredentialsException(BadCredentialsException ex) {
+    public ResponseEntity<ErrorDto> handleBadCredentialsException(BadCredentialsException ex) {
         return ResponseEntity
                 .status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorDTO("Invalid username/password supplied"));
+                .body(new ErrorDto("Invalid username/password supplied"));
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ErrorDTO> handleAuthenticationException(AuthenticationException ex) {
+    public ResponseEntity<ErrorDto> handleAuthenticationException(AuthenticationException ex) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorDTO("Unauthorized"));
+                .body(new ErrorDto("Unauthorized"));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorDTO> handleException(Exception ex) {
+    public ResponseEntity<ErrorDto> handleException() {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorDTO("Internal server error"));
+                .body(new ErrorDto("Internal server error"));
     }
 
     @ExceptionHandler(UserNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorDTO handleUserNotFoundException(UserNotFoundException ex) {
-        return new ErrorDTO(ex.getMessage());
+    public ErrorDto handleUserNotFoundException(UserNotFoundException ex) {
+        return new ErrorDto(ex.getMessage());
     }
 }

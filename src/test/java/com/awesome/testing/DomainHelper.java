@@ -1,7 +1,7 @@
 package com.awesome.testing;
 
-import com.awesome.testing.dto.LoginDTO;
-import com.awesome.testing.dto.LoginResponseDTO;
+import com.awesome.testing.dto.LoginDto;
+import com.awesome.testing.dto.LoginResponseDto;
 import com.awesome.testing.dto.UserRegisterDto;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +16,7 @@ public abstract class DomainHelper extends HttpHelper {
 
     protected static final String MISSING_USER = "The user doesn't exist";
 
-    protected <T> ResponseEntity<T> attemptLogin(LoginDTO loginDetails, Class<T> clazz) {
+    protected <T> ResponseEntity<T> attemptLogin(LoginDto loginDetails, Class<T> clazz) {
         return executePost(
                 LOGIN_ENDPOINT,
                 loginDetails,
@@ -24,25 +24,29 @@ public abstract class DomainHelper extends HttpHelper {
                 clazz);
     }
 
+    protected void registerUser(UserRegisterDto userRegisterDto) {
+        getToken(userRegisterDto);
+    }
+
     @SuppressWarnings("ConstantConditions")
-    protected String getToken(UserRegisterDto userRegisterDTO) {
+    protected String getToken(UserRegisterDto userRegisterDto) {
         executePost(
                 REGISTER_ENDPOINT,
-                userRegisterDTO,
+                userRegisterDto,
                 getJsonOnlyHeaders(),
                 String.class
         );
 
-        LoginDTO loginDTO = LoginDTO.builder()
-                .username(userRegisterDTO.getUsername())
-                .password(userRegisterDTO.getPassword())
+        LoginDto loginDTO = LoginDto.builder()
+                .username(userRegisterDto.getUsername())
+                .password(userRegisterDto.getPassword())
                 .build();
 
-        LoginResponseDTO loginResponse = executePost(
+        LoginResponseDto loginResponse = executePost(
                 LOGIN_ENDPOINT,
                 loginDTO,
                 getJsonOnlyHeaders(),
-                LoginResponseDTO.class
+                LoginResponseDto.class
         ).getBody();
 
         if (loginResponse != null) {

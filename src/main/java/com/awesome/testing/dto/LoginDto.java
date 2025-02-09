@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Size;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginDTO {
+public class LoginDto {
 
     @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
     @Schema(description = "Username", example = "admin")

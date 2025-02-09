@@ -1,6 +1,7 @@
 package com.awesome.testing.dto;
 
 import com.awesome.testing.model.Role;
+import com.awesome.testing.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +14,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserResponseDTO {
+public class UserResponseDto {
 
     @Schema(description = "User ID", example = "1")
     Integer id;
@@ -30,7 +31,18 @@ public class UserResponseDTO {
     @Schema(description = "First name", example = "John")
     String firstName;
 
-    @Schema(description = "Last name", example = "Doe")
+    @Schema(description = "Last name", example = "Boyd")
     String lastName;
+
+    public static UserResponseDto from(User user) {
+        return UserResponseDto.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .roles(user.getRoles())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .build();
+    }
 
 }

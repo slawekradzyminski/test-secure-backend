@@ -1,7 +1,7 @@
 package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.ErrorDTO;
+import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.UserRegisterDto;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
@@ -35,10 +35,10 @@ public class DeleteControllerTest extends DomainHelper {
     @Test
     public void shouldGet401AsUnauthorized() {
         // when
-        ResponseEntity<ErrorDTO> response = executeDelete(
+        ResponseEntity<ErrorDto> response = executeDelete(
                 getUserEndpoint("nonexisting"),
                 getJsonOnlyHeaders(),
-                ErrorDTO.class
+                ErrorDto.class
         );
 
         // then
@@ -54,10 +54,10 @@ public class DeleteControllerTest extends DomainHelper {
         String apiToken = getToken(user);
 
         // when
-        ResponseEntity<ErrorDTO> response =
+        ResponseEntity<ErrorDto> response =
                 executeDelete(getUserEndpoint(username),
                         getHeadersWith(apiToken),
-                        ErrorDTO.class);
+                        ErrorDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -71,10 +71,10 @@ public class DeleteControllerTest extends DomainHelper {
         String apiToken = getToken(user);
 
         // when
-        ResponseEntity<ErrorDTO> response =
+        ResponseEntity<ErrorDto> response =
                 executeDelete(getUserEndpoint("nonexisting"),
                         getHeadersWith(apiToken),
-                        ErrorDTO.class);
+                        ErrorDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);

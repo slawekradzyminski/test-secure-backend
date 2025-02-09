@@ -1,9 +1,9 @@
 package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.ErrorDTO;
+import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.UserRegisterDto;
-import com.awesome.testing.dto.UserResponseDTO;
+import com.awesome.testing.dto.UserResponseDto;
 import com.awesome.testing.model.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.*;
@@ -24,10 +24,10 @@ public class GetSingleUserControllerTest extends DomainHelper {
         String adminToken = getToken(user);
 
         // when
-        ResponseEntity<UserResponseDTO> response =
+        ResponseEntity<UserResponseDto> response =
                 executeGet(getUserEndpoint(user.getUsername()),
                         getHeadersWith(adminToken),
-                        UserResponseDTO.class);
+                        UserResponseDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -35,7 +35,7 @@ public class GetSingleUserControllerTest extends DomainHelper {
 
     @Test
     public void shouldGet401AsUnauthorized() {
-        ResponseEntity<ErrorDTO> response = executeGet(getUserEndpoint("nonexisting"), getJsonOnlyHeaders(), ErrorDTO.class);
+        ResponseEntity<ErrorDto> response = executeGet(getUserEndpoint("nonexisting"), getJsonOnlyHeaders(), ErrorDto.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(response.getBody().getMessage()).isEqualTo("Unauthorized");
     }
@@ -48,10 +48,10 @@ public class GetSingleUserControllerTest extends DomainHelper {
         String token = getToken(user);
 
         // when
-        ResponseEntity<ErrorDTO> response =
+        ResponseEntity<ErrorDto> response =
                 executeGet(getUserEndpoint("nonexisting"),
                         getHeadersWith(token),
-                        ErrorDTO.class);
+                        ErrorDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);

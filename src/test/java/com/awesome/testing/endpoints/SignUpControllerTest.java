@@ -1,7 +1,7 @@
 package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.ErrorDTO;
+import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.UserRegisterDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
@@ -41,7 +41,7 @@ public class SignUpControllerTest extends DomainHelper {
         UserRegisterDto secondUser = getRandomUserWithUsername(firstUser.getUsername());
 
         // when
-        ResponseEntity<ErrorDTO> response = registerUser(secondUser, ErrorDTO.class);
+        ResponseEntity<ErrorDto> response = registerUser(secondUser, ErrorDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
