@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 @SuppressWarnings("unused")
 @Configuration
 @Profile("!local")
-public class TransactionConfig {
+public class DockerisedConfig {
 
     @Value("${spring.artemis.broker-url}")
     private String brokerUrl;

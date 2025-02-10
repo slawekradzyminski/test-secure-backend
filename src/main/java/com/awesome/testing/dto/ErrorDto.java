@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ErrorDto {
 
-    @Schema(description = "Error message", example = "Something went wrong")
+    @Schema(description = "Error message", example = "Error message")
     private String message;
 
 }

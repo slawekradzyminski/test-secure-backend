@@ -7,7 +7,7 @@ import java.util.Optional;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 
-import com.awesome.testing.exception.CustomException;
+import com.awesome.testing.controller.exception.CustomException;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

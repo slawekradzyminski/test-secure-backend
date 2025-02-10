@@ -2,6 +2,8 @@ package com.awesome.testing.endpoints;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.*;
+import com.awesome.testing.dto.cart.CartDto;
+import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.model.OrderStatus;
 import com.awesome.testing.model.ProductEntity;
@@ -78,13 +80,13 @@ class OrderControllerTest extends DomainHelper {
     @Test
     void shouldGetUserOrders() {
         // given
-        CartItemDTO cartItemDTO = CartItemDTO.builder()
+        CartItemDto cartItemDTO = CartItemDto.builder()
                 .productId(testProduct.getId())
                 .quantity(2)
                 .build();
 
         HttpHeaders headers = getHeadersWith(clientToken);
-        executePost(CART_ITEMS_ENDPOINT, cartItemDTO, headers, CartDTO.class);
+        executePost(CART_ITEMS_ENDPOINT, cartItemDTO, headers, CartDto.class);
         executePost(ORDERS_ENDPOINT, testAddress, headers, OrderDTO.class);
 
         // when
@@ -118,13 +120,13 @@ class OrderControllerTest extends DomainHelper {
     @Test
     void shouldGetOrderById() {
         // given
-        CartItemDTO cartItemDTO = CartItemDTO.builder()
+        CartItemDto cartItemDTO = CartItemDto.builder()
                 .productId(testProduct.getId())
                 .quantity(2)
                 .build();
 
         HttpHeaders headers = getHeadersWith(clientToken);
-        executePost(CART_ITEMS_ENDPOINT, cartItemDTO, headers, CartDTO.class);
+        executePost(CART_ITEMS_ENDPOINT, cartItemDTO, headers, CartDto.class);
         ResponseEntity<OrderDTO> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, headers, OrderDTO.class);
         assertThat(orderResponse.getBody()).isNotNull();
         Long orderId = orderResponse.getBody().getId();
@@ -145,13 +147,13 @@ class OrderControllerTest extends DomainHelper {
     @Test
     void shouldUpdateOrderStatusAsAdmin() {
         // given
-        CartItemDTO cartItemDTO = CartItemDTO.builder()
+        CartItemDto cartItemDTO = CartItemDto.builder()
                 .productId(testProduct.getId())
                 .quantity(2)
                 .build();
 
         HttpHeaders clientHeaders = getHeadersWith(clientToken);
-        executePost(CART_ITEMS_ENDPOINT, cartItemDTO, clientHeaders, CartDTO.class);
+        executePost(CART_ITEMS_ENDPOINT, cartItemDTO, clientHeaders, CartDto.class);
         ResponseEntity<OrderDTO> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, clientHeaders, OrderDTO.class);
         assertThat(orderResponse.getBody()).isNotNull();
         Long orderId = orderResponse.getBody().getId();
@@ -173,13 +175,13 @@ class OrderControllerTest extends DomainHelper {
     @Test
     void shouldFailToUpdateOrderStatusAsClient() {
         // given
-        CartItemDTO cartItemDTO = CartItemDTO.builder()
+        CartItemDto cartItemDTO = CartItemDto.builder()
                 .productId(testProduct.getId())
                 .quantity(2)
                 .build();
 
         HttpHeaders clientHeaders = getHeadersWith(clientToken);
-        executePost(CART_ITEMS_ENDPOINT, cartItemDTO, clientHeaders, CartDTO.class);
+        executePost(CART_ITEMS_ENDPOINT, cartItemDTO, clientHeaders, CartDto.class);
         ResponseEntity<OrderDTO> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, clientHeaders, OrderDTO.class);
         assertThat(orderResponse.getBody()).isNotNull();
         Long orderId = orderResponse.getBody().getId();
@@ -199,13 +201,13 @@ class OrderControllerTest extends DomainHelper {
     @Test
     void shouldCancelOrder() {
         // given
-        CartItemDTO cartItemDTO = CartItemDTO.builder()
+        CartItemDto cartItemDTO = CartItemDto.builder()
                 .productId(testProduct.getId())
                 .quantity(2)
                 .build();
 
         HttpHeaders clientHeaders = getHeadersWith(clientToken);
-        executePost(CART_ITEMS_ENDPOINT, cartItemDTO, clientHeaders, CartDTO.class);
+        executePost(CART_ITEMS_ENDPOINT, cartItemDTO, clientHeaders, CartDto.class);
         ResponseEntity<OrderDTO> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, clientHeaders, OrderDTO.class);
         assertThat(orderResponse.getBody()).isNotNull();
         Long orderId = orderResponse.getBody().getId();
@@ -227,7 +229,7 @@ class OrderControllerTest extends DomainHelper {
     @Test
     void shouldFailToCancelDeliveredOrder() {
         // given
-        CartItemDTO cartItemDTO = CartItemDTO.builder()
+        CartItemDto cartItemDTO = CartItemDto.builder()
                 .productId(testProduct.getId())
                 .quantity(2)
                 .build();
@@ -235,7 +237,7 @@ class OrderControllerTest extends DomainHelper {
         HttpHeaders clientHeaders = getHeadersWith(clientToken);
         HttpHeaders adminHeaders = getHeadersWith(adminToken);
         
-        executePost(CART_ITEMS_ENDPOINT, cartItemDTO, clientHeaders, CartDTO.class);
+        executePost(CART_ITEMS_ENDPOINT, cartItemDTO, clientHeaders, CartDto.class);
         ResponseEntity<OrderDTO> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, clientHeaders, OrderDTO.class);
         assertThat(orderResponse.getBody()).isNotNull();
         Long orderId = orderResponse.getBody().getId();

@@ -1,4 +1,4 @@
-package com.awesome.testing.exception;
+package com.awesome.testing.controller.exception;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -18,7 +18,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 @RestControllerAdvice
 public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
@@ -86,17 +85,4 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
                 .body(new ErrorDto("Unauthorized"));
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorDto> handleException() {
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorDto("Internal server error"));
-    }
-
-    @ExceptionHandler(UserNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorDto handleUserNotFoundException(UserNotFoundException ex) {
-        return new ErrorDto(ex.getMessage());
-    }
 }
