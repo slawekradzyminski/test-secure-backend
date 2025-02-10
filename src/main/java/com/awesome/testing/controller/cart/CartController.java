@@ -1,8 +1,10 @@
 package com.awesome.testing.controller.cart;
 
 import com.awesome.testing.dto.cart.CartDto;
+import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.CartService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -27,7 +29,8 @@ public class CartController {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved cart"),
         @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
     })
-    public ResponseEntity<CartDto> getCart(@AuthenticationPrincipal Object principal) {
+    public ResponseEntity<CartDto> getCart(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal) {
         return ResponseEntity.ok(cartService.getCart(principal.toString()));
     }
 
@@ -37,7 +40,8 @@ public class CartController {
         @ApiResponse(responseCode = "200", description = "Cart cleared successfully"),
         @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
     })
-    public ResponseEntity<Void> clearCart(@AuthenticationPrincipal Object principal) {
+    public ResponseEntity<Void> clearCart(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal) {
         cartService.clearCart(principal.toString());
         return ResponseEntity.ok().build();
     }

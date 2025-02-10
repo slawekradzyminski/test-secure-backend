@@ -3,8 +3,10 @@ package com.awesome.testing.controller.cart;
 import com.awesome.testing.dto.cart.CartDto;
 import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.cart.UpdateCartItemDto;
+import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.CartService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -33,7 +35,7 @@ public class CartItemsController {
         @ApiResponse(responseCode = "404", description = "Product not found", content = @Content)
     })
     public ResponseEntity<CartDto> addToCart(
-            @AuthenticationPrincipal Object principal,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Valid @RequestBody CartItemDto cartItemDto) {
         return ResponseEntity.ok(cartService.addToCart(principal.toString(), cartItemDto));
     }
@@ -47,7 +49,7 @@ public class CartItemsController {
         @ApiResponse(responseCode = "404", description = "Cart item not found", content = @Content)
     })
     public ResponseEntity<CartDto> updateCartItem(
-            @AuthenticationPrincipal Object principal,
+            @Parameter(hidden = true)  @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long productId,
             @Valid @RequestBody UpdateCartItemDto updateCartItemDto) {
         return ResponseEntity.ok(cartService.updateCartItem(principal.toString(), productId, updateCartItemDto));
@@ -61,7 +63,7 @@ public class CartItemsController {
         @ApiResponse(responseCode = "404", description = "Cart item not found", content = @Content)
     })
     public ResponseEntity<CartDto> removeFromCart(
-            @AuthenticationPrincipal Object principal,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long productId) {
         return ResponseEntity.ok(cartService.removeFromCart(principal.toString(), productId));
     }

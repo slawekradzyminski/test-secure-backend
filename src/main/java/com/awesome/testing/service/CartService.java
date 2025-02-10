@@ -25,8 +25,7 @@ public class CartService {
 
     @Transactional(readOnly = true)
     public CartDto getCart(String username) {
-        List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
-        return createCartDto(username, cartItems);
+        return getCartDto(username);
     }
 
     @Transactional
@@ -39,36 +38,41 @@ public class CartService {
                 .orElseGet(() -> createItem(username, cartItemDto, product));
 
         cartItemRepository.save(cartItem);
-        List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
-        return createCartDto(username, cartItems);
+        return getCartDto(username);
     }
 
     @Transactional
     public CartDto updateCartItem(String username, Long productId, UpdateCartItemDto updateCartItemDto) {
-        CartItemEntity cartItem = cartItemRepository.findByUsernameAndProductId(username, productId)
-                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found"));
+        CartItemEntity cartItem = getCartItemEntity(username, productId);
 
         cartItem.setQuantity(updateCartItemDto.getQuantity());
         cartItem.setPrice(cartItem.getProduct().getPrice());
         cartItemRepository.save(cartItem);
 
-        List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
-        return createCartDto(username, cartItems);
+        return getCartDto(username);
     }
 
     @Transactional
     public CartDto removeFromCart(String username, Long productId) {
-        cartItemRepository.findByUsernameAndProductId(username, productId)
-                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found"));
+        getCartItemEntity(username, productId);
 
         cartItemRepository.deleteByUsernameAndProductId(username, productId);
-        List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
-        return createCartDto(username, cartItems);
+        return getCartDto(username);
     }
 
     @Transactional
     public void clearCart(String username) {
         cartItemRepository.deleteByUsername(username);
+    }
+
+    private CartDto getCartDto(String username) {
+        List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
+        return createCartDto(username, cartItems);
+    }
+
+    private CartItemEntity getCartItemEntity(String username, Long productId) {
+        return cartItemRepository.findByUsernameAndProductId(username, productId)
+                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found"));
     }
 
     private CartDto createCartDto(String username, List<CartItemEntity> cartItems) {
