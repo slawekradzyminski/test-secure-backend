@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.zalando.logbook.*;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -38,7 +39,7 @@ public class PrettyPrintingHttpLogFormatter implements HttpLogFormatter {
 
     private Map<String, Object> toJson(HttpRequest request, Precorrelation precorrelation) throws IOException {
         String body = request.getBodyAsString();
-        Map<String, Object> content = Map.of(
+        return Map.of(
                 "origin", "remote",
                 "type", "request",
                 "correlation", precorrelation.getId(),
@@ -48,12 +49,11 @@ public class PrettyPrintingHttpLogFormatter implements HttpLogFormatter {
                 "headers", request.getHeaders(),
                 "body", body
         );
-        return content;
     }
 
     private Map<String, Object> toJson(HttpResponse response, Correlation correlation) throws IOException {
         String body = response.getBodyAsString();
-        Map<String, Object> content = Map.of(
+        return Map.of(
                 "origin", "local",
                 "type", "response",
                 "correlation", correlation.getId(),
@@ -63,14 +63,13 @@ public class PrettyPrintingHttpLogFormatter implements HttpLogFormatter {
                 "headers", response.getHeaders(),
                 "body", body
         );
-        return content;
     }
 
     private String formatWithPrettyBody(Map<String, Object> content) throws JsonProcessingException {
         if (content.containsKey("body") && content.get("body") instanceof String) {
             try {
                 Object body = mapper.readValue((String) content.get("body"), Object.class);
-                Map<String, Object> mutableContent = new java.util.HashMap<>(content);
+                Map<String, Object> mutableContent = new HashMap<>(content);
                 mutableContent.put("body", body);
                 content = mutableContent;
             } catch (JsonProcessingException ignored) {

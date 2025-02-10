@@ -26,7 +26,7 @@ public class OrderService {
 
     @Transactional
     public OrderDTO createOrder(String username, AddressDTO addressDTO) {
-        List<CartItem> cartItems = cartItemRepository.findByUsername(username);
+        List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
         if (cartItems.isEmpty()) {
             throw new CustomException("Cart is empty", HttpStatus.BAD_REQUEST);
         }
@@ -46,7 +46,7 @@ public class OrderService {
         return mapToOrderDTO(savedOrder);
     }
 
-    private void updateOrder(CartItem cartItem, Order order) {
+    private void updateOrder(CartItemEntity cartItem, Order order) {
         OrderItem orderItem = OrderItem.builder()
                 .product(cartItem.getProduct())
                 .quantity(cartItem.getQuantity())

@@ -16,7 +16,7 @@ public class ProductFactory extends FakerSingleton {
                 .name(FAKER.commerce().productName())
                 .description(FAKER.lorem().sentence())
                 .price(generateValidPrice())
-                .stockQuantity(FAKER.random().nextInt(1, 100))
+                .stockQuantity(FAKER.random().nextInt(1, 10000))
                 .category(FAKER.commerce().department())
                 .build();
     }
@@ -26,7 +26,7 @@ public class ProductFactory extends FakerSingleton {
                 .name(FAKER.commerce().productName())
                 .description(FAKER.lorem().sentence())
                 .price(generateValidPrice())
-                .stockQuantity(FAKER.random().nextInt(1, 100))
+                .stockQuantity(FAKER.random().nextInt(1, 10000))
                 .category(FAKER.commerce().department())
                 .build();
     }
@@ -36,7 +36,7 @@ public class ProductFactory extends FakerSingleton {
                 .name(FAKER.commerce().productName())
                 .description(FAKER.lorem().sentence())
                 .price(generateValidPrice())
-                .stockQuantity(FAKER.random().nextInt(1, 100))
+                .stockQuantity(FAKER.random().nextInt(1, 10000))
                 .category(FAKER.commerce().department())
                 .build();
     }
