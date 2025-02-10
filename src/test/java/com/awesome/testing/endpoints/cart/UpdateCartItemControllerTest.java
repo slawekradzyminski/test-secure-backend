@@ -3,6 +3,7 @@ package com.awesome.testing.endpoints.cart;
 import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.cart.CartDto;
 import com.awesome.testing.dto.cart.CartItemDto;
+import com.awesome.testing.dto.cart.UpdateCartItemDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.model.ProductEntity;
@@ -41,7 +42,8 @@ public class UpdateCartItemControllerTest extends AbstractCartTest {
         CartItemDto cartItemDto2 = getDoubleCartItemFrom(productEntity2.getId());
         cartService.addToCart(client.getUsername(), cartItemDto);
         cartService.addToCart(client.getUsername(), cartItemDto2);
-        CartItemDto updateCartItem = getDoubleCartItemFrom(productEntity.getId());
+        UpdateCartItemDto updateCartItem = UpdateCartItemDto.builder().quantity(2).build();
+        CartItemDto expectedCartItemInResponse = getDoubleCartItemFrom(productEntity.getId());
 
         // when
         ResponseEntity<CartDto> response = executePut(
@@ -53,7 +55,7 @@ public class UpdateCartItemControllerTest extends AbstractCartTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().getUsername()).isEqualTo(client.getUsername());
-        assertThat(response.getBody().getItems()).containsExactlyInAnyOrder(updateCartItem, cartItemDto2);
+        assertThat(response.getBody().getItems()).containsExactlyInAnyOrder(expectedCartItemInResponse, cartItemDto2);
         assertThat(response.getBody().getTotalItems()).isEqualTo(4);
         assertThat(response.getBody().getTotalPrice()).isEqualTo(
                 productEntity.getPrice()
@@ -71,7 +73,7 @@ public class UpdateCartItemControllerTest extends AbstractCartTest {
         ProductEntity productEntity = productRepository.save(testProduct);
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
-        CartItemDto updateCartItem = CartItemDto.builder().quantity(1).build();
+        UpdateCartItemDto updateCartItem = UpdateCartItemDto.builder().quantity(0).build();
 
         // when
         ResponseEntity<Map<String, String>> response = executePut(
@@ -82,7 +84,7 @@ public class UpdateCartItemControllerTest extends AbstractCartTest {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().get("productId")).isEqualTo("must not be null");
+        assertThat(response.getBody().get("quantity")).isEqualTo("must be greater than or equal to 1");
     }
 
     @Test
@@ -90,12 +92,12 @@ public class UpdateCartItemControllerTest extends AbstractCartTest {
         // given
         ProductEntity testProduct = getRandomProduct();
         ProductEntity productEntity = productRepository.save(testProduct);
-        CartItemDto cartItemDto = getSingleCartItemFrom(productEntity.getId());
+        UpdateCartItemDto updateCartItemDto = UpdateCartItemDto.builder().quantity(1).build();
 
         // when
         ResponseEntity<Object> response = executePut(
                 CART_ENDPOINT + "/items/" + productEntity.getId(),
-                cartItemDto,
+                updateCartItemDto,
                 getJsonOnlyHeaders(),
                 Object.class);
 
@@ -111,7 +113,7 @@ public class UpdateCartItemControllerTest extends AbstractCartTest {
         String clientToken = getToken(client);
         ProductEntity testProduct = getRandomProduct();
         ProductEntity productEntity = productRepository.save(testProduct);
-        CartItemDto updateCartItem = CartItemDto.builder().productId(productEntity.getId()).quantity(1).build();
+        UpdateCartItemDto updateCartItem = UpdateCartItemDto.builder().quantity(1).build();
 
         // when
         ResponseEntity<ErrorDto> response = executePut(

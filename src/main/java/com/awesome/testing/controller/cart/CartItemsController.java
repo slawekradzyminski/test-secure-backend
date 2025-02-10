@@ -2,6 +2,7 @@ package com.awesome.testing.controller.cart;
 
 import com.awesome.testing.dto.cart.CartDto;
 import com.awesome.testing.dto.cart.CartItemDto;
+import com.awesome.testing.dto.cart.UpdateCartItemDto;
 import com.awesome.testing.service.CartService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -48,8 +49,8 @@ public class CartItemsController {
     public ResponseEntity<CartDto> updateCartItem(
             @AuthenticationPrincipal Object principal,
             @PathVariable Long productId,
-            @Valid @RequestBody CartItemDto cartItemDto) {
-        return ResponseEntity.ok(cartService.updateCartItem(principal.toString(), productId, cartItemDto));
+            @Valid @RequestBody UpdateCartItemDto updateCartItemDto) {
+        return ResponseEntity.ok(cartService.updateCartItem(principal.toString(), productId, updateCartItemDto));
     }
 
     @DeleteMapping("/items/{productId}")
