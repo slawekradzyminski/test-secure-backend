@@ -35,19 +35,19 @@ class EmailControllerTest extends AbstractEcommerceTest {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String authToken = getToken(user);
-        EmailDto emailDTO = getRandomEmail();
+        EmailDto emailDto = getRandomEmail();
 
         // when
         ResponseEntity<Void> response = executePost(
                 EMAIL_ENDPOINT,
-                emailDTO,
+                emailDto,
                 getHeadersWith(authToken),
                 Void.class
         );
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(jmsTemplate).convertAndSend(destination, emailDTO);
+        verify(jmsTemplate).convertAndSend(destination, emailDto);
     }
 
     @Test
@@ -77,12 +77,12 @@ class EmailControllerTest extends AbstractEcommerceTest {
     @Test
     void shouldGet401WhenNoAuthorizationHeader() {
         // given
-        EmailDto emailDTO = getRandomEmail();
+        EmailDto emailDto = getRandomEmail();
 
         // when
         ResponseEntity<Void> response = executePost(
                 EMAIL_ENDPOINT,
-                emailDTO,
+                emailDto,
                 getJsonOnlyHeaders(),
                 Void.class
         );

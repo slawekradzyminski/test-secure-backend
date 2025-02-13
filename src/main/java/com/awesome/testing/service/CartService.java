@@ -84,11 +84,11 @@ public class CartService {
                 .build();
     }
 
-    private CartItemEntity createItem(String username, CartItemDto cartItemDTO, ProductEntity product) {
+    private CartItemEntity createItem(String username, CartItemDto cartItemDto, ProductEntity product) {
         return CartItemEntity.builder()
                 .username(username)
                 .product(product)
-                .quantity(cartItemDTO.getQuantity())
+                .quantity(cartItemDto.getQuantity())
                 .price(product.getPrice())
                 .version(0L)
                 .build();

@@ -84,14 +84,14 @@ public class UserService {
         return true;
     }
 
-    private UserEntity getUser(UserRegisterDto userRegisterDTO) {
+    private UserEntity getUser(UserRegisterDto userRegisterDto) {
         UserEntity user = new UserEntity();
-        user.setUsername(userRegisterDTO.getUsername());
-        user.setFirstName(userRegisterDTO.getFirstName());
-        user.setLastName(userRegisterDTO.getLastName());
-        user.setRoles(userRegisterDTO.getRoles());
-        user.setEmail(userRegisterDTO.getEmail());
-        user.setPassword(passwordEncoder.encode(userRegisterDTO.getPassword()));
+        user.setUsername(userRegisterDto.getUsername());
+        user.setFirstName(userRegisterDto.getFirstName());
+        user.setLastName(userRegisterDto.getLastName());
+        user.setRoles(userRegisterDto.getRoles());
+        user.setEmail(userRegisterDto.getEmail());
+        user.setPassword(passwordEncoder.encode(userRegisterDto.getPassword()));
         return user;
     }
 

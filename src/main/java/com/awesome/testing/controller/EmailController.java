@@ -33,8 +33,8 @@ public class EmailController {
             @ApiResponse(responseCode = "400", description = "Invalid email data", content = @Content),
             @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
     })
-    public ResponseEntity<Void> sendEmail(@RequestBody @Valid EmailDto emailDTO) {
-        emailService.sendEmail(emailDTO, destination);
+    public ResponseEntity<Void> sendEmail(@RequestBody @Valid EmailDto emailDto) {
+        emailService.sendEmail(emailDto, destination);
         return ResponseEntity.ok().build();
     }
 }

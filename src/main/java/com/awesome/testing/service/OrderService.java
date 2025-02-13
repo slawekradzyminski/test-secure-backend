@@ -26,7 +26,7 @@ public class OrderService {
     private final CartItemRepository cartItemRepository;
 
     @Transactional
-    public OrderDto createOrder(String username, AddressDto addressDTO) {
+    public OrderDto createOrder(String username, AddressDto addressDto) {
         List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
         if (cartItems.isEmpty()) {
             throw new CustomException("Cart is empty", HttpStatus.BAD_REQUEST);
@@ -35,7 +35,7 @@ public class OrderService {
         OrderEntity order = OrderEntity.builder()
                 .username(username)
                 .status(OrderStatus.PENDING)
-                .shippingAddress(mapToAddress(addressDTO))
+                .shippingAddress(mapToAddress(addressDto))
                 .totalAmount(BigDecimal.ZERO)
                 .build();
 
@@ -108,7 +108,7 @@ public class OrderService {
                 .items(mapToOrderItemDtos(order.getItems()))
                 .totalAmount(order.getTotalAmount())
                 .status(order.getStatus())
-                .shippingAddress(mapToAddressDTO(order.getShippingAddress()))
+                .shippingAddress(mapToAddressDto(order.getShippingAddress()))
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
                 .build();
@@ -127,7 +127,7 @@ public class OrderService {
                 .toList();
     }
 
-    private AddressDto mapToAddressDTO(AddressEntity address) {
+    private AddressDto mapToAddressDto(AddressEntity address) {
         return AddressDto.builder()
                 .street(address.getStreet())
                 .city(address.getCity())
