@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +30,7 @@ public class EmailController {
             @ApiResponse(responseCode = "200", description = "Email sent"),
             @ApiResponse(responseCode = "403", description = "Access denied")
     })
-    public ResponseEntity<Void> sendEmail(@RequestBody EmailDTO emailDTO) {
+    public ResponseEntity<Void> sendEmail(@RequestBody @Valid EmailDTO emailDTO) {
         emailService.sendEmail(emailDTO, destination);
         return ResponseEntity.ok().build();
     }
