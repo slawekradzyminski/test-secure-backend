@@ -1,6 +1,6 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.EmailDTO;
+import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.service.delay.DelayGenerator;
 
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ public class EmailService {
     private final JmsTemplate jmsTemplate;
     private final DelayGenerator delayGenerator;
 
-    public void sendEmail(EmailDTO emailDTO, String destination) {
+    public void sendEmail(EmailDto emailDTO, String destination) {
         Thread.ofVirtual().start(() -> {
             try {
                 long delay = delayGenerator.getDelayMillis();

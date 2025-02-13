@@ -1,14 +1,14 @@
 package com.awesome.testing.repository;
 
-import com.awesome.testing.model.User;
+import com.awesome.testing.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import jakarta.transaction.Transactional;
 
 import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<User, Integer> {
+public interface UserRepository extends JpaRepository<UserEntity, Integer> {
 
-    Optional<User> findByUsername(String username);
+    Optional<UserEntity> findByUsername(String username);
 
     @Transactional
     void deleteByUsername(String username);

@@ -1,6 +1,6 @@
 package com.awesome.testing.repository;
 
-import com.awesome.testing.model.CartItemEntity;
+import com.awesome.testing.entity.CartItemEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

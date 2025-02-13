@@ -15,10 +15,14 @@ import java.util.List;
 @AllArgsConstructor
 public class CartDto {
     @Schema(description = "Cart owner", example = "admin")
+
     private String username;
+
     private List<CartItemDto> items;
+
     @Schema(description = "Total Cart price", example = "199.56")
     private BigDecimal totalPrice;
+
     @Schema(description = "Total number of items", example = "7")
     private int totalItems;
 } 

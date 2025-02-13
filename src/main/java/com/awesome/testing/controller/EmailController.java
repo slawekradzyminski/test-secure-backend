@@ -1,6 +1,6 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.dto.EmailDTO;
+import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.service.EmailService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -33,7 +33,7 @@ public class EmailController {
             @ApiResponse(responseCode = "400", description = "Invalid email data", content = @Content),
             @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
     })
-    public ResponseEntity<Void> sendEmail(@RequestBody @Valid EmailDTO emailDTO) {
+    public ResponseEntity<Void> sendEmail(@RequestBody @Valid EmailDto emailDTO) {
         emailService.sendEmail(emailDTO, destination);
         return ResponseEntity.ok().build();
     }

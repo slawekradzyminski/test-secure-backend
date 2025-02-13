@@ -1,13 +1,13 @@
 package com.awesome.testing.endpoints.order;
 
-import com.awesome.testing.dto.AddressDto;
-import com.awesome.testing.dto.OrderDto;
+import com.awesome.testing.dto.order.AddressDto;
+import com.awesome.testing.dto.order.OrderDto;
 import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.endpoints.AbstractEcommerceTest;
-import com.awesome.testing.model.OrderStatus;
-import com.awesome.testing.model.ProductEntity;
+import com.awesome.testing.dto.order.OrderStatus;
+import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.service.CartService;
 import com.awesome.testing.service.OrderService;
 import org.junit.jupiter.api.Test;

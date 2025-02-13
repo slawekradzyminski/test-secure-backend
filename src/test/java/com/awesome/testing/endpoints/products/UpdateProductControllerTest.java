@@ -4,7 +4,7 @@ import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.product.ProductUpdateDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.endpoints.AbstractEcommerceTest;
-import com.awesome.testing.model.ProductEntity;
+import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.dto.user.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;

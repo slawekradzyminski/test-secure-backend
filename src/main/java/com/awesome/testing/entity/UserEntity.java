@@ -1,4 +1,4 @@
-package com.awesome.testing.model;
+package com.awesome.testing.entity;
 
 import com.awesome.testing.dto.user.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @RequiredArgsConstructor
 @Table(name = "app_user")
-public class User {
+public class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

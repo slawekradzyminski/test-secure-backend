@@ -1,6 +1,5 @@
-package com.awesome.testing.dto;
+package com.awesome.testing.dto.order;
 
-import com.awesome.testing.model.OrderStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -29,7 +28,7 @@ public class OrderDto {
     @Builder.Default
     @Valid
     @Schema(description = "Order items")
-    private List<OrderItemDTO> items = new ArrayList<>();
+    private List<OrderItemDto> items = new ArrayList<>();
 
     @Schema(description = "Total amount", example = "1999.98")
     private BigDecimal totalAmount;

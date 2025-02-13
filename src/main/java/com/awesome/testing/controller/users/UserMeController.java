@@ -1,7 +1,7 @@
 package com.awesome.testing.controller.users;
 
 import com.awesome.testing.dto.user.UserResponseDto;
-import com.awesome.testing.model.User;
+import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,7 +34,7 @@ public class UserMeController {
             @ApiResponse(responseCode = "401", description = "Unauthorized – Missing or invalid token", content = @Content)
     })
     public UserResponseDto whoAmI(HttpServletRequest req) {
-        User user = userService.whoAmI(req);
+        UserEntity user = userService.whoAmI(req);
         return UserResponseDto.from(user);
     }
 

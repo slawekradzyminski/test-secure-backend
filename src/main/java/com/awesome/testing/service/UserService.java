@@ -6,7 +6,7 @@ import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.controller.exception.UserNotFoundException;
 import com.awesome.testing.security.AuthenticationHandler;
 import jakarta.servlet.http.HttpServletRequest;
-import com.awesome.testing.model.User;
+import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ public class UserService {
 
     public String signIn(String username, String password) {
         authenticationHandler.authUser(username, password);
-        User user = getUser(username);
+        UserEntity user = getUser(username);
         return jwtTokenProvider.createToken(username, user.getRoles());
     }
 
@@ -49,31 +49,31 @@ public class UserService {
         userRepository.deleteByUsername(username);
     }
 
-    public User search(String username) {
+    public UserEntity search(String username) {
         return getUser(username);
     }
 
-    public User whoAmI(HttpServletRequest req) {
+    public UserEntity whoAmI(HttpServletRequest req) {
         String username = jwtTokenProvider.getUsername(jwtTokenProvider.extractTokenFromRequest(req));
         return getUser(username);
     }
 
     public String refresh(String username) {
-        User user = getUser(username);
+        UserEntity user = getUser(username);
         return jwtTokenProvider.createToken(username, user.getRoles());
     }
 
-    public List<User> getAll() {
+    public List<UserEntity> getAll() {
         return userRepository.findAll();
     }
 
-    public User edit(String username, UserEditDto userDto) {
-        User existingUser = getUser(username);
+    public UserEntity edit(String username, UserEditDto userDto) {
+        UserEntity existingUser = getUser(username);
 
-        updateIfNotNull(userDto.getEmail(), User::setEmail, existingUser);
-        updateIfNotNull(userDto.getFirstName(), User::setFirstName, existingUser);
-        updateIfNotNull(userDto.getLastName(), User::setLastName, existingUser);
-        updateIfNotNull(userDto.getRoles(), User::setRoles, existingUser);
+        updateIfNotNull(userDto.getEmail(), UserEntity::setEmail, existingUser);
+        updateIfNotNull(userDto.getFirstName(), UserEntity::setFirstName, existingUser);
+        updateIfNotNull(userDto.getLastName(), UserEntity::setLastName, existingUser);
+        updateIfNotNull(userDto.getRoles(), UserEntity::setRoles, existingUser);
 
         return userRepository.save(existingUser);
     }
@@ -84,8 +84,8 @@ public class UserService {
         return true;
     }
 
-    private User getUser(UserRegisterDto userRegisterDTO) {
-        User user = new User();
+    private UserEntity getUser(UserRegisterDto userRegisterDTO) {
+        UserEntity user = new UserEntity();
         user.setUsername(userRegisterDTO.getUsername());
         user.setFirstName(userRegisterDTO.getFirstName());
         user.setLastName(userRegisterDTO.getLastName());
@@ -99,7 +99,7 @@ public class UserService {
         throw new CustomException("Username is already in use", HttpStatus.BAD_REQUEST);
     }
 
-    private User getUser(String username) {
+    private UserEntity getUser(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("The user doesn't exist"));
     }

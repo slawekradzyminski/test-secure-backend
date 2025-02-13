@@ -1,4 +1,4 @@
-package com.awesome.testing.dto;
+package com.awesome.testing.dto.email;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EmailDTO {
+public class EmailDto {
+
     @Schema(description = "Email recipient", example = "user@example.com")
     @Email(message = "Invalid email format")
     private String to;

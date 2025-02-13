@@ -1,14 +1,14 @@
 package com.awesome.testing.endpoints.order;
 
-import com.awesome.testing.dto.AddressDto;
-import com.awesome.testing.dto.OrderDto;
+import com.awesome.testing.dto.order.AddressDto;
+import com.awesome.testing.dto.order.OrderDto;
 import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.endpoints.AbstractEcommerceTest;
-import com.awesome.testing.model.ProductEntity;
+import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.service.CartService;
-import com.awesome.testing.dto.OrderItemDTO;
+import com.awesome.testing.dto.order.OrderItemDto;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -121,7 +121,7 @@ class CreateOrderControllerTest extends AbstractEcommerceTest {
         assertThat(order.getId()).isGreaterThan(0);
         assertThat(order.getUsername()).isEqualTo(client.getUsername());
         assertThat(order.getItems()).hasSize(1);
-        OrderItemDTO item = order.getItems().get(0);
+        OrderItemDto item = order.getItems().get(0);
         assertThat(item.getId()).isGreaterThan(0);
         assertThat(item.getProductId()).isEqualTo(product.getId());
         assertThat(item.getProductName()).isEqualTo(product.getName());

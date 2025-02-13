@@ -1,9 +1,9 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.dto.AddressDto;
-import com.awesome.testing.dto.OrderDto;
-import com.awesome.testing.dto.PageDTO;
-import com.awesome.testing.model.OrderStatus;
+import com.awesome.testing.dto.order.AddressDto;
+import com.awesome.testing.dto.order.OrderDto;
+import com.awesome.testing.dto.order.PageDto;
+import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,12 +51,12 @@ public class OrderController {
             @ApiResponse(responseCode = "200", description = "Orders retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
     })
-    public ResponseEntity<PageDTO<OrderDto>> getUserOrders(
+    public ResponseEntity<PageDto<OrderDto>> getUserOrders(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) OrderStatus status) {
-        return ResponseEntity.ok(PageDTO.from(
+        return ResponseEntity.ok(PageDto.from(
                 orderService.getUserOrders(principal.getUsername(), status, PageRequest.of(page, size))
         ));
     }

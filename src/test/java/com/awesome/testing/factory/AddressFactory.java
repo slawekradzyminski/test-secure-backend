@@ -1,6 +1,6 @@
 package com.awesome.testing.factory;
 
-import com.awesome.testing.dto.AddressDto;
+import com.awesome.testing.dto.order.AddressDto;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass

@@ -1,4 +1,4 @@
-package com.awesome.testing.model;
+package com.awesome.testing.entity;
 
 import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Address {
+public class AddressEntity {
     private String street;
     private String city;
     private String state;

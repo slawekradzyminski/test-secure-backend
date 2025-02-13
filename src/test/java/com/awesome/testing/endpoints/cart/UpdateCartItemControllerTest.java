@@ -7,7 +7,7 @@ import com.awesome.testing.dto.cart.UpdateCartItemDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.endpoints.AbstractEcommerceTest;
-import com.awesome.testing.model.ProductEntity;
+import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.service.CartService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

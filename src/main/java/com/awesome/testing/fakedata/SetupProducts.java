@@ -1,6 +1,6 @@
 package com.awesome.testing.fakedata;
 
-import com.awesome.testing.model.ProductEntity;
+import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

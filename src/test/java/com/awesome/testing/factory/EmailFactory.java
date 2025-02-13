@@ -1,13 +1,13 @@
 package com.awesome.testing.factory;
 
-import com.awesome.testing.dto.EmailDTO;
+import com.awesome.testing.dto.email.EmailDto;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class EmailFactory extends FakerFactory {
 
-    public static EmailDTO getRandomEmail() {
-        return EmailDTO.builder()
+    public static EmailDto getRandomEmail() {
+        return EmailDto.builder()
                 .to(FAKER.internet().emailAddress())
                 .subject(generateSubject())
                 .message(generateMessage())

@@ -1,4 +1,4 @@
-package com.awesome.testing.model;
+package com.awesome.testing.dto.order;
 
 public enum OrderStatus {
     PENDING,

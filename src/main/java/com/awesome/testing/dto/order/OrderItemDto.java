@@ -1,4 +1,4 @@
-package com.awesome.testing.dto;
+package com.awesome.testing.dto.order;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Order item data transfer object")
-public class OrderItemDTO {
+public class OrderItemDto {
     @Schema(description = "Order item ID", example = "1")
     private Long id;
 

@@ -1,6 +1,6 @@
 package com.awesome.testing.endpoints;
 
-import com.awesome.testing.dto.EmailDTO;
+import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.dto.user.Role;
 
@@ -35,7 +35,7 @@ class EmailControllerTest extends AbstractEcommerceTest {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String authToken = getToken(user);
-        EmailDTO emailDTO = getRandomEmail();
+        EmailDto emailDTO = getRandomEmail();
 
         // when
         ResponseEntity<Void> response = executePost(
@@ -55,7 +55,7 @@ class EmailControllerTest extends AbstractEcommerceTest {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String authToken = getToken(user);
-        EmailDTO invalidEmail = EmailDTO.builder()
+        EmailDto invalidEmail = EmailDto.builder()
                 .to("invalid-email")  // invalid email format
                 .subject("")          // empty subject
                 .message("message")
@@ -77,7 +77,7 @@ class EmailControllerTest extends AbstractEcommerceTest {
     @Test
     void shouldGet401WhenNoAuthorizationHeader() {
         // given
-        EmailDTO emailDTO = getRandomEmail();
+        EmailDto emailDTO = getRandomEmail();
 
         // when
         ResponseEntity<Void> response = executePost(
