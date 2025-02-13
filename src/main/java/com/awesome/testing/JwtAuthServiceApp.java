@@ -10,7 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class JwtAuthServiceApp implements CommandLineRunner {
 
-    @Autowired
+    @Autowired(required = false)
     private SetupData setupData;
 
     public static void main(String[] args) {
@@ -19,6 +19,8 @@ public class JwtAuthServiceApp implements CommandLineRunner {
 
     @Override
     public void run(String... params) {
-        setupData.setupData();
+        if (setupData != null) {
+            setupData.setupData();
+        }
     }
 }

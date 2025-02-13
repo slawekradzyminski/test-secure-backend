@@ -5,7 +5,8 @@ import com.awesome.testing.dto.cart.CartDto;
 import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
-import com.awesome.testing.model.ProductEntity;
+import com.awesome.testing.endpoints.AbstractEcommerceTest;
+import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.service.CartService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,12 +18,11 @@ import java.util.Map;
 
 import static com.awesome.testing.factory.CartItemFactory.getDoubleCartItemFrom;
 import static com.awesome.testing.factory.CartItemFactory.getSingleCartItemFrom;
-import static com.awesome.testing.factory.ProductFactory.getRandomProduct;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class AddToCartControllerTest extends AbstractCartTest {
+public class AddToCartControllerTest extends AbstractEcommerceTest {
 
     @Autowired
     private CartService cartService;
@@ -33,12 +33,10 @@ public class AddToCartControllerTest extends AbstractCartTest {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
-        ProductEntity testProduct = getRandomProduct();
-        ProductEntity testProduct2 = getRandomProduct();
-        ProductEntity productEntity = productRepository.save(testProduct);
-        ProductEntity productEntity2 = productRepository.save(testProduct2);
-        CartItemDto cartItemDto = getSingleCartItemFrom(productEntity.getId());
-        CartItemDto cartItemDto2 = getDoubleCartItemFrom(productEntity2.getId());
+        ProductEntity testProduct = setupProduct();
+        ProductEntity testProduct2 = setupProduct();
+        CartItemDto cartItemDto = getSingleCartItemFrom(testProduct.getId());
+        CartItemDto cartItemDto2 = getDoubleCartItemFrom(testProduct2.getId());
         cartService.addToCart(client.getUsername(), cartItemDto);
 
         // when
@@ -54,9 +52,9 @@ public class AddToCartControllerTest extends AbstractCartTest {
         assertThat(response.getBody().getItems()).containsExactlyInAnyOrder(cartItemDto, cartItemDto2);
         assertThat(response.getBody().getTotalItems()).isEqualTo(3);
         assertThat(response.getBody().getTotalPrice()).isEqualTo(
-                productEntity.getPrice()
-                        .add(productEntity2.getPrice())
-                        .add(productEntity2.getPrice())
+                testProduct.getPrice()
+                        .add(testProduct2.getPrice())
+                        .add(testProduct2.getPrice())
         );
     }
 
@@ -83,9 +81,8 @@ public class AddToCartControllerTest extends AbstractCartTest {
     @Test
     public void shouldGet401AsUnauthorized() {
         // given
-        ProductEntity testProduct = getRandomProduct();
-        ProductEntity productEntity = productRepository.save(testProduct);
-        CartItemDto cartItemDto = getSingleCartItemFrom(productEntity.getId());
+        ProductEntity testProduct = setupProduct();
+        CartItemDto cartItemDto = getSingleCartItemFrom(testProduct.getId());
 
         // when
         ResponseEntity<CartDto> response = executePost(

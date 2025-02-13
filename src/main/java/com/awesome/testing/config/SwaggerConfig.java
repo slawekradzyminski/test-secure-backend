@@ -1,4 +1,4 @@
-package com.awesome.testing.configuration;
+package com.awesome.testing.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;

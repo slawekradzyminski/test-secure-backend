@@ -1,10 +1,10 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.AddressDTO;
-import com.awesome.testing.dto.OrderDTO;
-import com.awesome.testing.dto.OrderItemDTO;
+import com.awesome.testing.dto.order.AddressDto;
+import com.awesome.testing.dto.order.OrderDto;
 import com.awesome.testing.controller.exception.CustomException;
-import com.awesome.testing.model.*;
+import com.awesome.testing.dto.order.OrderStatus;
+import com.awesome.testing.entity.*;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,57 +25,38 @@ public class OrderService {
     private final CartItemRepository cartItemRepository;
 
     @Transactional
-    public OrderDTO createOrder(String username, AddressDTO addressDTO) {
+    public OrderDto createOrder(String username, AddressDto addressDto) {
         List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
         if (cartItems.isEmpty()) {
             throw new CustomException("Cart is empty", HttpStatus.BAD_REQUEST);
         }
 
-        Order order = Order.builder()
-                .username(username)
-                .status(OrderStatus.PENDING)
-                .shippingAddress(mapToAddress(addressDTO))
-                .totalAmount(BigDecimal.ZERO)
-                .build();
-
+        OrderEntity order = getInitialEmptyOrder(username, addressDto);
         cartItems.forEach(cartItem -> updateOrder(cartItem, order));
-
-        Order savedOrder = orderRepository.save(order);
+        OrderEntity savedOrder = orderRepository.save(order);
         cartItemRepository.deleteByUsername(username);
 
-        return mapToOrderDTO(savedOrder);
-    }
-
-    private void updateOrder(CartItemEntity cartItem, Order order) {
-        OrderItem orderItem = OrderItem.builder()
-                .product(cartItem.getProduct())
-                .quantity(cartItem.getQuantity())
-                .price(cartItem.getPrice())
-                .build();
-        order.addItem(orderItem);
-        order.setTotalAmount(order.getTotalAmount().add(
-                cartItem.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()))
-        ));
+        return OrderDto.from(savedOrder);
     }
 
     @Transactional(readOnly = true)
-    public Page<OrderDTO> getUserOrders(String username, OrderStatus status, Pageable pageable) {
-        Page<Order> orders = status == null ?
+    public Page<OrderDto> getUserOrders(String username, OrderStatus status, Pageable pageable) {
+        Page<OrderEntity> orders = status == null ?
                 orderRepository.findByUsername(username, pageable) :
                 orderRepository.findByUsernameAndStatus(username, status, pageable);
-        return orders.map(this::mapToOrderDTO);
+        return orders.map(OrderDto::from);
     }
 
     @Transactional(readOnly = true)
-    public OrderDTO getOrder(String username, Long orderId) {
+    public OrderDto getOrder(String username, Long orderId) {
         return orderRepository.findByIdAndUsername(orderId, username)
-                .map(this::mapToOrderDTO)
+                .map(OrderDto::from)
                 .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
     }
 
     @Transactional
-    public OrderDTO updateOrderStatus(Long orderId, OrderStatus newStatus) {
-        Order order = orderRepository.findById(orderId)
+    public OrderDto updateOrderStatus(Long orderId, OrderStatus newStatus) {
+        OrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
 
         if (newStatus == OrderStatus.CANCELLED && !canBeCancelled(order.getStatus())) {
@@ -83,56 +64,28 @@ public class OrderService {
         }
 
         order.setStatus(newStatus);
-        return mapToOrderDTO(orderRepository.save(order));
+        return OrderDto.from(orderRepository.save(order));
+    }
+
+    private OrderEntity getInitialEmptyOrder(String username, AddressDto addressDto) {
+        return OrderEntity.builder()
+                .username(username)
+                .status(OrderStatus.PENDING)
+                .shippingAddress(AddressEntity.from(addressDto))
+                .totalAmount(BigDecimal.ZERO)
+                .build();
+    }
+
+    private void updateOrder(CartItemEntity cartItem, OrderEntity order) {
+        OrderItemEntity orderItem = OrderItemEntity.from(cartItem);
+        order.addItem(orderItem);
+        order.setTotalAmount(order.getTotalAmount().add(
+                cartItem.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()))
+        ));
     }
 
     private boolean canBeCancelled(OrderStatus status) {
         return status == OrderStatus.PENDING || status == OrderStatus.PAID;
     }
 
-    private Address mapToAddress(AddressDTO dto) {
-        return Address.builder()
-                .street(dto.getStreet())
-                .city(dto.getCity())
-                .state(dto.getState())
-                .zipCode(dto.getZipCode())
-                .country(dto.getCountry())
-                .build();
-    }
-
-    private OrderDTO mapToOrderDTO(Order order) {
-        return OrderDTO.builder()
-                .id(order.getId())
-                .username(order.getUsername())
-                .items(mapToOrderItemDTOs(order.getItems()))
-                .totalAmount(order.getTotalAmount())
-                .status(order.getStatus())
-                .shippingAddress(mapToAddressDTO(order.getShippingAddress()))
-                .createdAt(order.getCreatedAt())
-                .updatedAt(order.getUpdatedAt())
-                .build();
-    }
-
-    private List<OrderItemDTO> mapToOrderItemDTOs(List<OrderItem> items) {
-        return items.stream()
-                .map(item -> OrderItemDTO.builder()
-                        .id(item.getId())
-                        .productId(item.getProduct().getId())
-                        .productName(item.getProduct().getName())
-                        .quantity(item.getQuantity())
-                        .unitPrice(item.getPrice())
-                        .totalPrice(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
-                        .build())
-                .toList();
-    }
-
-    private AddressDTO mapToAddressDTO(Address address) {
-        return AddressDTO.builder()
-                .street(address.getStreet())
-                .city(address.getCity())
-                .state(address.getState())
-                .zipCode(address.getZipCode())
-                .country(address.getCountry())
-                .build();
-    }
-} 
+}

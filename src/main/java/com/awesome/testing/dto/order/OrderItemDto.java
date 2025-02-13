@@ -1,5 +1,6 @@
-package com.awesome.testing.dto;
+package com.awesome.testing.dto.order;
 
+import com.awesome.testing.entity.OrderItemEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -15,7 +16,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Order item data transfer object")
-public class OrderItemDTO {
+public class OrderItemDto {
     @Schema(description = "Order item ID", example = "1")
     private Long id;
 
@@ -36,4 +37,15 @@ public class OrderItemDTO {
 
     @Schema(description = "Total price", example = "1999.98")
     private BigDecimal totalPrice;
+
+    public static OrderItemDto from(OrderItemEntity item) {
+        return OrderItemDto.builder()
+                .id(item.getId())
+                .productId(item.getProduct().getId())
+                .productName(item.getProduct().getName())
+                .quantity(item.getQuantity())
+                .unitPrice(item.getPrice())
+                .totalPrice(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .build();
+    }
 } 

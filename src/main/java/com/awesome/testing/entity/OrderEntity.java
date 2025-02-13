@@ -1,5 +1,6 @@
-package com.awesome.testing.model;
+package com.awesome.testing.entity;
 
+import com.awesome.testing.dto.order.OrderStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,7 +20,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Order {
+public class OrderEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -29,7 +30,7 @@ public class Order {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<OrderItem> items = new ArrayList<>();
+    private List<OrderItemEntity> items = new ArrayList<>();
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
@@ -39,7 +40,7 @@ public class Order {
     private OrderStatus status;
 
     @Embedded
-    private Address shippingAddress;
+    private AddressEntity shippingAddress;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
@@ -49,12 +50,12 @@ public class Order {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    public void addItem(OrderItem item) {
+    public void addItem(OrderItemEntity item) {
         items.add(item);
         item.setOrder(this);
     }
 
-    public void removeItem(OrderItem item) {
+    public void removeItem(OrderItemEntity item) {
         items.remove(item);
         item.setOrder(null);
     }

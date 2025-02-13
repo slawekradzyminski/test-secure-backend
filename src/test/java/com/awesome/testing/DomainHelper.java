@@ -37,14 +37,14 @@ public abstract class DomainHelper extends HttpHelper {
                 String.class
         );
 
-        LoginDto loginDTO = LoginDto.builder()
+        LoginDto loginDto = LoginDto.builder()
                 .username(userRegisterDto.getUsername())
                 .password(userRegisterDto.getPassword())
                 .build();
 
         LoginResponseDto loginResponse = executePost(
                 LOGIN_ENDPOINT,
-                loginDTO,
+                loginDto,
                 getJsonOnlyHeaders(),
                 LoginResponseDto.class
         ).getBody();

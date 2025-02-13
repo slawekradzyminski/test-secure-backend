@@ -7,7 +7,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.awesome.testing.model.User;
+import com.awesome.testing.entity.UserEntity;
 
 import java.text.MessageFormat;
 
@@ -26,7 +26,7 @@ public class MyUserDetails implements UserDetailsService {
                 .orElseThrow(() -> notFound(username));
     }
 
-    private UserDetails toUserDetails(String username, User user) {
+    private UserDetails toUserDetails(String username, UserEntity user) {
         return withUsername(username)
                 .password(user.getPassword())
                 .authorities(user.getRoles())

@@ -23,10 +23,10 @@ public class SignUpControllerTest extends DomainHelper {
     @Test
     public void shouldRegister() {
         // given
-        UserRegisterDto userRegisterDTO = getRandomUser();
+        UserRegisterDto userRegisterDto = getRandomUser();
 
         // when
-        ResponseEntity<String> response = registerUser(userRegisterDTO, String.class);
+        ResponseEntity<String> response = registerUser(userRegisterDto, String.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -84,10 +84,10 @@ public class SignUpControllerTest extends DomainHelper {
         assertThat(response.getBody().get("roles")).contains("At least one role must be specified");
     }
 
-    private <T> ResponseEntity<T> registerUser(UserRegisterDto userRegisterDTO, Class<T> clazz) {
+    private <T> ResponseEntity<T> registerUser(UserRegisterDto userRegisterDto, Class<T> clazz) {
         return executePost(
                 REGISTER_ENDPOINT,
-                userRegisterDTO,
+                userRegisterDto,
                 getJsonOnlyHeaders(),
                 clazz);
     }

@@ -1,13 +1,14 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.dto.AddressDTO;
-import com.awesome.testing.dto.OrderDTO;
-import com.awesome.testing.dto.PageDTO;
-import com.awesome.testing.model.OrderStatus;
+import com.awesome.testing.dto.order.AddressDto;
+import com.awesome.testing.dto.order.OrderDto;
+import com.awesome.testing.dto.order.PageDto;
+import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -34,14 +35,13 @@ public class OrderController {
     @Operation(summary = "Create a new order from cart")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Order created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid input or empty cart"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden")
+            @ApiResponse(responseCode = "400", description = "Invalid input or empty cart", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
     })
-    public ResponseEntity<OrderDTO> createOrder(
+    public ResponseEntity<OrderDto> createOrder(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
-            @Valid @RequestBody AddressDTO addressDTO) {
-        OrderDTO order = orderService.createOrder(principal.getUsername(), addressDTO);
+            @Valid @RequestBody AddressDto addressDto) {
+        OrderDto order = orderService.createOrder(principal.getUsername(), addressDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 
@@ -49,14 +49,14 @@ public class OrderController {
     @Operation(summary = "Get user's orders")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Orders retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
     })
-    public ResponseEntity<PageDTO<OrderDTO>> getUserOrders(
+    public ResponseEntity<PageDto<OrderDto>> getUserOrders(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) OrderStatus status) {
-        return ResponseEntity.ok(PageDTO.from(
+        return ResponseEntity.ok(PageDto.from(
                 orderService.getUserOrders(principal.getUsername(), status, PageRequest.of(page, size))
         ));
     }
@@ -65,10 +65,10 @@ public class OrderController {
     @Operation(summary = "Get order by ID")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Order retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
     })
-    public ResponseEntity<OrderDTO> getOrder(
+    public ResponseEntity<OrderDto> getOrder(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long id) {
         return ResponseEntity.ok(orderService.getOrder(principal.getUsername(), id));
@@ -79,12 +79,12 @@ public class OrderController {
     @Operation(summary = "Update order status (Admin only)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Order status updated successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid status transition"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
+            @ApiResponse(responseCode = "400", description = "Invalid status transition", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
     })
-    public ResponseEntity<OrderDTO> updateOrderStatus(
+    public ResponseEntity<OrderDto> updateOrderStatus(
             @PathVariable Long id,
             @RequestBody OrderStatus status) {
         return ResponseEntity.ok(orderService.updateOrderStatus(id, status));
@@ -94,11 +94,11 @@ public class OrderController {
     @Operation(summary = "Cancel order")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Order cancelled successfully"),
-            @ApiResponse(responseCode = "400", description = "Order cannot be cancelled"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
+            @ApiResponse(responseCode = "400", description = "Order cannot be cancelled", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
     })
-    public ResponseEntity<OrderDTO> cancelOrder(
+    public ResponseEntity<OrderDto> cancelOrder(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long id) {
         return ResponseEntity.ok(orderService.updateOrderStatus(id, OrderStatus.CANCELLED));

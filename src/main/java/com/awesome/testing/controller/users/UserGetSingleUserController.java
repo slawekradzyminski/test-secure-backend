@@ -1,7 +1,7 @@
 package com.awesome.testing.controller.users;
 
 import com.awesome.testing.dto.user.UserResponseDto;
-import com.awesome.testing.model.User;
+import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,7 +32,7 @@ public class UserGetSingleUserController {
             @ApiResponse(responseCode = "404", description = "The user doesn't exist", content = @Content)
     })
     public UserResponseDto getByUsername(@Parameter(description = "Username") @PathVariable String username) {
-        User user = userService.search(username);
+        UserEntity user = userService.search(username);
         return UserResponseDto.from(user);
     }
 

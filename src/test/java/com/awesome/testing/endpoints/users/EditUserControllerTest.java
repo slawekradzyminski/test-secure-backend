@@ -98,7 +98,7 @@ public class EditUserControllerTest extends DomainHelper {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String username = user.getUsername();
         String clientToken = getToken(user);
-        UserEditDto userEditDTO = UserEditDto.builder()
+        UserEditDto userEditDto = UserEditDto.builder()
                 .email("")
                 .roles(List.of(Role.ROLE_ADMIN))
                 .firstName("abcde")
@@ -108,7 +108,7 @@ public class EditUserControllerTest extends DomainHelper {
         // when
         ResponseEntity<Map<String, String>> response = executePut(
                 getUserEndpoint(username),
-                userEditDTO,
+                userEditDto,
                 getHeadersWith(clientToken),
                 mapTypeReference());
 
@@ -121,12 +121,12 @@ public class EditUserControllerTest extends DomainHelper {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
-        UserEditDto userEditDTO = getRandomUserEditBody();
+        UserEditDto userEditDto = getRandomUserEditBody();
 
         // when
         ResponseEntity<ErrorDto> response = executePut(
                 getUserEndpoint(username),
-                userEditDTO,
+                userEditDto,
                 getJsonOnlyHeaders(),
                 ErrorDto.class);
 
@@ -160,12 +160,12 @@ public class EditUserControllerTest extends DomainHelper {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String clientToken = getToken(user);
-        UserEditDto userEditDTO = getRandomUserEditBody();
+        UserEditDto userEditDto = getRandomUserEditBody();
 
         // when
         ResponseEntity<ErrorDto> response = executePut(
                 getUserEndpoint("nonexisting"),
-                userEditDTO,
+                userEditDto,
                 getHeadersWith(clientToken),
                 ErrorDto.class);
 

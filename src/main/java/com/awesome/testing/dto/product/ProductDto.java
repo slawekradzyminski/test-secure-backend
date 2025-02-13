@@ -1,6 +1,6 @@
 package com.awesome.testing.dto.product;
 
-import com.awesome.testing.model.ProductEntity;
+import com.awesome.testing.entity.ProductEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

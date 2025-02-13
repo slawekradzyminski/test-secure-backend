@@ -2,14 +2,14 @@ package com.awesome.testing.factory;
 
 import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.dto.product.ProductUpdateDto;
-import com.awesome.testing.model.ProductEntity;
+import com.awesome.testing.entity.ProductEntity;
 import lombok.experimental.UtilityClass;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @UtilityClass
-public class ProductFactory extends FakerSingleton {
+public class ProductFactory extends FakerFactory {
 
     public static ProductEntity getRandomProduct() {
         return ProductEntity.builder()

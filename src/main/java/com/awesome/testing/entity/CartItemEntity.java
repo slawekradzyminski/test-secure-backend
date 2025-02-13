@@ -1,4 +1,4 @@
-package com.awesome.testing.model;
+package com.awesome.testing.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

@@ -5,7 +5,8 @@ import com.awesome.testing.dto.cart.CartDto;
 import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
-import com.awesome.testing.model.ProductEntity;
+import com.awesome.testing.endpoints.AbstractEcommerceTest;
+import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.service.CartService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +17,10 @@ import java.util.List;
 
 import static com.awesome.testing.factory.CartItemFactory.getDoubleCartItemFrom;
 import static com.awesome.testing.factory.CartItemFactory.getSingleCartItemFrom;
-import static com.awesome.testing.factory.ProductFactory.getRandomProduct;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DeleteCartItemControllerTest extends AbstractCartTest {
+public class DeleteCartItemControllerTest extends AbstractEcommerceTest {
 
     @Autowired
     private CartService cartService;
@@ -31,18 +31,16 @@ public class DeleteCartItemControllerTest extends AbstractCartTest {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
-        ProductEntity testProduct = getRandomProduct();
-        ProductEntity testProduct2 = getRandomProduct();
-        ProductEntity productEntity = productRepository.save(testProduct);
-        ProductEntity productEntity2 = productRepository.save(testProduct2);
-        CartItemDto cartItemDto = getSingleCartItemFrom(productEntity.getId());
-        CartItemDto cartItemDto2 = getDoubleCartItemFrom(productEntity2.getId());
+        ProductEntity testProduct = setupProduct();
+        ProductEntity testProduct2 = setupProduct();
+        CartItemDto cartItemDto = getSingleCartItemFrom(testProduct.getId());
+        CartItemDto cartItemDto2 = getDoubleCartItemFrom(testProduct2.getId());
         cartService.addToCart(client.getUsername(), cartItemDto);
         cartService.addToCart(client.getUsername(), cartItemDto2);
 
         // when
         ResponseEntity<CartDto> response = executeDelete(
-                CART_ENDPOINT + "/items/" + productEntity2.getId(),
+                CART_ENDPOINT + "/items/" + testProduct2.getId(),
                 getHeadersWith(clientToken),
                 CartDto.class);
 
@@ -52,7 +50,7 @@ public class DeleteCartItemControllerTest extends AbstractCartTest {
         assertThat(response.getBody().getItems()).containsExactlyInAnyOrder(cartItemDto);
         assertThat(response.getBody().getTotalItems()).isEqualTo(1);
         assertThat(response.getBody().getTotalPrice()).isEqualTo(
-                productEntity.getPrice()
+                testProduct.getPrice()
         );
     }
 
@@ -60,14 +58,13 @@ public class DeleteCartItemControllerTest extends AbstractCartTest {
     public void shouldGet401AsUnauthorized() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        ProductEntity testProduct = getRandomProduct();
-        ProductEntity productEntity = productRepository.save(testProduct);
-        CartItemDto cartItemDto = getSingleCartItemFrom(productEntity.getId());
+        ProductEntity testProduct = setupProduct();
+        CartItemDto cartItemDto = getSingleCartItemFrom(testProduct.getId());
         cartService.addToCart(client.getUsername(), cartItemDto);
 
         // when
         ResponseEntity<Object> response = executeDelete(
-                CART_ENDPOINT + "/items/" + productEntity.getId(),
+                CART_ENDPOINT + "/items/" + testProduct.getId(),
                 getJsonOnlyHeaders(),
                 Object.class);
 
@@ -81,12 +78,11 @@ public class DeleteCartItemControllerTest extends AbstractCartTest {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
-        ProductEntity testProduct = getRandomProduct();
-        ProductEntity productEntity = productRepository.save(testProduct);
+        ProductEntity testProduct = setupProduct();
 
         // when
         ResponseEntity<ErrorDto> response = executeDelete(
-                CART_ENDPOINT + "/items/" + productEntity.getId(),
+                CART_ENDPOINT + "/items/" + testProduct.getId(),
                 getHeadersWith(clientToken),
                 ErrorDto.class);
 

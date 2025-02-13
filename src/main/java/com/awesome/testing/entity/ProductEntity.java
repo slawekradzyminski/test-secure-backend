@@ -1,4 +1,4 @@
-package com.awesome.testing.model;
+package com.awesome.testing.entity;
 
 import com.awesome.testing.dto.product.ProductCreateDto;
 import jakarta.persistence.*;

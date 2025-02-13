@@ -108,7 +108,7 @@ The application uses JWT tokens for authentication. To access protected endpoint
 
 ## Technologies
 
-- Java 17
+- Java 21
 - Spring Boot 3.x
 - Spring Security with JWT
 - Spring Data JPA
@@ -121,7 +121,7 @@ The application uses JWT tokens for authentication. To access protected endpoint
 
 ### Prerequisites
 
-- Java 17 or higher
+- Java 21 or higher
 - Maven 3.x
 - ActiveMQ (for email functionality)
 
@@ -213,18 +213,73 @@ src/
 ├── main/
 │   ├── java/
 │   │   └── com/awesome/testing/
-│   │       ├── controller/    # REST controllers
-│   │       ├── dto/          # Data Transfer Objects
-│   │       ├── model/        # Domain models
-│   │       ├── repository/   # Data access layer
-│   │       ├── security/     # Security configuration
-│   │       └── service/      # Business logic
+│   │       ├── config/       # Application configuration
+│   │       ├── controller/   # REST controllers
+│   │       ├── dto/         # Data Transfer Objects
+│   │       │   ├── cart/    # Cart-related DTOs
+│   │       │   ├── email/   # Email-related DTOs
+│   │       │   ├── order/   # Order-related DTOs
+│   │       │   ├── product/ # Product-related DTOs
+│   │       │   └── user/    # User-related DTOs
+│   │       ├── entity/      # JPA entities
+│   │       ├── jms/         # JMS configuration and handlers
+│   │       ├── repository/  # Data access layer
+│   │       ├── security/    # Security configuration
+│   │       └── service/     # Business logic
 │   └── resources/
-│       └── application.yml   # Application configuration
+│       └── application.yml  # Application configuration
 └── test/
     └── java/
         └── com/awesome/testing/
-            └── endpoints/     # Integration tests
+            ├── config/      # Test configuration
+            ├── endpoints/   # Integration tests by feature
+            │   ├── cart/   # Cart endpoint tests
+            │   ├── order/  # Order endpoint tests
+            │   └── products/ # Product endpoint tests
+            ├── factory/    # Test data factories
+            └── util/       # Test utilities
+
+```
+
+### Test Strategy
+
+The application follows a comprehensive testing strategy focusing on endpoint-level integration tests. Key aspects include:
+
+1. **Independent Endpoint Testing**
+   - Each endpoint is tested in isolation
+   - Tests are organized by feature in separate packages
+   - All possible HTTP response codes are tested for each endpoint
+
+2. **Test Organization**
+   - Tests are ordered by HTTP status code (2xx first, then 4xx, 5xx)
+   - Each test class focuses on a single endpoint functionality
+   - Example test coverage for an endpoint:
+     * 200/201 - Successful operations
+     * 400 - Bad Request (invalid input)
+     * 401 - Unauthorized (no authentication)
+     * 403 - Forbidden (insufficient permissions)
+     * 404 - Not Found (resource doesn't exist)
+
+3. **Test Data Generation**
+   - Uses factory pattern for test data creation
+   - Factories generate random, valid test data using Faker
+   - Located in `test/factory` package
+
+4. **Test Structure**
+   - Given/When/Then format for clear test organization
+   - Descriptive test method names indicating the scenario
+   - Comprehensive assertions for response status and body
+
+Example test class organization:
+```java
+class SomeEndpointTest {
+    void shouldReturnSuccessfully() // 200 OK
+    void shouldCreate() // 201 Created
+    void shouldGet400WhenInvalidInput()
+    void shouldGet401WhenNoAuthorizationHeader()
+    void shouldGet403WhenNotAuthorized()
+    void shouldGet404WhenNotFound()
+}
 ```
 
 ### AI Debugging Tips

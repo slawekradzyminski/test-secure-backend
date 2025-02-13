@@ -1,6 +1,6 @@
 package com.awesome.testing.dto.user;
 
-import com.awesome.testing.model.User;
+import com.awesome.testing.entity.UserEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Value;
@@ -29,7 +29,7 @@ public class LoginResponseDto {
     @Schema(description = "User roles", example = "[\"ROLE_CLIENT\"]")
     List<Role> roles;
 
-    public static LoginResponseDto from(String token, User user) {
+    public static LoginResponseDto from(String token, UserEntity user) {
         return LoginResponseDto.builder()
                 .username(user.getUsername())
                 .firstName(user.getFirstName())

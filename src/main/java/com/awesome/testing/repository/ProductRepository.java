@@ -1,6 +1,6 @@
 package com.awesome.testing.repository;
 
-import com.awesome.testing.model.ProductEntity;
+import com.awesome.testing.entity.ProductEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 

@@ -9,18 +9,12 @@ import lombok.RequiredArgsConstructor;
 @Component
 @Transactional
 @RequiredArgsConstructor
-@Profile("!test") // Active in all profiles except test
-public class SetupData {
-
-    private final SetupUsers setupUsers;
-    private final SetupProducts setupProducts;
-    private final SetupOrders setupOrders;
+@Profile("test")
+public class TestSetupData {
 
     @Transactional
     public void setupData() {
-        setupUsers.createUsers();
-        setupProducts.createProducts();
-        setupOrders.createOrdersAndCart();
+        // Empty implementation for tests
+        // Tests should set up their own data as needed
     }
-
-}
+} 

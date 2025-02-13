@@ -5,8 +5,8 @@ import com.awesome.testing.controller.exception.ProductNotFoundException;
 import com.awesome.testing.dto.cart.CartDto;
 import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.cart.UpdateCartItemDto;
-import com.awesome.testing.model.CartItemEntity;
-import com.awesome.testing.model.ProductEntity;
+import com.awesome.testing.entity.CartItemEntity;
+import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -84,11 +84,11 @@ public class CartService {
                 .build();
     }
 
-    private CartItemEntity createItem(String username, CartItemDto cartItemDTO, ProductEntity product) {
+    private CartItemEntity createItem(String username, CartItemDto cartItemDto, ProductEntity product) {
         return CartItemEntity.builder()
                 .username(username)
                 .product(product)
-                .quantity(cartItemDTO.getQuantity())
+                .quantity(cartItemDto.getQuantity())
                 .price(product.getPrice())
                 .version(0L)
                 .build();
