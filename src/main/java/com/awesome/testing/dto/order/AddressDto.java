@@ -1,5 +1,6 @@
 package com.awesome.testing.dto.order;
 
+import com.awesome.testing.entity.AddressEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -34,4 +35,14 @@ public class AddressDto {
     @NotBlank(message = "Country is required")
     @Schema(description = "Country", example = "Poland")
     private String country;
+
+    public static AddressDto from(AddressEntity address) {
+        return AddressDto.builder()
+                .street(address.getStreet())
+                .city(address.getCity())
+                .state(address.getState())
+                .zipCode(address.getZipCode())
+                .country(address.getCountry())
+                .build();
+    }
 } 

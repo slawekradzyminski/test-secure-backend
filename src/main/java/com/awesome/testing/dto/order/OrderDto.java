@@ -1,5 +1,6 @@
 package com.awesome.testing.dto.order;
 
+import com.awesome.testing.entity.OrderEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -46,4 +47,17 @@ public class OrderDto {
 
     @Schema(description = "Last update timestamp")
     private LocalDateTime updatedAt;
+
+    public static OrderDto from(OrderEntity order) {
+        return OrderDto.builder()
+                .id(order.getId())
+                .username(order.getUsername())
+                .items(order.getItems().stream().map(OrderItemDto::from).toList())
+                .totalAmount(order.getTotalAmount())
+                .status(order.getStatus())
+                .shippingAddress(AddressDto.from(order.getShippingAddress()))
+                .createdAt(order.getCreatedAt())
+                .updatedAt(order.getUpdatedAt())
+                .build();
+    }
 } 

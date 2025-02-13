@@ -32,4 +32,12 @@ public class OrderItemEntity {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price; // price at the time of order
+
+    public static OrderItemEntity from(CartItemEntity cartItem) {
+        return OrderItemEntity.builder()
+                .product(cartItem.getProduct())
+                .quantity(cartItem.getQuantity())
+                .price(cartItem.getPrice())
+                .build();
+    }
 } 

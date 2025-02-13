@@ -1,5 +1,6 @@
 package com.awesome.testing.dto.order;
 
+import com.awesome.testing.entity.OrderItemEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -36,4 +37,15 @@ public class OrderItemDto {
 
     @Schema(description = "Total price", example = "1999.98")
     private BigDecimal totalPrice;
+
+    public static OrderItemDto from(OrderItemEntity item) {
+        return OrderItemDto.builder()
+                .id(item.getId())
+                .productId(item.getProduct().getId())
+                .productName(item.getProduct().getName())
+                .quantity(item.getQuantity())
+                .unitPrice(item.getPrice())
+                .totalPrice(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .build();
+    }
 } 
