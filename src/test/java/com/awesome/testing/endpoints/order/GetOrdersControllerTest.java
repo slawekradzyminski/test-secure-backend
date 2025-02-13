@@ -11,6 +11,7 @@ import com.awesome.testing.endpoints.AbstractEcommerceTest;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.service.CartService;
 import com.awesome.testing.service.OrderService;
+import com.awesome.testing.dto.order.OrderStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
@@ -56,6 +57,35 @@ class GetOrdersControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
+    void shouldGetFilteredOrdersByStatus() {
+        // given
+        UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String clientToken = getToken(client);
+        AddressDto testAddress = getRandomAddress();
+        
+        OrderDto pendingOrder = createOrder(client, testAddress);
+        OrderDto shippedOrder = createOrder(client, testAddress);
+        orderService.updateOrderStatus(shippedOrder.getId(), OrderStatus.SHIPPED);
+        OrderDto deliveredOrder = createOrder(client, testAddress);
+        orderService.updateOrderStatus(deliveredOrder.getId(), OrderStatus.DELIVERED);
+
+        // when
+        ResponseEntity<PageDto<OrderDto>> response = executeGet(
+                ORDERS_ENDPOINT + "?status=" + OrderStatus.SHIPPED,
+                getHeadersWith(clientToken),
+                new ParameterizedTypeReference<>() {}
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getContent()).hasSize(1);
+        assertThat(response.getBody().getTotalElements()).isEqualTo(1);
+        assertThat(response.getBody().getContent().getFirst().getId()).isEqualTo(shippedOrder.getId());
+        assertThat(response.getBody().getContent().getFirst().getStatus()).isEqualTo(OrderStatus.SHIPPED);
+    }
+
+    @Test
     void shouldGet401AsUnauthorized() {
         // when
         ResponseEntity<ErrorDto> response = executeGet(
@@ -67,10 +97,10 @@ class GetOrdersControllerTest extends AbstractEcommerceTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
-    private void createOrder(UserRegisterDto client, AddressDto address) {
+    private OrderDto createOrder(UserRegisterDto client, AddressDto address) {
         ProductEntity testProduct = setupProduct();
         CartItemDto cartItemDto = getSingleCartItemFrom(testProduct.getId());
         cartService.addToCart(client.getUsername(), cartItemDto);
-        orderService.createOrder(client.getUsername(), address);
+        return orderService.createOrder(client.getUsername(), address);
     }
 }
