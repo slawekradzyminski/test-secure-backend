@@ -2,6 +2,7 @@ package com.awesome.testing.fakedata;
 
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,15 @@ public class SetupProducts {
 
     private final ProductRepository productRepository;
 
+    @Getter private ProductEntity iPhone;
+    @Getter private ProductEntity galaxyS21;
+    @Getter private ProductEntity macBook;
+    @Getter private ProductEntity playStation;
+    @Getter private ProductEntity ninjaFoodi;
+    @Getter private ProductEntity cleanCode;
+    @Getter private ProductEntity appleWatch;
+    @Getter private ProductEntity sonyHeadphones;
+
     @Transactional
     public void createProducts() {
         if (productRepository.count() > 0) {
@@ -21,7 +31,7 @@ public class SetupProducts {
         }
 
         // Electronics
-        createProduct(
+        iPhone = createProduct(
             "iPhone 13 Pro",
             "Latest iPhone model with A15 Bionic chip, Pro camera system, and Super Retina XDR display",
             new BigDecimal("999.99"),
@@ -30,7 +40,7 @@ public class SetupProducts {
             "https://example.com/iphone13pro.jpg"
         );
 
-        createProduct(
+        galaxyS21 = createProduct(
             "Samsung Galaxy S21",
             "5G smartphone with 8K video, all-day battery, and powerful performance",
             new BigDecimal("799.99"),
@@ -40,7 +50,7 @@ public class SetupProducts {
         );
 
         // Computers
-        createProduct(
+        macBook = createProduct(
             "MacBook Pro 14\"",
             "Apple M1 Pro chip, 16GB RAM, 512GB SSD, Liquid Retina XDR display",
             new BigDecimal("1999.99"),
@@ -50,7 +60,7 @@ public class SetupProducts {
         );
 
         // Gaming
-        createProduct(
+        playStation = createProduct(
             "PlayStation 5",
             "Next-gen gaming console with 4K graphics, ray tracing, and ultra-high speed SSD",
             new BigDecimal("499.99"),
@@ -60,7 +70,7 @@ public class SetupProducts {
         );
 
         // Home & Kitchen
-        createProduct(
+        ninjaFoodi = createProduct(
             "Ninja Foodi 9-in-1",
             "Deluxe XL pressure cooker and air fryer with multiple cooking functions",
             new BigDecimal("249.99"),
@@ -70,7 +80,7 @@ public class SetupProducts {
         );
 
         // Books
-        createProduct(
+        cleanCode = createProduct(
             "Clean Code",
             "A Handbook of Agile Software Craftsmanship by Robert C. Martin",
             new BigDecimal("44.99"),
@@ -80,7 +90,7 @@ public class SetupProducts {
         );
 
         // Wearables
-        createProduct(
+        appleWatch = createProduct(
             "Apple Watch Series 7",
             "Always-On Retina display, health monitoring, and fitness tracking",
             new BigDecimal("399.99"),
@@ -90,7 +100,7 @@ public class SetupProducts {
         );
 
         // Audio
-        createProduct(
+        sonyHeadphones = createProduct(
             "Sony WH-1000XM4",
             "Industry-leading noise canceling wireless headphones with exceptional sound",
             new BigDecimal("349.99"),
@@ -100,7 +110,7 @@ public class SetupProducts {
         );
     }
 
-    private void createProduct(String name, String description, BigDecimal price, int quantity, String category, String imageUrl) {
+    private ProductEntity createProduct(String name, String description, BigDecimal price, int quantity, String category, String imageUrl) {
         ProductEntity product = ProductEntity.builder()
             .name(name)
             .description(description)
@@ -109,6 +119,6 @@ public class SetupProducts {
             .category(category)
             .imageUrl(imageUrl)
             .build();
-        productRepository.save(product);
+        return productRepository.save(product);
     }
 } 
