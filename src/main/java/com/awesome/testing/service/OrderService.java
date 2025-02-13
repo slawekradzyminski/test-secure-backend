@@ -1,7 +1,7 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.AddressDTO;
-import com.awesome.testing.dto.OrderDTO;
+import com.awesome.testing.dto.AddressDto;
+import com.awesome.testing.dto.OrderDto;
 import com.awesome.testing.dto.OrderItemDTO;
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.model.*;
@@ -25,7 +25,7 @@ public class OrderService {
     private final CartItemRepository cartItemRepository;
 
     @Transactional
-    public OrderDTO createOrder(String username, AddressDTO addressDTO) {
+    public OrderDto createOrder(String username, AddressDto addressDTO) {
         List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
         if (cartItems.isEmpty()) {
             throw new CustomException("Cart is empty", HttpStatus.BAD_REQUEST);
@@ -43,7 +43,7 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
         cartItemRepository.deleteByUsername(username);
 
-        return mapToOrderDTO(savedOrder);
+        return mapToOrderDto(savedOrder);
     }
 
     private void updateOrder(CartItemEntity cartItem, Order order) {
@@ -59,22 +59,22 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public Page<OrderDTO> getUserOrders(String username, OrderStatus status, Pageable pageable) {
+    public Page<OrderDto> getUserOrders(String username, OrderStatus status, Pageable pageable) {
         Page<Order> orders = status == null ?
                 orderRepository.findByUsername(username, pageable) :
                 orderRepository.findByUsernameAndStatus(username, status, pageable);
-        return orders.map(this::mapToOrderDTO);
+        return orders.map(this::mapToOrderDto);
     }
 
     @Transactional(readOnly = true)
-    public OrderDTO getOrder(String username, Long orderId) {
+    public OrderDto getOrder(String username, Long orderId) {
         return orderRepository.findByIdAndUsername(orderId, username)
-                .map(this::mapToOrderDTO)
+                .map(this::mapToOrderDto)
                 .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
     }
 
     @Transactional
-    public OrderDTO updateOrderStatus(Long orderId, OrderStatus newStatus) {
+    public OrderDto updateOrderStatus(Long orderId, OrderStatus newStatus) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
 
@@ -83,14 +83,14 @@ public class OrderService {
         }
 
         order.setStatus(newStatus);
-        return mapToOrderDTO(orderRepository.save(order));
+        return mapToOrderDto(orderRepository.save(order));
     }
 
     private boolean canBeCancelled(OrderStatus status) {
         return status == OrderStatus.PENDING || status == OrderStatus.PAID;
     }
 
-    private Address mapToAddress(AddressDTO dto) {
+    private Address mapToAddress(AddressDto dto) {
         return Address.builder()
                 .street(dto.getStreet())
                 .city(dto.getCity())
@@ -100,11 +100,11 @@ public class OrderService {
                 .build();
     }
 
-    private OrderDTO mapToOrderDTO(Order order) {
-        return OrderDTO.builder()
+    private OrderDto mapToOrderDto(Order order) {
+        return OrderDto.builder()
                 .id(order.getId())
                 .username(order.getUsername())
-                .items(mapToOrderItemDTOs(order.getItems()))
+                .items(mapToOrderItemDtos(order.getItems()))
                 .totalAmount(order.getTotalAmount())
                 .status(order.getStatus())
                 .shippingAddress(mapToAddressDTO(order.getShippingAddress()))
@@ -113,7 +113,7 @@ public class OrderService {
                 .build();
     }
 
-    private List<OrderItemDTO> mapToOrderItemDTOs(List<OrderItem> items) {
+    private List<OrderItemDTO> mapToOrderItemDtos(List<OrderItem> items) {
         return items.stream()
                 .map(item -> OrderItemDTO.builder()
                         .id(item.getId())
@@ -126,8 +126,8 @@ public class OrderService {
                 .toList();
     }
 
-    private AddressDTO mapToAddressDTO(Address address) {
-        return AddressDTO.builder()
+    private AddressDto mapToAddressDTO(Address address) {
+        return AddressDto.builder()
                 .street(address.getStreet())
                 .city(address.getCity())
                 .state(address.getState())

@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Address data transfer object")
-public class AddressDTO {
+public class AddressDto {
     @NotBlank(message = "Street is required")
     @Schema(description = "Street address", example = "123 Main St")
     private String street;

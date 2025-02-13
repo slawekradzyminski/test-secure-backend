@@ -2,6 +2,7 @@ package com.awesome.testing.endpoints.products;
 
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
+import com.awesome.testing.endpoints.AbstractEcommerceTest;
 import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.dto.user.Role;
 import org.junit.jupiter.api.Test;
@@ -10,11 +11,10 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
-import static com.awesome.testing.factory.ProductFactory.getRandomProduct;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class GetSingleProductControllerTest extends AbstractProductTest {
+public class GetSingleProductControllerTest extends AbstractEcommerceTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
@@ -22,8 +22,7 @@ public class GetSingleProductControllerTest extends AbstractProductTest {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
-        ProductEntity testProduct = getRandomProduct();
-        productRepository.save(testProduct);
+        ProductEntity testProduct = setupProduct();
 
         // when
         ResponseEntity<ProductDto> response = executeGet(
@@ -40,8 +39,7 @@ public class GetSingleProductControllerTest extends AbstractProductTest {
     @Test
     public void shouldGet401AsUnauthorized() {
         // given
-        ProductEntity testProduct = getRandomProduct();
-        productRepository.save(testProduct);
+        ProductEntity testProduct = setupProduct();
 
         // when
         ResponseEntity<ProductEntity> response = executeGet(
@@ -59,8 +57,6 @@ public class GetSingleProductControllerTest extends AbstractProductTest {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
-        ProductEntity testProduct = getRandomProduct();
-        productRepository.save(testProduct);
 
         // when
         ResponseEntity<ProductEntity> response = executeGet(

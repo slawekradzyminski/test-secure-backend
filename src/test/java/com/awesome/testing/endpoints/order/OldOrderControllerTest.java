@@ -1,10 +1,10 @@
-package com.awesome.testing.endpoints;
+package com.awesome.testing.endpoints.order;
 
-import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.*;
 import com.awesome.testing.dto.cart.CartDto;
 import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
+import com.awesome.testing.endpoints.AbstractEcommerceTest;
 import com.awesome.testing.model.OrderStatus;
 import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.dto.user.Role;
@@ -15,7 +15,6 @@ import com.awesome.testing.factory.UserFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -26,13 +25,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class OrderControllerTest extends DomainHelper {
+class OldOrderControllerTest extends AbstractEcommerceTest {
 
-    private static final String ORDERS_ENDPOINT = "/api/orders";
-    private static final String CART_ITEMS_ENDPOINT = "/api/cart/items";
-
-    @LocalServerPort
-    private int port;
 
     @Autowired
     private ProductRepository productRepository;
@@ -44,12 +38,12 @@ class OrderControllerTest extends DomainHelper {
     private CartItemRepository cartItemRepository;
 
     private ProductEntity testProduct;
-    private AddressDTO testAddress;
+    private AddressDto testAddress;
     private String clientToken;
     private String adminToken;
 
     @BeforeEach
-    void setUp() {
+    void setUpzz() {
         cartItemRepository.deleteAll();
         orderRepository.deleteAll();
         productRepository.deleteAll();
@@ -68,7 +62,7 @@ class OrderControllerTest extends DomainHelper {
                 .build();
         testProduct = productRepository.save(testProduct);
 
-        testAddress = AddressDTO.builder()
+        testAddress = AddressDto.builder()
                 .street("123 Test St")
                 .city("Test City")
                 .state("TS")
@@ -87,10 +81,10 @@ class OrderControllerTest extends DomainHelper {
 
         HttpHeaders headers = getHeadersWith(clientToken);
         executePost(CART_ITEMS_ENDPOINT, cartItemDTO, headers, CartDto.class);
-        executePost(ORDERS_ENDPOINT, testAddress, headers, OrderDTO.class);
+        executePost(ORDERS_ENDPOINT, testAddress, headers, OrderDto.class);
 
         // when
-        ResponseEntity<PageDTO<OrderDTO>> response = executeGet(
+        ResponseEntity<PageDTO<OrderDto>> response = executeGet(
                 ORDERS_ENDPOINT,
                 headers,
                 new ParameterizedTypeReference<>() {}
@@ -106,11 +100,11 @@ class OrderControllerTest extends DomainHelper {
     @Test
     void shouldFailToCreateOrderWithEmptyCart() {
         // when
-        ResponseEntity<OrderDTO> response = executePost(
+        ResponseEntity<OrderDto> response = executePost(
                 ORDERS_ENDPOINT,
                 testAddress,
                 getHeadersWith(clientToken),
-                OrderDTO.class
+                OrderDto.class
         );
 
         // then
@@ -127,15 +121,15 @@ class OrderControllerTest extends DomainHelper {
 
         HttpHeaders headers = getHeadersWith(clientToken);
         executePost(CART_ITEMS_ENDPOINT, cartItemDTO, headers, CartDto.class);
-        ResponseEntity<OrderDTO> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, headers, OrderDTO.class);
+        ResponseEntity<OrderDto> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, headers, OrderDto.class);
         assertThat(orderResponse.getBody()).isNotNull();
         Long orderId = orderResponse.getBody().getId();
 
         // when
-        ResponseEntity<OrderDTO> response = executeGet(
+        ResponseEntity<OrderDto> response = executeGet(
                 ORDERS_ENDPOINT + "/" + orderId,
                 headers,
-                OrderDTO.class
+                OrderDto.class
         );
 
         // then
@@ -154,16 +148,16 @@ class OrderControllerTest extends DomainHelper {
 
         HttpHeaders clientHeaders = getHeadersWith(clientToken);
         executePost(CART_ITEMS_ENDPOINT, cartItemDTO, clientHeaders, CartDto.class);
-        ResponseEntity<OrderDTO> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, clientHeaders, OrderDTO.class);
+        ResponseEntity<OrderDto> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, clientHeaders, OrderDto.class);
         assertThat(orderResponse.getBody()).isNotNull();
         Long orderId = orderResponse.getBody().getId();
 
         // when
-        ResponseEntity<OrderDTO> response = executePut(
+        ResponseEntity<OrderDto> response = executePut(
                 ORDERS_ENDPOINT + "/" + orderId + "/status",
                 OrderStatus.PAID,
                 getHeadersWith(adminToken),
-                OrderDTO.class
+                OrderDto.class
         );
 
         // then
@@ -182,16 +176,16 @@ class OrderControllerTest extends DomainHelper {
 
         HttpHeaders clientHeaders = getHeadersWith(clientToken);
         executePost(CART_ITEMS_ENDPOINT, cartItemDTO, clientHeaders, CartDto.class);
-        ResponseEntity<OrderDTO> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, clientHeaders, OrderDTO.class);
+        ResponseEntity<OrderDto> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, clientHeaders, OrderDto.class);
         assertThat(orderResponse.getBody()).isNotNull();
         Long orderId = orderResponse.getBody().getId();
 
         // when
-        ResponseEntity<OrderDTO> response = executePut(
+        ResponseEntity<OrderDto> response = executePut(
                 ORDERS_ENDPOINT + "/" + orderId + "/status",
                 OrderStatus.PAID,
                 clientHeaders,
-                OrderDTO.class
+                OrderDto.class
         );
 
         // then
@@ -208,16 +202,16 @@ class OrderControllerTest extends DomainHelper {
 
         HttpHeaders clientHeaders = getHeadersWith(clientToken);
         executePost(CART_ITEMS_ENDPOINT, cartItemDTO, clientHeaders, CartDto.class);
-        ResponseEntity<OrderDTO> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, clientHeaders, OrderDTO.class);
+        ResponseEntity<OrderDto> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, clientHeaders, OrderDto.class);
         assertThat(orderResponse.getBody()).isNotNull();
         Long orderId = orderResponse.getBody().getId();
 
         // when
-        ResponseEntity<OrderDTO> response = executePost(
+        ResponseEntity<OrderDto> response = executePost(
                 ORDERS_ENDPOINT + "/" + orderId + "/cancel",
                 null,
                 clientHeaders,
-                OrderDTO.class
+                OrderDto.class
         );
 
         // then
@@ -238,18 +232,18 @@ class OrderControllerTest extends DomainHelper {
         HttpHeaders adminHeaders = getHeadersWith(adminToken);
         
         executePost(CART_ITEMS_ENDPOINT, cartItemDTO, clientHeaders, CartDto.class);
-        ResponseEntity<OrderDTO> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, clientHeaders, OrderDTO.class);
+        ResponseEntity<OrderDto> orderResponse = executePost(ORDERS_ENDPOINT, testAddress, clientHeaders, OrderDto.class);
         assertThat(orderResponse.getBody()).isNotNull();
         Long orderId = orderResponse.getBody().getId();
 
-        executePut(ORDERS_ENDPOINT + "/" + orderId + "/status", OrderStatus.DELIVERED, adminHeaders, OrderDTO.class);
+        executePut(ORDERS_ENDPOINT + "/" + orderId + "/status", OrderStatus.DELIVERED, adminHeaders, OrderDto.class);
 
         // when
-        ResponseEntity<OrderDTO> response = executePost(
+        ResponseEntity<OrderDto> response = executePost(
                 ORDERS_ENDPOINT + "/" + orderId + "/cancel",
                 null,
                 clientHeaders,
-                OrderDTO.class
+                OrderDto.class
         );
 
         // then

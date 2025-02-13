@@ -3,6 +3,7 @@ package com.awesome.testing.endpoints.products;
 import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
+import com.awesome.testing.endpoints.AbstractEcommerceTest;
 import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.dto.user.Role;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,7 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CreateProductControllerTest extends AbstractProductTest {
+public class CreateProductControllerTest extends AbstractEcommerceTest {
 
     @Test
     public void shouldCreateProductAsAdmin() {

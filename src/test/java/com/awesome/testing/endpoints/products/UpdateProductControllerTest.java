@@ -3,6 +3,7 @@ package com.awesome.testing.endpoints.products;
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.product.ProductUpdateDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
+import com.awesome.testing.endpoints.AbstractEcommerceTest;
 import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.dto.user.Role;
 import org.junit.jupiter.api.Test;
@@ -17,13 +18,12 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class UpdateProductControllerTest extends AbstractProductTest {
+public class UpdateProductControllerTest extends AbstractEcommerceTest {
 
     @Test
     public void shouldUpdateProductAsAdmin() {
         // given
-        ProductEntity testProduct = getRandomProduct();
-        productRepository.save(testProduct);
+        ProductEntity testProduct = setupProduct();
         UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String adminToken = getToken(admin);
         ProductUpdateDto productUpdateDto = getRandomProductUpdate();
@@ -44,8 +44,7 @@ public class UpdateProductControllerTest extends AbstractProductTest {
     @Test
     public void shouldPartiallyUpdateProductAsAdmin() {
         // given
-        ProductEntity testProduct = getRandomProduct();
-        productRepository.save(testProduct);
+        ProductEntity testProduct = setupProduct();
         UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String adminToken = getToken(admin);
         ProductUpdateDto productUpdateDto = ProductUpdateDto.builder()
@@ -70,8 +69,7 @@ public class UpdateProductControllerTest extends AbstractProductTest {
     @Test
     public void shouldGet400ForInvalidBody() {
         // given
-        ProductEntity testProduct = getRandomProduct();
-        productRepository.save(testProduct);
+        ProductEntity testProduct = setupProduct();
         UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String adminToken = getToken(admin);
         ProductUpdateDto productUpdateDto = ProductUpdateDto.builder()
@@ -93,8 +91,7 @@ public class UpdateProductControllerTest extends AbstractProductTest {
     @Test
     public void shouldGet401AsUnauthorized() {
         // given
-        ProductEntity testProduct = getRandomProduct();
-        productRepository.save(testProduct);
+        ProductEntity testProduct = setupProduct();
         ProductUpdateDto productUpdateDto = getRandomProductUpdate();
 
         // when
@@ -111,8 +108,7 @@ public class UpdateProductControllerTest extends AbstractProductTest {
     @Test
     public void shouldGet403AsClient() {
         // given
-        ProductEntity testProduct = getRandomProduct();
-        productRepository.save(testProduct);
+        ProductEntity testProduct = setupProduct();
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
         ProductUpdateDto productUpdateDto = getRandomProductUpdate();

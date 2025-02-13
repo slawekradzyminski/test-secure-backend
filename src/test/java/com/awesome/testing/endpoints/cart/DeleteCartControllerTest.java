@@ -5,6 +5,7 @@ import com.awesome.testing.dto.cart.CartDto;
 import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
+import com.awesome.testing.endpoints.AbstractEcommerceTest;
 import com.awesome.testing.model.ProductEntity;
 import com.awesome.testing.service.CartService;
 import org.junit.jupiter.api.Test;
@@ -16,11 +17,10 @@ import java.util.List;
 
 import static com.awesome.testing.factory.CartItemFactory.getDoubleCartItemFrom;
 import static com.awesome.testing.factory.CartItemFactory.getSingleCartItemFrom;
-import static com.awesome.testing.factory.ProductFactory.getRandomProduct;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DeleteCartControllerTest extends AbstractCartTest {
+public class DeleteCartControllerTest extends AbstractEcommerceTest {
 
     @Autowired
     private CartService cartService;
@@ -31,12 +31,10 @@ public class DeleteCartControllerTest extends AbstractCartTest {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
-        ProductEntity testProduct = getRandomProduct();
-        ProductEntity testProduct2 = getRandomProduct();
-        ProductEntity productEntity = productRepository.save(testProduct);
-        ProductEntity productEntity2 = productRepository.save(testProduct2);
-        CartItemDto cartItemDto = getSingleCartItemFrom(productEntity.getId());
-        CartItemDto cartItemDto2 = getDoubleCartItemFrom(productEntity2.getId());
+        ProductEntity testProduct = setupProduct();
+        ProductEntity testProduct2 = setupProduct();
+        CartItemDto cartItemDto = getSingleCartItemFrom(testProduct.getId());
+        CartItemDto cartItemDto2 = getDoubleCartItemFrom(testProduct2.getId());
         cartService.addToCart(client.getUsername(), cartItemDto);
         cartService.addToCart(client.getUsername(), cartItemDto2);
 

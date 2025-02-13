@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @UtilityClass
-public class ProductFactory extends FakerSingleton {
+public class ProductFactory extends FakerFactory {
 
     public static ProductEntity getRandomProduct() {
         return ProductEntity.builder()

@@ -19,7 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Order data transfer object")
-public class OrderDTO {
+public class OrderDto {
     @Schema(description = "Order ID", example = "1")
     private Long id;
 
@@ -40,7 +40,7 @@ public class OrderDTO {
     @Valid
     @NotNull(message = "Shipping address is required")
     @Schema(description = "Shipping address")
-    private AddressDTO shippingAddress;
+    private AddressDto shippingAddress;
 
     @Schema(description = "Creation timestamp")
     private LocalDateTime createdAt;
