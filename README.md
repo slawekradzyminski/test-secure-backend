@@ -182,6 +182,9 @@ Once the application is running, you can access the Swagger UI at:
 - PUT `/api/orders/{id}/status` - Update order status (ADMIN only)
 - POST `/api/orders/{id}/cancel` - Cancel order
 
+### QR Code
+- POST `/qr/create` - Generate QR code from text (authenticated)
+
 ### Email
 - POST `/email` - Send an email (authenticated users only)
 
