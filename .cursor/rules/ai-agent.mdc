@@ -1,0 +1,79 @@
+---
+description: 
+globs: 
+---
+# AI Agent Rules for Secure Backend Application
+
+## Project Overview
+This is a secure Spring Boot backend application with JWT authentication, PostgreSQL database, and ActiveMQ messaging. The project follows strict security practices and comprehensive testing patterns.
+
+## Code Style & Architecture
+
+### General
+- Follow Java 21 features and syntax
+- Use Spring Boot 3.x best practices
+- Maintain clean architecture separation (controller/service/repository layers)
+- Follow RESTful API design principles
+
+### Package Structure
+- Place new controllers in `com.awesome.testing.controller`
+- Place DTOs in appropriate packages under `com.awesome.testing.dto`
+- Place entities in `com.awesome.testing.entity`
+- Place repositories in `com.awesome.testing.repository`
+- Place services in `com.awesome.testing.service`
+
+### Security
+- Always implement proper JWT token validation
+- Use BCrypt for password encryption
+- Follow role-based access control (ADMIN/CLIENT)
+- Never expose sensitive information in logs or responses
+
+### Testing
+- Create tests in appropriate feature package under `test/java/com/awesome/testing/endpoints`
+- Follow Given/When/Then pattern in test comments
+- Test all possible HTTP response codes (2xx, 4xx, 5xx)
+- Use test data factories from `test/factory` package
+- Ensure comprehensive assertions for response status and body
+
+### Database
+- Use JPA entities with proper annotations
+- Follow database schema conventions
+- Include appropriate indexes and constraints
+- Use migrations for schema changes
+
+### API Design
+- Document all endpoints with OpenAPI/Swagger annotations
+- Use appropriate HTTP methods (GET, POST, PUT, DELETE)
+- Follow standard HTTP status codes
+- Use DTOs for request/response objects
+
+### Error Handling
+- Use proper exception handling
+- Return appropriate error responses
+- Include meaningful error messages
+- Handle edge cases properly
+
+## Dependencies
+- Spring Boot 3.x
+- Spring Security with JWT
+- Spring Data JPA
+- ActiveMQ
+- PostgreSQL/H2 Database
+- JUnit 5
+- Swagger/OpenAPI
+
+## Environment
+- Support both local (H2) and Docker (PostgreSQL) profiles
+- Configure proper CORS settings
+- Handle environment-specific configurations
+
+## Documentation
+- Update OpenAPI documentation for new endpoints
+- Keep README.md up to date
+- Document significant architectural decisions
+
+## Testing Requirements
+- Write tests for all new endpoints
+- Maintain test independence
+- Use appropriate test data factories
+- Follow existing test organization patterns 

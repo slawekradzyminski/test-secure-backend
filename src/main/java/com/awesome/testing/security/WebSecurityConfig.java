@@ -62,7 +62,13 @@ public class WebSecurityConfig {
 
         // Define authorization rules
         http.authorizeHttpRequests(auth -> {
+            // First, allow public endpoints
             ALLOWED_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(new AntPathRequestMatcher(endpoint)).permitAll());
+            
+            // Then, secure Ollama endpoints with role-based access
+            auth.requestMatchers("/api/ollama/**").hasAnyRole("CLIENT", "ADMIN");
+            
+            // Finally, require authentication for all other endpoints
             auth.anyRequest().authenticated();
         });
 
@@ -105,7 +111,20 @@ public class WebSecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:8081"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept"));
+        configuration.setAllowedHeaders(List.of(
+            "Authorization", 
+            "Content-Type", 
+            "X-Requested-With", 
+            "Accept", 
+            "Cache-Control",
+            "Last-Event-ID"
+        ));
+        configuration.setExposedHeaders(List.of(
+            "Content-Type",
+            "X-Requested-With",
+            "Cache-Control",
+            "Last-Event-ID"
+        ));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

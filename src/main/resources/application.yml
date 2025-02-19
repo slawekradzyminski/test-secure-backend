@@ -28,6 +28,10 @@ logbook:
     headers:
       - x-secret
       - cookie
+  minimum-status: 400  # Only log errors
+  
+logging.level:
+  org.zalando.logbook: INFO  # Change from TRACE to INFO
 
 UserController:
   signin: Authenticates user and returns its JWT token.
@@ -41,4 +45,7 @@ UserController:
 
 JmsSender:
   sendEmail: Sending email to Active MQ
+
+ollama:
+  base-url: http://localhost:11434
 
