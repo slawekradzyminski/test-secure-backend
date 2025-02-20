@@ -23,6 +23,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.core.annotation.Order;
+import jakarta.servlet.DispatcherType;
 
 import java.io.IOException;
 import java.util.List;
@@ -34,6 +40,7 @@ import static com.awesome.testing.utils.ErrorResponseDefinition.sendErrorRespons
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@Order(2)
 public class WebSecurityConfig {
 
     private static final List<String> ALLOWED_ENDPOINTS = List.of(
@@ -48,6 +55,7 @@ public class WebSecurityConfig {
     );
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final StreamingSecurityFilter streamingSecurityFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -62,11 +70,11 @@ public class WebSecurityConfig {
 
         // Define authorization rules
         http.authorizeHttpRequests(auth -> {
-            // First, allow public endpoints
-            ALLOWED_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(new AntPathRequestMatcher(endpoint)).permitAll());
+            // First, allow async dispatch
+            auth.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll();
             
-            // Then, secure Ollama endpoints with role-based access
-            auth.requestMatchers("/api/ollama/**").hasAnyRole("CLIENT", "ADMIN");
+            // Then allow public endpoints
+            ALLOWED_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(new AntPathRequestMatcher(endpoint)).permitAll());
             
             // Finally, require authentication for all other endpoints
             auth.anyRequest().authenticated();
@@ -80,6 +88,9 @@ public class WebSecurityConfig {
 
         // Apply JWT security filter
         http.addFilterBefore(new JwtTokenFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+        
+        // Apply streaming security filter
+        http.addFilterBefore(streamingSecurityFilter, JwtTokenFilter.class);
 
         return http.build();
     }
