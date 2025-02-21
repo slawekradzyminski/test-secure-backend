@@ -1,25 +1,23 @@
 package com.awesome.testing.factory.ollama;
 
-import com.awesome.testing.dto.ollama.GenerateRequestDto;
+import com.awesome.testing.dto.ollama.StreamedRequestDto;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class OllamaRequestFactory {
 
-    public static GenerateRequestDto validGenerateRequest() {
-        return GenerateRequestDto.builder()
+    public static StreamedRequestDto validStreamedRequest() {
+        return StreamedRequestDto.builder()
                 .model("gemma:2b")
                 .prompt("test prompt")
-                .stream(true)
                 .options(null)
                 .build();
     }
 
-    public static GenerateRequestDto invalidGenerateRequest() {
-        return GenerateRequestDto.builder()
+    public static StreamedRequestDto invalidStreamedRequest() {
+        return StreamedRequestDto.builder()
                 .model("")
                 .prompt("")
-                .stream(true)
                 .options(null)
                 .build();
     }

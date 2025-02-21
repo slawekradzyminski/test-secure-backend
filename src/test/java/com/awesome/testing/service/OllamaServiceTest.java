@@ -2,6 +2,7 @@ package com.awesome.testing.service;
 
 import com.awesome.testing.dto.ollama.GenerateRequestDto;
 import com.awesome.testing.dto.ollama.GenerateResponseDto;
+import com.awesome.testing.dto.ollama.StreamedRequestDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,7 +27,7 @@ class OllamaServiceTest {
     @Test
     void shouldStreamResponse() {
         // given
-        GenerateRequestDto request = new GenerateRequestDto("gemma:2b", "test prompt", true, null);
+        StreamedRequestDto request = new StreamedRequestDto("gemma:2b", "test prompt", null);
         GenerateResponseDto response1 = new GenerateResponseDto("gemma:2b", "2024-02-21", "Hello", false, null, 100L);
         GenerateResponseDto response2 = new GenerateResponseDto("gemma:2b", "2024-02-21", "World", true, null, 200L);
         
@@ -53,7 +54,7 @@ class OllamaServiceTest {
     @Test
     void shouldHandleError() {
         // given
-        GenerateRequestDto request = new GenerateRequestDto("invalid-model", "test", true, null);
+        StreamedRequestDto request = new StreamedRequestDto("invalid-model", "test", null);
         
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);

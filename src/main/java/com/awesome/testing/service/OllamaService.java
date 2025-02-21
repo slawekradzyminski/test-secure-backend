@@ -2,6 +2,7 @@ package com.awesome.testing.service;
 
 import com.awesome.testing.dto.ollama.GenerateRequestDto;
 import com.awesome.testing.dto.ollama.GenerateResponseDto;
+import com.awesome.testing.dto.ollama.StreamedRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,16 +17,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class OllamaService {
     private final WebClient ollamaWebClient;
     
-    public Flux<GenerateResponseDto> generateText(GenerateRequestDto request) {
+    public Flux<GenerateResponseDto> generateText(StreamedRequestDto request) {
         AtomicInteger requestCount = new AtomicInteger(1);
         log.info("Handling generateText with model: {}, prompt: {}", request.getModel(), request.getPrompt());
-        
-        GenerateRequestDto streamingRequest = new GenerateRequestDto(
-            request.getModel(),
-            request.getPrompt(),
-            true,
-            request.getOptions()
-        );
+        GenerateRequestDto streamingRequest = getStreamingRequest(request);
         
         return ollamaWebClient.post()
             .uri("/api/generate")
@@ -33,14 +28,23 @@ public class OllamaService {
             .retrieve()
             .bodyToFlux(GenerateResponseDto.class)
             .doOnNext(response -> {
-                log.info("Received response for request #{}: {}", requestCount.get(), response.response());
-                if (response.done()) {
-                    log.info("Generation completed for request #{} in {} seconds", requestCount.get(), response.totalDuration() / 1000000000);
+                log.info("Received response for request #{}: {}", requestCount.get(), response.getResponse());
+                if (response.isDone()) {
+                    log.info("Generation completed for request #{} in {} seconds", requestCount.get(), response.getTotalDuration() / 1000000000);
                 }
                 requestCount.incrementAndGet();
             })
             .doOnError(error -> 
                 log.error("Error generating text for request #{}: {}", requestCount.get(), error.getMessage())
             );
+    }
+
+    private GenerateRequestDto getStreamingRequest(StreamedRequestDto request) {
+        return new GenerateRequestDto(
+            request.getModel(),
+            request.getPrompt(),
+            true,
+            request.getOptions()
+        );
     }
 } 

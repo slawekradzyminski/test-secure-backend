@@ -20,4 +20,22 @@ public class OllamaMock {
                         .withChunkedDribbleDelay(2, 10)));
     }
 
+    public static void stubModelNotFound() {
+        stubFor(post(urlEqualTo("/api/generate"))
+                .willReturn(aResponse()
+                        .withStatus(404)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"error": "model 'gemma:2b' not found"}
+                                """)));
+    }
+
+    public static void stubServerError() {
+        stubFor(post(urlEqualTo("/api/generate"))
+                .willReturn(aResponse()
+                        .withStatus(500)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"error\":\"Internal server error\",\"message\":\"Failed to process request\"}")
+                ));
+    }
 }
