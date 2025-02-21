@@ -192,7 +192,6 @@ The application integrates with Ollama to provide AI text generation capabilitie
     {
       "model": "gemma:2b",
       "prompt": "Your prompt here",
-      "stream": true,
       "options": {}
     }
     ```

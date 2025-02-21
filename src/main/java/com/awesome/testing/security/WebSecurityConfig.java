@@ -55,7 +55,6 @@ public class WebSecurityConfig {
     );
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final StreamingSecurityFilter streamingSecurityFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -88,9 +87,6 @@ public class WebSecurityConfig {
 
         // Apply JWT security filter
         http.addFilterBefore(new JwtTokenFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
-        
-        // Apply streaming security filter
-        http.addFilterBefore(streamingSecurityFilter, JwtTokenFilter.class);
 
         return http.build();
     }
