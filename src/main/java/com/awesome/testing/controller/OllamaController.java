@@ -15,10 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.SignalType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/ollama")
@@ -37,16 +35,8 @@ public class OllamaController {
         @ApiResponse(responseCode = "500", description = "Ollama server error")
     })
     @PostMapping(value = "/generate", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @PreAuthorize("hasRole('ROLE_CLIENT') or hasRole('ROLE_ADMIN')")
     public Flux<GenerateResponseDto> generateText(@Valid @RequestBody GenerateRequestDto request) {
         return ollamaService.generateText(request)
-            .doOnSubscribe(subscription -> log.debug("Starting stream"))
-            .doFinally(signalType -> {
-                if (signalType == SignalType.ON_COMPLETE) {
-                    log.debug("Stream completed successfully");
-                } else {
-                    log.debug("Stream ended with signal: {}", signalType);
-                }
-            });
+            .doOnSubscribe(subscription -> log.info("Starting stream"));
     }
 } 

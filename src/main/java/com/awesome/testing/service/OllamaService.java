@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -15,13 +17,13 @@ public class OllamaService {
     private final WebClient ollamaWebClient;
     
     public Flux<GenerateResponseDto> generateText(GenerateRequestDto request) {
-        log.debug("Generating text with model: {}, prompt: {}", request.model(), request.prompt());
+        AtomicInteger requestCount = new AtomicInteger(1);
+        log.info("Handling generateText with model: {}, prompt: {}", request.model(), request.prompt());
         
-        // Ensure stream is enabled
         GenerateRequestDto streamingRequest = new GenerateRequestDto(
             request.model(),
             request.prompt(),
-            true, // Force streaming to be enabled
+            true,
             request.options()
         );
         
@@ -31,12 +33,14 @@ public class OllamaService {
             .retrieve()
             .bodyToFlux(GenerateResponseDto.class)
             .doOnNext(response -> {
+                log.info("Received response for request #{}: {}", requestCount.get(), response.response());
                 if (response.done()) {
-                    log.debug("Generation completed in {} ns", response.totalDuration());
+                    log.info("Generation completed for request #{} in {} seconds", requestCount.get(), response.totalDuration() / 1000000000);
                 }
+                requestCount.incrementAndGet();
             })
             .doOnError(error -> 
-                log.error("Error generating text: {}", error.getMessage())
+                log.error("Error generating text for request #{}: {}", requestCount.get(), error.getMessage())
             );
     }
 } 

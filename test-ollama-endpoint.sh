@@ -38,7 +38,7 @@ echo "Making request to generate text..."
 # Use temporary files to store the response and concatenated text
 TEMP_FILE=$(mktemp)
 FULL_RESPONSE=""
-MAX_WAIT_TIME=30  # Maximum wait time in seconds
+MAX_WAIT_TIME=60  # Maximum wait time in seconds
 START_TIME=$(date +%s)
 
 # Make the request and capture the response

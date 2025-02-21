@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
@@ -47,7 +48,7 @@ class EmailControllerTest extends AbstractEcommerceTest {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(jmsTemplate).convertAndSend(destination, emailDto);
+        verify(jmsTemplate, timeout(500)).convertAndSend(destination, emailDto);
     }
 
     @Test
