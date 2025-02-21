@@ -53,4 +53,7 @@ logging:
     root: INFO
     org.zalando.logbook: TRACE
   pattern:
-    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" 
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+ollama:
+  base-url: http://ollama:11434 

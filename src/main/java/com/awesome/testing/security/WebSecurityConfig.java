@@ -23,6 +23,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.core.annotation.Order;
+import jakarta.servlet.DispatcherType;
 
 import java.io.IOException;
 import java.util.List;
@@ -34,6 +40,7 @@ import static com.awesome.testing.utils.ErrorResponseDefinition.sendErrorRespons
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@Order(2)
 public class WebSecurityConfig {
 
     private static final List<String> ALLOWED_ENDPOINTS = List.of(
@@ -62,7 +69,13 @@ public class WebSecurityConfig {
 
         // Define authorization rules
         http.authorizeHttpRequests(auth -> {
+            // First, allow async dispatch
+            auth.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll();
+            
+            // Then allow public endpoints
             ALLOWED_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(new AntPathRequestMatcher(endpoint)).permitAll());
+            
+            // Finally, require authentication for all other endpoints
             auth.anyRequest().authenticated();
         });
 
@@ -105,7 +118,20 @@ public class WebSecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:8081"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept"));
+        configuration.setAllowedHeaders(List.of(
+            "Authorization", 
+            "Content-Type", 
+            "X-Requested-With", 
+            "Accept", 
+            "Cache-Control",
+            "Last-Event-ID"
+        ));
+        configuration.setExposedHeaders(List.of(
+            "Content-Type",
+            "X-Requested-With",
+            "Cache-Control",
+            "Last-Event-ID"
+        ));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

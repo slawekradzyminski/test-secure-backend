@@ -27,3 +27,5 @@ nbdist/
 /testlogs/
 app.log
 docker.log
+
+logs/

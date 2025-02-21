@@ -100,22 +100,12 @@ The application uses JWT tokens for authentication. To access protected endpoint
 - Role-based authorization (ADMIN and CLIENT roles)
 - User management (signup, signin, edit, delete)
 - Email sending functionality via ActiveMQ
+- Ollama integration for AI text generation
 - Product management
 - Shopping cart functionality
 - Order management
 - Swagger/OpenAPI documentation
 - Comprehensive test coverage
-
-## Technologies
-
-- Java 21
-- Spring Boot 3.x
-- Spring Security with JWT
-- Spring Data JPA
-- ActiveMQ for email queue
-- H2 Database (for development)
-- JUnit 5 for testing
-- Swagger/OpenAPI for documentation
 
 ## Getting Started
 
@@ -188,60 +178,30 @@ Once the application is running, you can access the Swagger UI at:
 ### Email
 - POST `/email` - Send an email (authenticated users only)
 
-## Security
+## Ollama Integration
 
-- JWT tokens for authentication
-- Password encryption using BCrypt
-- Role-based access control
-- Cross-Origin Resource Sharing (CORS) configured for localhost:8081
+The application integrates with Ollama to provide AI text generation capabilities. This feature is available through a secure endpoint that requires authentication.
 
-## Error Handling
+### Ollama Endpoints
 
-The API uses standard HTTP status codes:
-- 200: Success
-- 201: Created
-- 400: Bad Request
-- 401: Unauthorized
-- 403: Forbidden
-- 404: Not Found
-- 422: Unprocessable Entity
-- 500: Internal Server Error
+- POST `/api/ollama/generate` - Generate text using Ollama models
+  - Requires authentication with `ROLE_CLIENT` or `ROLE_ADMIN`
+  - Supports Server-Sent Events (SSE) for streaming responses
+  - Request body:
+    ```json
+    {
+      "model": "gemma:2b",
+      "prompt": "Your prompt here",
+      "options": {}
+    }
+    ```
 
-## Development
+### Configuration
 
-### Project Structure
-
-```
-src/
-├── main/
-│   ├── java/
-│   │   └── com/awesome/testing/
-│   │       ├── config/       # Application configuration
-│   │       ├── controller/   # REST controllers
-│   │       ├── dto/         # Data Transfer Objects
-│   │       │   ├── cart/    # Cart-related DTOs
-│   │       │   ├── email/   # Email-related DTOs
-│   │       │   ├── order/   # Order-related DTOs
-│   │       │   ├── product/ # Product-related DTOs
-│   │       │   └── user/    # User-related DTOs
-│   │       ├── entity/      # JPA entities
-│   │       ├── jms/         # JMS configuration and handlers
-│   │       ├── repository/  # Data access layer
-│   │       ├── security/    # Security configuration
-│   │       └── service/     # Business logic
-│   └── resources/
-│       └── application.yml  # Application configuration
-└── test/
-    └── java/
-        └── com/awesome/testing/
-            ├── config/      # Test configuration
-            ├── endpoints/   # Integration tests by feature
-            │   ├── cart/   # Cart endpoint tests
-            │   ├── order/  # Order endpoint tests
-            │   └── products/ # Product endpoint tests
-            ├── factory/    # Test data factories
-            └── util/       # Test utilities
-
+The Ollama service can be configured in `application.yml`:
+```yaml
+ollama:
+  base-url: http://localhost:11434  # Default Ollama server URL
 ```
 
 ### Test Strategy

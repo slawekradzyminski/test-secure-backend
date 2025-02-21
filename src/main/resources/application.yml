@@ -11,6 +11,19 @@ server:
       enabled: true
       force: true
 
+logging:
+  file:
+    name: logs/application.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  level:
+    root: INFO
+    com.awesome.testing: DEBUG
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    org.zalando.logbook: INFO
+
 logbook:
   include: "/**"
   exclude: 
@@ -28,7 +41,7 @@ logbook:
     headers:
       - x-secret
       - cookie
-
+  
 UserController:
   signin: Authenticates user and returns its JWT token.
   signup: Creates user and returns its JWT token
@@ -41,4 +54,7 @@ UserController:
 
 JmsSender:
   sendEmail: Sending email to Active MQ
+
+ollama:
+  base-url: http://localhost:11434
 
