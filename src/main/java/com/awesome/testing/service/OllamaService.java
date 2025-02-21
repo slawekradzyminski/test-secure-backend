@@ -18,13 +18,13 @@ public class OllamaService {
     
     public Flux<GenerateResponseDto> generateText(GenerateRequestDto request) {
         AtomicInteger requestCount = new AtomicInteger(1);
-        log.info("Handling generateText with model: {}, prompt: {}", request.model(), request.prompt());
+        log.info("Handling generateText with model: {}, prompt: {}", request.getModel(), request.getPrompt());
         
         GenerateRequestDto streamingRequest = new GenerateRequestDto(
-            request.model(),
-            request.prompt(),
+            request.getModel(),
+            request.getPrompt(),
             true,
-            request.options()
+            request.getOptions()
         );
         
         return ollamaWebClient.post()

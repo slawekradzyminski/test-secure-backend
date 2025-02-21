@@ -41,7 +41,6 @@ logbook:
     headers:
       - x-secret
       - cookie
-  minimum-status: 400  # Only log errors
   
 UserController:
   signin: Authenticates user and returns its JWT token.

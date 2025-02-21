@@ -67,4 +67,7 @@ logging:
     append: true
 
 ollama:
-  base-url: http://localhost:11434
+  base-url: http://localhost:${wiremock.server.port}
+
+wiremock:
+  reset-mappings-after-each-test: true
