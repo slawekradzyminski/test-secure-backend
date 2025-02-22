@@ -1,5 +1,7 @@
 package com.awesome.testing.controller;
 
+import com.awesome.testing.dto.ollama.ChatRequestDto;
+import com.awesome.testing.dto.ollama.ChatResponseDto;
 import com.awesome.testing.dto.ollama.GenerateResponseDto;
 import com.awesome.testing.dto.ollama.ModelNotFoundDto;
 import com.awesome.testing.dto.ollama.StreamedRequestDto;
@@ -46,5 +48,23 @@ public class OllamaController {
     public Flux<GenerateResponseDto> generateText(@Valid @RequestBody StreamedRequestDto request) {
         return ollamaService.generateText(request)
                 .doOnSubscribe(subscription -> log.info("Starting stream"));
+    }
+
+    @Operation(summary = "Chat with Ollama model")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful chat response"),
+            @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Model not found", content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ModelNotFoundDto.class)
+            )),
+            @ApiResponse(responseCode = "500", description = "Ollama server error", content = @Content)
+    })
+    @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ChatResponseDto> chat(@Valid @RequestBody ChatRequestDto request) {
+        log.info("Initiating chat request: model={}", request.getModel());
+        return ollamaService.chat(request)
+                .doOnSubscribe(subscription -> log.info("Starting chat stream"));
     }
 } 
