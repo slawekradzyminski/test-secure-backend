@@ -8,7 +8,7 @@ public class OllamaRequestFactory {
 
     public static StreamedRequestDto validStreamedRequest() {
         return StreamedRequestDto.builder()
-                .model("gemma:2b")
+                .model("llama3.2:1b")
                 .prompt("test prompt")
                 .options(null)
                 .build();

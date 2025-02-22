@@ -1,5 +1,7 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.dto.ollama.ChatRequestDto;
+import com.awesome.testing.dto.ollama.ChatResponseDto;
 import com.awesome.testing.dto.ollama.GenerateRequestDto;
 import com.awesome.testing.dto.ollama.GenerateResponseDto;
 import com.awesome.testing.dto.ollama.StreamedRequestDto;
@@ -19,9 +21,9 @@ public class OllamaService {
     
     public Flux<GenerateResponseDto> generateText(StreamedRequestDto request) {
         AtomicInteger requestCount = new AtomicInteger(1);
-        log.info("Handling generateText with model: {}, prompt: {}", request.getModel(), request.getPrompt());
         GenerateRequestDto streamingRequest = getStreamingRequest(request);
-        
+        log.info("Handling generateText with model: {}, prompt: {}", streamingRequest.getModel(), streamingRequest.getPrompt());
+
         return ollamaWebClient.post()
             .uri("/api/generate")
             .bodyValue(streamingRequest)
@@ -46,5 +48,27 @@ public class OllamaService {
             true,
             request.getOptions()
         );
+    }
+
+    public Flux<ChatResponseDto> chat(ChatRequestDto request) {
+        boolean streamEnabled = (request.getStream() == null) ? true : request.getStream();
+        log.info("Sending chat request to model: {}, streaming: {}", request.getModel(), streamEnabled);
+
+        return ollamaWebClient.post()
+            .uri("/api/chat")
+            .bodyValue(request)
+            .retrieve()
+            .bodyToFlux(ChatResponseDto.class)
+            .doOnNext(chunk -> {
+                log.debug("Received chunk: role={}, content={}",
+                          chunk.getMessage().getRole(),
+                          chunk.getMessage().getContent());
+            })
+            .doOnError(ex -> {
+                log.error("Error during chat streaming: {}", ex.getMessage(), ex);
+            })
+            .doOnComplete(() -> {
+                log.info("Chat streaming completed for model: {}", request.getModel());
+            });
     }
 } 

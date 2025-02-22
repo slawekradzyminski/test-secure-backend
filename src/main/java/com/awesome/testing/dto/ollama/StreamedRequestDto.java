@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StreamedRequestDto {
-    @Schema(description = "Model name", example = "gemma:2b")
+    @Schema(description = "Model name", example = "llama3.2:1b")
     @NotBlank String model;
     @Schema(description = "Prompt", example = "Hello, how are you?")
     @NotBlank String prompt;

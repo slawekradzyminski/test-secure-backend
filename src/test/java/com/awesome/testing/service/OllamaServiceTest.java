@@ -27,9 +27,9 @@ class OllamaServiceTest {
     @Test
     void shouldStreamResponse() {
         // given
-        StreamedRequestDto request = new StreamedRequestDto("gemma:2b", "test prompt", null);
-        GenerateResponseDto response1 = new GenerateResponseDto("gemma:2b", "2024-02-21", "Hello", false, null, 100L);
-        GenerateResponseDto response2 = new GenerateResponseDto("gemma:2b", "2024-02-21", "World", true, null, 200L);
+        StreamedRequestDto request = new StreamedRequestDto("llama3.2:1b", "test prompt", null);
+        GenerateResponseDto response1 = new GenerateResponseDto("llama3.2:1b", "2024-02-21", "Hello", false, null, 100L);
+        GenerateResponseDto response2 = new GenerateResponseDto("llama3.2:1b", "2024-02-21", "World", true, null, 200L);
         
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);

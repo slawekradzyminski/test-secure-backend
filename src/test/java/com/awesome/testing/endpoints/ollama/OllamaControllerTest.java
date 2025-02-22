@@ -47,7 +47,7 @@ class OllamaControllerTest extends DomainHelper {
         assertThat(response.getBody()).containsAnyOf("Hello", "world", "my friend");
 
         verify(postRequestedFor(urlEqualTo("/api/generate"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("gemma:2b")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("llama3.2:1b")))
                 .withRequestBody(matchingJsonPath("$.prompt", equalTo("test prompt")))
                 .withRequestBody(matchingJsonPath("$.stream", equalTo("true"))));
     }
@@ -107,7 +107,7 @@ class OllamaControllerTest extends DomainHelper {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/json;charset=UTF-8");
-        assertThat(response.getBody().getError()).isEqualTo("model 'gemma:2b' not found");
+        assertThat(response.getBody().getError()).isEqualTo("model 'llama3.2:1b' not found");
     }
 
     @Test

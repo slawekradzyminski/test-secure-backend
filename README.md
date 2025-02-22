@@ -190,7 +190,7 @@ The application integrates with Ollama to provide AI text generation capabilitie
   - Request body:
     ```json
     {
-      "model": "gemma:2b",
+      "model": "llama3.2:1b",
       "prompt": "Your prompt here",
       "options": {}
     }

@@ -10,7 +10,7 @@ BOLD='\033[1m'
 BASE_URL="http://localhost:4001"
 USERNAME="admin"
 PASSWORD="admin"
-MODEL="gemma:2b"
+MODEL="llama3.2:1b"
 PROMPT="Say hi"
 
 echo -e "${BOLD}Testing Ollama Endpoint${NC}\n"
