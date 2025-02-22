@@ -100,7 +100,7 @@ The application uses JWT tokens for authentication. To access protected endpoint
 - Role-based authorization (ADMIN and CLIENT roles)
 - User management (signup, signin, edit, delete)
 - Email sending functionality via ActiveMQ
-- Ollama integration for AI text generation
+- Ollama integration for AI text generation and chat
 - Product management
 - Shopping cart functionality
 - Order management
@@ -180,11 +180,12 @@ Once the application is running, you can access the Swagger UI at:
 
 ## Ollama Integration
 
-The application integrates with Ollama to provide AI text generation capabilities. This feature is available through a secure endpoint that requires authentication.
+The application integrates with Ollama to provide AI text generation and chat capabilities. These features are available through secure endpoints that require authentication.
 
 ### Ollama Endpoints
 
 - POST `/api/ollama/generate` - Generate text using Ollama models
+  - Single text generation without conversation history
   - Requires authentication with `ROLE_CLIENT` or `ROLE_ADMIN`
   - Supports Server-Sent Events (SSE) for streaming responses
   - Request body:
@@ -192,6 +193,25 @@ The application integrates with Ollama to provide AI text generation capabilitie
     {
       "model": "llama3.2:1b",
       "prompt": "Your prompt here",
+      "options": {}
+    }
+    ```
+
+- POST `/api/ollama/chat` - Chat with Ollama models
+  - Supports multi-message conversations with history
+  - Client maintains conversation history by sending all previous messages
+  - Requires authentication with `ROLE_CLIENT` or `ROLE_ADMIN`
+  - Supports Server-Sent Events (SSE) for streaming responses
+  - Request body:
+    ```json
+    {
+      "model": "llama3.2:1b",
+      "messages": [
+        { "role": "system", "content": "You are a helpful assistant." },
+        { "role": "user", "content": "Hello!" },
+        { "role": "assistant", "content": "Hi there!" },
+        { "role": "user", "content": "How are you?" }
+      ],
       "options": {}
     }
     ```
