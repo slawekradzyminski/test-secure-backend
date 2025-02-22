@@ -14,10 +14,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StreamedRequestDto {
-    @Schema(description = "Model name", example = "llama3.2:1b")
-    @NotBlank String model;
+    @NotBlank
+    @Schema(description = "Model to use, needs to be downloaded in ollama server", example = "llama3.2:1b")
+    String model;
+
     @Schema(description = "Prompt", example = "Hello, how are you?")
-    @NotBlank String prompt;
+    @NotBlank
+    String prompt;
+
     @Schema(description = "Options", example = "{ \"temperature\": 0.5 }")
     Map<String, Object> options;
 }
