@@ -46,7 +46,7 @@ security:
   jwt:
     token:
       secret-key: test-key
-      expire-length: 300000
+      expire-length: 3600000
 
 logging:
   level:

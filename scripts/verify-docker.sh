@@ -42,7 +42,7 @@ LOGIN_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
 
 echo "Login response: $LOGIN_RESPONSE"
 
-echo "Pulling Gemma model (this might take a while)..."
+echo "Pulling LLM model (this might take a while)..."
 docker exec test-secure-backend-backend-1 curl -s -X POST http://ollama:11434/api/pull -d '{"model": "llama3.2:1b"}' | while read -r line; do
   if echo "$line" | grep -q '"status"'; then
     status=$(echo "$line" | grep -o '"status":"[^"]*' | cut -d'"' -f4)
