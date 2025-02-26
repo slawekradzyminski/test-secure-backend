@@ -78,6 +78,16 @@ public class UserService {
         return userRepository.save(existingUser);
     }
 
+    public String getSystemPrompt(String username) {
+        return getUser(username).getSystemPrompt();
+    }
+
+    public UserEntity updateSystemPrompt(String username, String newPrompt) {
+        UserEntity user = getUser(username);
+        user.setSystemPrompt(newPrompt);
+        return userRepository.save(user);
+    }
+
     @SuppressWarnings("unused")
     public boolean exists(String username) {
         getUser(username);

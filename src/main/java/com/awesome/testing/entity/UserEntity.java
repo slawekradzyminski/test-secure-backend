@@ -43,6 +43,10 @@ public class UserEntity {
     @Column(name = "last_name")
     private String lastName;
 
+    @Size(max = 500)
+    @Column(name = "system_prompt")
+    private String systemPrompt;
+
     @JsonIgnore
     public String getPassword() {
         return password;
