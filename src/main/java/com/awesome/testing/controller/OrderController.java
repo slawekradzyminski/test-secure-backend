@@ -71,7 +71,12 @@ public class OrderController {
     public ResponseEntity<OrderDto> getOrder(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long id) {
-        return ResponseEntity.ok(orderService.getOrder(principal.getUsername(), id));
+        if (principal.getUserDetails().getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+            return ResponseEntity.ok(orderService.getOrderById(id));
+        } else {
+            return ResponseEntity.ok(orderService.getOrder(principal.getUsername(), id));
+        }
     }
 
     @PutMapping("/{id}/status")
@@ -102,5 +107,22 @@ public class OrderController {
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long id) {
         return ResponseEntity.ok(orderService.updateOrderStatus(id, OrderStatus.CANCELLED));
+    }
+    
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Operation(summary = "Get all orders (Admin only)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Orders retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content)
+    })
+    public ResponseEntity<PageDto<OrderDto>> getAllOrders(
+            @RequestParam(required = false) OrderStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(PageDto.from(
+                orderService.getAllOrders(status, PageRequest.of(page, size))
+        ));
     }
 } 

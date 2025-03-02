@@ -29,6 +29,7 @@ public class SetupOrders {
 
         UserEntity client = setupUsers.getClientUser();
         UserEntity client2 = setupUsers.getClient2User();
+        UserEntity admin = setupUsers.getAdminUser();
 
         ProductEntity iphone = setupProducts.getIPhone();
         ProductEntity macbook = setupProducts.getMacBook();
@@ -43,6 +44,10 @@ public class SetupOrders {
 
         // Create one order for client2
         createOrder(client2, iphone, 1, OrderStatus.PAID, LocalDateTime.now().minusDays(1));
+
+        // Create orders for admin
+        createOrder(admin, iphone, 2, OrderStatus.PENDING, LocalDateTime.now().minusDays(7));
+        createOrder(admin, ps5, 1, OrderStatus.SHIPPED, LocalDateTime.now().minusDays(1));
 
         // Add items to client2's cart
         createCartItem(client2, watch, 1);

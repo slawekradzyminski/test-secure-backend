@@ -66,6 +66,21 @@ public class OrderService {
         order.setStatus(newStatus);
         return OrderDto.from(orderRepository.save(order));
     }
+    
+    @Transactional(readOnly = true)
+    public Page<OrderDto> getAllOrders(OrderStatus status, Pageable pageable) {
+        Page<OrderEntity> orders = status == null ?
+                orderRepository.findAllOrdersWithItems(pageable) :
+                orderRepository.findAllOrdersByStatus(status, pageable);
+        return orders.map(OrderDto::from);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderDto getOrderById(Long orderId) {
+        return orderRepository.findById(orderId)
+                .map(OrderDto::from)
+                .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
+    }
 
     private OrderEntity getInitialEmptyOrder(String username, AddressDto addressDto) {
         return OrderEntity.builder()

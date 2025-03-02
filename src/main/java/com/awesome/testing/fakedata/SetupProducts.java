@@ -37,7 +37,7 @@ public class SetupProducts {
             new BigDecimal("999.99"),
             50,
             "Electronics",
-            "https://example.com/iphone13pro.jpg"
+            "http://localhost:8082/images/iphone.png"
         );
 
         galaxyS21 = createProduct(
@@ -46,17 +46,17 @@ public class SetupProducts {
             new BigDecimal("799.99"),
             75,
             "Electronics",
-            "https://example.com/galaxys21.jpg"
+            "http://localhost:8082/images/samsung.png"
         );
 
         // Computers
         macBook = createProduct(
-            "MacBook Pro 14\"",
+            "MacBook Pro 14",
             "Apple M1 Pro chip, 16GB RAM, 512GB SSD, Liquid Retina XDR display",
             new BigDecimal("1999.99"),
             25,
             "Computers",
-            "https://example.com/macbookpro.jpg"
+            "http://localhost:8082/images/mac.png"
         );
 
         // Gaming
@@ -66,7 +66,7 @@ public class SetupProducts {
             new BigDecimal("499.99"),
             30,
             "Gaming",
-            "https://example.com/ps5.jpg"
+            "http://localhost:8082/images/ps5.png"
         );
 
         // Home & Kitchen
@@ -76,7 +76,7 @@ public class SetupProducts {
             new BigDecimal("249.99"),
             100,
             "Home & Kitchen",
-            "https://example.com/ninjafoodi.jpg"
+            "http://localhost:8082/images/ninja.png"
         );
 
         // Books
@@ -86,7 +86,7 @@ public class SetupProducts {
             new BigDecimal("44.99"),
             200,
             "Books",
-            "https://example.com/cleancode.jpg"
+            "http://localhost:8082/images/cleancode.png"
         );
 
         // Wearables
@@ -96,7 +96,7 @@ public class SetupProducts {
             new BigDecimal("399.99"),
             60,
             "Wearables",
-            "https://example.com/applewatch.jpg"
+            "http://localhost:8082/images/applewatch.png"
         );
 
         // Audio
@@ -106,7 +106,7 @@ public class SetupProducts {
             new BigDecimal("349.99"),
             85,
             "Audio",
-            "https://example.com/sonywh1000xm4.jpg"
+            "http://localhost:8082/images/sony.png"
         );
     }
 

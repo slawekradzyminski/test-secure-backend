@@ -51,6 +51,30 @@ class GetSingleOrderControllerTest extends AbstractEcommerceTest {
         assertThat(response.getBody().getUsername()).isEqualTo(client.getUsername());
     }
 
+
+    @Test
+    void shouldAllowAdminToAccessAnyOrder() {
+        // given
+        UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        String adminToken = getToken(admin);
+        AddressDto testAddress = getRandomAddress();
+        OrderDto clientOrder = createOrder(client, testAddress);
+
+        // when
+        ResponseEntity<OrderDto> response = executeGet(
+                ORDERS_ENDPOINT + "/" + clientOrder.getId(),
+                getHeadersWith(adminToken),
+                OrderDto.class
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getId()).isEqualTo(clientOrder.getId());
+        assertThat(response.getBody().getUsername()).isEqualTo(client.getUsername());
+    }
+
     @Test
     void shouldGet401WhenNoAuthorizationHeader() {
         // when
@@ -74,6 +98,26 @@ class GetSingleOrderControllerTest extends AbstractEcommerceTest {
         ResponseEntity<OrderDto> response = executeGet(
                 ORDERS_ENDPOINT + "/999999",
                 getHeadersWith(clientToken),
+                OrderDto.class
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void shouldGet404WhenClientTriesToAccessOtherUsersOrder() {
+        // given
+        UserRegisterDto client1 = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto client2 = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String client2Token = getToken(client2);
+        AddressDto testAddress = getRandomAddress();
+        OrderDto client1Order = createOrder(client1, testAddress);
+
+        // when
+        ResponseEntity<OrderDto> response = executeGet(
+                ORDERS_ENDPOINT + "/" + client1Order.getId(),
+                getHeadersWith(client2Token),
                 OrderDto.class
         );
 
