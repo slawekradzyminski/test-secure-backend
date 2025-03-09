@@ -1,14 +1,20 @@
-package com.awesome.testing.controller;
+package com.awesome.testing.controller.exception;
 
+import com.awesome.testing.controller.OllamaController;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import java.time.Instant;
 
-@ControllerAdvice
+@RestControllerAdvice(assignableTypes = {
+        OllamaController.class
+})
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class OllamaExceptionHandler {
     
     public record ErrorResponse(

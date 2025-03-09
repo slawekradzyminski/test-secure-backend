@@ -1,7 +1,6 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.dto.embeddings.SidecarRequestDto;
-import com.awesome.testing.dto.embeddings.SidecarResponseDto;
+import com.awesome.testing.dto.embeddings.*;
 import com.awesome.testing.service.SidecarService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -18,8 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
-
 @RestController
 @RequestMapping("/api/embeddings")
 @Tag(name = "embeddings", description = "Embeddings & attention from Python sidecar")
@@ -29,29 +26,43 @@ import java.time.Duration;
 public class EmbeddingsController {
 
     private final SidecarService sidecarService;
-
-    @Operation(summary = "Process text to get tokens, embeddings, attention, optionally dimensionally reduced")
+    
+    @Operation(summary = "Get token embeddings for the provided text")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Success"),
         @ApiResponse(responseCode = "400", description = "Invalid input"),
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
         @ApiResponse(responseCode = "500", description = "Python sidecar error or server error")
     })
-    @PostMapping(value = "/process", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<SidecarResponseDto> process(@Valid @RequestBody SidecarRequestDto requestDto) {
-        log.info("Received request to process text of length: {}", requestDto.getText().length());
-
-        Mono<SidecarResponseDto> sidecarResponseDtoMono = sidecarService.processText(requestDto)
-                .timeout(Duration.ofSeconds(180))  // 3 minute timeout at controller level
-                .doOnSuccess(response -> {
-                    if (response != null) {
-                        log.info("Successfully processed text with {} tokens",
-                                response.getTokens() != null ? response.getTokens().size() : 0);
-                    } else {
-                        log.warn("Processed text but received null response");
-                    }
-                })
-                .doOnError(error -> log.error("Error processing text: {}", error.getMessage()));
-        return sidecarResponseDtoMono;
+    @PostMapping(value = "/embeddings", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<EmbeddingsResponseDto> getEmbeddings(@Valid @RequestBody EmbeddingsRequestDto requestDto) {
+        log.info("Received request to get embeddings for text of length: {}", requestDto.getText().length());
+        return sidecarService.getEmbeddings(requestDto);
+    }
+    
+    @Operation(summary = "Get attention weights for the provided text")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "500", description = "Python sidecar error or server error")
+    })
+    @PostMapping(value = "/attention", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<AttentionResponseDto> getAttention(@Valid @RequestBody AttentionRequestDto requestDto) {
+        log.info("Received request to get attention for text of length: {}", requestDto.getText().length());
+        return sidecarService.getAttention(requestDto);
+    }
+    
+    @Operation(summary = "Get dimensionally reduced embeddings for the provided text")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Success"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "500", description = "Python sidecar error or server error")
+    })
+    @PostMapping(value = "/reduce", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<ReduceResponseDto> reduceEmbeddings(@Valid @RequestBody ReduceRequestDto requestDto) {
+        log.info("Received request to reduce embeddings for text of length: {}", requestDto.getText().length());
+        return sidecarService.reduceEmbeddings(requestDto);
     }
 } 

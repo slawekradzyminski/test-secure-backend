@@ -1,7 +1,6 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.embeddings.SidecarRequestDto;
-import com.awesome.testing.dto.embeddings.SidecarResponseDto;
+import com.awesome.testing.dto.embeddings.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,78 +49,95 @@ public class SidecarServiceTest {
         when(requestBodySpecMock.bodyValue(any())).thenReturn(requestHeadersSpecMock);
         when(requestHeadersSpecMock.retrieve()).thenReturn(responseSpecMock);
     }
-
+    
     @Test
-    void shouldHandleShortText() {
+    void testGetEmbeddingsSuccessfully() {
         // given
-        SidecarRequestDto request = new SidecarRequestDto();
-        request.setText("Hello World");
-        request.setModelName("gpt2");
-        request.setDimensionalityReduction(true);
-        request.setReductionMethod("pca");
-        request.setNComponents(2);
+        EmbeddingsRequestDto request = EmbeddingsRequestDto.builder()
+                .text("Hello world")
+                .modelName("gpt2")
+                .build();
+                
+        EmbeddingsResponseDto mockResponse = EmbeddingsResponseDto.builder()
+                .tokens(Arrays.asList("Hello", "world"))
+                .embeddings(Arrays.asList(
+                        Arrays.asList(0.1f, 0.2f, 0.3f),
+                        Arrays.asList(0.4f, 0.5f, 0.6f)
+                ))
+                .modelName("gpt2")
+                .build();
 
-        SidecarResponseDto expectedResponse = createMockResponse(Arrays.asList("Hello", "World"));
-        when(responseSpecMock.bodyToMono(SidecarResponseDto.class)).thenReturn(Mono.just(expectedResponse));
+        when(responseSpecMock.bodyToMono(EmbeddingsResponseDto.class)).thenReturn(Mono.just(mockResponse));
 
         // when
-        Mono<SidecarResponseDto> result = sidecarService.processText(request);
+        Mono<EmbeddingsResponseDto> responseMono = sidecarService.getEmbeddings(request);
 
         // then
-        StepVerifier.create(result)
-                .expectNext(expectedResponse)
+        StepVerifier.create(responseMono)
+                .expectNext(mockResponse)
                 .verifyComplete();
     }
-
+    
     @Test
-    void shouldHandleLongText() {
+    void testGetAttentionSuccessfully() {
         // given
-        SidecarRequestDto request = new SidecarRequestDto();
-        request.setText("Tokenizer\nLearn about language model tokenization\nOpenAI's large language models process text using tokens, which are common sequences of characters found in a set of text. The models learn to understand the statistical relationships between these tokens, and excel at producing the next token in a sequence of tokens. Learn more.\n\nYou can use the tool below to understand how a piece of text might be tokenized by a language model, and the total count of tokens in that piece of text.");
-        request.setModelName("gpt2");
-        request.setDimensionalityReduction(true);
-        request.setReductionMethod("pca");
-        request.setNComponents(2);
+        AttentionRequestDto request = AttentionRequestDto.builder()
+                .text("Hello world")
+                .modelName("gpt2")
+                .build();
+                
+        List<List<List<List<Float>>>> attention = new ArrayList<>();
+        List<List<List<Float>>> layer = new ArrayList<>();
+        List<List<Float>> head = new ArrayList<>();
+        head.add(Arrays.asList(0.9f, 0.1f));
+        head.add(Arrays.asList(0.2f, 0.8f));
+        layer.add(head);
+        attention.add(layer);
+        
+        AttentionResponseDto mockResponse = AttentionResponseDto.builder()
+                .tokens(Arrays.asList("Hello", "world"))
+                .attention(attention)
+                .modelName("gpt2")
+                .build();
 
-        // Create a response with many tokens to simulate a large response
-        List<String> tokens = new ArrayList<>();
-        for (int i = 0; i < 100; i++) {
-            tokens.add("token" + i);
-        }
-        SidecarResponseDto expectedResponse = createMockResponse(tokens);
-        when(responseSpecMock.bodyToMono(SidecarResponseDto.class)).thenReturn(Mono.just(expectedResponse));
+        when(responseSpecMock.bodyToMono(AttentionResponseDto.class)).thenReturn(Mono.just(mockResponse));
 
         // when
-        Mono<SidecarResponseDto> result = sidecarService.processText(request);
+        Mono<AttentionResponseDto> responseMono = sidecarService.getAttention(request);
 
         // then
-        StepVerifier.create(result)
-                .expectNext(expectedResponse)
+        StepVerifier.create(responseMono)
+                .expectNext(mockResponse)
                 .verifyComplete();
     }
+    
+    @Test
+    void testReduceEmbeddingsSuccessfully() {
+        // given
+        ReduceRequestDto request = ReduceRequestDto.builder()
+                .text("Hello world")
+                .modelName("gpt2")
+                .reductionMethod("pca")
+                .nComponents(2)
+                .build();
+                
+        ReduceResponseDto mockResponse = ReduceResponseDto.builder()
+                .tokens(Arrays.asList("Hello", "world"))
+                .reducedEmbeddings(Arrays.asList(
+                        Arrays.asList(0.1, 0.2),
+                        Arrays.asList(0.3, 0.4)
+                ))
+                .modelName("gpt2")
+                .build();
 
-    private SidecarResponseDto createMockResponse(List<String> tokens) {
-        SidecarResponseDto response = new SidecarResponseDto();
-        response.setTokens(tokens);
-        
-        // Create embeddings
-        List<List<Float>> embeddings = new ArrayList<>();
-        for (int i = 0; i < tokens.size(); i++) {
-            List<Float> embedding = Arrays.asList(0.1f, 0.2f, 0.3f);
-            embeddings.add(embedding);
-        }
-        response.setEmbeddings(embeddings);
-        
-        // Create reduced embeddings
-        List<List<Double>> reducedEmbeddings = new ArrayList<>();
-        for (int i = 0; i < tokens.size(); i++) {
-            List<Double> reducedEmbedding = Arrays.asList(0.5, 0.6);
-            reducedEmbeddings.add(reducedEmbedding);
-        }
-        response.setReducedEmbeddings(reducedEmbeddings);
-        
-        response.setModelName("gpt2");
-        
-        return response;
+        when(responseSpecMock.bodyToMono(ReduceResponseDto.class)).thenReturn(Mono.just(mockResponse));
+
+        // when
+        Mono<ReduceResponseDto> responseMono = sidecarService.reduceEmbeddings(request);
+
+        // then
+        StepVerifier.create(responseMono)
+                .expectNext(mockResponse)
+                .verifyComplete();
     }
 } 

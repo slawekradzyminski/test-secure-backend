@@ -1,7 +1,6 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.embeddings.SidecarRequestDto;
-import com.awesome.testing.dto.embeddings.SidecarResponseDto;
+import com.awesome.testing.dto.embeddings.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -20,47 +19,43 @@ public class SidecarService {
 
     private final WebClient embeddingsWebClient;
 
-    public Mono<SidecarResponseDto> processText(SidecarRequestDto request) {
-        log.debug("Processing text with length: {}, model: {}, dimensionality reduction: {}", 
-                request.getText().length(), request.getModelName(), request.getDimensionalityReduction());
-        
+    public Mono<EmbeddingsResponseDto> getEmbeddings(EmbeddingsRequestDto request) {
+        return sendRequest("/embeddings", request, EmbeddingsResponseDto.class, "embeddings");
+    }
+
+    public Mono<AttentionResponseDto> getAttention(AttentionRequestDto request) {
+        return sendRequest("/attention", request, AttentionResponseDto.class, "attention");
+    }
+
+    public Mono<ReduceResponseDto> reduceEmbeddings(ReduceRequestDto request) {
+        return sendRequest("/reduce", request, ReduceResponseDto.class, "reduce");
+    }
+
+    private <T, R> Mono<R> sendRequest(String uri, T request, Class<R> responseType, String logIdentifier) {
         return embeddingsWebClient.post()
-                .uri("/process")
+                .uri(uri)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .retrieve()
-                .bodyToMono(SidecarResponseDto.class)
-                .timeout(Duration.ofSeconds(120))  // Increase timeout to 2 minutes
-                .doOnSubscribe(s -> log.debug("Sending request to sidecar service"))
-                .doOnSuccess(response -> {
-                    if (response != null) {
-                        log.debug("Successfully received response from sidecar service. " +
-                                "Tokens: {}, Embeddings size: {}, Reduced embeddings size: {}", 
-                                response.getTokens() != null ? response.getTokens().size() : 0,
-                                response.getEmbeddings() != null ? response.getEmbeddings().size() : 0,
-                                response.getReducedEmbeddings() != null ? response.getReducedEmbeddings().size() : 0);
-                    } else {
-                        log.warn("Received null response from sidecar service");
-                    }
-                })
-                .doOnError(error -> {
-                    if (error instanceof WebClientResponseException) {
-                        WebClientResponseException ex = (WebClientResponseException) error;
-                        log.error("Error from sidecar service: Status: {}, Body: {}", 
-                                ex.getStatusCode(), ex.getResponseBodyAsString());
-                    } else {
-                        log.error("Error processing request: {}", error.getMessage(), error);
-                    }
-                })
+                .bodyToMono(responseType)
+                .timeout(Duration.ofMinutes(2))
+                .doOnError(error -> handleError(error, logIdentifier))
                 .retryWhen(Retry.backoff(2, Duration.ofSeconds(1))
                         .filter(throwable -> !(throwable instanceof WebClientResponseException))
-                        .doBeforeRetry(retrySignal -> 
-                            log.warn("Retrying request after error: {}, attempt: {}", 
-                                    retrySignal.failure().getMessage(), 
-                                    retrySignal.totalRetries() + 1)))
+                        .doBeforeRetry(retrySignal ->
+                                log.warn("Retrying {} request after error: {}, attempt: {}",
+                                        logIdentifier, retrySignal.failure().getMessage(), retrySignal.totalRetries() + 1)))
                 .onErrorResume(error -> {
-                    log.error("Failed to process text after retries: {}", error.getMessage());
+                    log.error("Failed to process {} request after retries: {}", logIdentifier, error.getMessage());
                     return Mono.error(error);
                 });
     }
-} 
+
+    private void handleError(Throwable error, String endpoint) {
+        if (error instanceof WebClientResponseException ex) {
+            log.error("Error from {} endpoint: Status: {}, Body: {}", endpoint, ex.getStatusCode(), ex.getResponseBodyAsString());
+        } else {
+            log.error("Error processing {} request: {}", endpoint, error.getMessage(), error);
+        }
+    }
+}
