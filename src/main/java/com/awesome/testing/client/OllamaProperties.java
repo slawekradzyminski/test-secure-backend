@@ -1,4 +1,4 @@
-package com.awesome.testing.config;
+package com.awesome.testing.client;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

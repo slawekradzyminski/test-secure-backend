@@ -14,8 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TokenizeRequestDto {
 
-    @Schema(description = "OpenAI model type to use for tokenization. Defaults to GPT4o",
-            example = "GPT_4O", hidden = true)
+    @Schema(description = "OpenAI model type to use for tokenization. Defaults to GPT4o", example = "GPT_4O")
     private ModelType modelType;
 
     @NotBlank
