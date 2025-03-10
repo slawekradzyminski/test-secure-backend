@@ -44,7 +44,7 @@ public class OllamaService {
     }
 
     public Flux<ChatResponseDto> chat(ChatRequestDto request) {
-        boolean streamEnabled = (request.getStream() == null) ? true : request.getStream();
+        boolean streamEnabled = request.getStream() == null || request.getStream();
         AtomicInteger requestCount = new AtomicInteger(1);
         final String[] firstTimestamp = {null};
         log.info("Sending chat request to model: {}, streaming: {}", request.getModel(), streamEnabled);

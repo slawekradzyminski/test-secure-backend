@@ -69,5 +69,9 @@ logging:
 ollama:
   base-url: http://localhost:${wiremock.server.port}
 
+python:
+  sidecar:
+    url: http://localhost:${wiremock.server.port}
+
 wiremock:
   reset-mappings-after-each-test: true

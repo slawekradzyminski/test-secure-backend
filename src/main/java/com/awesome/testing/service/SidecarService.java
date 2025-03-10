@@ -1,5 +1,6 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.controller.exception.WebClientException;
 import com.awesome.testing.dto.embeddings.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,9 +46,9 @@ public class SidecarService {
                         .doBeforeRetry(retrySignal ->
                                 log.warn("Retrying {} request after error: {}, attempt: {}",
                                         logIdentifier, retrySignal.failure().getMessage(), retrySignal.totalRetries() + 1)))
-                .onErrorResume(error -> {
-                    log.error("Failed to process {} request after retries: {}", logIdentifier, error.getMessage());
-                    return Mono.error(error);
+                .onErrorResume(WebClientResponseException.class, ex -> {
+                    log.error("Returning error response for {}: {}", logIdentifier, ex.getMessage());
+                    return Mono.error(new WebClientException("Sidecar error", ex.getStatusCode()));
                 });
     }
 

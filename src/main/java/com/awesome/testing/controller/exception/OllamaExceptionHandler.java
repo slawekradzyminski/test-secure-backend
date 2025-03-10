@@ -1,5 +1,6 @@
 package com.awesome.testing.controller.exception;
 
+import com.awesome.testing.controller.EmbeddingsController;
 import com.awesome.testing.controller.OllamaController;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -12,7 +13,8 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.time.Instant;
 
 @RestControllerAdvice(assignableTypes = {
-        OllamaController.class
+        OllamaController.class,
+        EmbeddingsController.class
 })
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class OllamaExceptionHandler {
