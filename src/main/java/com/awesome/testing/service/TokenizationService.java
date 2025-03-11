@@ -29,53 +29,26 @@ public class TokenizationService {
         Encoding encoding = getEncoding(requestDto);
         String text = requestDto.getText();
         IntArrayList encodedTokens = encoding.encode(text);
-        List<TokenDto> tokenList = extractTokens(encoding, encodedTokens);
-        int tokenCount = encodedTokens.size();
-        int wordCount = getWordCount(text);
+        List<String> tokens = extractTokens(encoding, encodedTokens);
 
         return TokenizeResponseDto.builder()
-                .tokenMap(tokenList)
-                .tokenCount(tokenCount)
-                .inputCharsCount(text.length())
-                .inputWordsCount(wordCount)
-                .tokenToWordRatio(getRatio(wordCount, tokenCount))
+                .tokens(tokens)
+                .modelName(requestDto.getModelName())
                 .build();
     }
 
-    private List<TokenDto> extractTokens(Encoding encoding, IntArrayList encodedTokens) {
+    private List<String> extractTokens(Encoding encoding, IntArrayList encodedTokens) {
         return encodedTokens.boxed().stream()
-                .map(tokenId -> toTokenDto(encoding, tokenId))
+                .map(tokenId -> {
+                    IntArrayList singleTokenList = new IntArrayList();
+                    singleTokenList.add(tokenId);
+                    return encoding.decode(singleTokenList);
+                })
                 .filter(Objects::nonNull)
                 .toList();
     }
 
-    private TokenDto toTokenDto(Encoding encoding, Integer tokenId) {
-        IntArrayList singleTokenList = new IntArrayList();
-        singleTokenList.add(tokenId);
-        String tokenText = encoding.decode(singleTokenList);
-
-        return tokenText.isEmpty() ? null : TokenDto.builder().token(tokenText).id(tokenId).build();
-    }
-
     private Encoding getEncoding(TokenizeRequestDto requestDto) {
-        ModelType modelType = getModelType(requestDto);
-        return encodingRegistry.getEncodingForModel(modelType);
-    }
-
-    private ModelType getModelType(TokenizeRequestDto requestDto) {
-        return Optional.ofNullable(requestDto.getModelType())
-                .orElse(ModelType.GPT_4O);
-    }
-
-    private int getWordCount(String text) {
-        return text.trim().isEmpty()
-                ? 0
-                : text.trim().split("\\s+").length;
-    }
-
-    private double getRatio(int wordCount, double tokenCount) {
-        return (wordCount > 0)
-                ? (tokenCount / wordCount)
-                : 0.0;
+        return encodingRegistry.getEncodingForModel(ModelType.GPT_4O);
     }
 } 

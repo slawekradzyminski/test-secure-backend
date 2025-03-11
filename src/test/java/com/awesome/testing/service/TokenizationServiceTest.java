@@ -1,9 +1,7 @@
 package com.awesome.testing.service;
 
-import com.awesome.testing.dto.tokenizer.TokenDto;
 import com.awesome.testing.dto.tokenizer.TokenizeRequestDto;
 import com.awesome.testing.dto.tokenizer.TokenizeResponseDto;
-import com.knuddels.jtokkit.api.ModelType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -20,45 +18,21 @@ class TokenizationServiceTest {
     }
 
     @Test
-    void shouldTokenizeAndCalculateStatsForValidText() {
+    void shouldTokenizeAndReturnTokens() {
         // given
         String helloWorld = "Hello, world!";
         TokenizeRequestDto dto = TokenizeRequestDto.builder()
-                .modelType(ModelType.GPT_4O)
                 .text(helloWorld)
+                .modelName("gpt2")
                 .build();
 
         // when
         TokenizeResponseDto response = service.tokenize(dto);
 
         // then
-        assertThat(response.getTokenMap()).isNotEmpty();
-        assertThat(response.getTokenCount()).isEqualTo(4);
-        assertThat(response.getTokenMap()).containsExactly(
-                TokenDto.builder().token("Hello").id(13225).build(),
-                TokenDto.builder().token(",").id(11).build(),
-                TokenDto.builder().token(" world").id(2375).build(),
-                TokenDto.builder().token("!").id(0).build()
-        );
-        assertThat(response.getInputCharsCount()).isEqualTo(helloWorld.length());
-        assertThat(response.getInputWordsCount()).isEqualTo(2);
-        assertThat(response.getTokenToWordRatio()).isPositive();
-    }
-
-    @Test
-    void shouldUseDefaultModelWhenModelTypeIsNull() {
-        // given
-        TokenizeRequestDto dto = TokenizeRequestDto.builder()
-                .modelType(null)
-                .text("Hello world!")
-                .build();
-
-        // when
-        TokenizeResponseDto response = service.tokenize(dto);
-
-        // then
-        assertThat(response.getTokenMap()).isNotEmpty();
-        assertThat(response.getTokenCount()).isGreaterThan(0);
+        assertThat(response.getTokens()).isNotEmpty();
+        assertThat(response.getTokens()).containsExactly("Hello", ",", "world", "!");
+        assertThat(response.getModelName()).isEqualTo("gpt2");
     }
 
     @Test
@@ -66,14 +40,14 @@ class TokenizationServiceTest {
         // given
         TokenizeRequestDto dto = TokenizeRequestDto.builder()
                 .text("   ") // only spaces
+                .modelName("gpt2")
                 .build();
 
         // when
         TokenizeResponseDto response = service.tokenize(dto);
 
         // then
-        assertThat(response.getInputCharsCount()).isEqualTo(3);
-        assertThat(response.getInputWordsCount()).isEqualTo(0);
-        assertThat(response.getTokenToWordRatio()).isEqualTo(0.0);
+        assertThat(response.getTokens()).isEmpty();
+        assertThat(response.getModelName()).isEqualTo("gpt2");
     }
 }

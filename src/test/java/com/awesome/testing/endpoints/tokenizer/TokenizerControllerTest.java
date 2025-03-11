@@ -1,6 +1,5 @@
 package com.awesome.testing.endpoints.tokenizer;
 
-import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.tokenizer.TokenizeRequestDto;
 import com.awesome.testing.dto.tokenizer.TokenizeResponseDto;
 import com.awesome.testing.dto.user.Role;
@@ -14,53 +13,55 @@ import java.util.List;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class TokenizerControllerTest extends DomainHelper {
+public class TokenizerControllerTest extends AbstractTokenizerTest {
 
-    private static final String API_TOKENIZER = "/api/tokenizer";
+    private static final String TOKENIZER_ENDPOINT = "/api/tokenizer";
 
-    @SuppressWarnings("ConstantConditions")
     @Test
-    void shouldReturn200WithTokenStats() {
+    void shouldTokenizeText() {
         // given
-        UserRegisterDto clientDto = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String clientToken = getToken(clientDto);
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String authToken = getToken(user);
 
         TokenizeRequestDto requestDto = TokenizeRequestDto.builder()
-            .text("Hello, world!")
-            .build();
+                .text("Hello from Java test")
+                .modelName("gpt2")
+                .build();
+
+        stubTokenizeSuccess();
 
         // when
         ResponseEntity<TokenizeResponseDto> response = executePost(
-                API_TOKENIZER,
+                TOKENIZER_ENDPOINT,
                 requestDto,
-                getHeadersWith(clientToken),
+                getHeadersWith(authToken),
                 TokenizeResponseDto.class
         );
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().getTokenMap()).hasSize(4);
-        assertThat(response.getBody().getTokenCount()).isEqualTo(4);
-        assertThat(response.getBody().getInputCharsCount()).isEqualTo(13);
-        assertThat(response.getBody().getInputWordsCount()).isEqualTo(2);
-        assertThat(response.getBody().getTokenToWordRatio()).isGreaterThan(0.0);
+        TokenizeResponseDto body = response.getBody();
+        assertThat(body).isNotNull();
+        assertThat(body.getTokens()).containsExactly("Hello", "from", "Java", "test");
+        assertThat(body.getModelName()).isEqualTo("gpt2");
     }
 
     @Test
     void shouldReturn400WhenTextIsBlank() {
         // given
-        UserRegisterDto clientDto = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String clientToken = getToken(clientDto);
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String authToken = getToken(user);
 
         TokenizeRequestDto requestDto = TokenizeRequestDto.builder()
-            .text("")
-            .build();
+                .text("")
+                .modelName("gpt2")
+                .build();
 
         // when
         ResponseEntity<Object> response = executePost(
-                API_TOKENIZER,
+                TOKENIZER_ENDPOINT,
                 requestDto,
-                getHeadersWith(clientToken),
+                getHeadersWith(authToken),
                 Object.class
         );
 
@@ -69,22 +70,47 @@ class TokenizerControllerTest extends DomainHelper {
     }
 
     @Test
-    void shouldReturn401WhenNoTokenProvided() {
+    void shouldReturn401WhenNoAuth() {
         // given
         TokenizeRequestDto requestDto = TokenizeRequestDto.builder()
-            .text("Hello, world!")
-            .build();
+                .text("Hello world")
+                .modelName("gpt2")
+                .build();
 
         // when
-        ResponseEntity<Object> response = executePost(
-                API_TOKENIZER,
+        ResponseEntity<TokenizeResponseDto> response = executePost(
+                TOKENIZER_ENDPOINT,
                 requestDto,
-                null,
-                Object.class
+                getJsonOnlyHeaders(),
+                TokenizeResponseDto.class
         );
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
+    @Test
+    void shouldReturn500WhenSidecarFails() {
+        // given
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String authToken = getToken(user);
+
+        TokenizeRequestDto requestDto = TokenizeRequestDto.builder()
+                .text("Hello world")
+                .modelName("gpt2")
+                .build();
+
+        stubTokenizeServerError();
+
+        // when
+        ResponseEntity<Object> response = executePost(
+                TOKENIZER_ENDPOINT,
+                requestDto,
+                getHeadersWith(authToken),
+                Object.class
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }

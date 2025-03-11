@@ -2,6 +2,8 @@ package com.awesome.testing.service;
 
 import com.awesome.testing.controller.exception.WebClientException;
 import com.awesome.testing.dto.embeddings.*;
+import com.awesome.testing.dto.tokenizer.TokenizeRequestDto;
+import com.awesome.testing.dto.tokenizer.TokenizeResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -19,6 +21,10 @@ import java.time.Duration;
 public class SidecarService {
 
     private final WebClient embeddingsWebClient;
+
+    public Mono<TokenizeResponseDto> tokenize(TokenizeRequestDto request) {
+        return sendRequest("/tokenize", request, TokenizeResponseDto.class, "tokenize");
+    }
 
     public Mono<EmbeddingsResponseDto> getEmbeddings(EmbeddingsRequestDto request) {
         return sendRequest("/embeddings", request, EmbeddingsResponseDto.class, "embeddings");
