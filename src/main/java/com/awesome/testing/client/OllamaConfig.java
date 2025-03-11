@@ -1,4 +1,4 @@
-package com.awesome.testing.config;
+package com.awesome.testing.client;
 
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;

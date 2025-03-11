@@ -71,11 +71,3 @@ jobs:
 
       - name: Run Docker verification
         run: ./scripts/verify-docker.sh
-
-      - name: Upload docker.log as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-log
-          path: docker.log
-          retention-days: 1
