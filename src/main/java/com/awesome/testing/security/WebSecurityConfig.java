@@ -51,7 +51,8 @@ public class WebSecurityConfig {
             "/swagger-ui/**",
             "/swagger-resources/**",
             "/webjars/**",
-            "/actuator/**"
+            "/actuator/**",
+            "/ws-traffic/**"
     );
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -71,6 +72,10 @@ public class WebSecurityConfig {
         http.authorizeHttpRequests(auth -> {
             // First, allow async dispatch
             auth.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll();
+            
+            // Allow OPTIONS requests for CORS preflight
+            auth.requestMatchers(request -> 
+                "OPTIONS".equals(request.getMethod())).permitAll();
             
             // Then allow public endpoints
             ALLOWED_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(new AntPathRequestMatcher(endpoint)).permitAll());
@@ -116,7 +121,7 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:8081"));
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of(
             "Authorization", 
@@ -124,7 +129,8 @@ public class WebSecurityConfig {
             "X-Requested-With", 
             "Accept", 
             "Cache-Control",
-            "Last-Event-ID"
+            "Last-Event-ID",
+            "x-requested-with"
         ));
         configuration.setExposedHeaders(List.of(
             "Content-Type",
@@ -133,6 +139,7 @@ public class WebSecurityConfig {
             "Last-Event-ID"
         ));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

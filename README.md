@@ -224,6 +224,87 @@ ollama:
   base-url: http://localhost:11434  # Default Ollama server URL
 ```
 
+## WebSocket Traffic Monitoring
+
+The application includes a real-time HTTP traffic monitoring system implemented with WebSockets. This feature allows tracking and visualization of all HTTP requests in the application.
+
+### Features
+
+- Real-time tracking of HTTP requests and responses
+- Captures HTTP method, path, status code, response time, and timestamp
+- Events are broadcast via WebSocket to connected clients
+- Secured access requiring authentication
+
+### Architecture
+
+- Traffic is captured using a servlet filter (`TrafficLoggingFilter`)
+- Events are stored in a thread-safe concurrent queue
+- A scheduled publisher broadcasts events to WebSocket subscribers
+- Uses STOMP protocol over WebSocket for messaging
+
+### WebSocket Endpoints
+
+- WebSocket Connection: `/ws-traffic`
+- Subscription Topic: `/topic/traffic`
+- Data Format:
+  ```json
+  {
+    "method": "GET",
+    "path": "/api/products",
+    "status": 200,
+    "durationMs": 45,
+    "timestamp": "2023-03-22T10:15:30.123Z"
+  }
+  ```
+
+### Usage
+
+1. Connect to the WebSocket endpoint:
+   ```javascript
+   const socket = new SockJS('/ws-traffic');
+   const stompClient = Stomp.over(socket);
+   
+   // Include JWT token for authentication
+   const headers = {
+     'Authorization': 'Bearer ' + jwtToken
+   };
+   
+   stompClient.connect(headers, function(frame) {
+     // Subscribe to traffic events
+     stompClient.subscribe('/topic/traffic', function(message) {
+       const trafficEvent = JSON.parse(message.body);
+       console.log('New traffic event:', trafficEvent);
+       // Handle event (e.g., update UI)
+     });
+   });
+   ```
+
+2. Traffic events are automatically captured and broadcast as they occur in the application
+
+### Visualization Tool
+
+A simple HTML-based visualization tool is provided to help monitor traffic events in real-time:
+
+1. Open the `traffic-monitor.html` file in your browser
+2. Enter your server URL (default: http://localhost:4001)
+3. Paste a valid JWT token (obtained from `/users/signin` endpoint)
+4. Click "Connect" to establish the WebSocket connection
+5. Watch as HTTP traffic events appear in real-time
+
+![Traffic Monitor Screenshot](https://example.com/traffic-monitor-screenshot.png)
+
+### API Endpoints
+
+- GET `/api/traffic/info` - Get WebSocket connection information (authenticated)
+  - Returns:
+    ```json
+    {
+      "endpoint": "/ws-traffic",
+      "topic": "/topic/traffic",
+      "description": "WebSocket endpoint for real-time HTTP traffic events"
+    }
+    ```
+
 ### Test Strategy
 
 The application follows a comprehensive testing strategy focusing on endpoint-level integration tests. Key aspects include:
