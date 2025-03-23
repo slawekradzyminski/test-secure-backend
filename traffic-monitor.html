@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Traffic Monitor</title>
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .status {
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .connected {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .disconnected {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    .events {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      height: 500px;
+      overflow-y: auto;
+    }
+    .event {
+      border-bottom: 1px solid #eee;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+    .event:last-child {
+      border-bottom: none;
+    }
+    .method {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: bold;
+      color: white;
+      margin-right: 8px;
+    }
+    .GET { background-color: #61affe; }
+    .POST { background-color: #49cc90; }
+    .PUT { background-color: #fca130; }
+    .DELETE { background-color: #f93e3e; }
+    .PATCH { background-color: #50e3c2; }
+    .controls {
+      margin-bottom: 20px;
+    }
+    input, button {
+      padding: 8px;
+      margin-right: 5px;
+    }
+    button {
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    button.disconnect {
+      background-color: #f44336;
+    }
+    button.disconnect:hover {
+      background-color: #d32f2f;
+    }
+    .status-code {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: bold;
+    }
+    .status-2xx { background-color: #d4edda; color: #155724; }
+    .status-3xx { background-color: #fff3cd; color: #856404; }
+    .status-4xx { background-color: #f8d7da; color: #721c24; }
+    .status-5xx { background-color: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>HTTP Traffic Monitor</h1>
+    
+    <div class="header">
+      <div>
+        <span>Connection Status: </span>
+        <span id="connection-status" class="status disconnected">Disconnected</span>
+      </div>
+      <div>
+        <span>Events: </span>
+        <span id="event-count">0</span>
+      </div>
+    </div>
+    
+    <div class="controls">
+      <input type="text" id="server-url" value="http://localhost:4001" placeholder="Server URL">
+      <input type="text" id="token-input" placeholder="JWT Token">
+      <button id="connect-btn">Connect</button>
+      <button id="disconnect-btn" class="disconnect" disabled>Disconnect</button>
+      <button id="clear-btn">Clear Events</button>
+      <button id="direct-connect-btn">Direct Connect</button>
+    </div>
+    
+    <div class="events" id="events-container"></div>
+  </div>
+
+  <script>
+    let stompClient = null;
+    let eventCount = 0;
+    
+    document.getElementById('connect-btn').addEventListener('click', connect);
+    document.getElementById('disconnect-btn').addEventListener('click', disconnect);
+    document.getElementById('clear-btn').addEventListener('click', clearEvents);
+    document.getElementById('direct-connect-btn').addEventListener('click', directConnect);
+    
+    function connect() {
+      const serverUrl = document.getElementById('server-url').value;
+      const token = document.getElementById('token-input').value;
+      
+      if (!token) {
+        alert('Please enter a JWT token');
+        return;
+      }
+      
+      // First get the WebSocket info
+      fetch(`${serverUrl}/api/traffic/info`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Now connect to the WebSocket with the info provided
+        const wsEndpoint = `${serverUrl}${data.webSocketEndpoint}`;
+        const wsTopic = data.topic;
+        
+        const socket = new SockJS(wsEndpoint);
+        stompClient = Stomp.over(socket);
+        
+        // Enable debug logging to diagnose issues
+        stompClient.debug = function(str) {
+          console.log(str);
+        };
+        
+        const headers = {
+          'Authorization': `Bearer ${token}`
+        };
+        
+        stompClient.connect(headers, frame => {
+          // Connection succeeded
+          document.getElementById('connection-status').textContent = 'Connected';
+          document.getElementById('connection-status').className = 'status connected';
+          document.getElementById('connect-btn').disabled = true;
+          document.getElementById('disconnect-btn').disabled = false;
+          document.getElementById('direct-connect-btn').disabled = true;
+          
+          // Subscribe to the traffic topic
+          stompClient.subscribe(wsTopic, message => {
+            const trafficEvent = JSON.parse(message.body);
+            addEventToDisplay(trafficEvent);
+          });
+          
+          addSystemMessage('Connected to WebSocket server');
+        }, error => {
+          // Connection failed
+          console.error('STOMP error:', error);
+          document.getElementById('connection-status').textContent = 'Error: ' + error;
+          document.getElementById('connection-status').className = 'status disconnected';
+          addSystemMessage(`Connection error: ${error}`);
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching WebSocket info:', error);
+        alert(`Failed to get WebSocket info: ${error.message}`);
+      });
+    }
+    
+    function disconnect() {
+      if (stompClient !== null) {
+        stompClient.disconnect();
+        stompClient = null;
+        
+        document.getElementById('connection-status').textContent = 'Disconnected';
+        document.getElementById('connection-status').className = 'status disconnected';
+        document.getElementById('connect-btn').disabled = false;
+        document.getElementById('disconnect-btn').disabled = true;
+        document.getElementById('direct-connect-btn').disabled = true;
+        
+        addSystemMessage('Disconnected from WebSocket server');
+      }
+    }
+    
+    function clearEvents() {
+      document.getElementById('events-container').innerHTML = '';
+      eventCount = 0;
+      document.getElementById('event-count').textContent = eventCount;
+    }
+    
+    function addEventToDisplay(event) {
+      eventCount++;
+      document.getElementById('event-count').textContent = eventCount;
+      
+      const eventsContainer = document.getElementById('events-container');
+      const eventElement = document.createElement('div');
+      eventElement.className = 'event';
+      
+      // Determine status code class
+      let statusClass = 'status-2xx';
+      if (event.status >= 300 && event.status < 400) {
+        statusClass = 'status-3xx';
+      } else if (event.status >= 400 && event.status < 500) {
+        statusClass = 'status-4xx';
+      } else if (event.status >= 500) {
+        statusClass = 'status-5xx';
+      }
+      
+      // Format the timestamp
+      const timestamp = new Date(event.timestamp).toLocaleTimeString();
+      
+      eventElement.innerHTML = `
+        <span class="method ${event.method}">${event.method}</span>
+        <span class="path">${event.path}</span>
+        <span class="status-code ${statusClass}">${event.status}</span>
+        <span class="duration">${event.durationMs}ms</span>
+        <span class="timestamp">${timestamp}</span>
+      `;
+      
+      eventsContainer.prepend(eventElement);
+    }
+    
+    function addSystemMessage(message) {
+      const eventsContainer = document.getElementById('events-container');
+      const eventElement = document.createElement('div');
+      eventElement.className = 'event';
+      eventElement.innerHTML = `<i>${message}</i>`;
+      eventsContainer.prepend(eventElement);
+    }
+    
+    function directConnect() {
+      const serverUrl = document.getElementById('server-url').value;
+      const token = document.getElementById('token-input').value;
+      
+      if (!token) {
+        alert('Please enter a JWT token');
+        return;
+      }
+      
+      // Connect directly to the WebSocket endpoint
+      const socket = new SockJS(`${serverUrl}/ws-traffic`);
+      stompClient = Stomp.over(socket);
+      
+      // Optional: Enable debug logging to see what's happening
+      stompClient.debug = function(str) {
+        console.log(str);
+      };
+      
+      const headers = {
+        'Authorization': `Bearer ${token}`
+      };
+      
+      stompClient.connect(headers, frame => {
+        // Connection succeeded
+        document.getElementById('connection-status').textContent = 'Connected';
+        document.getElementById('connection-status').className = 'status connected';
+        document.getElementById('connect-btn').disabled = true;
+        document.getElementById('disconnect-btn').disabled = false;
+        document.getElementById('direct-connect-btn').disabled = true;
+        
+        // Subscribe to the traffic topic
+        stompClient.subscribe('/topic/traffic', message => {
+          const trafficEvent = JSON.parse(message.body);
+          addEventToDisplay(trafficEvent);
+        });
+        
+        addSystemMessage('Connected directly to WebSocket server');
+      }, error => {
+        // Connection failed
+        console.error('STOMP error:', error);
+        document.getElementById('connection-status').textContent = 'Error: ' + error;
+        document.getElementById('connection-status').className = 'status disconnected';
+        addSystemMessage(`Connection error: ${error}`);
+      });
+    }
+  </script>
+</body>
+</html> 
