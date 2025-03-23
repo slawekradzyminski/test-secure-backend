@@ -23,10 +23,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.server.WebFilter;
 import org.springframework.core.annotation.Order;
 import jakarta.servlet.DispatcherType;
 
@@ -73,10 +69,6 @@ public class WebSecurityConfig {
             // First, allow async dispatch
             auth.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll();
             
-            // Allow OPTIONS requests for CORS preflight
-            auth.requestMatchers(request -> 
-                "OPTIONS".equals(request.getMethod())).permitAll();
-            
             // Then allow public endpoints
             ALLOWED_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(new AntPathRequestMatcher(endpoint)).permitAll());
             
@@ -121,7 +113,7 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedOrigins(List.of("http://localhost:8081", "http://127.0.0.1:8081"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of(
             "Authorization", 

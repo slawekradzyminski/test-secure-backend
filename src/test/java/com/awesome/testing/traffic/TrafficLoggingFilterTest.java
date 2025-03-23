@@ -6,17 +6,19 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static com.awesome.testing.factory.ollama.TrafficEventFactory.trafficEvent;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class TrafficLoggingFilterTest {
+@ExtendWith(MockitoExtension.class)
+public class TrafficLoggingFilterTest {
 
     @Mock
     private HttpServletRequest request;
@@ -29,17 +31,18 @@ class TrafficLoggingFilterTest {
 
     private ConcurrentLinkedQueue<TrafficEventDto> trafficQueue;
     private TrafficLoggingFilter trafficLoggingFilter;
+    private TrafficEventDto trafficEvent;
 
     @BeforeEach
     void setUp() {
         // given
-        MockitoAnnotations.openMocks(this);
         trafficQueue = new ConcurrentLinkedQueue<>();
         trafficLoggingFilter = new TrafficLoggingFilter(trafficQueue);
-        
-        when(request.getMethod()).thenReturn("GET");
-        when(request.getRequestURI()).thenReturn("/api/test");
-        when(response.getStatus()).thenReturn(200);
+        trafficEvent = trafficEvent();
+
+        when(request.getMethod()).thenReturn(trafficEvent.getMethod());
+        when(request.getRequestURI()).thenReturn(trafficEvent.getPath());
+        when(response.getStatus()).thenReturn(trafficEvent.getStatus());
     }
 
     @Test
@@ -49,11 +52,10 @@ class TrafficLoggingFilterTest {
 
         // then
         verify(filterChain).doFilter(request, response);
-        assertFalse(trafficQueue.isEmpty());
-        
+        assertThat(trafficQueue).isNotEmpty();
         TrafficEventDto event = trafficQueue.poll();
-        assertEquals("GET", event.getMethod());
-        assertEquals("/api/test", event.getPath());
-        assertEquals(200, event.getStatus());
+        assertThat(event.getMethod()).isEqualTo(trafficEvent.getMethod());
+        assertThat(event.getPath()).isEqualTo(trafficEvent.getPath());
+        assertThat(event.getStatus()).isEqualTo(trafficEvent.getStatus());
     }
 } 

@@ -1,6 +1,7 @@
 # Secure Backend Application
 
-This is a secure backend application built with Spring Boot, featuring JWT authentication, PostgreSQL database, and ActiveMQ messaging.
+This is a secure backend application built with Spring Boot, featuring JWT authentication, PostgreSQL database, and
+ActiveMQ messaging.
 
 ## Profiles
 
@@ -27,6 +28,7 @@ docker compose up --build
 ```
 
 This will start:
+
 - Backend service on port 4001
 - Frontend service on port 8081
 - PostgreSQL database on port 5432
@@ -39,6 +41,7 @@ This will start:
 You can interact with the PostgreSQL database in several ways:
 
 1. Using docker exec and the psql command-line tool:
+
 ```bash
 # Connect to the database
 docker exec -it test-secure-backend-postgres-1 psql -U postgres -d testdb
@@ -56,15 +59,16 @@ SELECT * FROM orders;
 ```
 
 2. Using external tools:
-   - Host: localhost
-   - Port: 5432
-   - Database: testdb
-   - Username: postgres
-   - Password: postgres
+    - Host: localhost
+    - Port: 5432
+    - Database: testdb
+    - Username: postgres
+    - Password: postgres
 
 ### Database Schema
 
 The main tables in the database:
+
 - `app_user`: Stores user information
 - `products`: Stores product catalog
 - `cart_items`: Stores shopping cart items
@@ -73,24 +77,27 @@ The main tables in the database:
 ## API Documentation
 
 The API documentation is available at:
+
 - Swagger UI: http://localhost:4001/swagger-ui.html
 - OpenAPI JSON: http://localhost:4001/v3/api-docs
 
 ## Initial Data
 
 The application automatically sets up initial data when started:
+
 - Admin users (username/password):
-  - admin/admin
-  - admin2/admin2
+    - admin/admin
+    - admin2/admin2
 - Client users:
-  - client/client
-  - client2/client2
-  - client3/client3
+    - client/client
+    - client2/client2
+    - client3/client3
 - Sample products in various categories
 
 ## Security
 
 The application uses JWT tokens for authentication. To access protected endpoints:
+
 1. Get a token using the `/users/signin` endpoint
 2. Include the token in the Authorization header: `Bearer <token>`
 
@@ -140,11 +147,13 @@ Once the application is running, you can access the Swagger UI at:
 ## API Endpoints
 
 ### Authentication
+
 - POST `/users/signin` - Authenticate user and get JWT token
 - POST `/users/signup` - Register a new user
 - GET `/users/refresh` - Refresh JWT token
 
 ### User Management
+
 - GET `/users/me` - Get current user information
 - GET `/users` - Get all users (ADMIN only)
 - GET `/users/{username}` - Get user by username
@@ -152,6 +161,7 @@ Once the application is running, you can access the Swagger UI at:
 - DELETE `/users/{username}` - Delete user (ADMIN only)
 
 ### Products
+
 - GET `/api/products` - Get all products (authenticated)
 - GET `/api/products/{id}` - Get product by ID (authenticated)
 - POST `/api/products` - Create new product (ADMIN only)
@@ -159,6 +169,7 @@ Once the application is running, you can access the Swagger UI at:
 - DELETE `/api/products/{id}` - Delete product (ADMIN only)
 
 ### Shopping Cart
+
 - GET `/api/cart` - Get current user's cart
 - POST `/api/cart/items` - Add item to cart
 - PUT `/api/cart/items/{productId}` - Update item quantity
@@ -166,6 +177,7 @@ Once the application is running, you can access the Swagger UI at:
 - DELETE `/api/cart` - Clear cart
 
 ### Orders
+
 - POST `/api/orders` - Create a new order
 - GET `/api/orders` - Get user's orders
 - GET `/api/orders/{id}` - Get order by ID
@@ -173,52 +185,56 @@ Once the application is running, you can access the Swagger UI at:
 - POST `/api/orders/{id}/cancel` - Cancel order
 
 ### QR Code
+
 - POST `/qr/create` - Generate QR code from text (authenticated)
 
 ### Email
+
 - POST `/email` - Send an email (authenticated users only)
 
 ## Ollama Integration
 
-The application integrates with Ollama to provide AI text generation and chat capabilities. These features are available through secure endpoints that require authentication.
+The application integrates with Ollama to provide AI text generation and chat capabilities. These features are available
+through secure endpoints that require authentication.
 
 ### Ollama Endpoints
 
 - POST `/api/ollama/generate` - Generate text using Ollama models
-  - Single text generation without conversation history
-  - Requires authentication with `ROLE_CLIENT` or `ROLE_ADMIN`
-  - Supports Server-Sent Events (SSE) for streaming responses
-  - Request body:
-    ```json
-    {
-      "model": "llama3.2:1b",
-      "prompt": "Your prompt here",
-      "options": {}
-    }
-    ```
+    - Single text generation without conversation history
+    - Requires authentication with `ROLE_CLIENT` or `ROLE_ADMIN`
+    - Supports Server-Sent Events (SSE) for streaming responses
+    - Request body:
+      ```json
+      {
+        "model": "llama3.2:1b",
+        "prompt": "Your prompt here",
+        "options": {}
+      }
+      ```
 
 - POST `/api/ollama/chat` - Chat with Ollama models
-  - Supports multi-message conversations with history
-  - Client maintains conversation history by sending all previous messages
-  - Requires authentication with `ROLE_CLIENT` or `ROLE_ADMIN`
-  - Supports Server-Sent Events (SSE) for streaming responses
-  - Request body:
-    ```json
-    {
-      "model": "llama3.2:1b",
-      "messages": [
-        { "role": "system", "content": "You are a helpful assistant." },
-        { "role": "user", "content": "Hello!" },
-        { "role": "assistant", "content": "Hi there!" },
-        { "role": "user", "content": "How are you?" }
-      ],
-      "options": {}
-    }
-    ```
+    - Supports multi-message conversations with history
+    - Client maintains conversation history by sending all previous messages
+    - Requires authentication with `ROLE_CLIENT` or `ROLE_ADMIN`
+    - Supports Server-Sent Events (SSE) for streaming responses
+    - Request body:
+      ```json
+      {
+        "model": "llama3.2:1b",
+        "messages": [
+          { "role": "system", "content": "You are a helpful assistant." },
+          { "role": "user", "content": "Hello!" },
+          { "role": "assistant", "content": "Hi there!" },
+          { "role": "user", "content": "How are you?" }
+        ],
+        "options": {}
+      }
+      ```
 
 ### Configuration
 
 The Ollama service can be configured in `application.yml`:
+
 ```yaml
 ollama:
   base-url: http://localhost:11434  # Default Ollama server URL
@@ -226,7 +242,8 @@ ollama:
 
 ## WebSocket Traffic Monitoring
 
-The application includes a real-time HTTP traffic monitoring system implemented with WebSockets. This feature allows tracking and visualization of all HTTP requests in the application.
+The application includes a real-time HTTP traffic monitoring system implemented with WebSockets. This feature allows
+tracking and visualization of all HTTP requests in the application.
 
 ### Features
 
@@ -285,63 +302,75 @@ The application includes a real-time HTTP traffic monitoring system implemented 
 
 A simple HTML-based visualization tool is provided to help monitor traffic events in real-time:
 
-1. Open the `traffic-monitor.html` file in your browser
-2. Enter your server URL (default: http://localhost:4001)
-3. Paste a valid JWT token (obtained from `/users/signin` endpoint)
-4. Click "Connect" to establish the WebSocket connection
-5. Watch as HTTP traffic events appear in real-time
+1. Run the web server on port 8081 (this is CORS requirement, my frontend uses the same port - see `WebSecurityConfig`).
+   Use absolute path
 
-![Traffic Monitor Screenshot](https://example.com/traffic-monitor-screenshot.png)
+```
+jwebserver -p 8081 -d /Users/slawek/IdeaProjects/test-secure-backend
+```
+
+2. Go to `http://localhost:8081/traffic-monitor.html`
+3. Enter your server URL (default: http://localhost:4001)
+4. Paste a valid JWT token (obtained from `/users/signin` endpoint)
+5. Click "Connect" to establish the WebSocket connection
+6. Watch as HTTP traffic events appear in real-time
 
 ### API Endpoints
 
 - GET `/api/traffic/info` - Get WebSocket connection information (authenticated)
-  - Returns:
-    ```json
-    {
-      "endpoint": "/ws-traffic",
-      "topic": "/topic/traffic",
-      "description": "WebSocket endpoint for real-time HTTP traffic events"
-    }
-    ```
+    - Returns:
+      ```json
+      {
+        "endpoint": "/ws-traffic",
+        "topic": "/topic/traffic",
+        "description": "WebSocket endpoint for real-time HTTP traffic events"
+      }
+      ```
 
 ### Test Strategy
 
-The application follows a comprehensive testing strategy focusing on endpoint-level integration tests. Key aspects include:
+The application follows a comprehensive testing strategy focusing on endpoint-level integration tests. Key aspects
+include:
 
 1. **Independent Endpoint Testing**
-   - Each endpoint is tested in isolation
-   - Tests are organized by feature in separate packages
-   - All possible HTTP response codes are tested for each endpoint
+    - Each endpoint is tested in isolation
+    - Tests are organized by feature in separate packages
+    - All possible HTTP response codes are tested for each endpoint
 
 2. **Test Organization**
-   - Tests are ordered by HTTP status code (2xx first, then 4xx, 5xx)
-   - Each test class focuses on a single endpoint functionality
-   - Example test coverage for an endpoint:
-     * 200/201 - Successful operations
-     * 400 - Bad Request (invalid input)
-     * 401 - Unauthorized (no authentication)
-     * 403 - Forbidden (insufficient permissions)
-     * 404 - Not Found (resource doesn't exist)
+    - Tests are ordered by HTTP status code (2xx first, then 4xx, 5xx)
+    - Each test class focuses on a single endpoint functionality
+    - Example test coverage for an endpoint:
+        * 200/201 - Successful operations
+        * 400 - Bad Request (invalid input)
+        * 401 - Unauthorized (no authentication)
+        * 403 - Forbidden (insufficient permissions)
+        * 404 - Not Found (resource doesn't exist)
 
 3. **Test Data Generation**
-   - Uses factory pattern for test data creation
-   - Factories generate random, valid test data using Faker
-   - Located in `test/factory` package
+    - Uses factory pattern for test data creation
+    - Factories generate random, valid test data using Faker
+    - Located in `test/factory` package
 
 4. **Test Structure**
-   - Given/When/Then format for clear test organization
-   - Descriptive test method names indicating the scenario
-   - Comprehensive assertions for response status and body
+    - Given/When/Then format for clear test organization
+    - Descriptive test method names indicating the scenario
+    - Comprehensive assertions for response status and body
 
 Example test class organization:
+
 ```java
 class SomeEndpointTest {
     void shouldReturnSuccessfully() // 200 OK
+
     void shouldCreate() // 201 Created
+
     void shouldGet400WhenInvalidInput()
+
     void shouldGet401WhenNoAuthorizationHeader()
+
     void shouldGet403WhenNotAuthorized()
+
     void shouldGet404WhenNotFound()
 }
 ```

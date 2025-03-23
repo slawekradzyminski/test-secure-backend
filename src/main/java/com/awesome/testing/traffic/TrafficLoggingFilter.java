@@ -30,13 +30,9 @@ public class TrafficLoggingFilter implements Filter {
 
         if (req instanceof HttpServletRequest httpReq && res instanceof HttpServletResponse httpRes) {
             long start = System.currentTimeMillis();
-            
-            // Call the next filter in the chain
             chain.doFilter(req, res);
-            
             long duration = System.currentTimeMillis() - start;
 
-            // Build the event
             TrafficEventDto event = TrafficEventDto.builder()
                     .method(httpReq.getMethod())
                     .path(httpReq.getRequestURI())
@@ -45,7 +41,6 @@ public class TrafficLoggingFilter implements Filter {
                     .timestamp(Instant.now())
                     .build();
 
-            // Add to queue
             trafficQueue.add(event);
         } else {
             chain.doFilter(req, res);

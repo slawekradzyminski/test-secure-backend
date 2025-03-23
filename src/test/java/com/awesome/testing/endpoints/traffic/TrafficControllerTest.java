@@ -1,7 +1,8 @@
-package com.awesome.testing.traffic;
+package com.awesome.testing.endpoints.traffic;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.ErrorDto;
+import com.awesome.testing.dto.traffic.TrafficInfoDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import org.junit.jupiter.api.Test;
@@ -9,37 +10,40 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
-import java.util.Map;
 
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class TrafficControllerTest extends DomainHelper {
+public class TrafficControllerTest extends DomainHelper {
 
+    private static final String API_TRAFFIC_INFO = "/api/traffic/info";
+
+    @SuppressWarnings("ConstantConditions")
     @Test
     void shouldReturnTrafficInfoWhenAuthenticated() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String token = getToken(user);
+        String description = "Connect to the WebSocket endpoint and subscribe to the topic to receive real-time HTTP traffic events";
 
         // when
-        ResponseEntity<Map> response = executeGet(
-                "/api/traffic/info",
+        ResponseEntity<TrafficInfoDto> response = executeGet(
+                API_TRAFFIC_INFO,
                 getHeadersWith(token),
-                Map.class);
+                TrafficInfoDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().get("webSocketEndpoint")).isEqualTo("/ws-traffic");
-        assertThat(response.getBody().get("topic")).isEqualTo("/topic/traffic");
-        assertThat(response.getBody().get("description")).isNotNull();
+        assertThat(response.getBody().getWebSocketEndpoint()).isEqualTo("/ws-traffic");
+        assertThat(response.getBody().getTopic()).isEqualTo("/topic/traffic");
+        assertThat(response.getBody().getDescription()).isEqualTo(description);
     }
 
     @Test
     void shouldGet401WhenNotAuthenticated() {
         // when
         ResponseEntity<ErrorDto> response = executeGet(
-                "/api/traffic/info",
+                API_TRAFFIC_INFO,
                 getJsonOnlyHeaders(),
                 ErrorDto.class);
 

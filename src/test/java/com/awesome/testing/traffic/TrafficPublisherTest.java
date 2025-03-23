@@ -3,16 +3,18 @@ package com.awesome.testing.traffic;
 import com.awesome.testing.dto.traffic.TrafficEventDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
-import java.time.Instant;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import static com.awesome.testing.factory.ollama.TrafficEventFactory.trafficEvent;
 import static org.mockito.Mockito.verify;
 
-class TrafficPublisherTest {
+@ExtendWith(MockitoExtension.class)
+public class TrafficPublisherTest {
 
     @Mock
     private SimpMessagingTemplate messagingTemplate;
@@ -22,8 +24,6 @@ class TrafficPublisherTest {
 
     @BeforeEach
     void setUp() {
-        // given
-        MockitoAnnotations.openMocks(this);
         queue = new ConcurrentLinkedQueue<>();
         trafficPublisher = new TrafficPublisher(queue, messagingTemplate);
     }
@@ -31,14 +31,7 @@ class TrafficPublisherTest {
     @Test
     void shouldBroadcastEventsFromQueue() {
         // given
-        TrafficEventDto event = TrafficEventDto.builder()
-                .method("GET")
-                .path("/api/test")
-                .status(200)
-                .durationMs(100)
-                .timestamp(Instant.now())
-                .build();
-        
+        TrafficEventDto event = trafficEvent();
         queue.add(event);
         
         // when

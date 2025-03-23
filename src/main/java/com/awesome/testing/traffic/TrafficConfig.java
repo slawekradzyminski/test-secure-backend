@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 @Configuration
 public class TrafficConfig {
 
+    @SuppressWarnings("unused")
     @Bean
     public ConcurrentLinkedQueue<TrafficEventDto> trafficQueue() {
         return new ConcurrentLinkedQueue<>();

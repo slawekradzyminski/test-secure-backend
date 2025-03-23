@@ -5,6 +5,8 @@ import com.awesome.testing.config.WebSocketTestConfig;
 import com.awesome.testing.dto.traffic.TrafficEventDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -24,15 +26,16 @@ import org.springframework.web.socket.sockjs.client.SockJsClient;
 import org.springframework.web.socket.sockjs.client.Transport;
 import org.springframework.web.socket.sockjs.client.WebSocketTransport;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static com.awesome.testing.factory.ollama.TrafficEventFactory.trafficEvent;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
@@ -53,66 +56,54 @@ class WebSocketIntegrationTest extends DomainHelper {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    private WebSocketStompClient stompClient;
     private String authToken;
+    private StompSession session;
 
+    @SneakyThrows
     @BeforeEach
     void setup() {
-        // given
-        List<Transport> transports = new ArrayList<>();
-        transports.add(new WebSocketTransport(new StandardWebSocketClient()));
-        
-        stompClient = new WebSocketStompClient(new SockJsClient(transports));
-        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
-        
-        // Create a user and get auth token
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         authToken = getToken(user);
+
+        session = setupWebsocketSession();
+    }
+
+    @AfterEach
+    public void cleanUp() {
+        session.disconnect();
     }
 
     @Test
-    void shouldReceiveTrafficEventViaWebSocket() throws Exception {
+    void shouldReceiveTrafficEventViaWebSocket() {
         // given
-        WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
-        headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + authToken);
-        
-        // Connect to the WebSocket to verify connectivity
-        StompSession session = stompClient
-                .connect(getWsUrl(), headers, new StompSessionHandlerAdapter() {})
-                .get(5, TimeUnit.SECONDS);
-
-        // Create a test event and add it to the queue
-        TrafficEventDto testEvent = TrafficEventDto.builder()
-                .method("TEST")
-                .path("/test-websocket")
-                .status(200)
-                .durationMs(123)
-                .timestamp(Instant.now())
-                .build();
-        
+        TrafficEventDto testEvent = trafficEvent();
         trafficQueue.add(testEvent);
 
         // when
         trafficPublisher.broadcastTraffic();
 
         // then
-        // Verify that the publisher tried to send a message to the correct destination
         ArgumentCaptor<TrafficEventDto> eventCaptor = ArgumentCaptor.forClass(TrafficEventDto.class);
         verify(messagingTemplate, atLeastOnce()).convertAndSend(eq("/topic/traffic"), eventCaptor.capture());
-        
-        // Get the last captured event
         List<TrafficEventDto> capturedEvents = eventCaptor.getAllValues();
-        TrafficEventDto capturedEvent = capturedEvents.get(capturedEvents.size() - 1);
-        
-        // Verify the event data
-        assertNotNull(capturedEvent);
-        assertEquals("TEST", capturedEvent.getMethod());
-        assertEquals("/test-websocket", capturedEvent.getPath());
-        assertEquals(200, capturedEvent.getStatus());
-        assertEquals(123, capturedEvent.getDurationMs());
-        
-        // Clean up
-        session.disconnect();
+        TrafficEventDto capturedEvent = capturedEvents.getLast();
+        assertThat(capturedEvent.getMethod()).isEqualTo(testEvent.getMethod());
+        assertThat(capturedEvent.getPath()).isEqualTo(testEvent.getPath());
+        assertThat(capturedEvent.getStatus()).isEqualTo(testEvent.getStatus());
+        assertThat(capturedEvent.getDurationMs()).isEqualTo(testEvent.getDurationMs());
+    }
+
+    private StompSession setupWebsocketSession() throws InterruptedException, ExecutionException, TimeoutException {
+        List<Transport> transports = new ArrayList<>();
+        transports.add(new WebSocketTransport(new StandardWebSocketClient()));
+        WebSocketStompClient stompClient = new WebSocketStompClient(new SockJsClient(transports));
+        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+
+        WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
+        headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + authToken);
+        return stompClient
+                .connectAsync(getWsUrl(), headers, new StompSessionHandlerAdapter() {})
+                .get(5, TimeUnit.SECONDS);
     }
 
     private String getWsUrl() {
