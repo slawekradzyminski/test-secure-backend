@@ -56,4 +56,8 @@ logging:
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
 ollama:
-  base-url: http://ollama:11434 
+  base-url: http://ollama:11434
+
+python:
+  sidecar:
+    url: http://python-embeddings:5000 
