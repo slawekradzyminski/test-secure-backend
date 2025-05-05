@@ -78,8 +78,8 @@ The main tables in the database:
 
 The API documentation is available at:
 
-- Swagger UI: http://localhost:4001/swagger-ui.html
-- OpenAPI JSON: http://localhost:4001/v3/api-docs
+- Swagger UI: [http://localhost:4001/swagger-ui/index.html](http://localhost:4001/swagger-ui/index.html)
+- OpenAPI JSON: [http://localhost:4001/v3/api-docs](http://localhost:4001/v3/api-docs)
 
 ## Initial Data
 
@@ -138,11 +138,6 @@ The application will start on `http://localhost:8080`
 ```bash
 mvn test
 ```
-
-## API Documentation
-
-Once the application is running, you can access the Swagger UI at:
-`http://localhost:4001/swagger-ui/index.html`
 
 ## API Endpoints
 
