@@ -73,7 +73,6 @@ public class UserService {
         updateIfNotNull(userDto.getEmail(), UserEntity::setEmail, existingUser);
         updateIfNotNull(userDto.getFirstName(), UserEntity::setFirstName, existingUser);
         updateIfNotNull(userDto.getLastName(), UserEntity::setLastName, existingUser);
-        updateIfNotNull(userDto.getRoles(), UserEntity::setRoles, existingUser);
 
         return userRepository.save(existingUser);
     }
