@@ -44,7 +44,6 @@ public class EditUserControllerTest extends DomainHelper {
 
         assertThat(loginResponse.getLastName()).isEqualTo(userEditDto.getLastName());
         assertThat(loginResponse.getFirstName()).isEqualTo(userEditDto.getFirstName());
-        assertThat(loginResponse.getRoles()).isEqualTo(userEditDto.getRoles());
         assertThat(loginResponse.getEmail()).isEqualTo(userEditDto.getEmail());
     }
 
@@ -100,7 +99,6 @@ public class EditUserControllerTest extends DomainHelper {
         String clientToken = getToken(user);
         UserEditDto userEditDto = UserEditDto.builder()
                 .email("")
-                .roles(List.of(Role.ROLE_ADMIN))
                 .firstName("abcde")
                 .lastName("abcde")
                 .build();
@@ -176,7 +174,6 @@ public class EditUserControllerTest extends DomainHelper {
     private UserEditDto getRandomUserEditBody() {
         return UserEditDto.builder()
                 .email(getRandomEmail())
-                .roles(List.of(Role.ROLE_ADMIN))
                 .firstName(RandomString.make(10))
                 .lastName(RandomString.make(10))
                 .build();

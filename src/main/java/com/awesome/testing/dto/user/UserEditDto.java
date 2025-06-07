@@ -7,15 +7,10 @@ import lombok.Data;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import java.util.List;
 
 @Data
 @Builder
 public class UserEditDto {
-
-    @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
-    @Schema(description = "Username", example = "johndoe")
-    private String username;
 
     @Email(message = "Email should be valid")
     @NotBlank(message = "Email is required")
@@ -27,10 +22,7 @@ public class UserEditDto {
     private String firstName;
 
     @Size(min = 4, max = 255, message = "Minimum lastName length: 4 characters")
-    @Schema(description = "Last name", example = "Doe")
+    @Schema(description = "Last name", example = "Boyd")
     private String lastName;
-
-    @Schema(description = "User roles", example = "[\"ROLE_CLIENT\"]")
-    private List<Role> roles;
 
 }
