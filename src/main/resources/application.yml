@@ -1,8 +1,10 @@
 spring:
   profiles:
-    active: docker
+    active: local
   main:
     allow-bean-definition-overriding: true
+  codec:
+    max-in-memory-size: 20MB  # Increase codec buffer size
 
 server:
   servlet:
@@ -10,6 +12,9 @@ server:
       charset: UTF-8
       enabled: true
       force: true
+  tomcat:
+    max-http-form-post-size: 20MB
+    max-swallow-size: 20MB
 
 logging:
   file:
@@ -57,4 +62,11 @@ JmsSender:
 
 ollama:
   base-url: http://localhost:11434
+
+python:
+  sidecar:
+    url: http://localhost:5000
+    timeout: 180000  # 3 minutes in milliseconds
+    max-connections: 500
+    max-buffer-size: 20MB
 
