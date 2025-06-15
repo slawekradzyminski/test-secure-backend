@@ -12,7 +12,7 @@ public class OllamaRequestFactory {
 
     public static StreamedRequestDto validStreamedRequest() {
         return StreamedRequestDto.builder()
-                .model("llama3.2:1b")
+                .model("qwen3:0.6b")
                 .prompt("test prompt")
                 .options(null)
                 .build();
@@ -28,7 +28,7 @@ public class OllamaRequestFactory {
 
     public static ChatRequestDto validChatRequest() {
         return ChatRequestDto.builder()
-                .model("llama3.2:1b")
+                .model("qwen3:0.6b")
                 .messages(List.of(
                         ChatMessageDto.builder()
                                 .role("user")

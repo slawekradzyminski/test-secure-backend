@@ -44,9 +44,9 @@ class OllamaServiceTest {
     @Test
     void shouldStreamResponse() {
         // given
-        StreamedRequestDto request = new StreamedRequestDto("llama3.2:1b", "test prompt", null);
-        GenerateResponseDto response1 = new GenerateResponseDto("llama3.2:1b", "2024-02-21", "Hello", false, null, 100L);
-        GenerateResponseDto response2 = new GenerateResponseDto("llama3.2:1b", "2024-02-21", "World", true, null, 200L);
+        StreamedRequestDto request = new StreamedRequestDto("qwen3:0.6b", "test prompt", null);
+        GenerateResponseDto response1 = new GenerateResponseDto("qwen3:0.6b", "2024-02-21", "Hello", false, null, 100L);
+        GenerateResponseDto response2 = new GenerateResponseDto("qwen3:0.6b", "2024-02-21", "World", true, null, 200L);
 
         // when
         when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
@@ -88,7 +88,7 @@ class OllamaServiceTest {
     void shouldStreamChatResponse() {
         // given
         ChatRequestDto request = ChatRequestDto.builder()
-                .model("llama3.2:1b")
+                .model("qwen3:0.6b")
                 .messages(List.of(
                         ChatMessageDto.builder()
                                 .role("user")
@@ -99,7 +99,7 @@ class OllamaServiceTest {
                 .build();
 
         ChatResponseDto response1 = ChatResponseDto.builder()
-                .model("llama3.2:1b")
+                .model("qwen3:0.6b")
                 .createdAt("2024-02-21")
                 .message(ChatMessageDto.builder()
                         .role("assistant")
@@ -109,7 +109,7 @@ class OllamaServiceTest {
                 .build();
 
         ChatResponseDto response2 = ChatResponseDto.builder()
-                .model("llama3.2:1b")
+                .model("qwen3:0.6b")
                 .createdAt("2024-02-21")
                 .message(ChatMessageDto.builder()
                         .role("assistant")

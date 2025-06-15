@@ -201,7 +201,7 @@ through secure endpoints that require authentication.
     - Request body:
       ```json
       {
-        "model": "llama3.2:1b",
+        "model": "qwen3:0.6b",
         "prompt": "Your prompt here",
         "options": {}
       }
@@ -215,7 +215,7 @@ through secure endpoints that require authentication.
     - Request body:
       ```json
       {
-        "model": "llama3.2:1b",
+        "model": "qwen3:0.6b",
         "messages": [
           { "role": "system", "content": "You are a helpful assistant." },
           { "role": "user", "content": "Hello!" },

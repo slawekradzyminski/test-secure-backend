@@ -43,7 +43,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         assertThat(response.getBody()).containsAnyOf("Hi", "there", "friend");
 
         verify(postRequestedFor(urlEqualTo("/api/chat"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("llama3.2:1b")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
                 .withRequestBody(matchingJsonPath("$.messages[0].role", equalTo("user")))
                 .withRequestBody(matchingJsonPath("$.messages[0].content", equalTo("Hello")))
                 .withRequestBody(matchingJsonPath("$.stream", equalTo("true"))));
@@ -107,7 +107,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/json;charset=UTF-8");
-        assertThat(response.getBody().getError()).isEqualTo("model 'llama3.2:1b' not found");
+        assertThat(response.getBody().getError()).isEqualTo("model 'qwen3:0.6b' not found");
     }
 
     @Test

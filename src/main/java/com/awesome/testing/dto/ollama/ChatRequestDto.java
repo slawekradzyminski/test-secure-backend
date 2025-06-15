@@ -20,7 +20,7 @@ public class ChatRequestDto {
     @Schema(
             description = "Model to use. Only this model is downloaded automatically. " +
                     "Other model have to be manually downloaded on Ollama server",
-            example = "llama3.2:1b"
+            example = "qwen3:0.6b"
     )
     private String model;
 
