@@ -130,4 +130,30 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
         assertThat(response.getBody()).contains("Internal server error");
     }
 
+    @Test
+    void shouldPassThinkFlagInGenerateRequest() {
+        // given
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String authToken = getToken(user);
+        StreamedRequestDto request = validStreamedRequestWithThink();
+        OllamaMock.stubSuccessfulGeneration();
+
+        // when
+        ResponseEntity<String> response = executePostForEventStream(
+                request,
+                getHeadersWith(authToken),
+                String.class,
+                OLLAMA_GENERATE_ENDPOINT
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getContentType().toString())
+                .isEqualTo("text/event-stream;charset=UTF-8");
+
+        verify(postRequestedFor(urlEqualTo("/api/generate"))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
+                .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
+    }
+
 }

@@ -75,12 +75,13 @@ public class OllamaService {
     }
 
     private GenerateRequestDto getStreamingRequest(StreamedRequestDto request) {
-        return new GenerateRequestDto(
-            request.getModel(),
-            request.getPrompt(),
-            true,
-            request.getOptions()
-        );
+        return GenerateRequestDto.builder()
+            .model(request.getModel())
+            .prompt(request.getPrompt())
+            .stream(true)
+            .options(request.getOptions())
+            .think(request.getThink())
+            .build();
     }
 
     private double calculateTimeDifferenceInSeconds(String start, String end) {

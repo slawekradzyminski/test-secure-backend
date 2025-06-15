@@ -24,4 +24,8 @@ public class StreamedRequestDto {
 
     @Schema(description = "Options", example = "{ \"temperature\": 0.5 }")
     Map<String, Object> options;
+
+    @Schema(description = "Should the model think before responding?", example = "false")
+    @Builder.Default
+    Boolean think = false;
 }

@@ -68,4 +68,12 @@ public class ChatRequestDto {
     @Schema(hidden = true)
     @Builder.Default
     private Integer keepAlive = 10000;
+
+    /**
+     * Should the model think before responding?
+     * Defaults to false.
+     */
+    @Schema(description = "Should the model think before responding?", example = "false")
+    @Builder.Default
+    private Boolean think = false;
 } 

@@ -18,6 +18,15 @@ public class OllamaRequestFactory {
                 .build();
     }
 
+    public static StreamedRequestDto validStreamedRequestWithThink() {
+        return StreamedRequestDto.builder()
+                .model("qwen3:0.6b")
+                .prompt("test prompt")
+                .options(null)
+                .think(true)
+                .build();
+    }
+
     public static StreamedRequestDto invalidStreamedRequest() {
         return StreamedRequestDto.builder()
                 .model("")
@@ -36,6 +45,20 @@ public class OllamaRequestFactory {
                                 .build()
                 ))
                 .stream(true)
+                .build();
+    }
+
+    public static ChatRequestDto validChatRequestWithThink() {
+        return ChatRequestDto.builder()
+                .model("qwen3:0.6b")
+                .messages(List.of(
+                        ChatMessageDto.builder()
+                                .role("user")
+                                .content("Hello")
+                                .build()
+                ))
+                .stream(true)
+                .think(true)
                 .build();
     }
 
