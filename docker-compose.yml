@@ -63,13 +63,11 @@ services:
       - my-private-ntwk
 
   ollama:
-    image: slawekradzyminski/ollama:qwen3-0.6b
+    image: slawekradzyminski/ollama:qwen3-thinking
     restart: unless-stopped
     hostname: ollama
     ports:
       - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
     environment:
       - OLLAMA_MODELS_DIR=/root/.ollama
     networks:
