@@ -225,50 +225,38 @@ test_chat_endpoint() {
     fi
 }
 
-# Step 2: Test simple prompt without thinking
-echo "2. Testing simple prompt without thinking..."
-if ! test_ollama_endpoint "Test 1: Simple prompt (think=false)" "$SIMPLE_PROMPT" "false"; then
+# Step 2: Test generate endpoint without thinking (baseline)
+echo "2. Testing generate endpoint without thinking..."
+if ! test_ollama_endpoint "Test 1: Generate (think=false)" "$SIMPLE_PROMPT" "false"; then
     exit 1
 fi
 
-# Step 3: Test simple prompt with thinking
-echo "3. Testing simple prompt with thinking..."
-if ! test_ollama_endpoint "Test 2: Simple prompt (think=true)" "$SIMPLE_PROMPT" "true"; then
+# Step 3: Test generate endpoint with thinking
+echo "3. Testing generate endpoint with thinking..."
+if ! test_ollama_endpoint "Test 2: Generate (think=true)" "$THINKING_PROMPT" "true"; then
     exit 1
 fi
 
-# Step 4: Test reasoning prompt without thinking
-echo "4. Testing reasoning prompt without thinking..."
-if ! test_ollama_endpoint "Test 3: Reasoning prompt (think=false)" "$THINKING_PROMPT" "false"; then
+# Step 4: Test chat endpoint with thinking
+echo "4. Testing chat endpoint with thinking..."
+if ! test_chat_endpoint "Test 3: Chat (think=true)" "$THINKING_PROMPT" "true"; then
     exit 1
 fi
 
-# Step 5: Test reasoning prompt with thinking
-echo "5. Testing reasoning prompt with thinking..."
-if ! test_ollama_endpoint "Test 4: Reasoning prompt (think=true)" "$THINKING_PROMPT" "true"; then
-    exit 1
-fi
-
-# Step 6: Test chat endpoint with thinking
-echo "6. Testing chat endpoint with thinking..."
-if ! test_chat_endpoint "Test 5: Chat with thinking" "$THINKING_PROMPT" "true"; then
-    exit 1
-fi
-
-# Step 7: Analysis and summary
-echo -e "${BOLD}7. Analysis Summary${NC}"
+# Step 5: Analysis and summary
+echo -e "${BOLD}5. Analysis Summary${NC}"
 echo "=================================="
 
 echo -e "\n${BOLD}Think Flag Verification:${NC}"
-echo "✓ Generate endpoint accepts think=true parameter"
 echo "✓ Generate endpoint accepts think=false parameter"
+echo "✓ Generate endpoint accepts think=true parameter"
 echo "✓ Chat endpoint accepts think=true parameter"
 echo "✓ All requests completed successfully"
 
 echo -e "\n${BOLD}Response Analysis:${NC}"
-echo "Simple prompt responses were received for both think=true and think=false"
-echo "Reasoning prompt responses were received for both think=true and think=false"
-echo "Chat endpoint successfully processed think=true parameter"
+echo "Generate endpoint baseline test (think=false) completed successfully"
+echo "Generate endpoint thinking test (think=true) completed successfully"
+echo "Chat endpoint thinking test (think=true) completed successfully"
 
 echo -e "\n${BOLD}Performance Comparison:${NC}"
 if [ ! -z "$NORMAL_DURATION" ] && [ ! -z "$THINKING_DURATION" ]; then

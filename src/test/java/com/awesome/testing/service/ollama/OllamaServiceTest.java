@@ -1,6 +1,5 @@
 package com.awesome.testing.service.ollama;
 
-import com.awesome.testing.dto.ollama.ChatMessageDto;
 import com.awesome.testing.dto.ollama.ChatRequestDto;
 import com.awesome.testing.dto.ollama.ChatResponseDto;
 import com.awesome.testing.dto.ollama.GenerateRequestDto;
@@ -15,11 +14,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
-import java.util.List;
-
+import static com.awesome.testing.factory.ollama.OllamaRequestFactory.*;
+import static com.awesome.testing.factory.ollama.OllamaResponseFactory.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 @ExtendWith(MockitoExtension.class)
 class OllamaServiceTest {
 
@@ -44,29 +44,9 @@ class OllamaServiceTest {
     @Test
     void shouldStreamResponse() {
         // given
-        StreamedRequestDto request = StreamedRequestDto.builder()
-                .model("qwen3:0.6b")
-                .prompt("test prompt")
-                .options(null)
-                .build();
-        GenerateResponseDto response1 = GenerateResponseDto.builder()
-                .model("qwen3:0.6b")
-                .createdAt("2024-02-21")
-                .response("Hello")
-                .thinking(null)
-                .done(false)
-                .context(null)
-                .totalDuration(100L)
-                .build();
-        GenerateResponseDto response2 = GenerateResponseDto.builder()
-                .model("qwen3:0.6b")
-                .createdAt("2024-02-21")
-                .response("World")
-                .thinking(null)
-                .done(true)
-                .context(null)
-                .totalDuration(200L)
-                .build();
+        StreamedRequestDto request = validStreamedRequest();
+        GenerateResponseDto response1 = simpleGenerateResponse();
+        GenerateResponseDto response2 = finalGenerateResponse();
 
         // when
         when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
@@ -87,11 +67,7 @@ class OllamaServiceTest {
     @Test
     void shouldHandleError() {
         // given
-        StreamedRequestDto request = StreamedRequestDto.builder()
-                .model("invalid-model")
-                .prompt("test")
-                .options(null)
-                .build();
+        StreamedRequestDto request = invalidStreamedRequest();
 
         // when
         when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
@@ -111,36 +87,9 @@ class OllamaServiceTest {
     @Test
     void shouldStreamChatResponse() {
         // given
-        ChatRequestDto request = ChatRequestDto.builder()
-                .model("qwen3:0.6b")
-                .messages(List.of(
-                        ChatMessageDto.builder()
-                                .role("user")
-                                .content("Hello")
-                                .build()
-                ))
-                .stream(true)
-                .build();
-
-        ChatResponseDto response1 = ChatResponseDto.builder()
-                .model("qwen3:0.6b")
-                .createdAt("2024-02-21")
-                .message(ChatMessageDto.builder()
-                        .role("assistant")
-                        .content("Hi")
-                        .build())
-                .done(false)
-                .build();
-
-        ChatResponseDto response2 = ChatResponseDto.builder()
-                .model("qwen3:0.6b")
-                .createdAt("2024-02-21")
-                .message(ChatMessageDto.builder()
-                        .role("assistant")
-                        .content("there!")
-                        .build())
-                .done(true)
-                .build();
+        ChatRequestDto request = validChatRequest();
+        ChatResponseDto response1 = simpleChatResponse();
+        ChatResponseDto response2 = finalChatResponse();
 
         // when
         when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
@@ -161,15 +110,7 @@ class OllamaServiceTest {
     @Test
     void shouldHandleChatError() {
         // given
-        ChatRequestDto request = ChatRequestDto.builder()
-                .model("invalid-model")
-                .messages(List.of(
-                        ChatMessageDto.builder()
-                                .role("user")
-                                .content("Hello")
-                                .build()
-                ))
-                .build();
+        ChatRequestDto request = invalidChatRequest();
 
         // when
         when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
@@ -189,21 +130,8 @@ class OllamaServiceTest {
     @Test
     void shouldPassThinkFlagInGenerateRequest() {
         // given
-        StreamedRequestDto request = StreamedRequestDto.builder()
-                .model("qwen3:0.6b")
-                .prompt("test prompt")
-                .options(null)
-                .think(true)
-                .build();
-        GenerateResponseDto response = GenerateResponseDto.builder()
-                .model("qwen3:0.6b")
-                .createdAt("2024-02-21")
-                .response("Hello")
-                .thinking(null)
-                .done(true)
-                .context(null)
-                .totalDuration(100L)
-                .build();
+        StreamedRequestDto request = validStreamedRequestWithThink();
+        GenerateResponseDto response = completedGenerateResponse();
 
         // when
         when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
@@ -223,27 +151,8 @@ class OllamaServiceTest {
     @Test
     void shouldPassThinkFlagInChatRequest() {
         // given
-        ChatRequestDto request = ChatRequestDto.builder()
-                .model("qwen3:0.6b")
-                .messages(List.of(
-                        ChatMessageDto.builder()
-                                .role("user")
-                                .content("Hello")
-                                .build()
-                ))
-                .stream(true)
-                .think(true)
-                .build();
-
-        ChatResponseDto response = ChatResponseDto.builder()
-                .model("qwen3:0.6b")
-                .createdAt("2024-02-21")
-                .message(ChatMessageDto.builder()
-                        .role("assistant")
-                        .content("Hi")
-                        .build())
-                .done(true)
-                .build();
+        ChatRequestDto request = validChatRequestWithThink();
+        ChatResponseDto response = completedChatResponse();
 
         // when
         when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
@@ -263,39 +172,9 @@ class OllamaServiceTest {
     @Test
     void shouldHandleThinkingContentInChatResponse() {
         // given
-        ChatRequestDto request = ChatRequestDto.builder()
-                .model("qwen3:0.6b")
-                .messages(List.of(
-                        ChatMessageDto.builder()
-                                .role("user")
-                                .content("Complex question")
-                                .build()
-                ))
-                .stream(true)
-                .think(true)
-                .build();
-
-        ChatResponseDto thinkingResponse = ChatResponseDto.builder()
-                .model("qwen3:0.6b")
-                .createdAt("2024-02-21")
-                .message(ChatMessageDto.builder()
-                        .role("assistant")
-                        .content("")
-                        .thinking("Let me think about this...")
-                        .build())
-                .done(false)
-                .build();
-
-        ChatResponseDto contentResponse = ChatResponseDto.builder()
-                .model("qwen3:0.6b")
-                .createdAt("2024-02-21")
-                .message(ChatMessageDto.builder()
-                        .role("assistant")
-                        .content("Here's my answer")
-                        .thinking("")
-                        .build())
-                .done(true)
-                .build();
+        ChatRequestDto request = validChatRequestWithThink();
+        ChatResponseDto thinkingResponse = thinkingChatResponse();
+        ChatResponseDto contentResponse = contentChatResponse();
 
         // when
         when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
@@ -316,27 +195,9 @@ class OllamaServiceTest {
     @Test
     void shouldHandleThinkingContentInGenerateResponse() {
         // given
-        StreamedRequestDto request = StreamedRequestDto.builder()
-                .model("qwen3:0.6b")
-                .prompt("Complex question")
-                .think(true)
-                .build();
-
-        GenerateResponseDto thinkingResponse = GenerateResponseDto.builder()
-                .model("qwen3:0.6b")
-                .createdAt("2024-02-21")
-                .response("")
-                .thinking("Let me think about this...")
-                .done(false)
-                .build();
-
-        GenerateResponseDto contentResponse = GenerateResponseDto.builder()
-                .model("qwen3:0.6b")
-                .createdAt("2024-02-21")
-                .response("Here's my answer")
-                .thinking("")
-                .done(true)
-                .build();
+        StreamedRequestDto request = validStreamedRequestWithThink();
+        GenerateResponseDto thinkingResponse = thinkingGenerateResponse();
+        GenerateResponseDto contentResponse = contentGenerateResponse();
 
         // when
         when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
