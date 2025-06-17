@@ -1,4 +1,4 @@
-package com.awesome.testing.service;
+package com.awesome.testing.service.ollama;
 
 import com.awesome.testing.dto.ollama.ChatMessageDto;
 import com.awesome.testing.dto.ollama.ChatRequestDto;
@@ -49,8 +49,24 @@ class OllamaServiceTest {
                 .prompt("test prompt")
                 .options(null)
                 .build();
-        GenerateResponseDto response1 = new GenerateResponseDto("qwen3:0.6b", "2024-02-21", "Hello", false, null, 100L);
-        GenerateResponseDto response2 = new GenerateResponseDto("qwen3:0.6b", "2024-02-21", "World", true, null, 200L);
+        GenerateResponseDto response1 = GenerateResponseDto.builder()
+                .model("qwen3:0.6b")
+                .createdAt("2024-02-21")
+                .response("Hello")
+                .thinking(null)
+                .done(false)
+                .context(null)
+                .totalDuration(100L)
+                .build();
+        GenerateResponseDto response2 = GenerateResponseDto.builder()
+                .model("qwen3:0.6b")
+                .createdAt("2024-02-21")
+                .response("World")
+                .thinking(null)
+                .done(true)
+                .context(null)
+                .totalDuration(200L)
+                .build();
 
         // when
         when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
@@ -179,7 +195,15 @@ class OllamaServiceTest {
                 .options(null)
                 .think(true)
                 .build();
-        GenerateResponseDto response = new GenerateResponseDto("qwen3:0.6b", "2024-02-21", "Hello", true, null, 100L);
+        GenerateResponseDto response = GenerateResponseDto.builder()
+                .model("qwen3:0.6b")
+                .createdAt("2024-02-21")
+                .response("Hello")
+                .thinking(null)
+                .done(true)
+                .context(null)
+                .totalDuration(100L)
+                .build();
 
         // when
         when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
@@ -233,6 +257,100 @@ class OllamaServiceTest {
         // then
         StepVerifier.create(ollamaService.chat(request))
                 .expectNext(response)
+                .verifyComplete();
+    }
+
+    @Test
+    void shouldHandleThinkingContentInChatResponse() {
+        // given
+        ChatRequestDto request = ChatRequestDto.builder()
+                .model("qwen3:0.6b")
+                .messages(List.of(
+                        ChatMessageDto.builder()
+                                .role("user")
+                                .content("Complex question")
+                                .build()
+                ))
+                .stream(true)
+                .think(true)
+                .build();
+
+        ChatResponseDto thinkingResponse = ChatResponseDto.builder()
+                .model("qwen3:0.6b")
+                .createdAt("2024-02-21")
+                .message(ChatMessageDto.builder()
+                        .role("assistant")
+                        .content("")
+                        .thinking("Let me think about this...")
+                        .build())
+                .done(false)
+                .build();
+
+        ChatResponseDto contentResponse = ChatResponseDto.builder()
+                .model("qwen3:0.6b")
+                .createdAt("2024-02-21")
+                .message(ChatMessageDto.builder()
+                        .role("assistant")
+                        .content("Here's my answer")
+                        .thinking("")
+                        .build())
+                .done(true)
+                .build();
+
+        // when
+        when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri("/api/chat")).thenReturn(requestBodySpec);
+        when(requestBodySpec.bodyValue(any(ChatRequestDto.class)))
+                .thenReturn((WebClient.RequestHeadersSpec) requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToFlux(ChatResponseDto.class))
+                .thenReturn(Flux.just(thinkingResponse, contentResponse));
+
+        // then
+        StepVerifier.create(ollamaService.chat(request))
+                .expectNext(thinkingResponse)
+                .expectNext(contentResponse)
+                .verifyComplete();
+    }
+
+    @Test
+    void shouldHandleThinkingContentInGenerateResponse() {
+        // given
+        StreamedRequestDto request = StreamedRequestDto.builder()
+                .model("qwen3:0.6b")
+                .prompt("Complex question")
+                .think(true)
+                .build();
+
+        GenerateResponseDto thinkingResponse = GenerateResponseDto.builder()
+                .model("qwen3:0.6b")
+                .createdAt("2024-02-21")
+                .response("")
+                .thinking("Let me think about this...")
+                .done(false)
+                .build();
+
+        GenerateResponseDto contentResponse = GenerateResponseDto.builder()
+                .model("qwen3:0.6b")
+                .createdAt("2024-02-21")
+                .response("Here's my answer")
+                .thinking("")
+                .done(true)
+                .build();
+
+        // when
+        when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri("/api/generate")).thenReturn(requestBodySpec);
+        when(requestBodySpec.bodyValue(any(GenerateRequestDto.class)))
+                .thenReturn((WebClient.RequestHeadersSpec) requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToFlux(GenerateResponseDto.class))
+                .thenReturn(Flux.just(thinkingResponse, contentResponse));
+
+        // then
+        StepVerifier.create(ollamaService.generateText(request))
+                .expectNext(thinkingResponse)
+                .expectNext(contentResponse)
                 .verifyComplete();
     }
 }

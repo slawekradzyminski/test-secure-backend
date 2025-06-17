@@ -156,4 +156,36 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
                 .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
     }
 
+    @Test
+    void shouldReceiveThinkingContentInGenerateResponse() {
+        // given
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String authToken = getToken(user);
+        StreamedRequestDto request = validStreamedRequestWithThink();
+        OllamaMock.stubSuccessfulGenerationWithThinking();
+
+        // when
+        ResponseEntity<String> response = executePostForEventStream(
+                request,
+                getHeadersWith(authToken),
+                String.class,
+                OLLAMA_GENERATE_ENDPOINT
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getContentType().toString())
+                .isEqualTo("text/event-stream;charset=UTF-8");
+        
+        // Verify response contains both thinking and content
+        String responseBody = response.getBody();
+        assertThat(responseBody).contains("thinking");
+        assertThat(responseBody).contains("Let me think...");
+        assertThat(responseBody).contains("Hello");
+
+        verify(postRequestedFor(urlEqualTo("/api/generate"))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
+                .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
+    }
+
 }

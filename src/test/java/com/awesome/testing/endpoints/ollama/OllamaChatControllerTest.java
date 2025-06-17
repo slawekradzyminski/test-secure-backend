@@ -157,4 +157,36 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
                 .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
     }
 
+    @Test
+    void shouldReceiveThinkingContentInChatResponse() {
+        // given
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String authToken = getToken(user);
+        ChatRequestDto request = validChatRequestWithThink();
+        OllamaMock.stubSuccessfulChatWithThinking();
+
+        // when
+        ResponseEntity<String> response = executePostForEventStream(
+                request,
+                getHeadersWith(authToken),
+                String.class,
+                OLLAMA_CHAT_ENDPOINT
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getContentType().toString())
+                .isEqualTo("text/event-stream;charset=UTF-8");
+        
+        // Verify response contains both thinking and content
+        String responseBody = response.getBody();
+        assertThat(responseBody).contains("thinking");
+        assertThat(responseBody).contains("I need to think");
+        assertThat(responseBody).contains("Hi there!");
+
+        verify(postRequestedFor(urlEqualTo("/api/chat"))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
+                .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
+    }
+
 }

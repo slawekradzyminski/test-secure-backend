@@ -18,7 +18,7 @@ THINKING_PROMPT="What is 15 * 23? Think step by step and show your reasoning."
 # Timeout configurations (in seconds)
 NORMAL_TIMEOUT=300    # 5 minutes for normal mode
 THINKING_TIMEOUT=1200  # 20 minutes for thinking mode
-CHAT_TIMEOUT=600      # 10 minutes for chat
+CHAT_TIMEOUT=1200      # 20 minutes for chat
 
 echo -e "${BOLD}Testing Ollama Endpoint with Think Flag${NC}\n"
 
@@ -168,7 +168,7 @@ test_chat_endpoint() {
       -H "Content-Type: application/json" \
       -H "Accept: text/event-stream" \
       -H "Connection: keep-alive" \
-      -d "{\"model\":\"${MODEL}\",\"messages\":[{\"role\":\"user\",\"content\":\"${prompt}\"}],\"stream\":true,\"think\":${think_flag}}" > "$temp_file"
+      -d "{\"model\":\"${MODEL}\",\"messages\":[{\"role\":\"user\",\"content\":\"${prompt}\"}],\"stream\":false,\"think\":${think_flag}}" > "$temp_file"
     
     local curl_exit_code=$?
     local end_time=$(date +%s)

@@ -17,6 +17,13 @@ public class GenerateResponseDto {
     private String createdAt;
     
     private String response;
+    
+    /**
+     * The thinking content from the model (for thinking models).
+     * Present when model is in thinking mode.
+     */
+    private String thinking;
+    
     private boolean done;
     private Long[] context;
     

@@ -21,6 +21,19 @@ public class OllamaMock {
                         .withChunkedDribbleDelay(2, 10)));
     }
 
+    public static void stubSuccessfulGenerationWithThinking() {
+        stubFor(post(urlEqualTo("/api/generate"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"model":"qwen3:0.6b","created_at":"2025-02-21T14:28:24Z","response":"","thinking":"Let me think...","done":false,"context":null,"total_duration":null}
+                                {"model":"qwen3:0.6b","created_at":"2025-02-21T14:28:25Z","response":"","thinking":" about this question.","done":false,"context":null,"total_duration":null}
+                                {"model":"qwen3:0.6b","created_at":"2025-02-21T14:28:26Z","response":"Hello","thinking":"","done":false,"context":null,"total_duration":null}
+                                {"model":"qwen3:0.6b","created_at":"2025-02-21T14:28:27Z","response":" world!","thinking":"","done":true,"context":[2456, 4567],"total_duration":300000000}
+                                """)
+                        .withChunkedDribbleDelay(2, 10)));
+    }
+
     public static void stubModelNotFound() {
         stubFor(post(urlEqualTo("/api/generate"))
                 .willReturn(aResponse()
@@ -49,6 +62,19 @@ public class OllamaMock {
                                 {"model":"qwen3:0.6b","created_at":"2025-02-21T14:28:24Z","message":{"role":"assistant","content":"Hi"},"done":false}
                                 {"model":"qwen3:0.6b","created_at":"2025-02-21T14:28:25Z","message":{"role":"assistant","content":"there"},"done":false}
                                 {"model":"qwen3:0.6b","created_at":"2025-02-21T14:28:25Z","message":{"role":"assistant","content":"friend!"},"done":true}
+                                """)
+                        .withChunkedDribbleDelay(2, 10)));
+    }
+
+    public static void stubSuccessfulChatWithThinking() {
+        stubFor(post(urlEqualTo("/api/chat"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"model":"qwen3:0.6b","created_at":"2025-02-21T14:28:24Z","message":{"role":"assistant","content":"","thinking":"I need to think"},"done":false}
+                                {"model":"qwen3:0.6b","created_at":"2025-02-21T14:28:25Z","message":{"role":"assistant","content":"","thinking":" about this..."},"done":false}
+                                {"model":"qwen3:0.6b","created_at":"2025-02-21T14:28:26Z","message":{"role":"assistant","content":"Hi there!","thinking":""},"done":false}
+                                {"model":"qwen3:0.6b","created_at":"2025-02-21T14:28:27Z","message":{"role":"assistant","content":" How can I help?","thinking":""},"done":true}
                                 """)
                         .withChunkedDribbleDelay(2, 10)));
     }
