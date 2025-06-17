@@ -201,9 +201,10 @@ through secure endpoints that require authentication.
     - Request body:
       ```json
       {
-        "model": "llama3.2:1b",
+        "model": "qwen3:0.6b",
         "prompt": "Your prompt here",
-        "options": {}
+        "options": {},
+        "think": false
       }
       ```
 
@@ -215,16 +216,31 @@ through secure endpoints that require authentication.
     - Request body:
       ```json
       {
-        "model": "llama3.2:1b",
+        "model": "qwen3:0.6b",
         "messages": [
           { "role": "system", "content": "You are a helpful assistant." },
           { "role": "user", "content": "Hello!" },
           { "role": "assistant", "content": "Hi there!" },
           { "role": "user", "content": "How are you?" }
         ],
-        "options": {}
+        "options": {},
+        "think": false
       }
       ```
+
+### Request Parameters
+
+Both endpoints support the following parameters:
+
+- `model` (required): The Ollama model to use (e.g., "qwen3:0.6b")
+- `options` (optional): Model-specific options (e.g., temperature, max tokens)
+- `think` (optional): Set to `true` for 'thinking' models that benefit from reasoning before responding. Defaults to `false`
+
+For the `/generate` endpoint:
+- `prompt` (required): The text prompt to generate from
+
+For the `/chat` endpoint:
+- `messages` (required): Array of conversation messages with role and content
 
 ### Configuration
 

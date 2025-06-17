@@ -43,7 +43,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
         assertThat(response.getBody()).containsAnyOf("Hello", "world", "my friend");
 
         verify(postRequestedFor(urlEqualTo("/api/generate"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("llama3.2:1b")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
                 .withRequestBody(matchingJsonPath("$.prompt", equalTo("test prompt")))
                 .withRequestBody(matchingJsonPath("$.stream", equalTo("true"))));
     }
@@ -106,7 +106,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/json;charset=UTF-8");
-        assertThat(response.getBody().getError()).isEqualTo("model 'llama3.2:1b' not found");
+        assertThat(response.getBody().getError()).isEqualTo("model 'qwen3:0.6b' not found");
     }
 
     @Test
@@ -128,6 +128,64 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(response.getBody()).contains("Internal server error");
+    }
+
+    @Test
+    void shouldPassThinkFlagInGenerateRequest() {
+        // given
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String authToken = getToken(user);
+        StreamedRequestDto request = validStreamedRequestWithThink();
+        OllamaMock.stubSuccessfulGeneration();
+
+        // when
+        ResponseEntity<String> response = executePostForEventStream(
+                request,
+                getHeadersWith(authToken),
+                String.class,
+                OLLAMA_GENERATE_ENDPOINT
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getContentType().toString())
+                .isEqualTo("text/event-stream;charset=UTF-8");
+
+        verify(postRequestedFor(urlEqualTo("/api/generate"))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
+                .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
+    }
+
+    @Test
+    void shouldReceiveThinkingContentInGenerateResponse() {
+        // given
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String authToken = getToken(user);
+        StreamedRequestDto request = validStreamedRequestWithThink();
+        OllamaMock.stubSuccessfulGenerationWithThinking();
+
+        // when
+        ResponseEntity<String> response = executePostForEventStream(
+                request,
+                getHeadersWith(authToken),
+                String.class,
+                OLLAMA_GENERATE_ENDPOINT
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getContentType().toString())
+                .isEqualTo("text/event-stream;charset=UTF-8");
+        
+        // Verify response contains both thinking and content
+        String responseBody = response.getBody();
+        assertThat(responseBody).contains("thinking");
+        assertThat(responseBody).contains("Let me think...");
+        assertThat(responseBody).contains("Hello");
+
+        verify(postRequestedFor(urlEqualTo("/api/generate"))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
+                .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
     }
 
 }

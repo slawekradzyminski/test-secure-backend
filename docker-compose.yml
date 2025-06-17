@@ -63,7 +63,7 @@ services:
       - my-private-ntwk
 
   ollama:
-    image: ollama/ollama:latest
+    image: slawekradzyminski/ollama:qwen3-0.6b
     restart: unless-stopped
     hostname: ollama
     ports:

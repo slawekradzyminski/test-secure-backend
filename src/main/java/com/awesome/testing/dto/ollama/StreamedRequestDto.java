@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class StreamedRequestDto {
     @NotBlank
-    @Schema(description = "Model to use, needs to be downloaded in ollama server", example = "llama3.2:1b")
+    @Schema(description = "Model to use, needs to be downloaded in ollama server", example = "qwen3:0.6b")
     String model;
 
     @Schema(description = "Prompt", example = "Hello, how are you?")
@@ -24,4 +24,8 @@ public class StreamedRequestDto {
 
     @Schema(description = "Options", example = "{ \"temperature\": 0.5 }")
     Map<String, Object> options;
+
+    @Schema(description = "Should the model think before responding?", example = "false")
+    @Builder.Default
+    Boolean think = false;
 }

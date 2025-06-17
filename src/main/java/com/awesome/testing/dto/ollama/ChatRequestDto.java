@@ -20,7 +20,7 @@ public class ChatRequestDto {
     @Schema(
             description = "Model to use. Only this model is downloaded automatically. " +
                     "Other model have to be manually downloaded on Ollama server",
-            example = "llama3.2:1b"
+            example = "qwen3:0.6b"
     )
     private String model;
 
@@ -68,4 +68,12 @@ public class ChatRequestDto {
     @Schema(hidden = true)
     @Builder.Default
     private Integer keepAlive = 10000;
+
+    /**
+     * Should the model think before responding?
+     * Defaults to false.
+     */
+    @Schema(description = "Should the model think before responding?", example = "false")
+    @Builder.Default
+    private Boolean think = false;
 } 

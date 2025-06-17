@@ -43,7 +43,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         assertThat(response.getBody()).containsAnyOf("Hi", "there", "friend");
 
         verify(postRequestedFor(urlEqualTo("/api/chat"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("llama3.2:1b")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
                 .withRequestBody(matchingJsonPath("$.messages[0].role", equalTo("user")))
                 .withRequestBody(matchingJsonPath("$.messages[0].content", equalTo("Hello")))
                 .withRequestBody(matchingJsonPath("$.stream", equalTo("true"))));
@@ -107,7 +107,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/json;charset=UTF-8");
-        assertThat(response.getBody().getError()).isEqualTo("model 'llama3.2:1b' not found");
+        assertThat(response.getBody().getError()).isEqualTo("model 'qwen3:0.6b' not found");
     }
 
     @Test
@@ -129,6 +129,64 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(response.getBody()).contains("Internal server error");
+    }
+
+    @Test
+    void shouldPassThinkFlagInChatRequest() {
+        // given
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String authToken = getToken(user);
+        ChatRequestDto request = validChatRequestWithThink();
+        OllamaMock.stubSuccessfulChat();
+
+        // when
+        ResponseEntity<String> response = executePostForEventStream(
+                request,
+                getHeadersWith(authToken),
+                String.class,
+                OLLAMA_CHAT_ENDPOINT
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getContentType().toString())
+                .isEqualTo("text/event-stream;charset=UTF-8");
+
+        verify(postRequestedFor(urlEqualTo("/api/chat"))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
+                .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
+    }
+
+    @Test
+    void shouldReceiveThinkingContentInChatResponse() {
+        // given
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String authToken = getToken(user);
+        ChatRequestDto request = validChatRequestWithThink();
+        OllamaMock.stubSuccessfulChatWithThinking();
+
+        // when
+        ResponseEntity<String> response = executePostForEventStream(
+                request,
+                getHeadersWith(authToken),
+                String.class,
+                OLLAMA_CHAT_ENDPOINT
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getContentType().toString())
+                .isEqualTo("text/event-stream;charset=UTF-8");
+        
+        // Verify response contains both thinking and content
+        String responseBody = response.getBody();
+        assertThat(responseBody).contains("thinking");
+        assertThat(responseBody).contains("I need to think");
+        assertThat(responseBody).contains("Hi there!");
+
+        verify(postRequestedFor(urlEqualTo("/api/chat"))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
+                .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
     }
 
 }
