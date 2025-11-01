@@ -37,11 +37,10 @@ public class UserService {
 
     @Transactional
     public void signup(UserRegisterDto userRegisterDto) {
-        userRepository.findByUsername(userRegisterDto.getUsername())
-                .ifPresentOrElse(
-                        it -> returnBadRequest(),
-                        () -> userRepository.save(getUser(userRegisterDto))
-                );
+        userRepository.findByUsernameOrEmail(userRegisterDto.getUsername(), userRegisterDto.getEmail())
+                .ifPresent(existingUser -> handleDuplicateUsersErrors(userRegisterDto, existingUser));
+
+        userRepository.save(getUser(userRegisterDto));
     }
 
     public void delete(String username) {
@@ -93,6 +92,13 @@ public class UserService {
         return true;
     }
 
+    private static void handleDuplicateUsersErrors(UserRegisterDto userRegisterDto, UserEntity existingUser) {
+        if (existingUser.getUsername().equals(userRegisterDto.getUsername())) {
+            throw new CustomException("Username is already in use", HttpStatus.BAD_REQUEST);
+        }
+        throw new CustomException("Email is already in use", HttpStatus.BAD_REQUEST);
+    }
+
     private UserEntity getUser(UserRegisterDto userRegisterDto) {
         UserEntity user = new UserEntity();
         user.setUsername(userRegisterDto.getUsername());
@@ -102,10 +108,6 @@ public class UserService {
         user.setEmail(userRegisterDto.getEmail());
         user.setPassword(passwordEncoder.encode(userRegisterDto.getPassword()));
         return user;
-    }
-
-    private void returnBadRequest() {
-        throw new CustomException("Username is already in use", HttpStatus.BAD_REQUEST);
     }
 
     private UserEntity getUser(String username) {

@@ -8,6 +8,8 @@ import net.bytebuddy.utility.RandomString;
 import java.text.MessageFormat;
 import java.util.List;
 
+import static com.awesome.testing.dto.user.Role.ROLE_ADMIN;
+
 @UtilityClass
 public class UserFactory {
 
@@ -16,7 +18,7 @@ public class UserFactory {
                 .username(RandomString.make(10))
                 .email(getRandomEmail())
                 .password(RandomString.make(10))
-                .roles(List.of(Role.ROLE_ADMIN))
+                .roles(List.of(ROLE_ADMIN))
                 .firstName(RandomString.make(10))
                 .lastName(RandomString.make(10))
                 .build();
@@ -27,7 +29,7 @@ public class UserFactory {
                 .username(username)
                 .email(getRandomEmail())
                 .password(RandomString.make(12))
-                .roles(List.of(Role.ROLE_ADMIN))
+                .roles(List.of(ROLE_ADMIN))
                 .firstName(RandomString.make(10))
                 .lastName(RandomString.make(10))
                 .build();
@@ -39,6 +41,17 @@ public class UserFactory {
                 .email(getRandomEmail())
                 .password(RandomString.make(12))
                 .roles(roles)
+                .firstName(RandomString.make(10))
+                .lastName(RandomString.make(10))
+                .build();
+    }
+
+    public static UserRegisterDto getRandomUserWithEmail(String email) {
+        return UserRegisterDto.builder()
+                .username(RandomString.make(10))
+                .email(email)
+                .password(RandomString.make(12))
+                .roles(List.of(ROLE_ADMIN))
                 .firstName(RandomString.make(10))
                 .lastName(RandomString.make(10))
                 .build();

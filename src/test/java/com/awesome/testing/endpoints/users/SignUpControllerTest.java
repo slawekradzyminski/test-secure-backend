@@ -50,6 +50,22 @@ public class SignUpControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
+    public void shouldFailToRegisterExistingEmail() {
+        // given
+        UserRegisterDto firstUser = getRandomUser();
+        registerUser(firstUser, String.class);
+        UserRegisterDto secondUser = getRandomUserWithEmail(firstUser.getEmail());
+
+        // when
+        ResponseEntity<ErrorDto> response = registerUser(secondUser, ErrorDto.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().getMessage()).isEqualTo("Email is already in use");
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
     public void shouldFailToRegisterUsernameTooShort() {
         // given
         UserRegisterDto user = getRandomUserWithUsername("one");
