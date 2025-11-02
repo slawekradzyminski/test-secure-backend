@@ -35,7 +35,6 @@ public class GetSingleProductControllerTest extends AbstractEcommerceTest {
         assertThat(response.getBody().getName()).isEqualTo(testProduct.getName());
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldGet401AsUnauthorized() {
         // given
@@ -51,7 +50,6 @@ public class GetSingleProductControllerTest extends AbstractEcommerceTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldGet404ForWrongProduct() {
         // given

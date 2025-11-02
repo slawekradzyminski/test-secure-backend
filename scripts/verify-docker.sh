@@ -55,11 +55,11 @@ done
 echo "Verifying model is available..."
 MODEL_CHECK=$(docker exec test-secure-backend-backend-1 curl -s http://ollama:11434/api/tags | grep -o '"name":"qwen3:0.6b"' || true)
 if [ -z "$MODEL_CHECK" ]; then
-  echo "Failed to pull Gemma model"
+  echo "Failed to pull LLM"
   docker compose down
   exit 1
 fi
-echo "Gemma model is ready!"
+echo "LLM is ready!"
 
 ./test-ollama-endpoint.sh
 

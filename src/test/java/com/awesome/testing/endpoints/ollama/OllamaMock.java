@@ -3,7 +3,6 @@ package com.awesome.testing.endpoints.ollama;
 import lombok.experimental.UtilityClass;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 
 @UtilityClass
 public class OllamaMock {

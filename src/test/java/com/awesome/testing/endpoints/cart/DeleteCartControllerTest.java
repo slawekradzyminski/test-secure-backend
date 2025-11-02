@@ -25,7 +25,6 @@ public class DeleteCartControllerTest extends AbstractEcommerceTest {
     @Autowired
     private CartService cartService;
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void shouldDeleteCart() {
         // given

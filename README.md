@@ -372,17 +372,17 @@ Example test class organization:
 
 ```java
 class SomeEndpointTest {
-    void shouldReturnSuccessfully() // 200 OK
+    void shouldReturnSuccessfully(); // 200 OK
 
-    void shouldCreate() // 201 Created
+    void shouldCreate(); // 201 Created
 
-    void shouldGet400WhenInvalidInput()
+    void shouldGet400WhenInvalidInput();
 
-    void shouldGet401WhenNoAuthorizationHeader()
+    void shouldGet401WhenNoAuthorizationHeader();
 
-    void shouldGet403WhenNotAuthorized()
+    void shouldGet403WhenNotAuthorized();
 
-    void shouldGet404WhenNotFound()
+    void shouldGet404WhenNotFound();
 }
 ```
 

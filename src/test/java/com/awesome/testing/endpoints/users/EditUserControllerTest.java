@@ -3,7 +3,6 @@ package com.awesome.testing.endpoints.users;
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.*;
 import com.awesome.testing.dto.user.*;
-import com.awesome.testing.dto.user.Role;
 import net.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -12,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 import java.util.Map;
 
+import static com.awesome.testing.dto.user.Role.ROLE_ADMIN;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static com.awesome.testing.factory.UserFactory.getRandomEmail;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
@@ -23,7 +23,7 @@ public class EditUserControllerTest extends DomainHelper {
     @Test
     public void shouldUpdateUserAsAdmin() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(ROLE_ADMIN));
         String username = user.getUsername();
         String token = getToken(user);
         UserEditDto userEditDto = getRandomUserEditBody();
@@ -51,7 +51,7 @@ public class EditUserControllerTest extends DomainHelper {
     @Test
     public void shouldPartiallyUpdateUserAsAdmin() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(ROLE_ADMIN));
         String username = user.getUsername();
         String token = getToken(user);
         String newEmail = "newEmail@gmail.com";
@@ -94,7 +94,7 @@ public class EditUserControllerTest extends DomainHelper {
     @Test
     public void shouldGet400IfInvalidBody() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(ROLE_ADMIN));
         String username = user.getUsername();
         String clientToken = getToken(user);
         UserEditDto userEditDto = UserEditDto.builder()
@@ -156,7 +156,7 @@ public class EditUserControllerTest extends DomainHelper {
     @Test
     public void shouldGet404ForNonExistingUser() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        UserRegisterDto user = getRandomUserWithRoles(List.of(ROLE_ADMIN));
         String clientToken = getToken(user);
         UserEditDto userEditDto = getRandomUserEditBody();
 
