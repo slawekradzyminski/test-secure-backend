@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 echo "Starting Docker environment..."
 nohup docker compose up --build -d > docker.log 2>&1 &
@@ -43,7 +43,7 @@ LOGIN_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
 echo "Login response: $LOGIN_RESPONSE"
 
 echo "Pulling LLM model (this might take a while)..."
-docker exec test-secure-backend-backend-1 curl -s -X POST http://ollama:11434/api/pull -d '{"model": "qwen3:0.6b"}' | while read -r line; do
+curl -s -X POST http://localhost:11434/api/pull -d '{"model": "qwen3:0.6b"}' | while read -r line; do
   if echo "$line" | grep -q '"status"'; then
     status=$(echo "$line" | grep -o '"status":"[^"]*' | cut -d'"' -f4)
     if [ ! -z "$status" ]; then
@@ -53,7 +53,7 @@ docker exec test-secure-backend-backend-1 curl -s -X POST http://ollama:11434/ap
 done
 
 echo "Verifying model is available..."
-MODEL_CHECK=$(docker exec test-secure-backend-backend-1 curl -s http://ollama:11434/api/tags | grep -o '"name":"qwen3:0.6b"' || true)
+MODEL_CHECK=$(curl -s http://localhost:11434/api/tags | grep -o '"name":"qwen3:0.6b"' || true)
 if [ -z "$MODEL_CHECK" ]; then
   echo "Failed to pull LLM"
   docker compose down
@@ -71,4 +71,3 @@ else
   echo "Verification failed! Login response did not contain token."
   exit 1
 fi
-
