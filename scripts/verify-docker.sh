@@ -61,7 +61,26 @@ if [ -z "$MODEL_CHECK" ]; then
 fi
 echo "LLM is ready!"
 
-./test-ollama-endpoint.sh
+TOKEN=$(echo "$LOGIN_RESPONSE" | sed -n 's/.*"token" : "\([^"]*\)".*/\1/p')
+if [ -z "$TOKEN" ]; then
+  echo "Failed to extract token from login response."
+  docker compose down
+  exit 1
+fi
+
+echo "Testing Ollama generate endpoint without thinking..."
+GENERATE_RESPONSE=$(curl -s -X POST http://localhost:4001/api/ollama/generate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"qwen3:0.6b","prompt":"Say hi","stream":false,"think":false}')
+
+echo "Generate response: $GENERATE_RESPONSE"
+
+if ! echo "$GENERATE_RESPONSE" | grep -q '"done" : true'; then
+  echo "Generate endpoint verification failed."
+  docker compose down
+  exit 1
+fi
 
 # Check if login was successful by looking for token in response
 if echo "$LOGIN_RESPONSE" | grep -q "token"; then
