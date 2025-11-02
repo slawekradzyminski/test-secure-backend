@@ -37,7 +37,7 @@ public class CartItemsController {
     public ResponseEntity<CartDto> addToCart(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Valid @RequestBody CartItemDto cartItemDto) {
-        return ResponseEntity.ok(cartService.addToCart(principal.toString(), cartItemDto));
+        return ResponseEntity.ok(cartService.addToCart(principal.getUsername(), cartItemDto));
     }
 
     @PutMapping("/items/{productId}")
@@ -52,7 +52,7 @@ public class CartItemsController {
             @Parameter(hidden = true)  @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long productId,
             @Valid @RequestBody UpdateCartItemDto updateCartItemDto) {
-        return ResponseEntity.ok(cartService.updateCartItem(principal.toString(), productId, updateCartItemDto));
+        return ResponseEntity.ok(cartService.updateCartItem(principal.getUsername(), productId, updateCartItemDto));
     }
 
     @DeleteMapping("/items/{productId}")
@@ -65,7 +65,7 @@ public class CartItemsController {
     public ResponseEntity<CartDto> removeFromCart(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long productId) {
-        return ResponseEntity.ok(cartService.removeFromCart(principal.toString(), productId));
+        return ResponseEntity.ok(cartService.removeFromCart(principal.getUsername(), productId));
     }
 
 }

@@ -34,7 +34,7 @@ public class UserSystemPromptController {
     })
     public SystemPromptDto getSystemPrompt(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal) {
-        String username = principal.toString();
+        String username = principal.getUsername();
         String systemPrompt = userService.getSystemPrompt(username);
         return SystemPromptDto.builder()
                 .systemPrompt(systemPrompt)
@@ -50,7 +50,7 @@ public class UserSystemPromptController {
     public SystemPromptDto updateSystemPrompt(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Parameter(description = "System prompt") @Valid @RequestBody SystemPromptDto systemPromptDto) {
-        String username = principal.toString();
+        String username = principal.getUsername();
         UserEntity updatedUser = userService.updateSystemPrompt(username, systemPromptDto.getSystemPrompt());
         return SystemPromptDto.builder()
                 .systemPrompt(updatedUser.getSystemPrompt())
