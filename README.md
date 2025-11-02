@@ -118,7 +118,7 @@ The application uses JWT tokens for authentication. To access protected endpoint
 
 ### Prerequisites
 
-- Java 21 or higher
+- Java 25 (Temurin distribution recommended)
 - Maven 3.x
 - ActiveMQ (for email functionality)
 
