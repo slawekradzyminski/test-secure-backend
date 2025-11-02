@@ -3,6 +3,9 @@ spring:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
     password: sa
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jms.artemis.ArtemisAutoConfiguration
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -16,20 +19,6 @@ spring:
     console:
       enabled: true
       path: /h2-console
-  artemis:
-    mode: embedded
-    embedded:
-      enabled: true
-      queues: email
-      persistent: false
-    broker-url: vm://0
-    user: admin
-    password: admin
-  jms:
-    pub-sub-domain: false
-    template:
-      default-destination: email
-      receive-timeout: 2000
   jackson:
     serialization:
       indent-output: true

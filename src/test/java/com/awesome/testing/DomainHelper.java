@@ -28,7 +28,6 @@ public abstract class DomainHelper extends HttpHelper {
         getToken(userRegisterDto);
     }
 
-    @SuppressWarnings("ConstantConditions")
     protected String getToken(UserRegisterDto userRegisterDto) {
         executePost(
                 REGISTER_ENDPOINT,

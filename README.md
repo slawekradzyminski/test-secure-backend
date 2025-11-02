@@ -118,7 +118,7 @@ The application uses JWT tokens for authentication. To access protected endpoint
 
 ### Prerequisites
 
-- Java 21 or higher
+- Java 25 (Temurin distribution recommended)
 - Maven 3.x
 - ActiveMQ (for email functionality)
 
@@ -372,17 +372,17 @@ Example test class organization:
 
 ```java
 class SomeEndpointTest {
-    void shouldReturnSuccessfully() // 200 OK
+    void shouldReturnSuccessfully(); // 200 OK
 
-    void shouldCreate() // 201 Created
+    void shouldCreate(); // 201 Created
 
-    void shouldGet400WhenInvalidInput()
+    void shouldGet400WhenInvalidInput();
 
-    void shouldGet401WhenNoAuthorizationHeader()
+    void shouldGet401WhenNoAuthorizationHeader();
 
-    void shouldGet403WhenNotAuthorized()
+    void shouldGet403WhenNotAuthorized();
 
-    void shouldGet404WhenNotFound()
+    void shouldGet404WhenNotFound();
 }
 ```
 

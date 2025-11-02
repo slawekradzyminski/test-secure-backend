@@ -121,7 +121,7 @@ class CreateOrderControllerTest extends AbstractEcommerceTest {
         assertThat(order.getId()).isGreaterThan(0);
         assertThat(order.getUsername()).isEqualTo(client.getUsername());
         assertThat(order.getItems()).hasSize(1);
-        OrderItemDto item = order.getItems().get(0);
+        OrderItemDto item = order.getItems().getFirst();
         assertThat(item.getId()).isGreaterThan(0);
         assertThat(item.getProductId()).isEqualTo(product.getId());
         assertThat(item.getProductName()).isEqualTo(product.getName());

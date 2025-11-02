@@ -31,7 +31,7 @@ public class CartController {
     })
     public ResponseEntity<CartDto> getCart(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal) {
-        return ResponseEntity.ok(cartService.getCart(principal.toString()));
+        return ResponseEntity.ok(cartService.getCart(principal.getUsername()));
     }
 
     @DeleteMapping
@@ -42,7 +42,7 @@ public class CartController {
     })
     public ResponseEntity<Void> clearCart(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal) {
-        cartService.clearCart(principal.toString());
+        cartService.clearCart(principal.getUsername());
         return ResponseEntity.ok().build();
     }
 } 
