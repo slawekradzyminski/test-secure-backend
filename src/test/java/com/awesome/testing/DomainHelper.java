@@ -25,10 +25,14 @@ public abstract class DomainHelper extends HttpHelper {
     }
 
     protected void registerUser(UserRegisterDto userRegisterDto) {
-        getToken(userRegisterDto);
+        registerAndLogin(userRegisterDto);
     }
 
     protected String getToken(UserRegisterDto userRegisterDto) {
+        return registerAndLogin(userRegisterDto).getToken();
+    }
+
+    protected LoginResponseDto registerAndLogin(UserRegisterDto userRegisterDto) {
         executePost(
                 REGISTER_ENDPOINT,
                 userRegisterDto,
@@ -49,7 +53,7 @@ public abstract class DomainHelper extends HttpHelper {
         ).getBody();
 
         if (loginResponse != null) {
-            return loginResponse.getToken();
+            return loginResponse;
         }
 
         throw new IllegalStateException("Login failed, token not found");

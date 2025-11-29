@@ -1,15 +1,14 @@
 package com.awesome.testing.controller.users;
 
-import com.awesome.testing.dto.user.RefreshTokenRequestDto;
-import com.awesome.testing.dto.user.TokenPair;
-import com.awesome.testing.dto.user.TokenRefreshResponseDto;
+import com.awesome.testing.dto.user.LogoutRequestDto;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -23,20 +22,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/users")
 @Tag(name = "users", description = "User management endpoints")
 @RequiredArgsConstructor
-public class UserRefreshController {
+public class UserLogoutController {
 
     private final UserService userService;
 
-    @PostMapping("/refresh")
-    @Operation(summary = "Refresh JWT token using refresh token")
+    @PostMapping("/logout")
+    @Operation(summary = "Logout user and revoke refresh token", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "New JWT and refresh tokens",
-                    content = @Content(schema = @Schema(implementation = TokenRefreshResponseDto.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid refresh token", content = @Content)
+            @ApiResponse(responseCode = "200", description = "Successfully logged out"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
     })
-    public TokenRefreshResponseDto refresh(@Valid @RequestBody RefreshTokenRequestDto request) {
-        TokenPair tokens = userService.refresh(request.getRefreshToken());
-        return TokenRefreshResponseDto.from(tokens);
+    public void logout(@Valid @RequestBody LogoutRequestDto request, HttpServletRequest httpRequest) {
+        String username = userService.whoAmI(httpRequest).getUsername();
+        userService.logout(request.getRefreshToken(), username);
     }
-
 }

@@ -101,6 +101,8 @@ The application uses JWT tokens for authentication. To access protected endpoint
 1. Get a token using the `/users/signin` endpoint
 2. Include the token in the Authorization header: `Bearer <token>`
 
+Sign in responses now include both an access token and a refresh token. The refresh token can be exchanged via `POST /users/refresh` even when the access token expires, and calling `POST /users/logout` revokes the refresh token on the server.
+
 ## Features
 
 - User authentication with JWT tokens
@@ -151,7 +153,8 @@ mvn test
 
 - POST `/users/signin` - Authenticate user and get JWT token
 - POST `/users/signup` - Register a new user
-- GET `/users/refresh` - Refresh JWT token
+- POST `/users/refresh` - Refresh JWT token using a refresh token
+- POST `/users/logout` - Revoke current refresh token and logout
 
 ### User Management
 

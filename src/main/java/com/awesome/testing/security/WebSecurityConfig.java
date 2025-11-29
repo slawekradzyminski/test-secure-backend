@@ -42,6 +42,7 @@ public class WebSecurityConfig {
     private static final List<String> ALLOWED_ENDPOINTS = List.of(
             "/users/signin",
             "/users/signup",
+            "/users/refresh",
             "/h2-console/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",

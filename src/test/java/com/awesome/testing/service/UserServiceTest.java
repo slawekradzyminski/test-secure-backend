@@ -2,12 +2,15 @@ package com.awesome.testing.service;
 
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.user.Role;
+import com.awesome.testing.dto.user.TokenPair;
 import com.awesome.testing.dto.user.UserEditDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.entity.UserEntity;
+import com.awesome.testing.entity.RefreshTokenEntity;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.AuthenticationHandler;
 import com.awesome.testing.security.JwtTokenProvider;
+import com.awesome.testing.service.token.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +44,9 @@ class UserServiceTest {
     @Mock
     private AuthenticationHandler authenticationHandler;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     @InjectMocks
     private UserService userService;
 
@@ -67,11 +73,14 @@ class UserServiceTest {
     void shouldSignInWhenCredentialsAreValid() {
         when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
         when(jwtTokenProvider.createToken(registerDto.getUsername(), userEntity.getRoles())).thenReturn("jwt-token");
+        RefreshTokenEntity refreshTokenEntity = buildRefreshToken("refresh-token", userEntity);
+        when(refreshTokenService.createToken(userEntity)).thenReturn(refreshTokenEntity);
 
-        String token = userService.signIn(registerDto.getUsername(), registerDto.getPassword());
+        TokenPair tokens = userService.signIn(registerDto.getUsername(), registerDto.getPassword());
 
         verify(authenticationHandler).authUser(registerDto.getUsername(), registerDto.getPassword());
-        assertThat(token).isEqualTo("jwt-token");
+        assertThat(tokens.getToken()).isEqualTo("jwt-token");
+        assertThat(tokens.getRefreshToken()).isEqualTo("refresh-token");
     }
 
     @Test
@@ -116,6 +125,7 @@ class UserServiceTest {
 
         userService.delete(registerDto.getUsername());
 
+        verify(refreshTokenService).removeAllTokensForUser(registerDto.getUsername());
         verify(userRepository).deleteByUsername(registerDto.getUsername());
     }
 
@@ -142,12 +152,21 @@ class UserServiceTest {
 
     @Test
     void shouldRefreshToken() {
-        when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
-        when(jwtTokenProvider.createToken(registerDto.getUsername(), userEntity.getRoles())).thenReturn("refreshed");
+        RefreshTokenEntity rotatedToken = buildRefreshToken("new-refresh", userEntity);
+        when(refreshTokenService.rotateToken("old-refresh")).thenReturn(rotatedToken);
+        when(jwtTokenProvider.createToken(userEntity.getUsername(), userEntity.getRoles())).thenReturn("refreshed");
 
-        String token = userService.refresh(registerDto.getUsername());
+        TokenPair tokenPair = userService.refresh("old-refresh");
 
-        assertThat(token).isEqualTo("refreshed");
+        assertThat(tokenPair.getToken()).isEqualTo("refreshed");
+        assertThat(tokenPair.getRefreshToken()).isEqualTo("new-refresh");
+    }
+
+    @Test
+    void shouldLogoutAndRevokeRefreshToken() {
+        userService.logout("refresh-token", "johndoe");
+
+        verify(refreshTokenService).revokeToken("refresh-token", "johndoe");
     }
 
     @Test
@@ -208,5 +227,12 @@ class UserServiceTest {
         entity.setFirstName("John");
         entity.setLastName("Doe");
         return entity;
+    }
+
+    private static RefreshTokenEntity buildRefreshToken(String tokenValue, UserEntity owner) {
+        RefreshTokenEntity token = new RefreshTokenEntity();
+        token.setToken(tokenValue);
+        token.setUser(owner);
+        return token;
     }
 }

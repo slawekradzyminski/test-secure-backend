@@ -2,7 +2,9 @@ package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.ErrorDto;
+import com.awesome.testing.dto.user.LoginDto;
 import com.awesome.testing.dto.user.LoginResponseDto;
+import com.awesome.testing.dto.user.LogoutRequestDto;
 import com.awesome.testing.dto.user.RefreshTokenRequestDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.TokenRefreshResponseDto;
@@ -18,70 +20,68 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
-public class RefreshControllerTest extends DomainHelper {
+public class LogoutControllerTest extends DomainHelper {
 
+    private static final String LOGOUT_ENDPOINT = "/users/logout";
     private static final String REFRESH_ENDPOINT = "/users/refresh";
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldRefreshTokensUsingRefreshToken() {
+    public void shouldInvalidateRefreshTokenOnLogout() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         LoginResponseDto loginResponse = registerAndLogin(user);
 
         // when
-        TokenRefreshResponseDto response = executePost(
-                REFRESH_ENDPOINT,
-                new RefreshTokenRequestDto(loginResponse.getRefreshToken()),
-                getJsonOnlyHeaders(),
-                TokenRefreshResponseDto.class
-        ).getBody();
+        ResponseEntity<Void> logoutResponse = executePost(
+                LOGOUT_ENDPOINT,
+                new LogoutRequestDto(loginResponse.getRefreshToken()),
+                getHeadersWith(loginResponse.getToken()),
+                Void.class
+        );
 
         // then
-        assertThat(response.getToken()).isNotBlank();
-        assertThat(response.getRefreshToken()).isNotBlank();
-        assertThat(response.getRefreshToken()).isNotEqualTo(loginResponse.getRefreshToken());
-    }
+        assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-    @Test
-    public void shouldRejectUnknownRefreshToken() {
-        // when
-        ResponseEntity<ErrorDto> response = executePost(
+        ResponseEntity<ErrorDto> refreshResponse = executePost(
                 REFRESH_ENDPOINT,
-                new RefreshTokenRequestDto("does-not-exist"),
+                new RefreshTokenRequestDto(loginResponse.getRefreshToken()),
                 getJsonOnlyHeaders(),
                 ErrorDto.class
         );
 
-        // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(refreshResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldRejectReuseOfRefreshToken() {
+    public void shouldAllowFreshLoginAfterLogout() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         LoginResponseDto loginResponse = registerAndLogin(user);
 
+        executePost(
+                LOGOUT_ENDPOINT,
+                new LogoutRequestDto(loginResponse.getRefreshToken()),
+                getHeadersWith(loginResponse.getToken()),
+                Void.class
+        );
+
+        // when
+        LoginResponseDto newLoginResponse = attemptLogin(
+                new LoginDto(user.getUsername(), user.getPassword()),
+                LoginResponseDto.class
+        ).getBody();
+
         TokenRefreshResponseDto refreshed = executePost(
                 REFRESH_ENDPOINT,
-                new RefreshTokenRequestDto(loginResponse.getRefreshToken()),
+                new RefreshTokenRequestDto(newLoginResponse.getRefreshToken()),
                 getJsonOnlyHeaders(),
                 TokenRefreshResponseDto.class
         ).getBody();
 
-        // when
-        ResponseEntity<ErrorDto> response = executePost(
-                REFRESH_ENDPOINT,
-                new RefreshTokenRequestDto(loginResponse.getRefreshToken()),
-                getJsonOnlyHeaders(),
-                ErrorDto.class
-        );
-
         // then
-        assertThat(refreshed.getRefreshToken()).isNotEqualTo(loginResponse.getRefreshToken());
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(refreshed.getRefreshToken()).isNotBlank();
+        assertThat(refreshed.getToken()).isNotBlank();
     }
-
 }
