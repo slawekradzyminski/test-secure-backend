@@ -42,6 +42,7 @@ public class WebSecurityConfig {
     private static final List<String> ALLOWED_ENDPOINTS = List.of(
             "/users/signin",
             "/users/signup",
+            "/users/refresh",
             "/h2-console/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",
@@ -114,7 +115,11 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:8081", "http://127.0.0.1:8081"));
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:8081",
+                "http://127.0.0.1:8081",
+                "http://host.docker.internal:8081"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of(
             "Authorization", 

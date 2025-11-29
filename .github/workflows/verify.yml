@@ -15,9 +15,8 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Run unit tests
-        run: ./mvnw clean test
-        continue-on-error: true
+      - name: Run unit tests with coverage
+        run: ./mvnw clean verify
 
       - name: Publish Test Report
         if: always()
@@ -27,6 +26,26 @@ jobs:
           path: target/surefire-reports/*.xml
           reporter: java-junit
           fail-on-error: false
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: |
+            target/site/jacoco
+            target/jacoco.exec
+          retention-days: 7
+
+      - name: Summarize coverage
+        if: always()
+        run: |
+          if [ -f target/site/jacoco/jacoco.csv ]; then
+            python3 scripts/coverage_summary.py --csv-path target/site/jacoco/jacoco.csv > coverage-summary.txt
+            cat coverage-summary.txt >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "JaCoCo report not found" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   verify-local:
     runs-on: ubuntu-latest

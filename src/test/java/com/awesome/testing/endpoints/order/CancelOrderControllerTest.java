@@ -106,6 +106,51 @@ class CancelOrderControllerTest extends AbstractEcommerceTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
+    @Test
+    void shouldGet403WhenCancellingAnotherClientsOrder() {
+        // given
+        UserRegisterDto owner = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String ownerToken = getToken(owner);
+        AddressDto testAddress = getRandomAddress();
+        OrderDto createdOrder = createOrder(owner, testAddress);
+        UserRegisterDto attacker = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String attackerToken = getToken(attacker);
+
+        // when
+        ResponseEntity<OrderDto> response = executePost(
+                ORDERS_ENDPOINT + "/" + createdOrder.getId() + "/cancel",
+                null,
+                getHeadersWith(attackerToken),
+                OrderDto.class
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void shouldAllowAdminToCancelAnyOrder() {
+        // given
+        UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        String adminToken = getToken(admin);
+        AddressDto testAddress = getRandomAddress();
+        OrderDto createdOrder = createOrder(client, testAddress);
+
+        // when
+        ResponseEntity<OrderDto> response = executePost(
+                ORDERS_ENDPOINT + "/" + createdOrder.getId() + "/cancel",
+                null,
+                getHeadersWith(adminToken),
+                OrderDto.class
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getStatus().name()).isEqualTo("CANCELLED");
+    }
+
     private OrderDto createOrder(UserRegisterDto client, AddressDto address) {
         ProductEntity testProduct = setupProduct();
         CartItemDto cartItemDto = getSingleCartItemFrom(testProduct.getId());

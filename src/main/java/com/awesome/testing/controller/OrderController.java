@@ -106,7 +106,9 @@ public class OrderController {
     public ResponseEntity<OrderDto> cancelOrder(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long id) {
-        return ResponseEntity.ok(orderService.updateOrderStatus(id, OrderStatus.CANCELLED));
+        boolean isAdmin = principal.getUserDetails().getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        return ResponseEntity.ok(orderService.cancelOrder(id, principal.getUsername(), isAdmin));
     }
     
     @GetMapping("/admin")

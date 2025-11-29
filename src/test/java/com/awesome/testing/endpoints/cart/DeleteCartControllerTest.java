@@ -1,7 +1,6 @@
 package com.awesome.testing.endpoints.cart;
 
 import com.awesome.testing.dto.ErrorDto;
-import com.awesome.testing.dto.cart.CartDto;
 import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
@@ -38,13 +37,13 @@ public class DeleteCartControllerTest extends AbstractEcommerceTest {
         cartService.addToCart(client.getUsername(), cartItemDto2);
 
         // when
-        ResponseEntity<CartDto> response = executeDelete(
+        ResponseEntity<Void> response = executeDelete(
                 CART_ENDPOINT,
                 getHeadersWith(clientToken),
-                CartDto.class);
+                Void.class);
 
         // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(response.getBody()).isNull();
     }
 

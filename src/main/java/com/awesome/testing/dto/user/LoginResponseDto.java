@@ -14,6 +14,9 @@ public class LoginResponseDto {
     @Schema(description = "JWT token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
     String token;
 
+    @Schema(description = "Refresh token")
+    String refreshToken;
+
     @Schema(description = "Username", example = "johndoe")
     String username;
 
@@ -29,13 +32,14 @@ public class LoginResponseDto {
     @Schema(description = "User roles", example = "[\"ROLE_CLIENT\"]")
     List<Role> roles;
 
-    public static LoginResponseDto from(String token, UserEntity user) {
+    public static LoginResponseDto from(TokenPair tokenPair, UserEntity user) {
         return LoginResponseDto.builder()
                 .username(user.getUsername())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .roles(user.getRoles())
-                .token(token)
+                .token(tokenPair.getToken())
+                .refreshToken(tokenPair.getRefreshToken())
                 .email(user.getEmail())
                 .build();
     }

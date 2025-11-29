@@ -1,5 +1,6 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.dto.user.TokenPair;
 import com.awesome.testing.dto.user.UserEditDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.controller.exception.CustomException;
@@ -7,8 +8,10 @@ import com.awesome.testing.controller.exception.UserNotFoundException;
 import com.awesome.testing.security.AuthenticationHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import com.awesome.testing.entity.UserEntity;
+import com.awesome.testing.entity.RefreshTokenEntity;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;
+import com.awesome.testing.service.token.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,11 +31,17 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationHandler authenticationHandler;
+    private final RefreshTokenService refreshTokenService;
 
-    public String signIn(String username, String password) {
+    public TokenPair signIn(String username, String password) {
         authenticationHandler.authUser(username, password);
         UserEntity user = getUser(username);
-        return jwtTokenProvider.createToken(username, user.getRoles());
+        String jwt = jwtTokenProvider.createToken(username, user.getRoles());
+        String refreshToken = refreshTokenService.createToken(user).getToken();
+        return TokenPair.builder()
+                .token(jwt)
+                .refreshToken(refreshToken)
+                .build();
     }
 
     @Transactional
@@ -45,6 +54,7 @@ public class UserService {
 
     public void delete(String username) {
         getUser(username);
+        refreshTokenService.removeAllTokensForUser(username);
         userRepository.deleteByUsername(username);
     }
 
@@ -57,9 +67,19 @@ public class UserService {
         return getUser(username);
     }
 
-    public String refresh(String username) {
-        UserEntity user = getUser(username);
-        return jwtTokenProvider.createToken(username, user.getRoles());
+    public TokenPair refresh(String refreshToken) {
+        RefreshTokenEntity rotatedToken = refreshTokenService.rotateToken(refreshToken);
+        UserEntity user = rotatedToken.getUser();
+        String jwt = jwtTokenProvider.createToken(user.getUsername(), user.getRoles());
+        String rotatedRefreshToken = rotatedToken.getToken();
+        return TokenPair.builder()
+                .token(jwt)
+                .refreshToken(rotatedRefreshToken)
+                .build();
+    }
+
+    public void logout(String refreshToken, String username) {
+        refreshTokenService.revokeToken(refreshToken, username);
     }
 
     public List<UserEntity> getAll() {

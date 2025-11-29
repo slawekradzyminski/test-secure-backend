@@ -45,7 +45,13 @@ public class CartService {
     public CartDto updateCartItem(String username, Long productId, UpdateCartItemDto updateCartItemDto) {
         CartItemEntity cartItem = getCartItemEntity(username, productId);
 
-        cartItem.setQuantity(updateCartItemDto.getQuantity());
+        int quantity = updateCartItemDto.getQuantity();
+        if (quantity == 0) {
+            cartItemRepository.delete(cartItem);
+            return getCartDto(username);
+        }
+
+        cartItem.setQuantity(quantity);
         cartItem.setPrice(cartItem.getProduct().getPrice());
         cartItemRepository.save(cartItem);
 

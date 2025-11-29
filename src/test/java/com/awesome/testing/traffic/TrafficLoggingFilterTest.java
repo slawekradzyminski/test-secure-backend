@@ -2,60 +2,63 @@ package com.awesome.testing.traffic;
 
 import com.awesome.testing.dto.traffic.TrafficEventDto;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static com.awesome.testing.factory.ollama.TrafficEventFactory.trafficEvent;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
-public class TrafficLoggingFilterTest {
+class TrafficLoggingFilterTest {
 
-    @Mock
-    private HttpServletRequest request;
-
-    @Mock
-    private HttpServletResponse response;
-
-    @Mock
-    private FilterChain filterChain;
-
-    private ConcurrentLinkedQueue<TrafficEventDto> trafficQueue;
-    private TrafficLoggingFilter trafficLoggingFilter;
-    private TrafficEventDto trafficEvent;
+    private ConcurrentLinkedQueue<TrafficEventDto> queue;
+    private TrafficLoggingFilter filter;
+    private FilterChain chain;
 
     @BeforeEach
     void setUp() {
-        // given
-        trafficQueue = new ConcurrentLinkedQueue<>();
-        trafficLoggingFilter = new TrafficLoggingFilter(trafficQueue);
-        trafficEvent = trafficEvent();
-
-        when(request.getMethod()).thenReturn(trafficEvent.getMethod());
-        when(request.getRequestURI()).thenReturn(trafficEvent.getPath());
-        when(response.getStatus()).thenReturn(trafficEvent.getStatus());
+        queue = new ConcurrentLinkedQueue<>();
+        filter = new TrafficLoggingFilter(queue);
+        chain = mock(FilterChain.class);
     }
 
     @Test
-    void shouldAddEventToQueueWhenHttpRequestIsProcessed() throws Exception {
-        // when
-        trafficLoggingFilter.doFilter(request, response, filterChain);
+    void shouldCaptureHttpRequests() throws IOException, ServletException {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getRequestURI()).thenReturn("/api/test");
+        when(response.getStatus()).thenReturn(200);
 
-        // then
-        verify(filterChain).doFilter(request, response);
-        assertThat(trafficQueue).isNotEmpty();
-        TrafficEventDto event = trafficQueue.poll();
-        assertThat(event.getMethod()).isEqualTo(trafficEvent.getMethod());
-        assertThat(event.getPath()).isEqualTo(trafficEvent.getPath());
-        assertThat(event.getStatus()).isEqualTo(trafficEvent.getStatus());
+        filter.doFilter(request, response, chain);
+
+        verify(chain).doFilter(request, response);
+        assertThat(queue).hasSize(1);
+        TrafficEventDto event = queue.poll();
+        assertThat(event.getMethod()).isEqualTo("GET");
+        assertThat(event.getPath()).isEqualTo("/api/test");
+        assertThat(event.getStatus()).isEqualTo(200);
+        assertThat(event.getDurationMs()).isGreaterThanOrEqualTo(0);
+        assertThat(event.getTimestamp()).isNotNull();
     }
-} 
+
+    @Test
+    void shouldSkipNonHttpRequests() throws IOException, ServletException {
+        ServletRequest request = mock(ServletRequest.class);
+        ServletResponse response = mock(ServletResponse.class);
+
+        filter.doFilter(request, response, chain);
+
+        verify(chain).doFilter(request, response);
+        assertThat(queue).isEmpty();
+    }
+}

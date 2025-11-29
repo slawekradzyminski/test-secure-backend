@@ -1,5 +1,6 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.controller.exception.ProductNotFoundException;
 import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.product.ProductUpdateDto;
@@ -10,8 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
-
 import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
 
 @Service
@@ -29,9 +28,10 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<ProductDto> getProductById(Long id) {
+    public ProductDto getProductById(Long id) {
         return productRepository.findById(id)
-                .map(ProductDto::from);
+                .map(ProductDto::from)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
     }
 
     @Transactional
@@ -42,13 +42,13 @@ public class ProductService {
     }
 
     @Transactional
-    public Optional<ProductDto> updateProduct(Long id, ProductUpdateDto productUpdateDto) {
-        return productRepository.findById(id)
-                .map(product -> {
-                    toUpdatedProduct(productUpdateDto, product);
-                    productRepository.save(product);
-                    return ProductDto.from(product);
-                });
+    public ProductDto updateProduct(Long id, ProductUpdateDto productUpdateDto) {
+        ProductEntity product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
+
+        toUpdatedProduct(productUpdateDto, product);
+        productRepository.saveAndFlush(product);
+        return ProductDto.from(product);
     }
 
     @Transactional

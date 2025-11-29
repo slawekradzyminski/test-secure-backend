@@ -101,6 +101,8 @@ The application uses JWT tokens for authentication. To access protected endpoint
 1. Get a token using the `/users/signin` endpoint
 2. Include the token in the Authorization header: `Bearer <token>`
 
+Sign in responses now include both an access token and a refresh token. The refresh token can be exchanged via `POST /users/refresh` even when the access token expires, and calling `POST /users/logout` revokes the refresh token on the server.
+
 ## Features
 
 - User authentication with JWT tokens
@@ -113,6 +115,12 @@ The application uses JWT tokens for authentication. To access protected endpoint
 - Order management
 - Swagger/OpenAPI documentation
 - Comprehensive test coverage
+
+## Testing & Coverage
+
+- Run `./mvnw verify` to execute the entire unit/integration suite. The build fails if line coverage drops below 40%, and JaCoCo reports are emitted to `target/site/jacoco/index.html`.
+- Core scenarios are covered with focused unit tests for business services (users, products, carts, orders, email), security components (token provider, filter, authentication handler, security config), and controller utilities/exception handlers.
+- Repository-specific behavior is validated with `@DataJpaTest` suites for `OrderRepository` and `CartItemRepository`, ensuring the custom JPQL queries behave correctly against H2.
 
 ## Getting Started
 
@@ -145,7 +153,8 @@ mvn test
 
 - POST `/users/signin` - Authenticate user and get JWT token
 - POST `/users/signup` - Register a new user
-- GET `/users/refresh` - Refresh JWT token
+- POST `/users/refresh` - Refresh JWT token using a refresh token
+- POST `/users/logout` - Revoke current refresh token and logout
 
 ### User Management
 

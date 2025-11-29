@@ -45,9 +45,7 @@ public class ProductController {
         @ApiResponse(responseCode = "404", description = "Product not found", content = @Content)
     })
     public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
-        return productService.getProductById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(productService.getProductById(id));
     }
 
     @PostMapping
@@ -77,9 +75,7 @@ public class ProductController {
     public ResponseEntity<ProductDto> updateProduct(
             @PathVariable Long id,
             @Valid @RequestBody ProductUpdateDto productUpdateDto) {
-        return productService.updateProduct(id, productUpdateDto)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(productService.updateProduct(id, productUpdateDto));
     }
 
     @DeleteMapping("/{id}")

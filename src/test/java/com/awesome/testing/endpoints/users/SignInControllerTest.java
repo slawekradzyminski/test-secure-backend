@@ -45,6 +45,7 @@ public class SignInControllerTest extends DomainHelper {
         // then
         assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(responseWithToken.getBody().getToken()).isNotBlank();
+        assertThat(responseWithToken.getBody().getRefreshToken()).isNotBlank();
     }
 
     @SuppressWarnings("ConstantConditions")

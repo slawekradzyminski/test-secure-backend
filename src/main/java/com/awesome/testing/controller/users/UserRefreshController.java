@@ -1,17 +1,20 @@
 package com.awesome.testing.controller.users;
 
+import com.awesome.testing.dto.user.RefreshTokenRequestDto;
+import com.awesome.testing.dto.user.TokenPair;
+import com.awesome.testing.dto.user.TokenRefreshResponseDto;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,15 +27,16 @@ public class UserRefreshController {
 
     private final UserService userService;
 
-    @GetMapping("/refresh")
-    @Operation(summary = "Refresh JWT token", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/refresh")
+    @Operation(summary = "Refresh JWT token using refresh token")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "New JWT token",
-                    content = @Content(schema = @Schema(type = "string", example = "eyJhbGciOiJIUzI1NiJ9..."))),
-            @ApiResponse(responseCode = "401", description = "Unauthorized – Missing or invalid token", content = @Content)
+            @ApiResponse(responseCode = "200", description = "New JWT and refresh tokens",
+                    content = @Content(schema = @Schema(implementation = TokenRefreshResponseDto.class))),
+            @ApiResponse(responseCode = "401", description = "Invalid refresh token", content = @Content)
     })
-    public String refresh(HttpServletRequest req) {
-        return userService.refresh(userService.whoAmI(req).getUsername());
+    public TokenRefreshResponseDto refresh(@Valid @RequestBody RefreshTokenRequestDto request) {
+        TokenPair tokens = userService.refresh(request.getRefreshToken());
+        return TokenRefreshResponseDto.from(tokens);
     }
 
 }
