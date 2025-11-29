@@ -1,5 +1,6 @@
 package com.awesome.testing.endpoints.products;
 
+import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.endpoints.AbstractEcommerceTest;
@@ -57,13 +58,15 @@ public class GetSingleProductControllerTest extends AbstractEcommerceTest {
         String clientToken = getToken(client);
 
         // when
-        ResponseEntity<ProductEntity> response = executeGet(
+        ResponseEntity<ErrorDto> response = executeGet(
                 PRODUCTS_ENDPOINT + "/6666",
                 getHeadersWith(clientToken),
-                ProductEntity.class);
+                ErrorDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getMessage()).isEqualTo("Product not found");
     }
 
 }

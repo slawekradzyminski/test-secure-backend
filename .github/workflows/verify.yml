@@ -15,9 +15,8 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Run unit tests
-        run: ./mvnw clean test
-        continue-on-error: true
+      - name: Run unit tests with coverage
+        run: ./mvnw clean verify
 
       - name: Publish Test Report
         if: always()
@@ -27,6 +26,51 @@ jobs:
           path: target/surefire-reports/*.xml
           reporter: java-junit
           fail-on-error: false
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: |
+            target/site/jacoco
+            target/jacoco.exec
+          retention-days: 7
+
+      - name: Summarize coverage
+        if: always()
+        run: |
+          if [ -f target/site/jacoco/jacoco.csv ]; then
+            python3 - <<'PY' > coverage-summary.txt
+import csv
+from pathlib import Path
+path = Path("target/site/jacoco/jacoco.csv")
+im = ic = bm = bc = lm = lc = 0
+with path.open() as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        im += int(row["INSTRUCTION_MISSED"])
+        ic += int(row["INSTRUCTION_COVERED"])
+        bm += int(row["BRANCH_MISSED"])
+        bc += int(row["BRANCH_COVERED"])
+        lm += int(row["LINE_MISSED"])
+        lc += int(row["LINE_COVERED"])
+
+def pct(covered, missed):
+    total = covered + missed
+    return (covered / total * 100) if total else 100.0
+
+summary = f"""## Coverage Summary
+- Instruction: {pct(ic, im):.2f}%
+- Branch: {pct(bc, bm):.2f}%
+- Line: {pct(lc, lm):.2f}%
+"""
+print(summary)
+PY
+            cat coverage-summary.txt >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "JaCoCo report not found" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   verify-local:
     runs-on: ubuntu-latest

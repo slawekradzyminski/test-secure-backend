@@ -1,5 +1,6 @@
 package com.awesome.testing.endpoints.products;
 
+import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.product.ProductUpdateDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
@@ -10,8 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
 
 import static com.awesome.testing.factory.ProductFactory.*;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
@@ -39,6 +42,32 @@ public class UpdateProductControllerTest extends AbstractEcommerceTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getName()).isEqualTo(productUpdateDto.getName());
+    }
+
+    @Test
+    public void shouldBumpUpdatedAtWhenProductChanges() {
+        // given
+        ProductEntity testProduct = setupProduct();
+        UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        String adminToken = getToken(admin);
+        ProductUpdateDto productUpdateDto = ProductUpdateDto.builder()
+                .price(testProduct.getPrice().add(BigDecimal.TEN))
+                .build();
+        LocalDateTime originalUpdatedAt = productRepository.findById(testProduct.getId())
+                .orElseThrow()
+                .getUpdatedAt();
+
+        // when
+        ResponseEntity<ProductDto> response = executePut(
+                PRODUCTS_ENDPOINT + "/" + testProduct.getId(),
+                productUpdateDto,
+                getHeadersWith(adminToken),
+                ProductDto.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getUpdatedAt()).isAfter(originalUpdatedAt);
     }
 
     @Test
@@ -134,14 +163,16 @@ public class UpdateProductControllerTest extends AbstractEcommerceTest {
         ProductUpdateDto productUpdateDto = getRandomProductUpdate();
 
         // when
-        ResponseEntity<ProductEntity> response = executePut(
+        ResponseEntity<ErrorDto> response = executePut(
                 PRODUCTS_ENDPOINT + "/66666",
                 productUpdateDto,
                 getHeadersWith(adminToken),
-                ProductEntity.class);
+                ErrorDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getMessage()).isEqualTo("Product not found");
     }
 
 }

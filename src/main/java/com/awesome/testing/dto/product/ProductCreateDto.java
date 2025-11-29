@@ -21,6 +21,7 @@ public class ProductCreateDto {
     @Schema(description = "Product name", example = "iPhone 13")
     private String name;
 
+    @NotBlank(message = "Product description is required")
     @Size(max = 1000, message = "Description cannot exceed 1000 characters")
     @Schema(description = "Product description", example = "Latest iPhone model with A15 Bionic chip")
     private String description;

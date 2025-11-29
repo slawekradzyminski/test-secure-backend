@@ -37,12 +37,12 @@ public class CartController {
     @DeleteMapping
     @Operation(summary = "Clear cart", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Cart cleared successfully"),
+        @ApiResponse(responseCode = "204", description = "Cart cleared successfully"),
         @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
     })
     public ResponseEntity<Void> clearCart(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal) {
         cartService.clearCart(principal.getUsername());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
-} 
+}

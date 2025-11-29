@@ -85,4 +85,12 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
                 .body(new ErrorDto("Unauthorized"));
     }
 
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleProductNotFoundException(ProductNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorDto(ex.getMessage()));
+    }
+
 }

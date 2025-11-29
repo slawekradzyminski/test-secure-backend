@@ -16,7 +16,7 @@ public class UpdateCartItemDto {
 
     @Schema(description = "Product quantity", example = "1")
     @NotNull
-    @Min(1)
+    @Min(value = 0, message = "Quantity cannot be negative")
     private Integer quantity;
 
 }

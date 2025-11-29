@@ -66,6 +66,23 @@ public class OrderService {
         order.setStatus(newStatus);
         return OrderDto.from(orderRepository.save(order));
     }
+
+    @Transactional
+    public OrderDto cancelOrder(Long orderId, String username, boolean isAdmin) {
+        OrderEntity order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
+
+        if (!isAdmin && !order.getUsername().equals(username)) {
+            throw new CustomException("You cannot cancel someone else's order", HttpStatus.FORBIDDEN);
+        }
+
+        if (!canBeCancelled(order.getStatus())) {
+            throw new CustomException("Order cannot be cancelled in current status", HttpStatus.BAD_REQUEST);
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        return OrderDto.from(orderRepository.save(order));
+    }
     
     @Transactional(readOnly = true)
     public Page<OrderDto> getAllOrders(OrderStatus status, Pageable pageable) {

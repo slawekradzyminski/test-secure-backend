@@ -68,13 +68,13 @@ public class UpdateCartItemControllerTest extends AbstractEcommerceTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet400ForInvalidRequestBody() {
+    public void shouldGet400ForNegativeQuantity() {
         // given
         ProductEntity testProduct = getRandomProduct();
         ProductEntity productEntity = productRepository.save(testProduct);
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
-        UpdateCartItemDto updateCartItem = UpdateCartItemDto.builder().quantity(0).build();
+        UpdateCartItemDto updateCartItem = UpdateCartItemDto.builder().quantity(-1).build();
 
         // when
         ResponseEntity<Map<String, String>> response = executePut(
@@ -85,7 +85,32 @@ public class UpdateCartItemControllerTest extends AbstractEcommerceTest {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().get("quantity")).isEqualTo("must be greater than or equal to 1");
+        assertThat(response.getBody().get("quantity")).isEqualTo("Quantity cannot be negative");
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void shouldRemoveItemWhenQuantitySetToZero() {
+        // given
+        UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String clientToken = getToken(client);
+        ProductEntity productEntity = productRepository.save(getRandomProduct());
+        CartItemDto cartItemDto = getSingleCartItemFrom(productEntity.getId());
+        cartService.addToCart(client.getUsername(), cartItemDto);
+        UpdateCartItemDto updateCartItem = UpdateCartItemDto.builder().quantity(0).build();
+
+        // when
+        ResponseEntity<CartDto> response = executePut(
+                CART_ENDPOINT + "/items/" + productEntity.getId(),
+                updateCartItem,
+                getHeadersWith(clientToken),
+                CartDto.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getItems()).isEmpty();
+        assertThat(response.getBody().getTotalItems()).isZero();
+        assertThat(response.getBody().getTotalPrice()).isZero();
     }
 
     @Test

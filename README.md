@@ -114,6 +114,12 @@ The application uses JWT tokens for authentication. To access protected endpoint
 - Swagger/OpenAPI documentation
 - Comprehensive test coverage
 
+## Testing & Coverage
+
+- Run `./mvnw verify` to execute the entire unit/integration suite. The build fails if line coverage drops below 40%, and JaCoCo reports are emitted to `target/site/jacoco/index.html`.
+- Core scenarios are covered with focused unit tests for business services (users, products, carts, orders, email), security components (token provider, filter, authentication handler, security config), and controller utilities/exception handlers.
+- Repository-specific behavior is validated with `@DataJpaTest` suites for `OrderRepository` and `CartItemRepository`, ensuring the custom JPQL queries behave correctly against H2.
+
 ## Getting Started
 
 ### Prerequisites

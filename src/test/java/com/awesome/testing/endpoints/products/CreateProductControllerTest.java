@@ -65,6 +65,27 @@ public class CreateProductControllerTest extends AbstractEcommerceTest {
         assertThat(response.getBody().get("price")).isEqualTo("Price must have at most 8 digits and 2 decimals");
     }
 
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void shouldRequireDescriptionWhenCreatingProduct() {
+        // given
+        UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
+        String adminToken = getToken(admin);
+        ProductCreateDto productCreateDto = getRandomProductCreate();
+        productCreateDto.setDescription("");
+
+        // when
+        ResponseEntity<Map<String, String>> response = executePost(
+                PRODUCTS_ENDPOINT,
+                productCreateDto,
+                getHeadersWith(adminToken),
+                mapTypeReference());
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().get("description")).isEqualTo("Product description is required");
+    }
+
     @Test
     public void shouldGet401AsUnauthorized() {
         ProductCreateDto productCreateDto = getRandomProductCreate();
