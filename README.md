@@ -155,6 +155,8 @@ mvn test
 - POST `/users/signup` - Register a new user
 - POST `/users/refresh` - Refresh JWT token using a refresh token
 - POST `/users/logout` - Revoke current refresh token and logout
+- POST `/users/password/forgot` - Anonymous endpoint that queues a password-reset email (always responds with 202)
+- POST `/users/password/reset` - Completes a reset using the emailed token and a new password (anonymous)
 
 ### User Management
 
@@ -195,6 +197,20 @@ mvn test
 ### Email
 
 - POST `/email` - Send an email (authenticated users only)
+- GET `/local/email/outbox` *(local profile only)* - Inspect the in-memory email queue when running without Artemis
+- DELETE `/local/email/outbox` *(local profile only)* - Clear the local outbox buffer for a clean test run
+
+#### Local Password Reset Flow
+
+When running with the `local` profile the backend does not connect to Artemis. Instead, every outgoing `EmailDto`
+payload is captured by the local outbox endpoint described above so that developers (or the frontend) can retrieve the
+latest password-reset link without needing SMTP infrastructure. Each record contains the destination, payload, and a
+timestamp. Clearing the outbox before a test run makes it easy to retrieve only the latest link. In Docker/localstack
+profiles, reset messages are dispatched through Artemis to the dedicated JMS consumer which forwards them to Mailhog.
+
+Every email message now carries a `template` identifier (e.g., `PASSWORD_RESET_REQUESTED`) and a `properties` map
+containing contextual data such as the reset link, expiry window, and username. Downstream consumers can render their
+own copy using those properties while the legacy `subject`/`message` fields remain populated for backward compatibility.
 
 ## Ollama Integration
 

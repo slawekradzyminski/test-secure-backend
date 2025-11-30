@@ -1,18 +1,20 @@
 package com.awesome.testing.config;
 
+import com.awesome.testing.config.properties.PasswordResetProperties;
+import com.awesome.testing.service.password.LocalEmailOutbox;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import org.springframework.jms.JmsException;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.support.converter.MessageType;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.orm.jpa.JpaTransactionManager;
-import org.springframework.jms.JmsException;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @SuppressWarnings("unused")
 @Slf4j
@@ -29,7 +31,9 @@ public class LocalConfig {
     }
 
     @Bean
-    public JmsTemplate jmsTemplate(MessageConverter messageConverter) {
+    public JmsTemplate jmsTemplate(MessageConverter messageConverter,
+                                   LocalEmailOutbox localEmailOutbox,
+                                   PasswordResetProperties passwordResetProperties) {
         return new JmsTemplate() {
             {
                 setMessageConverter(messageConverter);
@@ -43,6 +47,9 @@ public class LocalConfig {
             @Override
             public void convertAndSend(String destinationName, Object message) throws JmsException {
                 log.info("Local JMS stub - skipping send to {} with payload {}", destinationName, message);
+                if (passwordResetProperties.isLocalOutboxEnabled() && message instanceof com.awesome.testing.dto.email.EmailDto emailDto) {
+                    localEmailOutbox.store(destinationName, emailDto);
+                }
             }
         };
     }

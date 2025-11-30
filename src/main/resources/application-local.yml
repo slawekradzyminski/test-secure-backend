@@ -53,3 +53,10 @@ logging:
 
 ollama:
   base-url: http://localhost:11434 
+
+password-reset:
+  frontend-base-url: http://localhost:8081/reset
+  token-ttl: 30m
+  token-byte-length: 32
+  expose-token-in-response: true
+  local-outbox-enabled: true

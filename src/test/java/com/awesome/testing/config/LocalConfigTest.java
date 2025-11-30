@@ -1,6 +1,8 @@
 package com.awesome.testing.config;
 
 import jakarta.persistence.EntityManagerFactory;
+import com.awesome.testing.config.properties.PasswordResetProperties;
+import com.awesome.testing.service.password.LocalEmailOutbox;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
@@ -31,8 +33,10 @@ class LocalConfigTest {
     @Test
     void shouldCreateStubJmsTemplate() {
         MessageConverter converter = new MappingJackson2MessageConverter();
+        LocalEmailOutbox outbox = mock(LocalEmailOutbox.class);
+        PasswordResetProperties properties = new PasswordResetProperties();
 
-        var jmsTemplate = config.jmsTemplate(converter);
+        var jmsTemplate = config.jmsTemplate(converter, outbox, properties);
 
         assertThat(jmsTemplate.getMessageConverter()).isEqualTo(converter);
         // the stub overrides afterPropertiesSet(), so it should not fail without a ConnectionFactory

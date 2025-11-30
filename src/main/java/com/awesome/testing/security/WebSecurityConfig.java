@@ -43,13 +43,16 @@ public class WebSecurityConfig {
             "/users/signin",
             "/users/signup",
             "/users/refresh",
+            "/users/password/forgot",
+            "/users/password/reset",
             "/h2-console/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-resources/**",
             "/webjars/**",
             "/actuator/**",
-            "/ws-traffic/**"
+            "/ws-traffic/**",
+            "/local/email/outbox/**"
     );
 
     private final JwtTokenProvider jwtTokenProvider;
