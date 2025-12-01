@@ -253,6 +253,48 @@ through secure endpoints that require authentication.
       }
       ```
 
+- POST `/api/ollama/chat/tools` - Chat with Ollama models and invoke backend functions
+    - Accepts the same conversation history as `/api/ollama/chat` plus a `tools` array that describes available functions
+    - Streams every chunk (assistant thinking, tool calls, tool results, and final reply) so workshop participants can watch the loop in real time
+    - Currently exposes one function, `get_product_snapshot`, which surfaces live product metadata by `productId` or `name`
+    - Sample request:
+      ```json
+      {
+        "model": "qwen3:0.6b",
+        "messages": [
+          { "role": "system", "content": "You are a helpful shopping assistant." },
+          { "role": "user", "content": "How much does the Retro Console cost?" }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_product_snapshot",
+              "description": "Return catalog metadata for a product so you can answer shopper questions accurately.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "productId": {
+                    "type": "integer",
+                    "description": "Numeric product id from the catalog."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Exact product name when the id is unknown."
+                  }
+                },
+                "oneOf": [
+                  { "required": ["productId"] },
+                  { "required": ["name"] }
+                ]
+              }
+            }
+          }
+        ]
+      }
+      ```
+    - When the model decides to call `get_product_snapshot`, the backend executes `ProductService`, streams a `role: "tool"` payload containing the JSON snapshot (or `{ "error": "..." }`), and then resubmits the expanded history back to Ollama so the final assistant reply references the real data.
+
 ### Request Parameters
 
 Both endpoints support the following parameters:

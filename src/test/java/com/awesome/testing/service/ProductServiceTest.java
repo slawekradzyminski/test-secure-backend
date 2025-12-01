@@ -75,6 +75,24 @@ class ProductServiceTest {
     }
 
     @Test
+    void shouldGetProductByName() {
+        when(productRepository.findFirstByNameIgnoreCaseOrderByIdAsc("Laptop")).thenReturn(Optional.of(entity));
+
+        ProductDto dto = productService.getProductByName("Laptop");
+
+        assertThat(dto.getId()).isEqualTo(1L);
+        assertThat(dto.getName()).isEqualTo("Laptop");
+    }
+
+    @Test
+    void shouldThrowWhenNameNotFound() {
+        when(productRepository.findFirstByNameIgnoreCaseOrderByIdAsc("Missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> productService.getProductByName("Missing"))
+                .isInstanceOf(ProductNotFoundException.class);
+    }
+
+    @Test
     void shouldCreateProduct() {
         ProductCreateDto createDto = ProductCreateDto.builder()
                 .name("Phone")

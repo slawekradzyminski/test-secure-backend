@@ -4,11 +4,15 @@ import com.awesome.testing.dto.ollama.ModelNotFoundDto;
 import com.awesome.testing.dto.ollama.ChatRequestDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
+import com.awesome.testing.entity.ProductEntity;
+import com.awesome.testing.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
 
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.factory.ollama.OllamaRequestFactory.*;
@@ -19,6 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("ConstantConditions")
 class OllamaChatControllerTest extends AbstractOllamaTest {
     private static final String OLLAMA_CHAT_ENDPOINT = "/api/ollama/chat";
+
+    @Autowired
+    private ProductRepository productRepository;
 
     @Test
     void shouldStreamChatResponseWithValidToken() {
@@ -187,6 +194,53 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         verify(postRequestedFor(urlEqualTo("/api/chat"))
                 .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
                 .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
+    }
+
+    @Test
+    void shouldStreamToolResultBeforeFinalAssistantReply() {
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String authToken = getToken(user);
+        ChatRequestDto request = validToolChatRequest();
+        OllamaMock.stubToolCallingChatScenario();
+        ensureProductExists("iPhone 13 Pro");
+
+        ResponseEntity<String> response = executePostForEventStream(
+                request,
+                getHeadersWith(authToken),
+                String.class,
+                "/api/ollama/chat/tools"
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getContentType().toString())
+                .isEqualTo("text/event-stream;charset=UTF-8");
+
+        String responseBody = response.getBody();
+        assertThat(responseBody).contains("\"role\":\"tool\"");
+        assertThat(responseBody).contains("iPhone 13 Pro");
+        assertThat(responseBody).contains("999.99");
+
+        int toolIndex = responseBody.indexOf("\"role\":\"tool\"");
+        int finalReplyIndex = responseBody.indexOf("999.99");
+        assertThat(toolIndex).isGreaterThan(-1);
+        assertThat(finalReplyIndex).isGreaterThan(-1);
+        assertThat(toolIndex).isLessThan(finalReplyIndex);
+
+        verify(postRequestedFor(urlEqualTo("/api/chat"))
+                .withRequestBody(matchingJsonPath("$.tools[0].function.name", equalTo("get_product_snapshot")))
+                .withRequestBody(matchingJsonPath("$.messages[1].content", containing("iPhone 13 Pro"))));
+    }
+
+    private void ensureProductExists(String name) {
+        productRepository.findFirstByNameIgnoreCaseOrderByIdAsc(name)
+                .orElseGet(() -> productRepository.save(ProductEntity.builder()
+                        .name(name)
+                        .description("Test product for tool calling")
+                        .price(new BigDecimal("999.99"))
+                        .stockQuantity(50)
+                        .category("Testing")
+                        .imageUrl("http://example.com/test.png")
+                        .build()));
     }
 
 }

@@ -35,7 +35,7 @@ services:
       - my-private-ntwk
 
   frontend:
-    image: slawekradzyminski/frontend:2.0
+    image: slawekradzyminski/frontend:3.1.0
     platform: linux/amd64
     restart: always
     ports:
@@ -63,9 +63,9 @@ services:
       - my-private-ntwk
 
   ollama:
-    image: slawekradzyminski/ollama:qwen3-thinking
+    image: customlama8b
+    container_name: ollama
     restart: unless-stopped
-    hostname: ollama
     ports:
       - "11434:11434"
     environment:

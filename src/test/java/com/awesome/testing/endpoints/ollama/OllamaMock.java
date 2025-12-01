@@ -3,6 +3,7 @@ package com.awesome.testing.endpoints.ollama;
 import lombok.experimental.UtilityClass;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
 
 @UtilityClass
 public class OllamaMock {
@@ -95,5 +96,29 @@ public class OllamaMock {
                         .withHeader("Content-Type", "application/json")
                         .withBody("{\"error\":\"Internal server error\",\"message\":\"Failed to process request\"}")
                 ));
+    }
+
+    public static void stubToolCallingChatScenario() {
+        stubFor(post(urlEqualTo("/api/chat"))
+                .inScenario("tool-chat")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"model":"qwen3:0.6b","created_at":"2025-02-21T14:28:24Z","message":{"role":"assistant","content":"","tool_calls":[{"function":{"name":"get_product_snapshot","arguments":{"name":"iPhone 13 Pro"}}}]},"done":true}
+                                """)
+                        .withFixedDelay(5))
+                .willSetStateTo("tool-called"));
+
+        stubFor(post(urlEqualTo("/api/chat"))
+                .inScenario("tool-chat")
+                .whenScenarioStateIs("tool-called")
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"model":"qwen3:0.6b","created_at":"2025-02-21T14:28:30Z","message":{"role":"assistant","content":"The iPhone 13 Pro currently costs $999.99 with 50 units in stock."},"done":true}
+                                """)
+                        .withFixedDelay(5))
+                .willSetStateTo("completed"));
     }
 }

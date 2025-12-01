@@ -27,6 +27,11 @@ import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
 @RequiredArgsConstructor
 public class UserService {
 
+    static final String DEFAULT_SYSTEM_PROMPT = """
+            You are a shopping assistant for our training store. Whenever a user asks about products, prices, availability, or catalog details you must call the function get_product_snapshot.
+            Provide either a numeric productId or the full product name. The function returns JSON with id, name, description, price, stockQuantity, category, and imageUrl. Always call it before answering and base your reply on the returned values.
+            """;
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -97,7 +102,11 @@ public class UserService {
     }
 
     public String getSystemPrompt(String username) {
-        return getUser(username).getSystemPrompt();
+        String systemPrompt = getUser(username).getSystemPrompt();
+        if (systemPrompt == null || systemPrompt.isBlank()) {
+            return DEFAULT_SYSTEM_PROMPT.strip();
+        }
+        return systemPrompt;
     }
 
     public UserEntity updateSystemPrompt(String username, String newPrompt) {
@@ -127,6 +136,7 @@ public class UserService {
         user.setRoles(userRegisterDto.getRoles());
         user.setEmail(userRegisterDto.getEmail());
         user.setPassword(passwordEncoder.encode(userRegisterDto.getPassword()));
+        user.setSystemPrompt(DEFAULT_SYSTEM_PROMPT.strip());
         return user;
     }
 

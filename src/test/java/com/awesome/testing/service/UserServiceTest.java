@@ -97,6 +97,7 @@ class UserServiceTest {
         assertThat(saved.getEmail()).isEqualTo(registerDto.getEmail());
         assertThat(saved.getPassword()).isEqualTo("encoded");
         assertThat(saved.getRoles()).containsExactly(Role.ROLE_CLIENT);
+        assertThat(saved.getSystemPrompt()).isEqualTo(UserService.DEFAULT_SYSTEM_PROMPT.strip());
     }
 
     @Test
@@ -198,6 +199,15 @@ class UserServiceTest {
         when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
 
         assertThat(userService.getSystemPrompt(registerDto.getUsername())).isEqualTo("Act cool");
+    }
+
+    @Test
+    void shouldReturnDefaultSystemPromptWhenUserHasNone() {
+        userEntity.setSystemPrompt(null);
+        when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
+
+        assertThat(userService.getSystemPrompt(registerDto.getUsername()))
+                .isEqualTo(UserService.DEFAULT_SYSTEM_PROMPT.strip());
     }
 
     @Test

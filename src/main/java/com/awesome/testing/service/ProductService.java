@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+
 import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
 
 @Service
@@ -30,6 +31,13 @@ public class ProductService {
     @Transactional(readOnly = true)
     public ProductDto getProductById(Long id) {
         return productRepository.findById(id)
+                .map(ProductDto::from)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public ProductDto getProductByName(String name) {
+        return productRepository.findFirstByNameIgnoreCaseOrderByIdAsc(name)
                 .map(ProductDto::from)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found"));
     }

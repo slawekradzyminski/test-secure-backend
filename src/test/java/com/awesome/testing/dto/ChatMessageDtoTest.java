@@ -85,7 +85,7 @@ class ChatMessageDtoTest {
         // then
         assertThat(violations).hasSize(1);
         assertThat(violations.iterator().next().getMessage())
-                .isEqualTo("Either content or thinking must be present");
+                .isEqualTo("Either content, thinking, or tool calls must be present");
     }
 
     @Test
@@ -101,7 +101,7 @@ class ChatMessageDtoTest {
         // then
         assertThat(violations).hasSize(1);
         assertThat(violations.iterator().next().getMessage())
-                .isEqualTo("Either content or thinking must be present");
+                .isEqualTo("Either content, thinking, or tool calls must be present");
     }
 
     @Test
@@ -118,7 +118,7 @@ class ChatMessageDtoTest {
         // then
         assertThat(violations).hasSize(1);
         assertThat(violations.iterator().next().getMessage())
-                .isEqualTo("Role must be either 'system', 'user' or 'assistant'");
+                .isEqualTo("Role must be either 'system', 'user', 'assistant' or 'tool'");
     }
 
     @Test
@@ -167,6 +167,33 @@ class ChatMessageDtoTest {
         // then
         assertThat(violations).hasSize(1);
         assertThat(violations.iterator().next().getMessage())
-                .isEqualTo("Either content or thinking must be present");
+                .isEqualTo("Either content, thinking, or tool calls must be present");
     }
-} 
+
+    @Test
+    void shouldValidateToolMessageWhenToolNamePresent() {
+        ChatMessageDto message = ChatMessageDto.builder()
+                .role("tool")
+                .toolName("demo_tool")
+                .content("{\"foo\":\"bar\"}")
+                .build();
+
+        Set<ConstraintViolation<ChatMessageDto>> violations = validator.validate(message);
+
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
+    void shouldFailWhenToolMessageMissingToolName() {
+        ChatMessageDto message = ChatMessageDto.builder()
+                .role("tool")
+                .content("{}")
+                .build();
+
+        Set<ConstraintViolation<ChatMessageDto>> violations = validator.validate(message);
+
+        assertThat(violations).hasSize(1);
+        assertThat(violations.iterator().next().getMessage())
+                .isEqualTo("Tool messages must include tool_name");
+    }
+}

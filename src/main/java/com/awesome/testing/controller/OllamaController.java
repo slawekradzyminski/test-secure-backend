@@ -5,6 +5,7 @@ import com.awesome.testing.dto.ollama.ChatResponseDto;
 import com.awesome.testing.dto.ollama.GenerateResponseDto;
 import com.awesome.testing.dto.ollama.ModelNotFoundDto;
 import com.awesome.testing.dto.ollama.StreamedRequestDto;
+import com.awesome.testing.service.ollama.OllamaFunctionCallingService;
 import com.awesome.testing.service.ollama.OllamaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -32,6 +33,7 @@ import reactor.core.publisher.Flux;
 public class OllamaController {
 
     private final OllamaService ollamaService;
+    private final OllamaFunctionCallingService functionCallingService;
 
     @Operation(summary = "Generate text using Ollama model")
     @ApiResponses(value = {
@@ -66,5 +68,19 @@ public class OllamaController {
         log.info("Initiating chat request: model={}", request.getModel());
         return ollamaService.chat(request)
                 .doOnSubscribe(subscription -> log.info("Starting chat stream"));
+    }
+
+    @Operation(summary = "Chat with Ollama using backend function calling")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful chat response"),
+            @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Ollama server error", content = @Content)
+    })
+    @PostMapping(value = "/chat/tools", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ChatResponseDto> chatWithTools(@Valid @RequestBody ChatRequestDto request) {
+        log.info("Initiating tool-enabled chat: model={} tools={}", request.getModel(), request.getTools().size());
+        return functionCallingService.chatWithTools(request)
+                .doOnSubscribe(subscription -> log.info("Starting tool-enabled chat stream"));
     }
 } 

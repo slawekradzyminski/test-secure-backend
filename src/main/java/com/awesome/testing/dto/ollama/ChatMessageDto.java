@@ -1,12 +1,16 @@
 package com.awesome.testing.dto.ollama;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import jakarta.validation.constraints.AssertTrue;
+
+import java.util.Collections;
+import java.util.List;
 
 @Data
 @Builder
@@ -18,7 +22,7 @@ public class ChatMessageDto {
      * Must be either "system", "user" or "assistant".
      */
     @NotBlank
-    @Pattern(regexp = "^(system|user|assistant)$", message = "Role must be either 'system', 'user' or 'assistant'")
+    @Pattern(regexp = "^(system|user|assistant|tool)$", message = "Role must be either 'system', 'user', 'assistant' or 'tool'")
     private String role;
 
     /**
@@ -34,11 +38,37 @@ public class ChatMessageDto {
     private String thinking;
 
     /**
-     * Validates that either content or thinking is present (but both can be present).
+     * Tool calls requested by the assistant.
      */
-    @AssertTrue(message = "Either content or thinking must be present")
-    private boolean isContentOrThinkingPresent() {
-        return (content != null && !content.trim().isEmpty()) || 
-               (thinking != null && !thinking.trim().isEmpty());
+    @JsonProperty("tool_calls")
+    @Builder.Default
+    private List<ToolCallDto> toolCalls = Collections.emptyList();
+
+    /**
+     * Tool name populated when role == tool.
+     */
+    @JsonProperty("tool_name")
+    private String toolName;
+
+    /**
+     * Validates that either content, thinking or tool calls are present.
+     */
+    @AssertTrue(message = "Either content, thinking, or tool calls must be present")
+    private boolean isContentOrThinkingOrToolCallPresent() {
+        boolean hasContent = content != null && !content.trim().isEmpty();
+        boolean hasThinking = thinking != null && !thinking.trim().isEmpty();
+        boolean hasToolCalls = toolCalls != null && !toolCalls.isEmpty();
+        return hasContent || hasThinking || hasToolCalls;
+    }
+
+    /**
+     * Ensures tool_name is provided when role is "tool".
+     */
+    @AssertTrue(message = "Tool messages must include tool_name")
+    private boolean isToolNamePresentForToolRole() {
+        if (!"tool".equals(role)) {
+            return true;
+        }
+        return toolName != null && !toolName.trim().isEmpty();
     }
 } 
