@@ -43,7 +43,7 @@ public class UserEntity {
     @Column(name = "last_name")
     private String lastName;
 
-    @Size(max = 500)
+    @Size(max = 5000, message = "System prompt must be at most 5000 characters")
     @Column(name = "system_prompt")
     private String systemPrompt;
 

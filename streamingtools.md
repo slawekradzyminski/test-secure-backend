@@ -21,7 +21,7 @@ cURL
 An example of Ollama using the weather tool to answer the prompt What is the weather today in Toronto?
 
 curl http://localhost:11434/api/chat -d '{
-"model": "qwen3",
+"model": "qwen3:4b-instruct",
 "messages": [
 {
 "role": "user",
@@ -57,7 +57,7 @@ curl http://localhost:11434/api/chat -d '{
 Output
 ...
 {
-"model": "qwen3",
+"model": "qwen3:4b-instruct",
 "created_at": "2025-05-27T22:54:57.641643Z",
 "message": {
 "role": "assistant",
@@ -66,7 +66,7 @@ Output
 "done": false
 }
 {
-"model": "qwen3",
+"model": "qwen3:4b-instruct",
 "created_at": "2025-05-27T22:54:57.673559Z",
 "message": {
 "role": "assistant",
@@ -75,7 +75,7 @@ Output
 "done": false
 }
 {
-"model": "qwen3",
+"model": "qwen3:4b-instruct",
 "created_at": "2025-05-27T22:54:58.100509Z",
 "message": {
 "role": "assistant",
@@ -119,7 +119,7 @@ from ollama import chat, ChatResponse
 messages = [{'role': 'user', 'content': 'what is three minus one?'}]
 
 response: ChatResponse = chat(
-model='qwen3',
+model='qwen3:4b-instruct',
 messages=messages,
 tools=[add_two_numbers], # Python SDK supports passing tools as functions
 stream=True
@@ -184,7 +184,7 @@ console.log('Question:', messages[0].content);
     }
 }
 
-run('qwen3').catch(console.error);
+run('qwen3:4b-instruct').catch(console.error);
 Output:
 Question: What is 2 plus 3?
 <think>

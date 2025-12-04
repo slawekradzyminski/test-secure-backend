@@ -1,6 +1,5 @@
 package com.awesome.testing.config;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,7 +7,6 @@ import org.zalando.logbook.*;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -117,6 +115,7 @@ class PrettyPrintingHttpLogFormatterTest {
         assertThat(result).contains("\"body\":\"\"");
     }
 }
+
 
 
 

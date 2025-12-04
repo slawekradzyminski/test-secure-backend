@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class UpdateSystemPromptControllerTest extends DomainHelper {
 
     private static final String SYSTEM_PROMPT_ENDPOINT = "/users/system-prompt";
-    private static final String SYSTEM_PROMPT_TOO_LONG = "A".repeat(501);
+    private static final String SYSTEM_PROMPT_TOO_LONG = "A".repeat(5001);
 
     @SuppressWarnings("ConstantConditions")
     @Test

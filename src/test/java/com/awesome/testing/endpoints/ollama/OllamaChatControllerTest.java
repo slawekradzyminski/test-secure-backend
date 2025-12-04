@@ -1,15 +1,18 @@
 package com.awesome.testing.endpoints.ollama;
 
-import com.awesome.testing.dto.ollama.ModelNotFoundDto;
 import com.awesome.testing.dto.ollama.ChatRequestDto;
+import com.awesome.testing.dto.ollama.ModelNotFoundDto;
+import com.awesome.testing.dto.ollama.OllamaToolDefinitionDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
+import com.awesome.testing.service.ollama.OllamaToolDefinitionCatalog;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.math.BigDecimal;
@@ -26,6 +29,9 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private OllamaToolDefinitionCatalog toolDefinitionCatalog;
 
     @Test
     void shouldStreamChatResponseWithValidToken() {
@@ -50,7 +56,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         assertThat(response.getBody()).containsAnyOf("Hi", "there", "friend");
 
         verify(postRequestedFor(urlEqualTo("/api/chat"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
                 .withRequestBody(matchingJsonPath("$.messages[0].role", equalTo("user")))
                 .withRequestBody(matchingJsonPath("$.messages[0].content", equalTo("Hello")))
                 .withRequestBody(matchingJsonPath("$.stream", equalTo("true"))));
@@ -114,7 +120,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/json;charset=UTF-8");
-        assertThat(response.getBody().getError()).isEqualTo("model 'qwen3:0.6b' not found");
+        assertThat(response.getBody().getError()).isEqualTo("model 'qwen3:4b-instruct' not found");
     }
 
     @Test
@@ -160,7 +166,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
                 .isEqualTo("text/event-stream;charset=UTF-8");
 
         verify(postRequestedFor(urlEqualTo("/api/chat"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
                 .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
     }
 
@@ -192,7 +198,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         assertThat(responseBody).contains("Hi there!");
 
         verify(postRequestedFor(urlEqualTo("/api/chat"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
                 .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
     }
 
@@ -231,6 +237,27 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
                 .withRequestBody(matchingJsonPath("$.messages[1].content", containing("iPhone 13 Pro"))));
     }
 
+    @Test
+    void shouldExposeToolDefinitionsThroughController() {
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String authToken = getToken(user);
+
+        ResponseEntity<OllamaToolDefinitionDto[]> response = executeGet(
+                "/api/ollama/chat/tools/definitions",
+                getHeadersWith(authToken),
+                OllamaToolDefinitionDto[].class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().length).isEqualTo(toolDefinitionCatalog.getDefinitions().size());
+        assertThat(Arrays.stream(response.getBody())
+                .map(dto -> dto.getFunction().getName()))
+                .containsExactlyInAnyOrder(
+                        "get_product_snapshot",
+                        "list_products"
+                );
+    }
     private void ensureProductExists(String name) {
         productRepository.findFirstByNameIgnoreCaseOrderByIdAsc(name)
                 .orElseGet(() -> productRepository.save(ProductEntity.builder()

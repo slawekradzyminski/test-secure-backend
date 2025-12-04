@@ -226,7 +226,7 @@ through secure endpoints that require authentication.
     - Request body:
       ```json
       {
-        "model": "qwen3:0.6b",
+        "model": "qwen3:4b-instruct",
         "prompt": "Your prompt here",
         "options": {},
         "think": false
@@ -241,7 +241,7 @@ through secure endpoints that require authentication.
     - Request body:
       ```json
       {
-        "model": "qwen3:0.6b",
+        "model": "qwen3:4b-instruct",
         "messages": [
           { "role": "system", "content": "You are a helpful assistant." },
           { "role": "user", "content": "Hello!" },
@@ -256,11 +256,15 @@ through secure endpoints that require authentication.
 - POST `/api/ollama/chat/tools` - Chat with Ollama models and invoke backend functions
     - Accepts the same conversation history as `/api/ollama/chat` plus a `tools` array that describes available functions
     - Streams every chunk (assistant thinking, tool calls, tool results, and final reply) so workshop participants can watch the loop in real time
-    - Currently exposes one function, `get_product_snapshot`, which surfaces live product metadata by `productId` or `name`
+    - Currently exposes two functions:
+        - `get_product_snapshot` – anchor every SKU answer with trusted JSON (price/stock/description). qwen3:4b-instruct hallucinates often, so this is always the first hop when you are in the product lane.
+        - `list_products` – grab a slice of the catalog right after a snapshot so the model can compare SKUs; keep it paired with `get_product_snapshot` to avoid invented cross-product claims.
+      - We intentionally removed the Grokipedia lane, so every function call now focuses on internal inventory data.
+
     - Sample request:
       ```json
       {
-        "model": "qwen3:0.6b",
+        "model": "qwen3:4b-instruct",
         "messages": [
           { "role": "system", "content": "You are a helpful shopping assistant." },
           { "role": "user", "content": "How much does the Retro Console cost?" }
@@ -294,12 +298,13 @@ through secure endpoints that require authentication.
       }
       ```
     - When the model decides to call `get_product_snapshot`, the backend executes `ProductService`, streams a `role: "tool"` payload containing the JSON snapshot (or `{ "error": "..." }`), and then resubmits the expanded history back to Ollama so the final assistant reply references the real data.
+- GET `/api/ollama/chat/tools/definitions` - Returns the JSON schema for every supported tool so SDKs/frontends can stay in sync with the backend contract (requires the same auth as the chat endpoints)
 
 ### Request Parameters
 
 Both endpoints support the following parameters:
 
-- `model` (required): The Ollama model to use (e.g., "qwen3:0.6b")
+- `model` (required): The Ollama model to use (e.g., "qwen3:4b-instruct")
 - `options` (optional): Model-specific options (e.g., temperature, max tokens)
 - `think` (optional): Set to `true` for 'thinking' models that benefit from reasoning before responding. Defaults to `false`
 

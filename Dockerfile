@@ -1,7 +1,12 @@
 FROM eclipse-temurin:25-jdk-jammy as build
 WORKDIR /app
-COPY . .
-RUN ./mvnw clean package spring-boot:repackage -DskipTests
+
+COPY .mvn .mvn
+COPY mvnw pom.xml ./
+RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -Dmaven.test.skip=true dependency:go-offline
+
+COPY src ./src
+RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -Dmaven.test.skip=true clean package spring-boot:repackage
 
 FROM eclipse-temurin:25-jdk-jammy
 WORKDIR /app

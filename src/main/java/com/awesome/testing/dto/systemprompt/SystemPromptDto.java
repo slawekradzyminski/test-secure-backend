@@ -14,7 +14,7 @@ import jakarta.validation.constraints.Size;
 @AllArgsConstructor
 public class SystemPromptDto {
     
-    @Size(max = 500)
+    @Size(max = 5000, message = "System prompt must be at most 5000 characters")
     @Schema(description = "System prompt for Ollama chat", example = "You are a helpful assistant.")
     private String systemPrompt;
 } 

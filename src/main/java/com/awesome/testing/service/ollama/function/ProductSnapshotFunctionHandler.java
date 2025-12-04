@@ -35,7 +35,9 @@ public class ProductSnapshotFunctionHandler implements FunctionCallHandler {
         try {
             ToolCallFunctionDto function = toolCall.getFunction();
             Map<String, Object> arguments = function.getArguments();
+            log.info("Executing {} with arguments: {}", TOOL_NAME, arguments);
             ProductDto product = resolveProduct(arguments);
+            log.info("Resolved product snapshot for {}", product.getName());
             return buildToolMessage(product);
         } catch (ProductNotFoundException ex) {
             log.warn("Product lookup failed: {}", ex.getMessage());
@@ -55,12 +57,14 @@ public class ProductSnapshotFunctionHandler implements FunctionCallHandler {
         }
         Long productId = extractProductId(arguments.get("productId"));
         if (productId != null) {
+            log.info("Fetching product snapshot by id={}", productId);
             return productService.getProductById(productId);
         }
         String name = Optional.ofNullable(arguments.get("name"))
                 .map(Object::toString)
                 .filter(s -> !s.isBlank())
                 .orElseThrow(() -> new IllegalArgumentException("name must be provided when productId is absent"));
+        log.info("Fetching product snapshot by name='{}'", name);
         return productService.getProductByName(name);
     }
 

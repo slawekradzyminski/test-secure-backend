@@ -12,6 +12,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -150,5 +152,17 @@ class ProductServiceTest {
         boolean deleted = productService.deleteProduct(5L);
 
         assertThat(deleted).isFalse();
+    }
+
+    @Test
+    void shouldListProductsWithPaging() {
+        when(productRepository.findAll(PageRequest.of(0, 25)))
+                .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 25), 1));
+
+        var result = productService.listProducts(0, 25);
+
+        assertThat(result.getProducts()).hasSize(1);
+        assertThat(result.getTotal()).isEqualTo(1);
+        verify(productRepository).findAll(PageRequest.of(0, 25));
     }
 }

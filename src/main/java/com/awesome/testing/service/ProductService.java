@@ -3,10 +3,14 @@ package com.awesome.testing.service;
 import com.awesome.testing.controller.exception.ProductNotFoundException;
 import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.dto.product.ProductDto;
+import com.awesome.testing.dto.product.ProductListDto;
 import com.awesome.testing.dto.product.ProductUpdateDto;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +30,21 @@ public class ProductService {
                 .stream()
                 .map(ProductDto::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ProductListDto listProducts(int page, int size) {
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+        Page<ProductEntity> result = productRepository.findAll(pageable);
+
+        return ProductListDto.builder()
+                .products(result.getContent().stream().map(ProductDto::from).toList())
+                .total(result.getTotalElements())
+                .page(safePage)
+                .size(safeSize)
+                .build();
     }
 
     @Transactional(readOnly = true)
