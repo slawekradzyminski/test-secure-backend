@@ -3,10 +3,10 @@ WORKDIR /app
 
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
-RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -Dmaven.test.skip=true dependency:go-offline
+RUN ./mvnw -B -Dmaven.test.skip=true dependency:go-offline
 
 COPY src ./src
-RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -Dmaven.test.skip=true clean package spring-boot:repackage
+RUN ./mvnw -B -Dmaven.test.skip=true clean package spring-boot:repackage
 
 FROM eclipse-temurin:25-jdk-jammy
 WORKDIR /app

@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -22,7 +23,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ProductServiceTest {
@@ -155,14 +158,18 @@ class ProductServiceTest {
     }
 
     @Test
-    void shouldListProductsWithPaging() {
-        when(productRepository.findAll(PageRequest.of(0, 25)))
-                .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 25), 1));
+    void shouldListProductsWithOffsetLimit() {
+        when(productRepository.findAll(
+                org.mockito.ArgumentMatchers.<Specification<ProductEntity>>any(),
+                eq(PageRequest.of(0, 15))))
+                .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 15), 1));
 
-        var result = productService.listProducts(0, 25);
+        var result = productService.listProducts(10, 5, null, null);
 
-        assertThat(result.getProducts()).hasSize(1);
+        assertThat(result.getProducts()).hasSize(0); // only 1 item total, offset skips it
         assertThat(result.getTotal()).isEqualTo(1);
-        verify(productRepository).findAll(PageRequest.of(0, 25));
+        verify(productRepository).findAll(
+                org.mockito.ArgumentMatchers.<Specification<ProductEntity>>any(),
+                eq(PageRequest.of(0, 15)));
     }
 }

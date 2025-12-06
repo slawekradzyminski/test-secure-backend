@@ -31,9 +31,12 @@ public class ProductCatalogFunctionHandler implements FunctionCallHandler {
     public ChatMessageDto handle(ToolCallDto toolCall) {
         try {
             Map<String, Object> args = toolCall.getFunction().getArguments();
-            int page = parseInt(args != null ? args.get("offset") : null, 0);
-            int size = parseInt(args != null ? args.get("limit") : null, 25);
-            ProductListDto list = productService.listProducts(page, size);
+            int offset = parseInt(args != null ? args.get("offset") : null, 0);
+            int limit = parseInt(args != null ? args.get("limit") : null, 25);
+            String category = parseCategory(args != null ? args.get("category") : null);
+            Boolean inStockOnly = parseBoolean(args != null ? args.get("inStockOnly") : null);
+
+            ProductListDto list = productService.listProducts(offset, limit, category, inStockOnly);
             return ChatMessageDto.builder()
                     .role("tool")
                     .toolName(TOOL_NAME)
@@ -63,6 +66,27 @@ public class ProductCatalogFunctionHandler implements FunctionCallHandler {
             }
         }
         throw new IllegalArgumentException("Unsupported number format");
+    }
+
+    private String parseCategory(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String category = value.toString().trim();
+        return category.isBlank() ? null : category;
+    }
+
+    private Boolean parseBoolean(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        if (value instanceof String str && !str.isBlank()) {
+            return Boolean.parseBoolean(str.trim());
+        }
+        throw new IllegalArgumentException("inStockOnly must be a boolean");
     }
 
     private ChatMessageDto errorMessage(String message) {

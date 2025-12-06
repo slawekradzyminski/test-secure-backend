@@ -61,12 +61,14 @@ public class OllamaToolDefinitionCatalog {
         return OllamaToolDefinitionDto.builder()
                 .function(OllamaToolFunctionDto.builder()
                         .name("list_products")
-                        .description("Follow up immediately after get_product_snapshot so qwen3:4b-instruct can cite multiple SKUs without inventing details. Stay strictly in the product lane; there are no external knowledge tools available.")
+                        .description("Return a lightweight catalog slice (id + name only). Use for discovery by category before calling get_product_snapshot for details.")
                         .parameters(OllamaToolParametersDto.builder()
                                 .type("object")
                                 .properties(Map.of(
                                         "offset", property("integer", "Zero-based offset into the catalog (default 0)."),
-                                        "limit", property("integer", "Number of products to fetch (default 25, max 100).")
+                                        "limit", property("integer", "Number of products to fetch (default 25, max 100)."),
+                                        "category", property("string", "Case-insensitive category filter, e.g., 'electronics'."),
+                                        "inStockOnly", property("boolean", "If true, only return products with stockQuantity > 0.")
                                 ))
                                 .build())
                         .build())

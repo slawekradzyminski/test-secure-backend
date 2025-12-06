@@ -4,6 +4,7 @@ import com.awesome.testing.controller.exception.ProductNotFoundException;
 import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.product.ProductListDto;
+import com.awesome.testing.dto.product.ProductSummaryDto;
 import com.awesome.testing.dto.product.ProductUpdateDto;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.ArrayList;
+import jakarta.persistence.criteria.Predicate;
 
 import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
 
@@ -33,17 +36,38 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public ProductListDto listProducts(int page, int size) {
-        int safePage = Math.max(0, page);
-        int safeSize = Math.min(Math.max(size, 1), 100);
-        Pageable pageable = PageRequest.of(safePage, safeSize);
-        Page<ProductEntity> result = productRepository.findAll(pageable);
+    public ProductListDto listProducts(int offset, int limit, String category, Boolean inStockOnly) {
+        int safeOffset = Math.max(0, offset);
+        int safeLimit = Math.min(Math.max(limit, 1), 100);
+        Pageable pageable = PageRequest.of(0, safeOffset + safeLimit);
+
+        Page<ProductEntity> result = productRepository.findAll(
+                (root, query, cb) -> {
+                    query.distinct(true);
+                    List<Predicate> predicates = new ArrayList<>();
+                    if (category != null && !category.isBlank()) {
+                        predicates.add(cb.equal(cb.lower(root.get("category")), category.toLowerCase()));
+                    }
+                    if (Boolean.TRUE.equals(inStockOnly)) {
+                        predicates.add(cb.greaterThan(root.get("stockQuantity"), 0));
+                    }
+                    return predicates.isEmpty()
+                            ? cb.conjunction()
+                            : cb.and(predicates.toArray(new Predicate[0]));
+                },
+                pageable);
+
+        List<ProductSummaryDto> content = result.getContent().stream()
+                .map(ProductSummaryDto::from)
+                .toList();
+        int from = Math.min(safeOffset, content.size());
+        int to = Math.min(safeOffset + safeLimit, content.size());
 
         return ProductListDto.builder()
-                .products(result.getContent().stream().map(ProductDto::from).toList())
+                .products(content.subList(from, to))
                 .total(result.getTotalElements())
-                .page(safePage)
-                .size(safeSize)
+                .page(safeOffset)
+                .size(safeLimit)
                 .build();
     }
 

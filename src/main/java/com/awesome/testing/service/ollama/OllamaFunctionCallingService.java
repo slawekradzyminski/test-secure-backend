@@ -10,9 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,71 +35,27 @@ public class OllamaFunctionCallingService {
         }
         Objects.requireNonNull(request.getMessages(), "messages must not be null");
 
-        return Flux.create(
-                sink -> runConversation(request, sink, new OllamaRequestHandler("chat-tools", request.getModel())),
-                FluxSink.OverflowStrategy.BUFFER);
+        List<ChatMessageDto> history = new ArrayList<>(request.getMessages());
+        OllamaRequestHandler ctx = new OllamaRequestHandler("chat-tools", request.getModel());
+
+        return runIteration(request, history, 0, ctx);
     }
 
-    private void runConversation(ChatRequestDto baseRequest, FluxSink<ChatResponseDto> sink, OllamaRequestHandler ctx) {
-        List<ChatMessageDto> history = new ArrayList<>(baseRequest.getMessages());
-        try {
-            for (int iteration = 0; iteration < MAX_TOOL_CALL_ITERATIONS; iteration++) {
-                log.info("Iteration {}: forwarding {} historical messages to Ollama (tools={})",
-                        iteration + 1, history.size(), baseRequest.getTools().size());
-                List<ChatResponseDto> iterationChunks = sendToOllama(baseRequest, history, sink, iteration + 1, ctx);
-                if (iterationChunks == null || iterationChunks.isEmpty()) {
-                    log.warn("Iteration {}: Ollama returned no chunks, completing stream", iteration + 1);
-                    sink.complete();
-                    return;
-                }
-
-                ChatMessageDto toolRequestMessage = findLastMessageWithToolCalls(iterationChunks);
-                if (toolRequestMessage != null) {
-                    history.add(toolRequestMessage);
-                    List<String> requestedTools = toolRequestMessage.getToolCalls().stream()
-                            .map(call -> call.getFunction().getName())
-                            .collect(Collectors.toList());
-                    log.info("Iteration {}: Ollama requested {} tool call(s): {}",
-                            iteration + 1, requestedTools.size(), requestedTools);
-                    for (ToolCallDto toolCall : toolRequestMessage.getToolCalls()) {
-                        String toolName = toolCall.getFunction().getName();
-                        log.info("Iteration {}: Executing tool {} with args {}", iteration + 1, toolName,
-                                toolCall.getFunction().getArguments());
-                        ChatMessageDto toolOutput = toolRegistry.execute(toolCall);
-                        log.info("Iteration {}: Tool {} responded (payload {} chars)",
-                                iteration + 1, toolName,
-                                toolOutput.getContent() != null ? toolOutput.getContent().length() : 0);
-                        history.add(toolOutput);
-                        sink.next(buildToolResponse(baseRequest.getModel(), toolOutput));
-                    }
-                    continue;
-                }
-
-                ChatMessageDto assistantMessage = findLastMessage(iterationChunks);
-                if (assistantMessage == null) {
-                    sink.complete();
-                    return;
-                }
-                history.add(assistantMessage);
-                log.info("Iteration {}: Received assistant completion ({} chars). Ending stream.",
-                        iteration + 1, assistantMessage.getContent() != null ? assistantMessage.getContent().length() : 0);
-
-                sink.complete();
-                return;
-            }
+    private Flux<ChatResponseDto> runIteration(ChatRequestDto baseRequest,
+                                                List<ChatMessageDto> history,
+                                                int iteration,
+                                                OllamaRequestHandler ctx) {
+        if (iteration >= MAX_TOOL_CALL_ITERATIONS) {
             log.error("Exceeded maximum tool call iterations ({}) for model {}", MAX_TOOL_CALL_ITERATIONS, baseRequest.getModel());
-            sink.error(new IllegalStateException("Exceeded maximum tool call iterations"));
-        } catch (Throwable t) {
-            log.error("Failed to complete tool-enabled chat: {}", t.getMessage(), t);
-            sink.error(t);
+            return Flux.error(new IllegalStateException("Exceeded maximum tool call iterations"));
         }
-    }
 
-    private List<ChatResponseDto> sendToOllama(ChatRequestDto baseRequest,
-                                               List<ChatMessageDto> history,
-                                               FluxSink<ChatResponseDto> sink,
-                                               int iteration,
-                                               OllamaRequestHandler ctx) {
+        log.info("Iteration {}: forwarding {} historical messages to Ollama (tools={})",
+                iteration + 1, history.size(), baseRequest.getTools().size());
+
+        Sinks.Many<ChatResponseDto> replaySink = Sinks.many().replay().all();
+        List<ChatResponseDto> collectedChunks = new ArrayList<>();
+
         ChatRequestDto iterationRequest = ChatRequestDto.builder()
                 .model(baseRequest.getModel())
                 .messages(List.copyOf(history))
@@ -110,8 +66,7 @@ public class OllamaFunctionCallingService {
                 .think(baseRequest.getThink())
                 .build();
 
-        Instant start = Instant.now();
-        List<ChatResponseDto> chunks = ollamaWebClient.post()
+        Flux<ChatResponseDto> ollamaStream = ollamaWebClient.post()
                 .uri("/api/chat")
                 .bodyValue(iterationRequest)
                 .retrieve()
@@ -119,16 +74,77 @@ public class OllamaFunctionCallingService {
                 .doOnNext(resp -> {
                     logToolCalls(ctx, resp.getMessage() != null ? resp.getMessage().getToolCalls() : null);
                     handleChunk(ctx, resp);
-                    sink.next(resp);
+                    collectedChunks.add(resp);
+                    replaySink.tryEmitNext(resp);
                 })
-                .doOnError(ctx::logError)
-                .doOnComplete(ctx::logComplete)
+                .doOnError(e -> {
+                    ctx.logError(e);
+                    replaySink.tryEmitError(e);
+                })
+                .doOnComplete(() -> {
+                    ctx.logComplete();
+                    replaySink.tryEmitComplete();
+                });
+
+        Mono<List<ChatResponseDto>> collected = ollamaStream
                 .collectList()
-                .block();
-        long durationMs = Duration.between(start, Instant.now()).toMillis();
-        log.info("Iteration {}: Ollama responded with {} chunk(s) in {} ms",
-                iteration, chunks != null ? chunks.size() : 0, durationMs);
-        return chunks;
+                .map(chunks -> {
+                    log.info("Iteration {}: Ollama responded with {} chunk(s)", iteration + 1, chunks.size());
+                    return chunks;
+                });
+
+        return Flux.merge(
+                replaySink.asFlux(),
+                collected.flatMapMany(chunks -> processIterationResult(baseRequest, history, chunks, iteration, ctx))
+        );
+    }
+
+    private Flux<ChatResponseDto> processIterationResult(ChatRequestDto baseRequest,
+                                                          List<ChatMessageDto> history,
+                                                          List<ChatResponseDto> chunks,
+                                                          int iteration,
+                                                          OllamaRequestHandler ctx) {
+        if (chunks == null || chunks.isEmpty()) {
+            log.warn("Iteration {}: Ollama returned no chunks, completing stream", iteration + 1);
+            return Flux.empty();
+        }
+
+        ChatMessageDto toolRequestMessage = findLastMessageWithToolCalls(chunks);
+        if (toolRequestMessage != null) {
+            history.add(toolRequestMessage);
+            List<String> requestedTools = toolRequestMessage.getToolCalls().stream()
+                    .map(call -> call.getFunction().getName())
+                    .collect(Collectors.toList());
+            log.info("Iteration {}: Ollama requested {} tool call(s): {}",
+                    iteration + 1, requestedTools.size(), requestedTools);
+
+            List<ChatResponseDto> toolResponses = new ArrayList<>();
+            for (ToolCallDto toolCall : toolRequestMessage.getToolCalls()) {
+                String toolName = toolCall.getFunction().getName();
+                log.info("Iteration {}: Executing tool {} with args {}", iteration + 1, toolName,
+                        toolCall.getFunction().getArguments());
+                ChatMessageDto toolOutput = toolRegistry.execute(toolCall);
+                log.info("Iteration {}: Tool {} responded (payload {} chars)",
+                        iteration + 1, toolName,
+                        toolOutput.getContent() != null ? toolOutput.getContent().length() : 0);
+                history.add(toolOutput);
+                toolResponses.add(buildToolResponse(baseRequest.getModel(), toolOutput));
+            }
+
+            return Flux.concat(
+                    Flux.fromIterable(toolResponses),
+                    runIteration(baseRequest, history, iteration + 1, ctx)
+            );
+        }
+
+        ChatMessageDto assistantMessage = findLastMessage(chunks);
+        if (assistantMessage != null) {
+            history.add(assistantMessage);
+            log.info("Iteration {}: Received assistant completion ({} chars). Ending stream.",
+                    iteration + 1, assistantMessage.getContent() != null ? assistantMessage.getContent().length() : 0);
+        }
+
+        return Flux.empty();
     }
 
     private ChatResponseDto buildToolResponse(String model, ChatMessageDto toolMessage) {

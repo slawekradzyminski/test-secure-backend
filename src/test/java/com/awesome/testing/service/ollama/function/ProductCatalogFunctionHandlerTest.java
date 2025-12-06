@@ -3,13 +3,12 @@ package com.awesome.testing.service.ollama.function;
 import com.awesome.testing.dto.ollama.ChatMessageDto;
 import com.awesome.testing.dto.ollama.ToolCallDto;
 import com.awesome.testing.dto.ollama.ToolCallFunctionDto;
-import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.product.ProductListDto;
+import com.awesome.testing.dto.product.ProductSummaryDto;
 import com.awesome.testing.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -26,18 +25,15 @@ class ProductCatalogFunctionHandlerTest {
     @Test
     void shouldReturnCatalogPage() {
         ProductListDto listDto = ProductListDto.builder()
-                .products(List.of(ProductDto.builder()
+                .products(List.of(ProductSummaryDto.builder()
                         .id(1L)
                         .name("Laptop")
-                        .price(BigDecimal.valueOf(999))
-                        .stockQuantity(5)
-                        .category("Electronics")
                         .build()))
                 .total(1)
                 .page(0)
                 .size(25)
                 .build();
-        when(productService.listProducts(0, 25)).thenReturn(listDto);
+        when(productService.listProducts(0, 25, null, null)).thenReturn(listDto);
 
         ToolCallDto toolCall = ToolCallDto.builder()
                 .function(ToolCallFunctionDto.builder()

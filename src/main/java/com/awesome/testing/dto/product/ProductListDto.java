@@ -8,7 +8,7 @@ import java.util.List;
 @Value
 @Builder
 public class ProductListDto {
-    List<ProductDto> products;
+    List<ProductSummaryDto> products;
     long total;
     int page;
     int size;
