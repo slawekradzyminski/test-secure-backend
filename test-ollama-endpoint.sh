@@ -11,7 +11,7 @@ BOLD='\033[1m'
 BASE_URL="http://localhost:4001"
 USERNAME="admin"
 PASSWORD="admin"
-MODEL="qwen3:0.6b"
+MODEL="qwen3:4b-instruct"
 SIMPLE_PROMPT="Say hi"
 THINKING_PROMPT="What is 15 * 23? Think step by step and show your reasoning."
 

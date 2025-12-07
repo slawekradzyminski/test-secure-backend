@@ -12,6 +12,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -20,7 +23,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ProductServiceTest {
@@ -71,6 +76,24 @@ class ProductServiceTest {
         when(productRepository.findById(2L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> productService.getProductById(2L))
+                .isInstanceOf(ProductNotFoundException.class);
+    }
+
+    @Test
+    void shouldGetProductByName() {
+        when(productRepository.findFirstByNameIgnoreCaseOrderByIdAsc("Laptop")).thenReturn(Optional.of(entity));
+
+        ProductDto dto = productService.getProductByName("Laptop");
+
+        assertThat(dto.getId()).isEqualTo(1L);
+        assertThat(dto.getName()).isEqualTo("Laptop");
+    }
+
+    @Test
+    void shouldThrowWhenNameNotFound() {
+        when(productRepository.findFirstByNameIgnoreCaseOrderByIdAsc("Missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> productService.getProductByName("Missing"))
                 .isInstanceOf(ProductNotFoundException.class);
     }
 
@@ -132,5 +155,21 @@ class ProductServiceTest {
         boolean deleted = productService.deleteProduct(5L);
 
         assertThat(deleted).isFalse();
+    }
+
+    @Test
+    void shouldListProductsWithOffsetLimit() {
+        when(productRepository.findAll(
+                org.mockito.ArgumentMatchers.<Specification<ProductEntity>>any(),
+                eq(PageRequest.of(0, 15))))
+                .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 15), 1));
+
+        var result = productService.listProducts(10, 5, null, null);
+
+        assertThat(result.getProducts()).hasSize(0); // only 1 item total, offset skips it
+        assertThat(result.getTotal()).isEqualTo(1);
+        verify(productRepository).findAll(
+                org.mockito.ArgumentMatchers.<Specification<ProductEntity>>any(),
+                eq(PageRequest.of(0, 15)));
     }
 }

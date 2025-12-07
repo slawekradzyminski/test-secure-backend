@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GenerateRequestDto {
-    @Schema(description = "Model name", example = "qwen3:0.6b")
+    @Schema(description = "Model name", example = "qwen3:4b-instruct")
     @NotBlank String model;
     @Schema(description = "Prompt", example = "Hello, how are you?")
     @NotBlank String prompt;

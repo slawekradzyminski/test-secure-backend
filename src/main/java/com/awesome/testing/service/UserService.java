@@ -27,6 +27,28 @@ import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
 @RequiredArgsConstructor
 public class UserService {
 
+    static final String DEFAULT_CHAT_SYSTEM_PROMPT = """
+            You are an engineering copilot for our internal product team.
+            - Give concise, accurate answers grounded in provided context.
+            - Ask clarifying questions when requirements are underspecified.
+            - Highlight security or privacy concerns as soon as they matter.
+            - When tooling or APIs are relevant, describe how you would use them and cite the component.
+            """;
+
+    static final String DEFAULT_TOOL_SYSTEM_PROMPT = """
+            You are a tool-calling shopping assistant for our training store.
+            Tools available:
+            - list_products: returns ONLY id and name for a catalog slice. Accepts offset, limit, category (e.g., "electronics"), and inStockOnly.
+            - get_product_snapshot: fetch one product by name or productId (id, name, description, price, stockQuantity, category, imageUrl).
+
+            Tool rules:
+            - Never answer from memory; ground every product fact in a tool response.
+            - For broad questions, call list_products first, then snapshot every product you mention.
+            - For specific SKUs, call get_product_snapshot before replying.
+            - For comparisons, retrieve list_products followed by snapshots for each SKU mentioned.
+            - If a product is missing, be transparent and ask for another name/id; never fabricate details.
+            """;
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -96,13 +118,31 @@ public class UserService {
         return userRepository.save(existingUser);
     }
 
-    public String getSystemPrompt(String username) {
-        return getUser(username).getSystemPrompt();
+    public String getChatSystemPrompt(String username) {
+        String prompt = getUser(username).getChatSystemPrompt();
+        if (prompt == null || prompt.isBlank()) {
+            return DEFAULT_CHAT_SYSTEM_PROMPT.strip();
+        }
+        return prompt;
     }
 
-    public UserEntity updateSystemPrompt(String username, String newPrompt) {
+    public UserEntity updateChatSystemPrompt(String username, String newPrompt) {
         UserEntity user = getUser(username);
-        user.setSystemPrompt(newPrompt);
+        user.setChatSystemPrompt(newPrompt);
+        return userRepository.save(user);
+    }
+
+    public String getToolSystemPrompt(String username) {
+        String prompt = getUser(username).getToolSystemPrompt();
+        if (prompt == null || prompt.isBlank()) {
+            return DEFAULT_TOOL_SYSTEM_PROMPT.strip();
+        }
+        return prompt;
+    }
+
+    public UserEntity updateToolSystemPrompt(String username, String newPrompt) {
+        UserEntity user = getUser(username);
+        user.setToolSystemPrompt(newPrompt);
         return userRepository.save(user);
     }
 
@@ -127,6 +167,8 @@ public class UserService {
         user.setRoles(userRegisterDto.getRoles());
         user.setEmail(userRegisterDto.getEmail());
         user.setPassword(passwordEncoder.encode(userRegisterDto.getPassword()));
+        user.setChatSystemPrompt(DEFAULT_CHAT_SYSTEM_PROMPT.strip());
+        user.setToolSystemPrompt(DEFAULT_TOOL_SYSTEM_PROMPT.strip());
         return user;
     }
 

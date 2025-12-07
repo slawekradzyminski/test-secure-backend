@@ -1,7 +1,7 @@
 package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.systemprompt.SystemPromptDto;
+import com.awesome.testing.dto.systemprompt.ToolSystemPromptDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import org.junit.jupiter.api.Test;
@@ -15,49 +15,43 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class GetSystemPromptControllerTest extends DomainHelper {
+public class GetToolSystemPromptControllerTest extends DomainHelper {
 
-    private static final String SYSTEM_PROMPT_ENDPOINT = "/users/system-prompt";
+    private static final String TOOL_SYSTEM_PROMPT_ENDPOINT = "/users/tool-system-prompt";
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGetSystemPromptAsAdmin() {
-        // given
+    public void shouldGetToolSystemPromptAsAdmin() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String token = getToken(user);
-        String systemPrompt = "You are a helpful assistant.";
-        SystemPromptDto systemPromptDto = new SystemPromptDto(systemPrompt);
+        String systemPrompt = "Call get_product_snapshot first.";
+        ToolSystemPromptDto dto = new ToolSystemPromptDto(systemPrompt);
 
         executePut(
-                SYSTEM_PROMPT_ENDPOINT,
-                systemPromptDto,
+                TOOL_SYSTEM_PROMPT_ENDPOINT,
+                dto,
                 getHeadersWith(token),
-                SystemPromptDto.class);
+                ToolSystemPromptDto.class);
 
-        // when
-        ResponseEntity<SystemPromptDto> response = executeGet(
-                SYSTEM_PROMPT_ENDPOINT,
+        ResponseEntity<ToolSystemPromptDto> response = executeGet(
+                TOOL_SYSTEM_PROMPT_ENDPOINT,
                 getHeadersWith(token),
-                SystemPromptDto.class);
+                ToolSystemPromptDto.class);
 
-        // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().getSystemPrompt()).isEqualTo(systemPrompt);
+        assertThat(response.getBody().getToolSystemPrompt()).isEqualTo(systemPrompt);
     }
 
     @Test
     public void shouldGet401AsUnauthorized() {
-        // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         getToken(user);
 
-        // when
         ResponseEntity<Map<String, String>> response = executeGet(
-                SYSTEM_PROMPT_ENDPOINT,
+                TOOL_SYSTEM_PROMPT_ENDPOINT,
                 getJsonOnlyHeaders(),
                 mapTypeReference());
 
-        // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 }

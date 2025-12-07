@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +21,7 @@ public class ChatRequestDto {
     @Schema(
             description = "Model to use. Only this model is downloaded automatically. " +
                     "Other model have to be manually downloaded on Ollama server",
-            example = "qwen3:0.6b"
+            example = "qwen3:4b-instruct"
     )
     private String model;
 
@@ -52,6 +53,13 @@ public class ChatRequestDto {
     private Map<String, Object> options;
 
     /**
+     * Tool definitions exposed to the model for function calling.
+     */
+    @Schema(description = "Function/tool definitions available to the model.")
+    @Builder.Default
+    private List<OllamaToolDefinitionDto> tools = Collections.emptyList();
+
+    /**
      * Whether to stream the response.
      * Defaults to true.
      * Hidden from Swagger documentation.
@@ -76,4 +84,5 @@ public class ChatRequestDto {
     @Schema(description = "Should the model think before responding?", example = "false")
     @Builder.Default
     private Boolean think = false;
+
 } 

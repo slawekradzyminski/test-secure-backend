@@ -1,7 +1,7 @@
 package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.systemprompt.SystemPromptDto;
+import com.awesome.testing.dto.systemprompt.ChatSystemPromptDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import org.junit.jupiter.api.Test;
@@ -15,68 +15,59 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class UpdateSystemPromptControllerTest extends DomainHelper {
+public class UpdateChatSystemPromptControllerTest extends DomainHelper {
 
-    private static final String SYSTEM_PROMPT_ENDPOINT = "/users/system-prompt";
-    private static final String SYSTEM_PROMPT_TOO_LONG = "A".repeat(501);
+    private static final String CHAT_SYSTEM_PROMPT_ENDPOINT = "/users/chat-system-prompt";
+    private static final String SYSTEM_PROMPT_TOO_LONG = "A".repeat(5001);
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldUpdateSystemPromptAsAdmin() {
-        // given
+    public void shouldUpdateChatSystemPromptAsAdmin() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String token = getToken(user);
         String systemPrompt = "You are a helpful assistant.";
-        SystemPromptDto systemPromptDto = new SystemPromptDto(systemPrompt);
+        ChatSystemPromptDto dto = new ChatSystemPromptDto(systemPrompt);
 
-        // when
-        ResponseEntity<SystemPromptDto> response = executePut(
-                SYSTEM_PROMPT_ENDPOINT,
-                systemPromptDto,
+        ResponseEntity<ChatSystemPromptDto> response = executePut(
+                CHAT_SYSTEM_PROMPT_ENDPOINT,
+                dto,
                 getHeadersWith(token),
-                SystemPromptDto.class);
+                ChatSystemPromptDto.class);
 
-        // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().getSystemPrompt()).isEqualTo(systemPrompt);
+        assertThat(response.getBody().getChatSystemPrompt()).isEqualTo(systemPrompt);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldUpdateSystemPromptAsClient() {
-        // given
+    public void shouldUpdateChatSystemPromptAsClient() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String token = getToken(user);
         String systemPrompt = "You are a helpful assistant for a client.";
-        SystemPromptDto systemPromptDto = new SystemPromptDto(systemPrompt);
+        ChatSystemPromptDto dto = new ChatSystemPromptDto(systemPrompt);
 
-        // when
-        ResponseEntity<SystemPromptDto> response = executePut(
-                SYSTEM_PROMPT_ENDPOINT,
-                systemPromptDto,
+        ResponseEntity<ChatSystemPromptDto> response = executePut(
+                CHAT_SYSTEM_PROMPT_ENDPOINT,
+                dto,
                 getHeadersWith(token),
-                SystemPromptDto.class);
+                ChatSystemPromptDto.class);
 
-        // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().getSystemPrompt()).isEqualTo(systemPrompt);
+        assertThat(response.getBody().getChatSystemPrompt()).isEqualTo(systemPrompt);
     }
 
     @Test
-    public void shouldGet400WhenSystemPromptTooLong() {
-        // given
+    public void shouldGet400WhenChatSystemPromptTooLong() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String token = getToken(user);
-        SystemPromptDto systemPromptDto = new SystemPromptDto(SYSTEM_PROMPT_TOO_LONG);
+        ChatSystemPromptDto dto = new ChatSystemPromptDto(SYSTEM_PROMPT_TOO_LONG);
 
-        // when
         ResponseEntity<Map<String, String>> response = executePut(
-                SYSTEM_PROMPT_ENDPOINT,
-                systemPromptDto,
+                CHAT_SYSTEM_PROMPT_ENDPOINT,
+                dto,
                 getHeadersWith(token),
                 mapTypeReference());
 
-        // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 }

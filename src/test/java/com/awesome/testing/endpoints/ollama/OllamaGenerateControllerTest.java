@@ -43,7 +43,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
         assertThat(response.getBody()).containsAnyOf("Hello", "world", "my friend");
 
         verify(postRequestedFor(urlEqualTo("/api/generate"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
                 .withRequestBody(matchingJsonPath("$.prompt", equalTo("test prompt")))
                 .withRequestBody(matchingJsonPath("$.stream", equalTo("true"))));
     }
@@ -106,7 +106,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/json;charset=UTF-8");
-        assertThat(response.getBody().getError()).isEqualTo("model 'qwen3:0.6b' not found");
+        assertThat(response.getBody().getError()).isEqualTo("model 'qwen3:4b-instruct' not found");
     }
 
     @Test
@@ -152,7 +152,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
                 .isEqualTo("text/event-stream;charset=UTF-8");
 
         verify(postRequestedFor(urlEqualTo("/api/generate"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
                 .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
     }
 
@@ -184,7 +184,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
         assertThat(responseBody).contains("Hello");
 
         verify(postRequestedFor(urlEqualTo("/api/generate"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:0.6b")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
                 .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
     }
 

@@ -32,6 +32,7 @@ spring:
       receive-timeout: 2000
   main:
     allow-bean-definition-overriding: true
+    banner-mode: "off"
 
 activemq:
   destination: email
@@ -50,7 +51,9 @@ security:
 
 logging:
   level:
-    root: INFO
+    root: WARN
+    org.springframework: WARN
+    com.awesome.testing: WARN
     org.apache.activemq: WARN
     org.apache.activemq.artemis: WARN
   file:
