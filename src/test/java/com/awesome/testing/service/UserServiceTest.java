@@ -66,7 +66,8 @@ class UserServiceTest {
 
         userEntity = buildUserEntity("johndoe", "john.doe@example.com");
         userEntity.setRoles(List.of(Role.ROLE_CLIENT));
-        userEntity.setSystemPrompt("Act cool");
+        userEntity.setChatSystemPrompt("Act cool");
+        userEntity.setToolSystemPrompt("Call tools");
     }
 
     @Test
@@ -97,7 +98,8 @@ class UserServiceTest {
         assertThat(saved.getEmail()).isEqualTo(registerDto.getEmail());
         assertThat(saved.getPassword()).isEqualTo("encoded");
         assertThat(saved.getRoles()).containsExactly(Role.ROLE_CLIENT);
-        assertThat(saved.getSystemPrompt()).isEqualTo(UserService.DEFAULT_SYSTEM_PROMPT.strip());
+        assertThat(saved.getChatSystemPrompt()).isEqualTo(UserService.DEFAULT_CHAT_SYSTEM_PROMPT.strip());
+        assertThat(saved.getToolSystemPrompt()).isEqualTo(UserService.DEFAULT_TOOL_SYSTEM_PROMPT.strip());
     }
 
     @Test
@@ -195,29 +197,56 @@ class UserServiceTest {
     }
 
     @Test
-    void shouldReturnSystemPrompt() {
+    void shouldReturnChatSystemPrompt() {
         when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
 
-        assertThat(userService.getSystemPrompt(registerDto.getUsername())).isEqualTo("Act cool");
+        assertThat(userService.getChatSystemPrompt(registerDto.getUsername())).isEqualTo("Act cool");
     }
 
     @Test
-    void shouldReturnDefaultSystemPromptWhenUserHasNone() {
-        userEntity.setSystemPrompt(null);
+    void shouldReturnDefaultChatSystemPromptWhenUserHasNone() {
+        userEntity.setChatSystemPrompt(null);
         when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
 
-        assertThat(userService.getSystemPrompt(registerDto.getUsername()))
-                .isEqualTo(UserService.DEFAULT_SYSTEM_PROMPT.strip());
+        assertThat(userService.getChatSystemPrompt(registerDto.getUsername()))
+                .isEqualTo(UserService.DEFAULT_CHAT_SYSTEM_PROMPT.strip());
     }
 
     @Test
-    void shouldUpdateSystemPrompt() {
+    void shouldUpdateChatSystemPrompt() {
         when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
         when(userRepository.save(any(UserEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        UserEntity result = userService.updateSystemPrompt(registerDto.getUsername(), "New Prompt");
+        UserEntity result = userService.updateChatSystemPrompt(registerDto.getUsername(), "New Prompt");
 
-        assertThat(result.getSystemPrompt()).isEqualTo("New Prompt");
+        assertThat(result.getChatSystemPrompt()).isEqualTo("New Prompt");
+        verify(userRepository).save(userEntity);
+    }
+
+    @Test
+    void shouldReturnToolSystemPrompt() {
+        when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
+
+        assertThat(userService.getToolSystemPrompt(registerDto.getUsername())).isEqualTo("Call tools");
+    }
+
+    @Test
+    void shouldReturnDefaultToolSystemPromptWhenUserHasNone() {
+        userEntity.setToolSystemPrompt(null);
+        when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
+
+        assertThat(userService.getToolSystemPrompt(registerDto.getUsername()))
+                .isEqualTo(UserService.DEFAULT_TOOL_SYSTEM_PROMPT.strip());
+    }
+
+    @Test
+    void shouldUpdateToolSystemPrompt() {
+        when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
+        when(userRepository.save(any(UserEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UserEntity result = userService.updateToolSystemPrompt(registerDto.getUsername(), "Tool Prompt");
+
+        assertThat(result.getToolSystemPrompt()).isEqualTo("Tool Prompt");
         verify(userRepository).save(userEntity);
     }
 
@@ -236,6 +265,8 @@ class UserServiceTest {
         entity.setRoles(List.of(Role.ROLE_CLIENT));
         entity.setFirstName("John");
         entity.setLastName("Doe");
+        entity.setChatSystemPrompt(UserService.DEFAULT_CHAT_SYSTEM_PROMPT.strip());
+        entity.setToolSystemPrompt(UserService.DEFAULT_TOOL_SYSTEM_PROMPT.strip());
         return entity;
     }
 

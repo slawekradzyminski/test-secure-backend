@@ -300,6 +300,15 @@ through secure endpoints that require authentication.
     - When the model decides to call `get_product_snapshot`, the backend executes `ProductService`, streams a `role: "tool"` payload containing the JSON snapshot (or `{ "error": "..." }`), and then resubmits the expanded history back to Ollama so the final assistant reply references the real data.
 - GET `/api/ollama/chat/tools/definitions` - Returns the JSON schema for every supported tool so SDKs/frontends can stay in sync with the backend contract (requires the same auth as the chat endpoints)
 
+### Prompt Management
+
+Each user can configure two system prompts that the backend injects automatically:
+
+- GET/PUT `/users/chat-system-prompt` – controls the general conversation tone for `/api/ollama/chat`.
+- GET/PUT `/users/tool-system-prompt` – explains how to use the catalog tools for `/api/ollama/chat/tools`.
+
+Clients can fetch these endpoints to display/edit the prompts, but they no longer need to include the strings in the `messages` array; the controller prepends them before relaying any request to Ollama.
+
 ### Request Parameters
 
 Both endpoints support the following parameters:

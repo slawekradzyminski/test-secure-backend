@@ -43,9 +43,13 @@ public class UserEntity {
     @Column(name = "last_name")
     private String lastName;
 
-    @Size(max = 5000, message = "System prompt must be at most 5000 characters")
-    @Column(name = "system_prompt")
-    private String systemPrompt;
+    @Size(max = 5000, message = "Chat system prompt must be at most 5000 characters")
+    @Column(name = "chat_system_prompt")
+    private String chatSystemPrompt;
+
+    @Size(max = 5000, message = "Tool system prompt must be at most 5000 characters")
+    @Column(name = "tool_system_prompt")
+    private String toolSystemPrompt;
 
     @JsonIgnore
     public String getPassword() {

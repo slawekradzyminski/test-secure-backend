@@ -94,10 +94,6 @@ public class OllamaRequestFactory {
                 .model("qwen3:4b-instruct")
                 .messages(List.of(
                         ChatMessageDto.builder()
-                                .role("system")
-                                .content("You help shoppers with real catalog data.")
-                                .build(),
-                        ChatMessageDto.builder()
                                 .role("user")
                                 .content("Tell me the price of the iPhone 13 Pro.")
                                 .build()

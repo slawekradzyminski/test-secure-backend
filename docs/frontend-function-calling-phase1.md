@@ -10,7 +10,7 @@ This document captures the discovery work, design decisions, and shared artefact
 ### Existing flow
 - `/llm/chat` renders `OllamaChatPage`, which relies on `useOllamaChat`.
 - `useOllamaChat` keeps the entire chat history in component state and streams updates via `processSSEResponse`.
-- The hook loads the user’s system prompt from `/users/system-prompt` on mount and inserts it as the first `system` message.
+- The hook loads the user’s chat prompt from `/users/chat-system-prompt` (and the tool prompt from `/users/tool-system-prompt`) on mount so admins can preview/edit them, but the backend now injects those prompts automatically when forwarding chat/tool requests.
 - SSE chunks are applied cumulatively to a single assistant placeholder (`assistantIndex`). There is no notion of intermediate roles (e.g., `tool`), so any new message types must be stored separately.
 - API client (`ollama.chat`) POSTs to `/api/ollama/chat` and returns the raw `Response` so hooks can decode SSE manually.
 
@@ -55,7 +55,7 @@ All tool-enabled chat requests will include `tools: [PRODUCT_SNAPSHOT_TOOL]`.
 ## 3. Interaction Design
 
 - **Entry point**: extend the existing `/llm/chat` view with a prominent toggle labeled *“Use live product data (calls get_product_snapshot)”*. When enabled, the chat form routes through the new hook/endpoint. Keeping everything on one page simplifies workshop instructions and preserves URL bookmarks.
-- **System prompt banner**: show the current default prompt (fetched from `/users/system-prompt`) in a highlighted card with an “Edit prompt” button for admins. This ensures facilitators can paste the backend’s recommended instructions without digging into settings.
+- **System prompt banner**: show the current default prompt (fetched from `/users/chat-system-prompt`) in a highlighted card with an “Edit prompt” button for admins. Next to it, surface the tool prompt from `/users/tool-system-prompt` so facilitators can tweak the catalog-specific instructions without leaving the chat view.
 - **Suggested prompts**: beneath the input, display quick actions such as “What’s the price of the iPhone 13 Pro?” and “How many Apple Watch Series 7 units are available?” Clicking one should populate the textarea and trigger send, helping attendees reach the happy path quickly.
 - **Mode indicator**: when the toggle is on, prepend each assistant reply with a subtle badge (“Catalog-powered”) to remind users they’re seeing live data.
 

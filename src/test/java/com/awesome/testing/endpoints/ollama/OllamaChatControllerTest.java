@@ -57,8 +57,9 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
 
         verify(postRequestedFor(urlEqualTo("/api/chat"))
                 .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
-                .withRequestBody(matchingJsonPath("$.messages[0].role", equalTo("user")))
-                .withRequestBody(matchingJsonPath("$.messages[0].content", equalTo("Hello")))
+                .withRequestBody(matchingJsonPath("$.messages[0].role", equalTo("system")))
+                .withRequestBody(matchingJsonPath("$.messages[1].role", equalTo("user")))
+                .withRequestBody(matchingJsonPath("$.messages[1].content", equalTo("Hello")))
                 .withRequestBody(matchingJsonPath("$.stream", equalTo("true"))));
     }
 
@@ -234,7 +235,9 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
 
         verify(postRequestedFor(urlEqualTo("/api/chat"))
                 .withRequestBody(matchingJsonPath("$.tools[0].function.name", equalTo("get_product_snapshot")))
-                .withRequestBody(matchingJsonPath("$.messages[1].content", containing("iPhone 13 Pro"))));
+                .withRequestBody(matchingJsonPath("$.messages[0].role", equalTo("system")))
+                .withRequestBody(matchingJsonPath("$.messages[1].role", equalTo("system")))
+                .withRequestBody(matchingJsonPath("$.messages[2].content", containing("iPhone 13 Pro"))));
     }
 
     @Test
