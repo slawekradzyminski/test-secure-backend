@@ -9,7 +9,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
@@ -18,6 +21,9 @@ import java.time.Instant;
 @Table(name = "refresh_token")
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RefreshTokenEntity {
 
     @Id
@@ -30,6 +36,7 @@ public class RefreshTokenEntity {
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean revoked = false;
 

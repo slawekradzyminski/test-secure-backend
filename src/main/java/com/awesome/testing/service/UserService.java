@@ -160,16 +160,16 @@ public class UserService {
     }
 
     private UserEntity getUser(UserRegisterDto userRegisterDto) {
-        UserEntity user = new UserEntity();
-        user.setUsername(userRegisterDto.getUsername());
-        user.setFirstName(userRegisterDto.getFirstName());
-        user.setLastName(userRegisterDto.getLastName());
-        user.setRoles(userRegisterDto.getRoles());
-        user.setEmail(userRegisterDto.getEmail());
-        user.setPassword(passwordEncoder.encode(userRegisterDto.getPassword()));
-        user.setChatSystemPrompt(DEFAULT_CHAT_SYSTEM_PROMPT.strip());
-        user.setToolSystemPrompt(DEFAULT_TOOL_SYSTEM_PROMPT.strip());
-        return user;
+        return UserEntity.builder()
+                .username(userRegisterDto.getUsername())
+                .firstName(userRegisterDto.getFirstName())
+                .lastName(userRegisterDto.getLastName())
+                .roles(userRegisterDto.getRoles())
+                .email(userRegisterDto.getEmail())
+                .password(passwordEncoder.encode(userRegisterDto.getPassword()))
+                .chatSystemPrompt(DEFAULT_CHAT_SYSTEM_PROMPT.strip())
+                .toolSystemPrompt(DEFAULT_TOOL_SYSTEM_PROMPT.strip())
+                .build();
     }
 
     private UserEntity getUser(String username) {

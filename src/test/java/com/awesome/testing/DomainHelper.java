@@ -33,30 +33,39 @@ public abstract class DomainHelper extends HttpHelper {
     }
 
     protected LoginResponseDto registerAndLogin(UserRegisterDto userRegisterDto) {
-        executePost(
+        ResponseEntity<String> signupResponse = executePost(
                 REGISTER_ENDPOINT,
                 userRegisterDto,
                 getJsonOnlyHeaders(),
                 String.class
         );
+        if (!signupResponse.getStatusCode().is2xxSuccessful()) {
+            throw new IllegalStateException("Signup failed with status " + signupResponse.getStatusCode()
+                    + " body=" + signupResponse.getBody());
+        }
 
         LoginDto loginDto = LoginDto.builder()
                 .username(userRegisterDto.getUsername())
                 .password(userRegisterDto.getPassword())
                 .build();
 
-        LoginResponseDto loginResponse = executePost(
+        ResponseEntity<LoginResponseDto> loginResponseEntity = executePost(
                 LOGIN_ENDPOINT,
                 loginDto,
                 getJsonOnlyHeaders(),
                 LoginResponseDto.class
-        ).getBody();
+        );
 
-        if (loginResponse != null) {
-            return loginResponse;
+        if (!loginResponseEntity.getStatusCode().is2xxSuccessful()) {
+            throw new IllegalStateException("Login failed with status " + loginResponseEntity.getStatusCode()
+                    + " body=" + loginResponseEntity.getBody());
         }
 
-        throw new IllegalStateException("Login failed, token not found");
+        LoginResponseDto loginResponse = loginResponseEntity.getBody();
+        if (loginResponse == null || loginResponse.getToken() == null) {
+            throw new IllegalStateException("Login failed, token not found");
+        }
+        return loginResponse;
     }
 
     protected String getUserEndpoint(String username) {

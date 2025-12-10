@@ -18,7 +18,7 @@ public class OllamaMock {
                                 {"model":"qwen3:4b-instruct","created_at":"2025-02-21T14:28:25Z","response":"world","done":false,"context":null,"total_duration":null}
                                 {"model":"qwen3:4b-instruct","created_at":"2025-02-21T14:28:25Z","response":"my friend","done":true,"context":[2456, 4567],"total_duration":200000000}
                                 """)
-                        .withChunkedDribbleDelay(2, 10)));
+                        .withFixedDelay(1)));
     }
 
     public static void stubSuccessfulGenerationWithThinking() {
@@ -31,7 +31,7 @@ public class OllamaMock {
                                 {"model":"qwen3:4b-instruct","created_at":"2025-02-21T14:28:26Z","response":"Hello","thinking":"","done":false,"context":null,"total_duration":null}
                                 {"model":"qwen3:4b-instruct","created_at":"2025-02-21T14:28:27Z","response":" world!","thinking":"","done":true,"context":[2456, 4567],"total_duration":300000000}
                                 """)
-                        .withChunkedDribbleDelay(2, 10)));
+                        .withFixedDelay(1)));
     }
 
     public static void stubModelNotFound() {
@@ -63,7 +63,7 @@ public class OllamaMock {
                                 {"model":"qwen3:4b-instruct","created_at":"2025-02-21T14:28:25Z","message":{"role":"assistant","content":"there"},"done":false}
                                 {"model":"qwen3:4b-instruct","created_at":"2025-02-21T14:28:25Z","message":{"role":"assistant","content":"friend!"},"done":true}
                                 """)
-                        .withChunkedDribbleDelay(2, 10)));
+                        .withFixedDelay(1)));
     }
 
     public static void stubSuccessfulChatWithThinking() {
@@ -76,7 +76,7 @@ public class OllamaMock {
                                 {"model":"qwen3:4b-instruct","created_at":"2025-02-21T14:28:26Z","message":{"role":"assistant","content":"Hi there!","thinking":""},"done":false}
                                 {"model":"qwen3:4b-instruct","created_at":"2025-02-21T14:28:27Z","message":{"role":"assistant","content":" How can I help?","thinking":""},"done":true}
                                 """)
-                        .withChunkedDribbleDelay(2, 10)));
+                        .withFixedDelay(1)));
     }
 
     public static void stubModelNotFoundForChat() {

@@ -21,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,9 +66,6 @@ class UserServiceTest {
                 .build();
 
         userEntity = buildUserEntity("johndoe", "john.doe@example.com");
-        userEntity.setRoles(List.of(Role.ROLE_CLIENT));
-        userEntity.setChatSystemPrompt("Act cool");
-        userEntity.setToolSystemPrompt("Call tools");
     }
 
     @Test
@@ -258,22 +256,23 @@ class UserServiceTest {
     }
 
     private static UserEntity buildUserEntity(String username, String email) {
-        UserEntity entity = new UserEntity();
-        entity.setUsername(username);
-        entity.setEmail(email);
-        entity.setPassword("secret");
-        entity.setRoles(List.of(Role.ROLE_CLIENT));
-        entity.setFirstName("John");
-        entity.setLastName("Doe");
-        entity.setChatSystemPrompt(UserService.DEFAULT_CHAT_SYSTEM_PROMPT.strip());
-        entity.setToolSystemPrompt(UserService.DEFAULT_TOOL_SYSTEM_PROMPT.strip());
-        return entity;
+        return UserEntity.builder()
+                .username(username)
+                .email(email)
+                .password("secret")
+                .roles(List.of(Role.ROLE_CLIENT))
+                .firstName("John")
+                .lastName("Doe")
+                .chatSystemPrompt("Act cool")
+                .toolSystemPrompt("Call tools")
+                .build();
     }
 
     private static RefreshTokenEntity buildRefreshToken(String tokenValue, UserEntity owner) {
-        RefreshTokenEntity token = new RefreshTokenEntity();
-        token.setToken(tokenValue);
-        token.setUser(owner);
-        return token;
+        return RefreshTokenEntity.builder()
+                .token(tokenValue)
+                .user(owner)
+                .expiresAt(Instant.now().plusSeconds(3600))
+                .build();
     }
 }

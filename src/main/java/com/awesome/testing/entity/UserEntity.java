@@ -2,7 +2,11 @@ package com.awesome.testing.entity;
 
 import com.awesome.testing.dto.user.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -11,7 +15,8 @@ import java.util.List;
 @Entity
 @Data
 @NoArgsConstructor
-@RequiredArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "app_user")
 public class UserEntity {
 
