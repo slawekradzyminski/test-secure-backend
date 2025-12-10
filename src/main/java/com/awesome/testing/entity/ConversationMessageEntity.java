@@ -46,16 +46,18 @@ public class ConversationMessageEntity {
     private String role;
 
     @Lob
+    @Column(columnDefinition = "TEXT")
     private String content;
 
     @Lob
+    @Column(columnDefinition = "TEXT")
     private String thinking;
 
     @Column(name = "tool_name", length = 255)
     private String toolName;
 
     @Lob
-    @Column(name = "tool_calls")
+    @Column(name = "tool_calls", columnDefinition = "TEXT")
     private String toolCallsJson;
 
     @Column(name = "created_at", nullable = false, updatable = false)
