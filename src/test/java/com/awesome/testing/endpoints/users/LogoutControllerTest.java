@@ -4,7 +4,6 @@ import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.user.LoginDto;
 import com.awesome.testing.dto.user.LoginResponseDto;
-import com.awesome.testing.dto.user.LogoutRequestDto;
 import com.awesome.testing.dto.user.RefreshTokenRequestDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.TokenRefreshResponseDto;
@@ -35,7 +34,7 @@ public class LogoutControllerTest extends DomainHelper {
         // when
         ResponseEntity<Void> logoutResponse = executePost(
                 LOGOUT_ENDPOINT,
-                new LogoutRequestDto(loginResponse.getRefreshToken()),
+                null,
                 getHeadersWith(loginResponse.getToken()),
                 Void.class
         );
@@ -62,7 +61,7 @@ public class LogoutControllerTest extends DomainHelper {
 
         executePost(
                 LOGOUT_ENDPOINT,
-                new LogoutRequestDto(loginResponse.getRefreshToken()),
+                null,
                 getHeadersWith(loginResponse.getToken()),
                 Void.class
         );

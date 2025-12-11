@@ -100,8 +100,8 @@ public class UserService {
                 .build();
     }
 
-    public void logout(String refreshToken, String username) {
-        refreshTokenService.revokeToken(refreshToken, username);
+    public void logout(String username) {
+        refreshTokenService.removeAllTokensForUser(username);
     }
 
     public List<UserEntity> getAll() {

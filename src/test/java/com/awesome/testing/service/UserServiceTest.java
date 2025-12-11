@@ -164,10 +164,10 @@ class UserServiceTest {
     }
 
     @Test
-    void shouldLogoutAndRevokeRefreshToken() {
-        userService.logout("refresh-token", "johndoe");
+    void shouldLogoutAndRevokeAllRefreshTokens() {
+        userService.logout("johndoe");
 
-        verify(refreshTokenService).revokeToken("refresh-token", "johndoe");
+        verify(refreshTokenService).removeAllTokensForUser("johndoe");
     }
 
     @Test

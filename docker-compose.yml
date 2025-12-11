@@ -63,7 +63,7 @@ services:
       - my-private-ntwk
 
   ollama:
-    image: slawekradzyminski/qwen3:4b-instruct
+    image: slawekradzyminski/qwens
     container_name: ollama
     restart: unless-stopped
     ports:
