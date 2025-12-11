@@ -1,12 +1,15 @@
 package com.awesome.testing.controller;
 
+import com.awesome.testing.dto.conversation.ConversationChatRequestDto;
 import com.awesome.testing.dto.conversation.ConversationDetailDto;
 import com.awesome.testing.dto.conversation.ConversationSummaryDto;
 import com.awesome.testing.dto.conversation.ConversationType;
 import com.awesome.testing.dto.conversation.CreateConversationRequestDto;
 import com.awesome.testing.dto.conversation.UpdateConversationRequestDto;
+import com.awesome.testing.dto.ollama.ChatResponseDto;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.ConversationHistoryService;
+import com.awesome.testing.service.ConversationStreamingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,6 +20,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.UUID;
@@ -40,6 +45,7 @@ import java.util.UUID;
 public class ConversationController {
 
     private final ConversationHistoryService conversationHistoryService;
+    private final ConversationStreamingService conversationStreamingService;
 
     @GetMapping
     @Operation(summary = "List your conversations")
@@ -86,5 +92,23 @@ public class ConversationController {
             @PathVariable UUID conversationId) {
         conversationHistoryService.archiveConversation(principal.getUsername(), conversationId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/{conversationId}/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Append a user message and stream the assistant reply (chat conversations)")
+    public Flux<ChatResponseDto> streamChat(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
+            @PathVariable UUID conversationId,
+            @Valid @RequestBody ConversationChatRequestDto request) {
+        return conversationStreamingService.chat(principal.getUsername(), conversationId, request);
+    }
+
+    @PostMapping(value = "/{conversationId}/chat/tools", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Append a user message and stream the assistant reply (tool conversations)")
+    public Flux<ChatResponseDto> streamChatWithTools(
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
+            @PathVariable UUID conversationId,
+            @Valid @RequestBody ConversationChatRequestDto request) {
+        return conversationStreamingService.chatWithTools(principal.getUsername(), conversationId, request);
     }
 }

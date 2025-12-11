@@ -6,16 +6,12 @@ import com.awesome.testing.dto.conversation.ConversationSummaryDto;
 import com.awesome.testing.dto.conversation.ConversationType;
 import com.awesome.testing.dto.conversation.CreateConversationRequestDto;
 import com.awesome.testing.dto.conversation.UpdateConversationRequestDto;
-import com.awesome.testing.dto.ollama.ChatMessageDto;
-import com.awesome.testing.dto.ollama.ToolCallDto;
 import com.awesome.testing.entity.ConversationEntity;
 import com.awesome.testing.entity.ConversationMessageEntity;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.repository.ConversationMessageRepository;
 import com.awesome.testing.repository.ConversationRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.awesome.testing.service.conversation.ConversationMessageMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -23,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,10 +36,7 @@ public class ConversationHistoryService {
     private final ConversationRepository conversationRepository;
     private final ConversationMessageRepository conversationMessageRepository;
     private final UserService userService;
-    private final ObjectMapper objectMapper;
-
-    private static final TypeReference<List<ToolCallDto>> TOOL_CALL_LIST = new TypeReference<>() {
-    };
+    private final ConversationMessageMapper messageMapper;
 
     public List<ConversationSummaryDto> listConversations(String username, ConversationType type) {
         List<ConversationEntity> entities = type == null
@@ -83,7 +75,7 @@ public class ConversationHistoryService {
         return ConversationDetailDto.builder()
                 .summary(toSummary(saved))
                 .systemPromptSnapshot(systemPrompt)
-                .messages(List.of(toChatMessage(systemMessage)))
+                .messages(List.of(messageMapper.toDto(systemMessage)))
                 .build();
     }
 
@@ -95,7 +87,7 @@ public class ConversationHistoryService {
         return ConversationDetailDto.builder()
                 .summary(toSummary(conversation))
                 .systemPromptSnapshot(conversation.getSystemPromptSnapshot())
-                .messages(messages.stream().map(this::toChatMessage).toList())
+                .messages(messages.stream().map(messageMapper::toDto).toList())
                 .build();
     }
 
@@ -171,27 +163,5 @@ public class ConversationHistoryService {
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
-    }
-
-    private ChatMessageDto toChatMessage(ConversationMessageEntity message) {
-        return ChatMessageDto.builder()
-                .role(message.getRole())
-                .content(message.getContent())
-                .thinking(message.getThinking())
-                .toolName(message.getToolName())
-                .toolCalls(parseToolCalls(message.getToolCallsJson()))
-                .build();
-    }
-
-    private List<ToolCallDto> parseToolCalls(String json) {
-        if (!StringUtils.hasText(json)) {
-            return Collections.emptyList();
-        }
-        try {
-            return objectMapper.readValue(json, TOOL_CALL_LIST);
-        } catch (JsonProcessingException e) {
-            log.warn("Failed to parse tool_calls payload", e);
-            throw new CustomException("Failed to parse stored conversation", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
     }
 }

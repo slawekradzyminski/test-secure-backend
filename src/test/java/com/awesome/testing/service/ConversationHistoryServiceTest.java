@@ -12,6 +12,7 @@ import com.awesome.testing.entity.ConversationMessageEntity;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.repository.ConversationMessageRepository;
 import com.awesome.testing.repository.ConversationRepository;
+import com.awesome.testing.service.conversation.ConversationMessageMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ class ConversationHistoryServiceTest {
                 conversationRepository,
                 conversationMessageRepository,
                 userService,
-                new ObjectMapper()
+                new ConversationMessageMapper(new ObjectMapper())
         );
     }
 
