@@ -233,7 +233,7 @@ through secure endpoints that require authentication.
       }
       ```
 
-- POST `/api/ollama/chat` *(legacy)* - Chat with Ollama models
+- POST `/api/ollama/chat` - Chat with Ollama models (stateless)
     - Supports multi-message conversations with history
     - Client maintains conversation history by sending all previous messages
     - Requires authentication with `ROLE_CLIENT` or `ROLE_ADMIN`
@@ -253,7 +253,7 @@ through secure endpoints that require authentication.
       }
       ```
 
-- POST `/api/ollama/chat/tools` *(legacy)* - Chat with Ollama models and invoke backend functions
+- POST `/api/ollama/chat/tools` - Chat with Ollama models and invoke backend functions (stateless)
     - Accepts the same conversation history as `/api/ollama/chat` plus a `tools` array that describes available functions
     - Streams every chunk (assistant thinking, tool calls, tool results, and final reply) so workshop participants can watch the loop in real time
     - Currently exposes two functions:
@@ -299,28 +299,6 @@ through secure endpoints that require authentication.
       ```
     - When the model decides to call `get_product_snapshot`, the backend executes `ProductService`, streams a `role: "tool"` payload containing the JSON snapshot (or `{ "error": "..." }`), and then resubmits the expanded history back to Ollama so the final assistant reply references the real data.
 - GET `/api/ollama/chat/tools/definitions` - Returns the JSON schema for every supported tool so SDKs/frontends can stay in sync with the backend contract (requires the same auth as the chat endpoints)
-
-### Persistent Conversations
-
-Use these endpoints when you want the backend to own the transcript instead of sending the full history with every request. Each conversation records the model, temperature, `think` flag, and snapshots of the user's configured system prompt(s) so you can resume threads safely even after changing preferences.
-
-- `GET /api/ollama/conversations?type=` – List your active conversations (optionally filter by `CHAT` or `TOOL`).
-- `POST /api/ollama/conversations` – Create a new conversation. Provide `type`, and optionally override `title`, `model`, `temperature`, or `think`.
-- `GET /api/ollama/conversations/{id}` – Fetch the transcript plus metadata for that conversation.
-- `PATCH /api/ollama/conversations/{id}` – Rename a conversation or toggle the `archived` flag.
-- `DELETE /api/ollama/conversations/{id}` – Archive a conversation (idempotent).
-- `POST /api/ollama/conversations/{id}/chat` *(SSE)* – Append a user message to a `CHAT` conversation and stream the assistant response. Payload:
-  ```json
-  {
-    "content": "How did the release go?",
-    "model": "qwen3:0.6b",
-    "temperature": 0.6,
-    "think": false,
-    "options": { "top_p": 0.8 }
-  }
-  ```
-  Only `content` is required; the rest override the stored defaults when present. The backend replays the stored transcript to Ollama, appends the streamed assistant reply to the database, and bumps the conversation timestamps automatically.
-- `POST /api/ollama/conversations/{id}/chat/tools` *(SSE)* – Same contract as above but for `TOOL` conversations. The backend injects the supported tool definitions, persists tool-call chunks (assistant requests, tool outputs, final reply), and enforces the per-user prompt snapshot captured when the conversation was created.
 
 ### Prompt Management
 
