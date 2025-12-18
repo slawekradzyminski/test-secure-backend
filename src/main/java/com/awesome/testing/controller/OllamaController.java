@@ -63,9 +63,8 @@ public class OllamaController {
                 .doOnSubscribe(subscription -> log.info("Starting stream"));
     }
 
-    @Operation(summary = "Chat with Ollama model (legacy stateless endpoint)",
-            description = "Streams responses but requires the caller to manage the entire conversation history. "
-                    + "Prefer /api/ollama/conversations for persistent threads.")
+    @Operation(summary = "Chat with Ollama model (stateless endpoint)",
+            description = "Streams responses and expects the caller to manage the entire conversation history client-side.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful chat response"),
             @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content),
@@ -91,7 +90,7 @@ public class OllamaController {
             description = """
                     Available tools: get_product_snapshot, list_products.
                     Use GET /api/ollama/chat/tools/definitions for the full JSON schema.
-                    This endpoint requires the caller to resend the full conversation on every request. Prefer /api/ollama/conversations/{id}/chat/tools for persistent conversations.
+                    This endpoint requires the caller to resend the full conversation on every request.
                     qwen3:4b-instruct stays grounded only when it keeps everything in the product lane—always snapshot a SKU first and follow up with list_products if it needs comparisons."""
     )
     @ApiResponses(value = {

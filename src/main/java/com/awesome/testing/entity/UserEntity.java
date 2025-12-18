@@ -10,7 +10,6 @@ import lombok.NonNull;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -61,10 +60,5 @@ public class UserEntity {
     public String getPassword() {
         return password;
     }
-
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    @Builder.Default
-    private List<ConversationEntity> conversations = new ArrayList<>();
 
 }

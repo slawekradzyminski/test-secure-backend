@@ -1,6 +1,5 @@
 package com.awesome.testing.util;
 
-import com.awesome.testing.dto.conversation.ConversationSummaryDto;
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.user.UserResponseDto;
 import org.springframework.core.ParameterizedTypeReference;
@@ -21,11 +20,6 @@ public class TypeReferenceUtil {
     }
 
     public static ParameterizedTypeReference<List<ProductDto>> productListTypeReference() {
-        return new ParameterizedTypeReference<>() {
-        };
-    }
-
-    public static ParameterizedTypeReference<List<ConversationSummaryDto>> conversationSummaryListTypeReference() {
         return new ParameterizedTypeReference<>() {
         };
     }
