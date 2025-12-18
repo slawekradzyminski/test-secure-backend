@@ -226,14 +226,14 @@ through secure endpoints that require authentication.
     - Request body:
       ```json
       {
-        "model": "qwen3:0.6b",
+        "model": "qwen3:4b-instruct",
         "prompt": "Your prompt here",
         "options": {},
         "think": false
       }
       ```
 
-- POST `/api/ollama/chat` - Chat with Ollama models
+- POST `/api/ollama/chat` - Chat with Ollama models (stateless)
     - Supports multi-message conversations with history
     - Client maintains conversation history by sending all previous messages
     - Requires authentication with `ROLE_CLIENT` or `ROLE_ADMIN`
@@ -241,7 +241,7 @@ through secure endpoints that require authentication.
     - Request body:
       ```json
       {
-        "model": "qwen3:0.6b",
+        "model": "qwen3:4b-instruct",
         "messages": [
           { "role": "system", "content": "You are a helpful assistant." },
           { "role": "user", "content": "Hello!" },
@@ -253,11 +253,67 @@ through secure endpoints that require authentication.
       }
       ```
 
+- POST `/api/ollama/chat/tools` - Chat with Ollama models and invoke backend functions (stateless)
+    - Accepts the same conversation history as `/api/ollama/chat` plus a `tools` array that describes available functions
+    - Streams every chunk (assistant thinking, tool calls, tool results, and final reply) so workshop participants can watch the loop in real time
+    - Currently exposes two functions:
+        - `get_product_snapshot` – anchor every SKU answer with trusted JSON (price/stock/description). qwen3:4b-instruct hallucinates often, so this is always the first hop when you are in the product lane.
+        - `list_products` – grab a slice of the catalog right after a snapshot so the model can compare SKUs; keep it paired with `get_product_snapshot` to avoid invented cross-product claims.
+      - We intentionally removed the Grokipedia lane, so every function call now focuses on internal inventory data.
+
+    - Sample request:
+      ```json
+      {
+        "model": "qwen3:4b-instruct",
+        "messages": [
+          { "role": "system", "content": "You are a helpful shopping assistant." },
+          { "role": "user", "content": "How much does the Retro Console cost?" }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "get_product_snapshot",
+              "description": "Return catalog metadata for a product so you can answer shopper questions accurately.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "productId": {
+                    "type": "integer",
+                    "description": "Numeric product id from the catalog."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Exact product name when the id is unknown."
+                  }
+                },
+                "oneOf": [
+                  { "required": ["productId"] },
+                  { "required": ["name"] }
+                ]
+              }
+            }
+          }
+        ]
+      }
+      ```
+    - When the model decides to call `get_product_snapshot`, the backend executes `ProductService`, streams a `role: "tool"` payload containing the JSON snapshot (or `{ "error": "..." }`), and then resubmits the expanded history back to Ollama so the final assistant reply references the real data.
+- GET `/api/ollama/chat/tools/definitions` - Returns the JSON schema for every supported tool so SDKs/frontends can stay in sync with the backend contract (requires the same auth as the chat endpoints)
+
+### Prompt Management
+
+Each user can configure two system prompts that the backend injects automatically:
+
+- GET/PUT `/users/chat-system-prompt` – controls the general conversation tone for `/api/ollama/chat`.
+- GET/PUT `/users/tool-system-prompt` – explains how to use the catalog tools for `/api/ollama/chat/tools`.
+
+Clients can fetch these endpoints to display/edit the prompts, but they no longer need to include the strings in the `messages` array; the controller prepends them before relaying any request to Ollama.
+
 ### Request Parameters
 
 Both endpoints support the following parameters:
 
-- `model` (required): The Ollama model to use (e.g., "qwen3:0.6b")
+- `model` (required): The Ollama model to use (e.g., "qwen3:4b-instruct")
 - `options` (optional): Model-specific options (e.g., temperature, max tokens)
 - `think` (optional): Set to `true` for 'thinking' models that benefit from reasoning before responding. Defaults to `false`
 

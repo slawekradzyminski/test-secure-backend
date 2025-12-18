@@ -69,13 +69,14 @@ public class PasswordResetService {
         String rawToken = tokenGenerator.generateToken();
         String tokenHash = tokenGenerator.hashToken(rawToken);
 
-        PasswordResetTokenEntity entity = new PasswordResetTokenEntity();
-        entity.setUser(user);
-        entity.setRequestedAt(now);
-        entity.setExpiresAt(now.plus(properties.getTokenTtl()));
-        entity.setTokenHash(tokenHash);
-        entity.setRequestIp(clientIp);
-        entity.setUserAgent(userAgent);
+        PasswordResetTokenEntity entity = PasswordResetTokenEntity.builder()
+                .user(user)
+                .requestedAt(now)
+                .expiresAt(now.plus(properties.getTokenTtl()))
+                .tokenHash(tokenHash)
+                .requestIp(clientIp)
+                .userAgent(userAgent)
+                .build();
         passwordResetTokenRepository.save(entity);
 
         String resetLink = buildResetLink(requestedBaseUrl, rawToken);

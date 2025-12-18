@@ -40,6 +40,9 @@ final class OllamaRequestHandler {
     }
 
     void logError(Throwable t) {
-        log.error("Error during {} for model {}: {}", type, model, t.getMessage(), t);
+        log.warn("Error during {} for model {}: {}", type, model, t.getMessage());
+        if (log.isDebugEnabled()) {
+            log.debug("Stacktrace for {} {}", type, model, t);
+        }
     }
 }

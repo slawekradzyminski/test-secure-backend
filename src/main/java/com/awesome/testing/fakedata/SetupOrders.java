@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -57,32 +56,33 @@ public class SetupOrders {
     private void createOrder(UserEntity user, ProductEntity product, int quantity, OrderStatus status, LocalDateTime createdAt) {
         BigDecimal totalPrice = product.getPrice().multiply(BigDecimal.valueOf(quantity));
         
-        OrderItemEntity orderItem = new OrderItemEntity();
-        orderItem.setProduct(product);
-        orderItem.setQuantity(quantity);
-        orderItem.setPrice(product.getPrice());
+        OrderEntity order = OrderEntity.builder()
+                .username(user.getUsername())
+                .totalAmount(totalPrice)
+                .status(status)
+                .shippingAddress(createAddress())
+                .createdAt(createdAt)
+                .updatedAt(createdAt)
+                .build();
 
-        OrderEntity order = new OrderEntity();
-        order.setUsername(user.getUsername());
-        order.setItems(List.of(orderItem));
-        order.setTotalAmount(totalPrice);
-        order.setStatus(status);
-        order.setShippingAddress(createAddress());
-        order.setCreatedAt(createdAt);
-        order.setUpdatedAt(createdAt);
+        OrderItemEntity orderItem = OrderItemEntity.builder()
+                .product(product)
+                .quantity(quantity)
+                .price(product.getPrice())
+                .build();
 
-        orderItem.setOrder(order);
+        order.addItem(orderItem);
         orderRepository.save(order);
     }
 
     private void createCartItem(UserEntity user, ProductEntity product, int quantity) {
-        CartItemEntity cartItem = new CartItemEntity();
-        cartItem.setUsername(user.getUsername());
-        cartItem.setProduct(product);
-        cartItem.setQuantity(quantity);
-        cartItem.setPrice(product.getPrice());
-        cartItem.setVersion(0L);
-
+        CartItemEntity cartItem = CartItemEntity.builder()
+                .username(user.getUsername())
+                .product(product)
+                .quantity(quantity)
+                .price(product.getPrice())
+                .version(0L)
+                .build();
         cartItemRepository.save(cartItem);
     }
 

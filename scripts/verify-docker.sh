@@ -43,7 +43,7 @@ LOGIN_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
 echo "Login response: $LOGIN_RESPONSE"
 
 echo "Pulling LLM model (this might take a while)..."
-curl -s -X POST http://localhost:11434/api/pull -d '{"model": "qwen3:0.6b"}' | while read -r line; do
+curl -s -X POST http://localhost:11434/api/pull -d '{"model": "qwen3:4b-instruct"}' | while read -r line; do
   if echo "$line" | grep -q '"status"'; then
     status=$(echo "$line" | grep -o '"status":"[^"]*' | cut -d'"' -f4)
     if [ ! -z "$status" ]; then
@@ -53,7 +53,7 @@ curl -s -X POST http://localhost:11434/api/pull -d '{"model": "qwen3:0.6b"}' | w
 done
 
 echo "Verifying model is available..."
-MODEL_CHECK=$(curl -s http://localhost:11434/api/tags | grep -o '"name":"qwen3:0.6b"' || true)
+MODEL_CHECK=$(curl -s http://localhost:11434/api/tags | grep -o '"name":"qwen3:4b-instruct"' || true)
 if [ -z "$MODEL_CHECK" ]; then
   echo "Failed to pull LLM"
   docker compose down
@@ -72,7 +72,7 @@ echo "Testing Ollama generate endpoint without thinking..."
 GENERATE_RESPONSE=$(curl -s -X POST http://localhost:4001/api/ollama/generate \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"qwen3:0.6b","prompt":"Say hi","stream":false,"think":false}')
+  -d '{"model":"qwen3:4b-instruct","prompt":"Say hi","stream":false,"think":false}')
 
 echo "Generate response: $GENERATE_RESPONSE"
 

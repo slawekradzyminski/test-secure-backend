@@ -123,7 +123,7 @@ public class WebSecurityConfig {
                 "http://127.0.0.1:8081",
                 "http://host.docker.internal:8081"
         ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of(
             "Authorization", 
             "Content-Type", 

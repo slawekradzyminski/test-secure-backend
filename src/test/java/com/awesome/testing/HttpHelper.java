@@ -61,6 +61,10 @@ public abstract class HttpHelper {
         return execute(HttpMethod.POST, url, body, httpHeaders, responseType);
     }
 
+    protected <T, V> ResponseEntity<T> executePatch(String url, V body, HttpHeaders httpHeaders, Class<T> responseType) {
+        return execute(HttpMethod.PATCH, url, body, httpHeaders, responseType);
+    }
+
     protected <T, V> ResponseEntity<T> executePost(String url, V body, HttpHeaders httpHeaders, ParameterizedTypeReference<T> responseType) {
         return restTemplate.exchange(url,
                 HttpMethod.POST,

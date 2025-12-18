@@ -24,11 +24,12 @@ public class RefreshTokenService {
     private long refreshTokenValidityInMs;
 
     public RefreshTokenEntity createToken(UserEntity user) {
-        RefreshTokenEntity refreshToken = new RefreshTokenEntity();
-        refreshToken.setToken(UUID.randomUUID().toString());
-        refreshToken.setExpiresAt(Instant.now().plusMillis(refreshTokenValidityInMs));
-        refreshToken.setUser(user);
-        refreshToken.setRevoked(false);
+        Instant expiresAt = Instant.now().plusMillis(refreshTokenValidityInMs);
+        RefreshTokenEntity refreshToken = RefreshTokenEntity.builder()
+                .token(UUID.randomUUID().toString())
+                .expiresAt(expiresAt)
+                .user(user)
+                .build();
         return refreshTokenRepository.save(refreshToken);
     }
 

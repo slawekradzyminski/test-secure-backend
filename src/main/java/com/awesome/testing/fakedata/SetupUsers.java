@@ -80,24 +80,24 @@ public class SetupUsers {
     }
 
     private UserEntity createAdminUser(String username, String password, String email, String firstName, String lastName) {
-        UserEntity admin = new UserEntity();
-        admin.setUsername(username);
-        admin.setPassword(passwordEncoder.encode(password));
-        admin.setEmail(email);
-        admin.setFirstName(firstName);
-        admin.setLastName(lastName);
-        admin.setRoles(List.of(Role.ROLE_ADMIN));
-        return admin;
+        return UserEntity.builder()
+                .username(username)
+                .password(passwordEncoder.encode(password))
+                .email(email)
+                .firstName(firstName)
+                .lastName(lastName)
+                .roles(List.of(Role.ROLE_ADMIN))
+                .build();
     }
 
     private UserEntity createClientUser(String username, String password, String email, String firstName, String lastName) {
-        UserEntity client = new UserEntity();
-        client.setUsername(username);
-        client.setPassword(passwordEncoder.encode(password));
-        client.setEmail(email);
-        client.setFirstName(firstName);
-        client.setLastName(lastName);
-        client.setRoles(List.of(Role.ROLE_CLIENT));
-        return client;
+        return UserEntity.builder()
+                .username(username)
+                .password(passwordEncoder.encode(password))
+                .email(email)
+                .firstName(firstName)
+                .lastName(lastName)
+                .roles(List.of(Role.ROLE_CLIENT))
+                .build();
     }
 }

@@ -8,7 +8,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class OllamaResponseFactory {
 
-    private static final String DEFAULT_MODEL = "qwen3:0.6b";
+    private static final String DEFAULT_MODEL = "qwen3:4b-instruct";
     private static final String DEFAULT_DATE = "2024-02-21";
 
     // Generate Response DTOs

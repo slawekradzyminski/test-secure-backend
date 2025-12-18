@@ -2,7 +2,11 @@ package com.awesome.testing.entity;
 
 import com.awesome.testing.dto.user.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -11,7 +15,8 @@ import java.util.List;
 @Entity
 @Data
 @NoArgsConstructor
-@RequiredArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "app_user")
 public class UserEntity {
 
@@ -43,9 +48,13 @@ public class UserEntity {
     @Column(name = "last_name")
     private String lastName;
 
-    @Size(max = 500)
-    @Column(name = "system_prompt")
-    private String systemPrompt;
+    @Size(max = 5000, message = "Chat system prompt must be at most 5000 characters")
+    @Column(name = "chat_system_prompt")
+    private String chatSystemPrompt;
+
+    @Size(max = 5000, message = "Tool system prompt must be at most 5000 characters")
+    @Column(name = "tool_system_prompt")
+    private String toolSystemPrompt;
 
     @JsonIgnore
     public String getPassword() {

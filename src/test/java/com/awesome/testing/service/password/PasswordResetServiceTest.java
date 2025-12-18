@@ -14,6 +14,7 @@ import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.dto.password.ForgotPasswordResponseDto;
 import com.awesome.testing.dto.password.ResetPasswordRequestDto;
+import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.entity.PasswordResetTokenEntity;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.repository.PasswordResetTokenRepository;
@@ -22,6 +23,7 @@ import com.awesome.testing.service.EmailService;
 import com.awesome.testing.service.token.PasswordResetTokenGenerator;
 import com.awesome.testing.service.token.RefreshTokenService;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,9 +81,7 @@ class PasswordResetServiceTest {
 
     @Test
     void shouldGenerateTokenAndSendEmailForExistingUser() {
-        UserEntity user = new UserEntity();
-        user.setUsername("client");
-        user.setEmail("client@example.com");
+        UserEntity user = sampleUser();
         when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
         when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");
         when(passwordResetTokenGenerator.hashToken("raw-token")).thenReturn("hash-token");
@@ -103,9 +103,7 @@ class PasswordResetServiceTest {
         properties.setExposeTokenInResponse(false);
         rebuildService();
 
-        UserEntity user = new UserEntity();
-        user.setUsername("client");
-        user.setEmail("client@example.com");
+        UserEntity user = sampleUser();
         when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
         when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");
         when(passwordResetTokenGenerator.hashToken("raw-token")).thenReturn("hash-token");
@@ -121,15 +119,14 @@ class PasswordResetServiceTest {
 
     @Test
     void shouldResetPasswordAndInvalidateRefreshTokens() {
-        UserEntity user = new UserEntity();
-        user.setUsername("client");
-        user.setEmail("client@example.com");
+        UserEntity user = sampleUser();
 
-        PasswordResetTokenEntity entity = new PasswordResetTokenEntity();
-        entity.setTokenHash("hash-token");
-        entity.setRequestedAt(Instant.now().minusSeconds(60));
-        entity.setExpiresAt(Instant.now().plusSeconds(600));
-        entity.setUser(user);
+        PasswordResetTokenEntity entity = PasswordResetTokenEntity.builder()
+                .tokenHash("hash-token")
+                .requestedAt(Instant.now().minusSeconds(60))
+                .expiresAt(Instant.now().plusSeconds(600))
+                .user(user)
+                .build();
 
         when(passwordResetTokenGenerator.hashToken("submitted-token")).thenReturn("hash-token");
         when(passwordResetTokenRepository.findByTokenHash("hash-token")).thenReturn(Optional.of(entity));
@@ -165,5 +162,14 @@ class PasswordResetServiceTest {
 
         assertThrows(CustomException.class, () -> passwordResetService.resetPassword(request));
         verify(passwordResetTokenRepository, never()).findByTokenHash(anyString());
+    }
+
+    private UserEntity sampleUser() {
+        return UserEntity.builder()
+                .username("client")
+                .email("client@example.com")
+                .password("secret")
+                .roles(List.of(Role.ROLE_CLIENT))
+                .build();
     }
 }

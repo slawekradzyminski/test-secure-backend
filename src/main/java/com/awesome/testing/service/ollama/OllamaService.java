@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
+import java.util.function.BooleanSupplier;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -39,13 +42,35 @@ public class OllamaService {
                 .bodyValue(req)
                 .retrieve()
                 .bodyToFlux(ChatResponseDto.class)
-                .doOnNext(resp -> handleChunk(ctx,
-                        resp.getMessage().getContent(),
-                        resp.getMessage().getThinking(),
-                        resp::isDone,
-                        null))
+                .doOnNext(resp -> {
+                    ChatMessageDto message = resp.getMessage();
+                    if (message != null) {
+                        logToolCalls(ctx, message.getToolCalls());
+                    }
+                    handleChunk(ctx,
+                            message != null ? message.getContent() : null,
+                            message != null ? message.getThinking() : null,
+                            resp::isDone,
+                            null);
+                })
                 .doOnError(ctx::logError)
                 .doOnComplete(ctx::logComplete);
+    }
+
+    private void logToolCalls(OllamaRequestHandler ctx, List<ToolCallDto> toolCalls) {
+        if (toolCalls == null || toolCalls.isEmpty()) {
+            return;
+        }
+        toolCalls.forEach(call -> {
+            ToolCallFunctionDto function = call.getFunction();
+            if (function == null) {
+                ctx.log("tool_call", "Received tool call with no function payload");
+                return;
+            }
+            ctx.log("tool_call", "function=%s arguments=%s".formatted(
+                    function.getName(),
+                    function.getArguments()));
+        });
     }
 
     private void handleChunk(OllamaRequestHandler ctx,
