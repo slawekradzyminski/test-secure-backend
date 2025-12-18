@@ -2,10 +2,19 @@
 set -euo pipefail
 
 echo "Starting Docker environment..."
-nohup docker compose up --build -d > docker.log 2>&1 &
+docker compose up --build -d 2>&1 | tee docker.log
 
-echo "Waiting for application to start (max 5 minutes)..."
-TIMEOUT=300  # 5 minutes in seconds
+dump_debug() {
+  echo "=== docker compose ps ==="
+  docker compose ps || true
+  echo "=== docker compose port backend 4001 ==="
+  docker compose port backend 4001 || true
+  echo "=== docker compose logs (last 300 lines) ==="
+  docker compose logs --no-color --tail=300 || true
+}
+
+TIMEOUT="${VERIFY_DOCKER_TIMEOUT:-900}"
+echo "Waiting for application to start (max ${TIMEOUT} seconds)..."
 INTERVAL=10  # polling interval in seconds
 ELAPSED=0
 
@@ -21,6 +30,7 @@ done
 
 if [ $ELAPSED -ge $TIMEOUT ]; then
   echo "Timeout waiting for application to start"
+  dump_debug
   docker compose down
   exit 1
 fi
