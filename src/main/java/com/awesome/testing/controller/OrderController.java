@@ -101,6 +101,7 @@ public class OrderController {
             @ApiResponse(responseCode = "200", description = "Order cancelled successfully"),
             @ApiResponse(responseCode = "400", description = "Order cannot be cancelled", content = @Content),
             @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content),
             @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
     })
     public ResponseEntity<OrderDto> cancelOrder(

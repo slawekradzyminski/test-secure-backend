@@ -31,6 +31,6 @@ public class LocalEmailOutboxController {
     @Operation(summary = "Clear the local outbox buffer")
     public ResponseEntity<Void> clearOutbox() {
         localEmailOutbox.clear();
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok().build();
     }
 }

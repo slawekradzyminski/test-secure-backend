@@ -1,6 +1,7 @@
 package com.awesome.testing.endpoints.ollama;
 
 import com.awesome.testing.dto.ollama.ChatRequestDto;
+import com.awesome.testing.dto.ollama.ChatMessageDto;
 import com.awesome.testing.dto.ollama.ModelNotFoundDto;
 import com.awesome.testing.dto.ollama.OllamaToolDefinitionDto;
 import com.awesome.testing.dto.user.Role;
@@ -83,6 +84,36 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         assertThat(response.getBody())
                 .containsEntry("model", "must not be blank")
                 .containsEntry("messages", "At least one message is required");
+    }
+
+    @Test
+    void shouldGet400WhenToolMessageIsMissingToolName() {
+        // given
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String authToken = getToken(user);
+        ChatRequestDto request = ChatRequestDto.builder()
+                .model("qwen3:4b-instruct")
+                .messages(List.of(
+                        ChatMessageDto.builder()
+                                .role("tool")
+                                .content("{}")
+                                .build()
+                ))
+                .build();
+
+        // when
+        ResponseEntity<Map<String, String>> response = executePostForEventStream(
+                request,
+                getHeadersWith(authToken),
+                mapTypeReference(),
+                OLLAMA_CHAT_ENDPOINT
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().values())
+                .contains("Tool messages must include tool_name");
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.awesome.testing.controller.users;
 import com.awesome.testing.dto.user.UserResponseDto;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -27,7 +28,7 @@ public class UserGetUsersController {
     @Operation(summary = "Get all users", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "List of users",
-                    content = @Content(schema = @Schema(implementation = UserResponseDto.class))),
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserResponseDto.class)))),
             @ApiResponse(responseCode = "401", description = "Unauthorized – Missing or invalid token", content = @Content)
     })
     public List<UserResponseDto> getAll() {
