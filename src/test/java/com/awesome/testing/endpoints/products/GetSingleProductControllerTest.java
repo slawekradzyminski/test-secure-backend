@@ -15,11 +15,11 @@ import java.util.List;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class GetSingleProductControllerTest extends AbstractEcommerceTest {
+class GetSingleProductControllerTest extends AbstractEcommerceTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGetProductById() {
+    void shouldGetProductById() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
@@ -37,7 +37,7 @@ public class GetSingleProductControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         // given
         ProductEntity testProduct = setupProduct();
 
@@ -52,7 +52,7 @@ public class GetSingleProductControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet404ForWrongProduct() {
+    void shouldGet404ForWrongProduct() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);

@@ -15,14 +15,14 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RequiredArgsConstructor
 public class TrafficLoggingFilter implements Filter {
 
-    private final ConcurrentLinkedQueue<TrafficEventDto> trafficQueue;
+    private final Queue<TrafficEventDto> trafficQueue;
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)

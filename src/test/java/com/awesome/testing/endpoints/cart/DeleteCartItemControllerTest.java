@@ -20,14 +20,14 @@ import static com.awesome.testing.factory.CartItemFactory.getSingleCartItemFrom;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DeleteCartItemControllerTest extends AbstractEcommerceTest {
+class DeleteCartItemControllerTest extends AbstractEcommerceTest {
 
     @Autowired
     private CartService cartService;
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldDeleteCartItem() {
+    void shouldDeleteCartItem() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
@@ -55,7 +55,7 @@ public class DeleteCartItemControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         ProductEntity testProduct = setupProduct();
@@ -74,7 +74,7 @@ public class DeleteCartItemControllerTest extends AbstractEcommerceTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet404ForMissingCartItem() {
+    void shouldGet404ForMissingCartItem() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);

@@ -1,5 +1,6 @@
 package com.awesome.testing.config;
 
+import com.awesome.testing.jms.JsonTextMessageConverter;
 import com.awesome.testing.service.delay.DelayGenerator;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.extern.slf4j.Slf4j;
@@ -11,9 +12,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.connection.CachingConnectionFactory;
-import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
 import org.springframework.jms.support.converter.MessageConverter;
-import org.springframework.jms.support.converter.MessageType;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.jms.connection.JmsTransactionManager;
@@ -46,10 +45,7 @@ public class TestConfig {
 
     @Bean
     public MessageConverter jacksonJmsMessageConverter() {
-        MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
-        converter.setTargetType(MessageType.TEXT);
-        converter.setTypeIdPropertyName("_awesome_");
-        return converter;
+        return new JsonTextMessageConverter();
     }
 
     @Bean

@@ -2,10 +2,10 @@ package com.awesome.testing.config;
 
 import jakarta.persistence.EntityManagerFactory;
 import com.awesome.testing.config.properties.PasswordResetProperties;
+import com.awesome.testing.jms.JsonTextMessageConverter;
 import com.awesome.testing.service.password.LocalEmailOutbox;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -27,12 +27,12 @@ class LocalConfigTest {
     void shouldCreateJacksonJmsMessageConverter() {
         MessageConverter converter = config.jacksonJmsMessageConverter();
 
-        assertThat(converter).isInstanceOf(MappingJackson2MessageConverter.class);
+        assertThat(converter).isInstanceOf(JsonTextMessageConverter.class);
     }
 
     @Test
     void shouldCreateStubJmsTemplate() {
-        MessageConverter converter = new MappingJackson2MessageConverter();
+        MessageConverter converter = new JsonTextMessageConverter();
         LocalEmailOutbox outbox = mock(LocalEmailOutbox.class);
         PasswordResetProperties properties = new PasswordResetProperties();
 

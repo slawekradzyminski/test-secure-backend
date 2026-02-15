@@ -16,4 +16,9 @@ public class CustomException extends RuntimeException {
     final String message;
     final HttpStatus httpStatus;
 
+    public CustomException(String message, HttpStatus httpStatus, Throwable cause) {
+        super(message, cause);
+        this.message = message;
+        this.httpStatus = httpStatus;
+    }
 }

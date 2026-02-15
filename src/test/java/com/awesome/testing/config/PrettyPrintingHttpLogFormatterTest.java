@@ -1,6 +1,6 @@
 package com.awesome.testing.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.logbook.*;
@@ -115,7 +115,6 @@ class PrettyPrintingHttpLogFormatterTest {
         assertThat(result).contains("\"body\":\"\"");
     }
 }
-
 
 
 

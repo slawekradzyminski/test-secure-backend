@@ -99,7 +99,7 @@ public class PasswordResetService {
             String separator = base.contains("?") ? "&" : "?";
             return base + separator + "token=" + token;
         } catch (URISyntaxException e) {
-            throw new CustomException("Invalid reset base URL", HttpStatus.BAD_REQUEST);
+            throw new CustomException("Invalid reset base URL", HttpStatus.BAD_REQUEST, e);
         }
     }
 

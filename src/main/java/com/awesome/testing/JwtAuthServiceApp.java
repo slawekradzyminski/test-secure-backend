@@ -2,6 +2,7 @@ package com.awesome.testing;
 
 import com.awesome.testing.fakedata.SetupData;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -13,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @SpringBootApplication
+@Slf4j
 public class JwtAuthServiceApp implements CommandLineRunner {
 
     @Autowired(required = false)
@@ -31,14 +33,14 @@ public class JwtAuthServiceApp implements CommandLineRunner {
                     try {
                         Files.delete(path);
                     } catch (IOException ex) {
-                        System.err.println("Failed to delete log file: " + ex.getMessage());
+                        log.warn("Failed to delete log file: {}", ex.getMessage());
                     }
                 });
             } else {
                 Files.createDirectories(logDir);
             }
         } catch (IOException ex) {
-            System.err.println("Error cleaning logs directory: " + ex.getMessage());
+            log.error("Error cleaning logs directory: {}", ex.getMessage());
         }
     }
 

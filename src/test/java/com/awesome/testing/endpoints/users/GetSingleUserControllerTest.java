@@ -6,19 +6,18 @@ import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.dto.user.UserResponseDto;
 import com.awesome.testing.dto.user.Role;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.*;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ActiveProfiles("test")
-public class GetSingleUserControllerTest extends DomainHelper {
+class GetSingleUserControllerTest extends DomainHelper {
 
     @Test
-    public void shouldGetUserAsAdmin() {
+    void shouldGetUserAsAdmin() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String adminToken = getToken(user);
@@ -35,7 +34,7 @@ public class GetSingleUserControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         // when
         ResponseEntity<ErrorDto> response = executeGet(getUserEndpoint("nonexisting"), getJsonOnlyHeaders(), ErrorDto.class);
 
@@ -46,7 +45,7 @@ public class GetSingleUserControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet404ForNonExistingUser() {
+    void shouldGet404ForNonExistingUser() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String token = getToken(user);

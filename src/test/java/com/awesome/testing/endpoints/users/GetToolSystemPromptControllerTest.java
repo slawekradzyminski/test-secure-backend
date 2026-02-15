@@ -15,13 +15,13 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class GetToolSystemPromptControllerTest extends DomainHelper {
+class GetToolSystemPromptControllerTest extends DomainHelper {
 
     private static final String TOOL_SYSTEM_PROMPT_ENDPOINT = "/users/tool-system-prompt";
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGetToolSystemPromptAsAdmin() {
+    void shouldGetToolSystemPromptAsAdmin() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String token = getToken(user);
         String systemPrompt = "Call get_product_snapshot first.";
@@ -43,7 +43,7 @@ public class GetToolSystemPromptControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         getToken(user);
 

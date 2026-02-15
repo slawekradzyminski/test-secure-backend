@@ -19,9 +19,9 @@ public class AuthenticationHandler {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
         } catch (BadCredentialsException e) {
-            throw new CustomException("Invalid username/password supplied", HttpStatus.UNPROCESSABLE_ENTITY);
+            throw new CustomException("Invalid username/password supplied", HttpStatus.UNPROCESSABLE_ENTITY, e);
         } catch (AuthenticationException e) {
-            throw new CustomException("Unauthorized", HttpStatus.UNAUTHORIZED);
+            throw new CustomException("Unauthorized", HttpStatus.UNAUTHORIZED, e);
         }
     }
 

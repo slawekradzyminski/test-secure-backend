@@ -54,7 +54,7 @@ public class ChatMessageDto {
      * Validates that either content, thinking or tool calls are present.
      */
     @AssertTrue(message = "Either content, thinking, or tool calls must be present")
-    private boolean isContentOrThinkingOrToolCallPresent() {
+    public boolean isContentOrThinkingOrToolCallPresent() {
         boolean hasContent = content != null && !content.trim().isEmpty();
         boolean hasThinking = thinking != null && !thinking.trim().isEmpty();
         boolean hasToolCalls = toolCalls != null && !toolCalls.isEmpty();
@@ -65,7 +65,7 @@ public class ChatMessageDto {
      * Ensures tool_name is provided when role is "tool".
      */
     @AssertTrue(message = "Tool messages must include tool_name")
-    private boolean isToolNamePresentForToolRole() {
+    public boolean isToolNamePresentForToolRole() {
         if (!"tool".equals(role)) {
             return true;
         }

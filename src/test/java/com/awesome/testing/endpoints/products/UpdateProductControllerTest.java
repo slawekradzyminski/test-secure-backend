@@ -21,10 +21,10 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class UpdateProductControllerTest extends AbstractEcommerceTest {
+class UpdateProductControllerTest extends AbstractEcommerceTest {
 
     @Test
-    public void shouldUpdateProductAsAdmin() {
+    void shouldUpdateProductAsAdmin() {
         // given
         ProductEntity testProduct = setupProduct();
         UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
@@ -45,7 +45,7 @@ public class UpdateProductControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldBumpUpdatedAtWhenProductChanges() {
+    void shouldBumpUpdatedAtWhenProductChanges() {
         // given
         ProductEntity testProduct = setupProduct();
         UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
@@ -71,7 +71,7 @@ public class UpdateProductControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldPartiallyUpdateProductAsAdmin() {
+    void shouldPartiallyUpdateProductAsAdmin() {
         // given
         ProductEntity testProduct = setupProduct();
         UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
@@ -96,7 +96,7 @@ public class UpdateProductControllerTest extends AbstractEcommerceTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet400ForInvalidBody() {
+    void shouldGet400ForInvalidBody() {
         // given
         ProductEntity testProduct = setupProduct();
         UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
@@ -118,7 +118,7 @@ public class UpdateProductControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         // given
         ProductEntity testProduct = setupProduct();
         ProductUpdateDto productUpdateDto = getRandomProductUpdate();
@@ -135,7 +135,7 @@ public class UpdateProductControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet403AsClient() {
+    void shouldGet403AsClient() {
         // given
         ProductEntity testProduct = setupProduct();
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
@@ -154,7 +154,7 @@ public class UpdateProductControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet404ForNotPresentProduct() {
+    void shouldGet404ForNotPresentProduct() {
         // given
         ProductEntity testProduct = getRandomProduct();
         productRepository.save(testProduct);

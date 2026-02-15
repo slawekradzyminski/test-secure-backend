@@ -17,11 +17,11 @@ import static com.awesome.testing.factory.UserFactory.getRandomEmail;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class EditUserControllerTest extends DomainHelper {
+class EditUserControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldUpdateUserAsAdmin() {
+    void shouldUpdateUserAsAdmin() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(ROLE_ADMIN));
         String username = user.getUsername();
@@ -49,7 +49,7 @@ public class EditUserControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldPartiallyUpdateUserAsAdmin() {
+    void shouldPartiallyUpdateUserAsAdmin() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(ROLE_ADMIN));
         String username = user.getUsername();
@@ -73,7 +73,7 @@ public class EditUserControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet200AsClientEditingHimself() {
+    void shouldGet200AsClientEditingHimself() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
@@ -92,7 +92,7 @@ public class EditUserControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet400IfInvalidBody() {
+    void shouldGet400IfInvalidBody() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(ROLE_ADMIN));
         String username = user.getUsername();
@@ -115,7 +115,7 @@ public class EditUserControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
@@ -133,7 +133,7 @@ public class EditUserControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet403AsClientEditingSomeoneElse() {
+    void shouldGet403AsClientEditingSomeoneElse() {
         // given
         UserRegisterDto userToEdit = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         registerUser(userToEdit);
@@ -154,7 +154,7 @@ public class EditUserControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet404ForNonExistingUser() {
+    void shouldGet404ForNonExistingUser() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(ROLE_ADMIN));
         String clientToken = getToken(user);

@@ -15,14 +15,14 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class UpdateChatSystemPromptControllerTest extends DomainHelper {
+class UpdateChatSystemPromptControllerTest extends DomainHelper {
 
     private static final String CHAT_SYSTEM_PROMPT_ENDPOINT = "/users/chat-system-prompt";
     private static final String SYSTEM_PROMPT_TOO_LONG = "A".repeat(5001);
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldUpdateChatSystemPromptAsAdmin() {
+    void shouldUpdateChatSystemPromptAsAdmin() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String token = getToken(user);
         String systemPrompt = "You are a helpful assistant.";
@@ -40,7 +40,7 @@ public class UpdateChatSystemPromptControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldUpdateChatSystemPromptAsClient() {
+    void shouldUpdateChatSystemPromptAsClient() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String token = getToken(user);
         String systemPrompt = "You are a helpful assistant for a client.";
@@ -57,7 +57,7 @@ public class UpdateChatSystemPromptControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet400WhenChatSystemPromptTooLong() {
+    void shouldGet400WhenChatSystemPromptTooLong() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String token = getToken(user);
         ChatSystemPromptDto dto = new ChatSystemPromptDto(SYSTEM_PROMPT_TOO_LONG);

@@ -5,6 +5,7 @@ import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.traffic.TrafficInfoDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +15,8 @@ import java.util.List;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TrafficControllerTest extends DomainHelper {
+@Tag("integration")
+class TrafficControllerTest extends DomainHelper {
 
     private static final String API_TRAFFIC_INFO = "/api/traffic/info";
 

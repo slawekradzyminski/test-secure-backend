@@ -8,7 +8,6 @@ import com.awesome.testing.dto.user.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
@@ -16,11 +15,10 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.userListTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ActiveProfiles("test")
-public class GetUsersControllerTest extends DomainHelper {
+class GetUsersControllerTest extends DomainHelper {
 
     @Test
-    public void shouldGetUsersAsAdmin() {
+    void shouldGetUsersAsAdmin() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String adminToken = getToken(user);
@@ -38,7 +36,7 @@ public class GetUsersControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         // when
         ResponseEntity<ErrorDto> response = executeGet(
                 USERS_ENDPOINT,

@@ -1,38 +1,24 @@
 package com.awesome.testing.traffic;
 
-import com.awesome.testing.config.TestConfig;
 import com.awesome.testing.dto.traffic.TrafficEventDto;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(properties = "spring.task.scheduling.enabled=false")
-@Import(TestConfig.class)
-@ActiveProfiles("test")
 class TrafficConfigTest {
-
-    @Autowired
-    private ConcurrentLinkedQueue<TrafficEventDto> trafficQueue;
-
-    @MockitoBean
-    @SuppressWarnings("unused")
-    private TrafficPublisher trafficPublisher;
 
     @Test
     void shouldCreateTrafficQueueBean() {
+        Queue<TrafficEventDto> trafficQueue = new TrafficConfig().trafficQueue();
         assertThat(trafficQueue).isNotNull();
         assertThat(trafficQueue).isEmpty();
     }
 
     @Test
     void shouldAllowAddingEventsToQueue() {
+        Queue<TrafficEventDto> trafficQueue = new TrafficConfig().trafficQueue();
         TrafficEventDto event = TrafficEventDto.builder()
                 .method("GET")
                 .path("/api/test")

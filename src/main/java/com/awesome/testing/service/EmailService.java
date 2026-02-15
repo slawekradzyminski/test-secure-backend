@@ -32,8 +32,8 @@ public class EmailService {
     }
 
     private void logDelay(long delay) {
-        long minutes = delay / 60000;
-        long seconds = (delay % 60000) / 1000;
+        long minutes = delay / 60_000;
+        long seconds = delay % 60_000 / 1000;
         log.info("Delaying email send by {} minutes and {} seconds", minutes, seconds);
     }
 }

@@ -24,6 +24,7 @@ import io.jsonwebtoken.Jwts;
 import com.awesome.testing.dto.user.Role;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 
 @Component
 @RequiredArgsConstructor
@@ -42,7 +43,7 @@ public class JwtTokenProvider {
     @PostConstruct
     protected void init() {
         String longSecretKey = secretKey + secretKey + secretKey + secretKey; // Repeat 4 times to ensure length
-        key = Keys.hmacShaKeyFor(longSecretKey.getBytes());
+        key = Keys.hmacShaKeyFor(longSecretKey.getBytes(StandardCharsets.UTF_8));
     }
 
     public String createToken(String username, List<Role> roles) {
@@ -93,7 +94,7 @@ public class JwtTokenProvider {
                     .parseSignedClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
-            throw new CustomException("Invalid or expired token", HttpStatus.UNAUTHORIZED);
+            throw new CustomException("Invalid or expired token", HttpStatus.UNAUTHORIZED, e);
         }
     }
 

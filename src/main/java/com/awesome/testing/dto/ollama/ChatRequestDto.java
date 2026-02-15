@@ -77,7 +77,7 @@ public class ChatRequestDto {
      */
     @Schema(hidden = true)
     @Builder.Default
-    private Integer keepAlive = 10000;
+    private Integer keepAlive = 10_000;
 
     /**
      * Should the model think before responding?

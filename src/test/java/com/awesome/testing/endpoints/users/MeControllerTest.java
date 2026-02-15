@@ -9,15 +9,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ActiveProfiles("test")
-public class MeControllerTest extends DomainHelper {
+class MeControllerTest extends DomainHelper {
 
     private String validUsername;
     private String apiToken;
@@ -25,7 +23,7 @@ public class MeControllerTest extends DomainHelper {
     private static final String ME_ENDPOINT = "/users/me";
 
     @BeforeEach
-    public void prepareUserForTest() {
+    void prepareUserForTest() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         validUsername = user.getUsername();
         apiToken = getToken(user);
@@ -33,7 +31,7 @@ public class MeControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldReturnMyData() {
+    void shouldReturnMyData() {
         // when
         ResponseEntity<UserResponseDto> response =
                 executeGet(ME_ENDPOINT, getHeadersWith(apiToken), UserResponseDto.class);
@@ -46,7 +44,7 @@ public class MeControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         // when
         ResponseEntity<ErrorDto> response = executeGet("/users/me", getJsonOnlyHeaders(), ErrorDto.class);
 

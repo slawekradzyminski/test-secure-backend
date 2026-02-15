@@ -4,24 +4,20 @@ import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static com.awesome.testing.factory.UserFactory.*;
+import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ActiveProfiles("test")
-public class SignUpControllerTest extends DomainHelper {
+class SignUpControllerTest extends DomainHelper {
 
     @Test
-    public void shouldRegister() {
+    void shouldRegister() {
         // given
         UserRegisterDto userRegisterDto = getRandomUser();
 
@@ -34,7 +30,7 @@ public class SignUpControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldFailToRegisterExistingUsername() {
+    void shouldFailToRegisterExistingUsername() {
         // given
         UserRegisterDto firstUser = getRandomUser();
         registerUser(firstUser, String.class);
@@ -50,7 +46,7 @@ public class SignUpControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldFailToRegisterExistingEmail() {
+    void shouldFailToRegisterExistingEmail() {
         // given
         UserRegisterDto firstUser = getRandomUser();
         registerUser(firstUser, String.class);
@@ -66,15 +62,15 @@ public class SignUpControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldFailToRegisterUsernameTooShort() {
+    void shouldFailToRegisterUsernameTooShort() {
         // given
         UserRegisterDto user = getRandomUserWithUsername("one");
 
         // when
-        ResponseEntity<Map<String, String>> response =  restTemplate.exchange(
+        ResponseEntity<Map<String, String>> response = executePost(
                 REGISTER_ENDPOINT,
-                HttpMethod.POST,
-                new HttpEntity<>(user, getJsonOnlyHeaders()),
+                user,
+                getJsonOnlyHeaders(),
                 mapTypeReference());
 
         // then
@@ -84,15 +80,15 @@ public class SignUpControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldFailToRegisterWithEmptyRoles() {
+    void shouldFailToRegisterWithEmptyRoles() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of());
 
         // when
-        ResponseEntity<Map<String, String>> response =  restTemplate.exchange(
+        ResponseEntity<Map<String, String>> response = executePost(
                 REGISTER_ENDPOINT,
-                HttpMethod.POST,
-                new HttpEntity<>(user, getJsonOnlyHeaders()),
+                user,
+                getJsonOnlyHeaders(),
                 mapTypeReference());
 
         // then
