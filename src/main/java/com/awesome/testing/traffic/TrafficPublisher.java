@@ -7,14 +7,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 
 @Component
 @EnableScheduling
 @RequiredArgsConstructor
 public class TrafficPublisher {
 
-    private final ConcurrentLinkedQueue<TrafficEventDto> queue;
+    private final Queue<TrafficEventDto> queue;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Scheduled(fixedDelay = 500)

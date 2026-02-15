@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Locale;
 import jakarta.persistence.criteria.Predicate;
 
 import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
@@ -46,7 +47,7 @@ public class ProductService {
                     query.distinct(true);
                     List<Predicate> predicates = new ArrayList<>();
                     if (category != null && !category.isBlank()) {
-                        predicates.add(cb.equal(cb.lower(root.get("category")), category.toLowerCase()));
+                        predicates.add(cb.equal(cb.lower(root.get("category")), category.toLowerCase(Locale.ROOT)));
                     }
                     if (Boolean.TRUE.equals(inStockOnly)) {
                         predicates.add(cb.greaterThan(root.get("stockQuantity"), 0));
@@ -97,7 +98,7 @@ public class ProductService {
         ProductEntity product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
-        toUpdatedProduct(productUpdateDto, product);
+        applyProductUpdates(productUpdateDto, product);
         productRepository.saveAndFlush(product);
         return ProductDto.from(product);
     }
@@ -112,7 +113,7 @@ public class ProductService {
                 .orElse(false);
     }
 
-    private void toUpdatedProduct(ProductUpdateDto productUpdateDto, ProductEntity product) {
+    private void applyProductUpdates(ProductUpdateDto productUpdateDto, ProductEntity product) {
         updateIfNotNull(productUpdateDto.getName(), ProductEntity::setName, product);
         updateIfNotNull(productUpdateDto.getDescription(), ProductEntity::setDescription, product);
         updateIfNotNull(productUpdateDto.getPrice(), ProductEntity::setPrice, product);

@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import lombok.Value;
 import org.springframework.context.annotation.Profile;
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Profile("local")
 public class LocalEmailOutbox {
 
-    private final ConcurrentLinkedQueue<StoredEmail> outbox = new ConcurrentLinkedQueue<>();
+    private final Queue<StoredEmail> outbox = new ConcurrentLinkedQueue<>();
 
     public void store(String destination, EmailDto payload) {
         outbox.add(new StoredEmail(Instant.now(), destination, payload));

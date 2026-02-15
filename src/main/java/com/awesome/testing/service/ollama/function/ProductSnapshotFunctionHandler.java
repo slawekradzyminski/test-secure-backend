@@ -79,7 +79,7 @@ public class ProductSnapshotFunctionHandler implements FunctionCallHandler {
             try {
                 return Long.parseLong(str.trim());
             } catch (NumberFormatException ex) {
-                throw new IllegalArgumentException("productId must be a number");
+                throw new IllegalArgumentException("productId must be a number", ex);
             }
         }
         throw new IllegalArgumentException("Unsupported productId type: " + value.getClass().getSimpleName());

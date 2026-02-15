@@ -62,7 +62,7 @@ public class ProductCatalogFunctionHandler implements FunctionCallHandler {
             try {
                 return Integer.parseInt(str.trim());
             } catch (NumberFormatException ex) {
-                throw new IllegalArgumentException("limit/offset must be numbers");
+                throw new IllegalArgumentException("limit/offset must be numbers", ex);
             }
         }
         throw new IllegalArgumentException("Unsupported number format");

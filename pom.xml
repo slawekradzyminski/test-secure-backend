@@ -216,7 +216,7 @@
                         <ruleset>config/pmd/ruleset.xml</ruleset>
                     </rulesets>
                     <failOnViolation>true</failOnViolation>
-                    <failurePriority>1</failurePriority>
+                    <failurePriority>2</failurePriority>
                     <linkXRef>false</linkXRef>
                 </configuration>
                 <executions>

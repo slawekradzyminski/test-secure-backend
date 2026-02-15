@@ -12,7 +12,9 @@ import com.awesome.testing.dto.order.OrderItemDto;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,16 +27,24 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CreateOrderControllerTest extends AbstractEcommerceTest {
 
     @Autowired
     private CartService cartService;
 
+    private UserRegisterDto client;
+    private String clientToken;
+
+    @BeforeAll
+    void setUpUser() {
+        client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        clientToken = getToken(client);
+    }
+
     @Test
     void shouldCreateOrder() {
         // given
-        UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String clientToken = getToken(client);
         AddressDto testAddress = getRandomAddress();
         ProductEntity product = addToCart(client);
 
@@ -57,8 +67,6 @@ class CreateOrderControllerTest extends AbstractEcommerceTest {
     @Test
     void shouldReturn400WhenAddressIsInvalid() {
         // given
-        UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String clientToken = getToken(client);
         AddressDto invalidAddress = new AddressDto();
         addToCart(client);
 
@@ -77,8 +85,6 @@ class CreateOrderControllerTest extends AbstractEcommerceTest {
     @Test
     void shouldReturn400WhenCartIsEmpty() {
         // given
-        UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String clientToken = getToken(client);
         AddressDto testAddress = getRandomAddress();
 
         // when

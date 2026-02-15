@@ -58,16 +58,17 @@ public class PrettyPrintingHttpLogFormatter implements HttpLogFormatter {
     }
 
     private String formatWithPrettyBody(Map<String, Object> content) throws IOException {
+        Map<String, Object> formattedContent = content;
         if (content.containsKey("body") && content.get("body") instanceof String) {
             try {
                 Object body = mapper.readValue((String) content.get("body"), Object.class);
                 Map<String, Object> mutableContent = new HashMap<>(content);
                 mutableContent.put("body", body);
-                content = mutableContent;
+                formattedContent = mutableContent;
             } catch (JacksonException ignored) {
                 // If body is not JSON, leave it as is
             }
         }
-        return mapper.writeValueAsString(content);
+        return mapper.writeValueAsString(formattedContent);
     }
 } 

@@ -4,6 +4,7 @@ import com.awesome.testing.dto.traffic.TrafficEventDto;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Configuration
@@ -11,7 +12,7 @@ public class TrafficConfig {
 
     @SuppressWarnings("unused")
     @Bean
-    public ConcurrentLinkedQueue<TrafficEventDto> trafficQueue() {
+    public Queue<TrafficEventDto> trafficQueue() {
         return new ConcurrentLinkedQueue<>();
     }
 } 

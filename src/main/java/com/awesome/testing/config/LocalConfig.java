@@ -1,6 +1,7 @@
 package com.awesome.testing.config;
 
 import com.awesome.testing.config.properties.PasswordResetProperties;
+import com.awesome.testing.jms.JsonTextMessageConverter;
 import com.awesome.testing.service.password.LocalEmailOutbox;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.extern.slf4j.Slf4j;
@@ -10,9 +11,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jms.JmsException;
 import org.springframework.jms.core.JmsTemplate;
-import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
 import org.springframework.jms.support.converter.MessageConverter;
-import org.springframework.jms.support.converter.MessageType;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -24,10 +23,7 @@ public class LocalConfig {
 
     @Bean
     public MessageConverter jacksonJmsMessageConverter() {
-        MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
-        converter.setTargetType(MessageType.TEXT);
-        converter.setTypeIdPropertyName("_awesome_");
-        return converter;
+        return new JsonTextMessageConverter();
     }
 
     @Bean
