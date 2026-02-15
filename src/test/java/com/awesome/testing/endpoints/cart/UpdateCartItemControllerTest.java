@@ -24,14 +24,14 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class UpdateCartItemControllerTest extends AbstractEcommerceTest {
+class UpdateCartItemControllerTest extends AbstractEcommerceTest {
 
     @Autowired
     private CartService cartService;
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldUpdateCartItem() {
+    void shouldUpdateCartItem() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
@@ -68,7 +68,7 @@ public class UpdateCartItemControllerTest extends AbstractEcommerceTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet400ForNegativeQuantity() {
+    void shouldGet400ForNegativeQuantity() {
         // given
         ProductEntity testProduct = getRandomProduct();
         ProductEntity productEntity = productRepository.save(testProduct);
@@ -90,7 +90,7 @@ public class UpdateCartItemControllerTest extends AbstractEcommerceTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldRemoveItemWhenQuantitySetToZero() {
+    void shouldRemoveItemWhenQuantitySetToZero() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
@@ -114,7 +114,7 @@ public class UpdateCartItemControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         // given
         ProductEntity testProduct = getRandomProduct();
         ProductEntity productEntity = productRepository.save(testProduct);
@@ -133,7 +133,7 @@ public class UpdateCartItemControllerTest extends AbstractEcommerceTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet404ForMissingCartItem() {
+    void shouldGet404ForMissingCartItem() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);

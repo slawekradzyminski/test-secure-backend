@@ -10,21 +10,19 @@ import com.awesome.testing.dto.user.UserRegisterDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ActiveProfiles("test")
-public class RefreshControllerTest extends DomainHelper {
+class RefreshControllerTest extends DomainHelper {
 
     private static final String REFRESH_ENDPOINT = "/users/refresh";
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldRefreshTokensUsingRefreshToken() {
+    void shouldRefreshTokensUsingRefreshToken() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         LoginResponseDto loginResponse = registerAndLogin(user);
@@ -44,7 +42,7 @@ public class RefreshControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldRejectUnknownRefreshToken() {
+    void shouldRejectUnknownRefreshToken() {
         // when
         ResponseEntity<ErrorDto> response = executePost(
                 REFRESH_ENDPOINT,
@@ -59,7 +57,7 @@ public class RefreshControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldRejectReuseOfRefreshToken() {
+    void shouldRejectReuseOfRefreshToken() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         LoginResponseDto loginResponse = registerAndLogin(user);

@@ -16,12 +16,12 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DeleteProductControllerTest extends AbstractEcommerceTest {
+class DeleteProductControllerTest extends AbstractEcommerceTest {
 
     private static final String PRODUCTS_ENDPOINT = "/api/products";
 
     @Test
-    public void shouldDeleteProductAsAdmin() {
+    void shouldDeleteProductAsAdmin() {
         // given
         ProductEntity testProduct = getRandomProduct();
         productRepository.save(testProduct);
@@ -39,7 +39,7 @@ public class DeleteProductControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         // given
         ProductEntity testProduct = getRandomProduct();
         productRepository.save(testProduct);
@@ -55,7 +55,7 @@ public class DeleteProductControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet403AsClient() {
+    void shouldGet403AsClient() {
         // given
         ProductEntity testProduct = getRandomProduct();
         productRepository.save(testProduct);
@@ -73,7 +73,7 @@ public class DeleteProductControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet404ForMissingProduct() {
+    void shouldGet404ForMissingProduct() {
         // given
         ProductEntity testProduct = getRandomProduct();
         productRepository.save(testProduct);

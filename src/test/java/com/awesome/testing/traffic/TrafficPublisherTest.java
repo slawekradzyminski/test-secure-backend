@@ -14,7 +14,7 @@ import static com.awesome.testing.factory.ollama.TrafficEventFactory.trafficEven
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class TrafficPublisherTest {
+class TrafficPublisherTest {
 
     @Mock
     private SimpMessagingTemplate messagingTemplate;

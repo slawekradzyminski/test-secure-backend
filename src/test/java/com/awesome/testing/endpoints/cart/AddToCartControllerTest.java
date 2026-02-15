@@ -22,14 +22,14 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class AddToCartControllerTest extends AbstractEcommerceTest {
+class AddToCartControllerTest extends AbstractEcommerceTest {
 
     @Autowired
     private CartService cartService;
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldAddToCart() {
+    void shouldAddToCart() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
@@ -60,7 +60,7 @@ public class AddToCartControllerTest extends AbstractEcommerceTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet400ForInvalidRequestBody() {
+    void shouldGet400ForInvalidRequestBody() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
@@ -79,7 +79,7 @@ public class AddToCartControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         // given
         ProductEntity testProduct = setupProduct();
         CartItemDto cartItemDto = getSingleCartItemFrom(testProduct.getId());
@@ -97,7 +97,7 @@ public class AddToCartControllerTest extends AbstractEcommerceTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet404ForMissingProduct() {
+    void shouldGet404ForMissingProduct() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);

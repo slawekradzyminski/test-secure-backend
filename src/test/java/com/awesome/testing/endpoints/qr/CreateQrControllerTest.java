@@ -22,7 +22,7 @@ import java.util.List;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CreateQrControllerTest extends DomainHelper {
+class CreateQrControllerTest extends DomainHelper {
 
     private final String CREATE_QR_CODE_ENDPOINT = "/qr/create";
 
@@ -32,7 +32,7 @@ public class CreateQrControllerTest extends DomainHelper {
     @SuppressWarnings("ConstantConditions")
     @SneakyThrows
     @Test
-    public void shouldGenerateQrCodeAsAdmin() {
+    void shouldGenerateQrCodeAsAdmin() {
         // given
         UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String apiToken = getToken(admin);
@@ -53,7 +53,7 @@ public class CreateQrControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet400WhenTextIsEmpty() {
+    void shouldGet400WhenTextIsEmpty() {
         // given
         UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String apiToken = getToken(admin);
@@ -68,7 +68,7 @@ public class CreateQrControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         // given
         CreateQrDto createQrDto = new CreateQrDto(getRandomText());
 

@@ -1,26 +1,25 @@
 package com.awesome.testing.endpoints.users;
 
 import com.awesome.testing.DomainHelper;
-import com.awesome.testing.dto.*;
+import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.user.LoginDto;
 import com.awesome.testing.dto.user.LoginResponseDto;
-import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.dto.user.UserResponseDto;
 import com.awesome.testing.dto.user.Role;
+import com.awesome.testing.dto.user.UserRegisterDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.*;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
+import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ActiveProfiles("test")
-public class SignInControllerTest extends DomainHelper {
+class SignInControllerTest extends DomainHelper {
 
     private String validUsername;
     private String validPassword;
@@ -28,7 +27,7 @@ public class SignInControllerTest extends DomainHelper {
     private static final String LOGIN_FAILED = "Invalid username/password supplied";
 
     @BeforeEach
-    public void prepareUserForTest() {
+    void prepareUserForTest() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         validUsername = user.getUsername();
         validPassword = user.getPassword();
@@ -37,7 +36,7 @@ public class SignInControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldLoginUser() {
+    void shouldLoginUser() {
         // when
         ResponseEntity<LoginResponseDto> responseWithToken =
                 attemptLogin(new LoginDto(validUsername, validPassword), LoginResponseDto.class);
@@ -50,7 +49,7 @@ public class SignInControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void loggingReturnsValidToken() {
+    void loggingReturnsValidToken() {
         // given
         String token = attemptLogin(new LoginDto(validUsername, validPassword), LoginResponseDto.class)
                 .getBody()
@@ -69,12 +68,12 @@ public class SignInControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldReturn400IfUsernameOrPasswordTooShort() {
+    void shouldReturn400IfUsernameOrPasswordTooShort() {
         // when
-        ResponseEntity<Map<String, String>> response = restTemplate.exchange(
+        ResponseEntity<Map<String, String>> response = executePost(
                 LOGIN_ENDPOINT,
-                HttpMethod.POST,
-                new HttpEntity<>(new LoginDto("one", "two"), getJsonOnlyHeaders()),
+                new LoginDto("one", "two"),
+                getJsonOnlyHeaders(),
                 mapTypeReference());
 
         // then
@@ -85,7 +84,7 @@ public class SignInControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldReturn422OnWrongPassword() {
+    void shouldReturn422OnWrongPassword() {
         // when
         ResponseEntity<ErrorDto> responseWithToken =
                 attemptLogin(new LoginDto(validUsername, "wrong"), ErrorDto.class);
@@ -97,7 +96,7 @@ public class SignInControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldReturn422OnWrongUsername() {
+    void shouldReturn422OnWrongUsername() {
         // when
         ResponseEntity<ErrorDto> responseWithToken =
                 attemptLogin(new LoginDto("wrong", validPassword), ErrorDto.class);

@@ -20,20 +20,12 @@ abstract class AbstractOllamaTest extends DomainHelper {
     protected  <T> ResponseEntity<T> executePostForEventStream(
             Object body, HttpHeaders headers, Class<T> responseType, String endpoint) {
         headers.setAccept(List.of(MediaType.TEXT_EVENT_STREAM));
-        return restTemplate.exchange(
-                endpoint,
-                HttpMethod.POST,
-                new HttpEntity<>(body, headers),
-                responseType);
+        return executePost(endpoint, body, headers, responseType);
     }
 
     protected  <T> ResponseEntity<T> executePostForEventStream(
             Object body, HttpHeaders headers, ParameterizedTypeReference<T> responseType, String endpoint) {
         headers.setAccept(List.of(MediaType.TEXT_EVENT_STREAM));
-        return restTemplate.exchange(
-                endpoint,
-                HttpMethod.POST,
-                new HttpEntity<>(body, headers),
-                responseType);
+        return executePost(endpoint, body, headers, responseType);
     }
 }

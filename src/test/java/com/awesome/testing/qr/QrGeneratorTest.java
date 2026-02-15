@@ -9,13 +9,13 @@ import java.io.File;
 import static com.awesome.testing.qr.QrGenerator.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class QrGeneratorTest {
+class QrGeneratorTest {
 
     @TempDir
     private File tempDir;
 
     @Test
-    public void shouldGenerateQrCode() {
+    void shouldGenerateQrCode() {
         // given
         String qrCodeText = "https://www.awesome-testing.com";
         File qrCodeFile = new File(tempDir, "qr.png");

@@ -11,22 +11,20 @@ import com.awesome.testing.dto.user.UserRegisterDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ActiveProfiles("test")
-public class LogoutControllerTest extends DomainHelper {
+class LogoutControllerTest extends DomainHelper {
 
     private static final String LOGOUT_ENDPOINT = "/users/logout";
     private static final String REFRESH_ENDPOINT = "/users/refresh";
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldInvalidateRefreshTokenOnLogout() {
+    void shouldInvalidateRefreshTokenOnLogout() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         LoginResponseDto loginResponse = registerAndLogin(user);
@@ -54,7 +52,7 @@ public class LogoutControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldAllowFreshLoginAfterLogout() {
+    void shouldAllowFreshLoginAfterLogout() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         LoginResponseDto loginResponse = registerAndLogin(user);

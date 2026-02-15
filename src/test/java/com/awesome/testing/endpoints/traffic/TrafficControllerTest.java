@@ -16,7 +16,7 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("integration")
-public class TrafficControllerTest extends DomainHelper {
+class TrafficControllerTest extends DomainHelper {
 
     private static final String API_TRAFFIC_INFO = "/api/traffic/info";
 

@@ -19,10 +19,10 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CreateProductControllerTest extends AbstractEcommerceTest {
+class CreateProductControllerTest extends AbstractEcommerceTest {
 
     @Test
-    public void shouldCreateProductAsAdmin() {
+    void shouldCreateProductAsAdmin() {
         // given
         UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String adminToken = getToken(admin);
@@ -46,7 +46,7 @@ public class CreateProductControllerTest extends AbstractEcommerceTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet400ForInvalidBody() {
+    void shouldGet400ForInvalidBody() {
         // given
         UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String adminToken = getToken(admin);
@@ -67,7 +67,7 @@ public class CreateProductControllerTest extends AbstractEcommerceTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldRequireDescriptionWhenCreatingProduct() {
+    void shouldRequireDescriptionWhenCreatingProduct() {
         // given
         UserRegisterDto admin = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String adminToken = getToken(admin);
@@ -87,7 +87,7 @@ public class CreateProductControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         ProductCreateDto productCreateDto = getRandomProductCreate();
 
         // when
@@ -102,7 +102,7 @@ public class CreateProductControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet403AsClient() {
+    void shouldGet403AsClient() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);

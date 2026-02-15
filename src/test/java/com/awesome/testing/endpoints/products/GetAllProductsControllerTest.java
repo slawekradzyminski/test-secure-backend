@@ -17,10 +17,10 @@ import static com.awesome.testing.util.TypeReferenceUtil.productListTypeReferenc
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class GetAllProductsControllerTest extends AbstractEcommerceTest {
+class GetAllProductsControllerTest extends AbstractEcommerceTest {
 
     @Test
-    public void shouldGetAllProductsWhenAuthenticated() {
+    void shouldGetAllProductsWhenAuthenticated() {
         // given
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String clientToken = getToken(client);
@@ -41,7 +41,7 @@ public class GetAllProductsControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
-    public void shouldGet401AsNotAuthenticated() {
+    void shouldGet401AsNotAuthenticated() {
         // when
         ResponseEntity<Map<String, String>> response = executeGet(
                 PRODUCTS_ENDPOINT,

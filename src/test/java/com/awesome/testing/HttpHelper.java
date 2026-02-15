@@ -1,26 +1,37 @@
 package com.awesome.testing;
 
 import com.awesome.testing.config.TestConfig;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.resttestclient.TestRestTemplate;
-import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.client.RestClient;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureTestRestTemplate
 @Import(TestConfig.class)
 @ActiveProfiles("test")
 public abstract class HttpHelper {
 
-    @Autowired
-    protected TestRestTemplate restTemplate;
+    @LocalServerPort
+    private int port;
+
+    private RestClient restClient;
+
+    private RestClient restClient() {
+        if (restClient == null) {
+            restClient = RestClient.builder()
+                    .baseUrl("http://localhost:" + port)
+                    .defaultStatusHandler(HttpStatusCode::isError, (req, res) -> {
+                    })
+                    .build();
+        }
+        return restClient;
+    }
 
     protected <T> ResponseEntity<T> executeGet(String url,
                                                HttpHeaders httpHeaders,
@@ -31,10 +42,7 @@ public abstract class HttpHelper {
     protected <T> ResponseEntity<T> executeGet(String url,
                                                HttpHeaders httpHeaders,
                                                ParameterizedTypeReference<T> responseType) {
-        return restTemplate.exchange(url,
-                HttpMethod.GET,
-                new HttpEntity<>(null, httpHeaders),
-                responseType);
+        return execute(HttpMethod.GET, url, null, httpHeaders, responseType);
     }
 
     protected <T, V> ResponseEntity<T> executePut(String url, V body, HttpHeaders httpHeaders, Class<T> responseType) {
@@ -42,10 +50,7 @@ public abstract class HttpHelper {
     }
 
     protected <T, V> ResponseEntity<T> executePut(String url, V body, HttpHeaders httpHeaders, ParameterizedTypeReference<T> responseType) {
-        return restTemplate.exchange(url,
-                HttpMethod.PUT,
-                new HttpEntity<>(body, httpHeaders),
-                responseType);
+        return execute(HttpMethod.PUT, url, body, httpHeaders, responseType);
     }
 
     protected <T> ResponseEntity<T> executeDelete(String url, HttpHeaders httpHeaders, Class<T> responseType) {
@@ -53,10 +58,7 @@ public abstract class HttpHelper {
     }
 
     protected <T> ResponseEntity<T> executeDelete(String url, HttpHeaders httpHeaders, ParameterizedTypeReference<T> responseType) {
-        return restTemplate.exchange(url,
-                HttpMethod.DELETE,
-                new HttpEntity<>(null, httpHeaders),
-                responseType);
+        return execute(HttpMethod.DELETE, url, null, httpHeaders, responseType);
     }
 
     protected <T, V> ResponseEntity<T> executePost(String url, V body, HttpHeaders httpHeaders, Class<T> responseType) {
@@ -68,10 +70,7 @@ public abstract class HttpHelper {
     }
 
     protected <T, V> ResponseEntity<T> executePost(String url, V body, HttpHeaders httpHeaders, ParameterizedTypeReference<T> responseType) {
-        return restTemplate.exchange(url,
-                HttpMethod.POST,
-                new HttpEntity<>(body, httpHeaders),
-                responseType);
+        return execute(HttpMethod.POST, url, body, httpHeaders, responseType);
     }
 
     protected <T, V> ResponseEntity<T> execute(HttpMethod httpMethod,
@@ -79,10 +78,33 @@ public abstract class HttpHelper {
                                                V body,
                                                HttpHeaders httpHeaders,
                                                Class<T> responseType) {
-        return restTemplate.exchange(url,
-                httpMethod,
-                new HttpEntity<>(body, httpHeaders),
-                responseType);
+        return prepareRequest(httpMethod, url, body, httpHeaders)
+                .retrieve()
+                .toEntity(responseType);
+    }
+
+    protected <T, V> ResponseEntity<T> execute(HttpMethod httpMethod,
+                                               String url,
+                                               V body,
+                                               HttpHeaders httpHeaders,
+                                               ParameterizedTypeReference<T> responseType) {
+        return prepareRequest(httpMethod, url, body, httpHeaders)
+                .retrieve()
+                .toEntity(responseType);
+    }
+
+    private <V> RestClient.RequestBodySpec prepareRequest(HttpMethod httpMethod,
+                                                          String url,
+                                                          V body,
+                                                          HttpHeaders httpHeaders) {
+        RestClient.RequestBodySpec request = restClient()
+                .method(httpMethod)
+                .uri(url)
+                .headers(headers -> headers.addAll(httpHeaders));
+        if (body != null) {
+            request.body(body);
+        }
+        return request;
     }
 
     protected HttpHeaders getJsonOnlyHeaders() {

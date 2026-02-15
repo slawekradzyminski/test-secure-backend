@@ -7,18 +7,16 @@ import com.awesome.testing.dto.user.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ActiveProfiles("test")
-public class DeleteControllerTest extends DomainHelper {
+class DeleteControllerTest extends DomainHelper {
 
     @Test
-    public void shouldDeleteUser() {
+    void shouldDeleteUser() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String username = user.getUsername();
@@ -34,7 +32,7 @@ public class DeleteControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         // when
         ResponseEntity<ErrorDto> response = executeDelete(
                 getUserEndpoint("nonexisting"),
@@ -48,7 +46,7 @@ public class DeleteControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet403AsClient() {
+    void shouldGet403AsClient() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String username = user.getUsername();
@@ -66,7 +64,7 @@ public class DeleteControllerTest extends DomainHelper {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGet404IfUserNotFound() {
+    void shouldGet404IfUserNotFound() {
         // given
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String apiToken = getToken(user);

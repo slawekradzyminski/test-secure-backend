@@ -15,13 +15,13 @@ import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static com.awesome.testing.util.TypeReferenceUtil.mapTypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class GetChatSystemPromptControllerTest extends DomainHelper {
+class GetChatSystemPromptControllerTest extends DomainHelper {
 
     private static final String CHAT_SYSTEM_PROMPT_ENDPOINT = "/users/chat-system-prompt";
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void shouldGetChatSystemPromptAsAdmin() {
+    void shouldGetChatSystemPromptAsAdmin() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_ADMIN));
         String token = getToken(user);
         String systemPrompt = "You are a helpful assistant.";
@@ -43,7 +43,7 @@ public class GetChatSystemPromptControllerTest extends DomainHelper {
     }
 
     @Test
-    public void shouldGet401AsUnauthorized() {
+    void shouldGet401AsUnauthorized() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         getToken(user);
 
