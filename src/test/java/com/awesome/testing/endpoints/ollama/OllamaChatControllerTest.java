@@ -9,7 +9,10 @@ import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
 import com.awesome.testing.service.ollama.OllamaToolDefinitionCatalog;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 
@@ -25,8 +28,11 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("ConstantConditions")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Tag("integration")
 class OllamaChatControllerTest extends AbstractOllamaTest {
     private static final String OLLAMA_CHAT_ENDPOINT = "/api/ollama/chat";
+    private String authToken;
 
     @Autowired
     private ProductRepository productRepository;
@@ -34,11 +40,15 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
     @Autowired
     private OllamaToolDefinitionCatalog toolDefinitionCatalog;
 
+    @BeforeAll
+    void initAuthToken() {
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        authToken = getToken(user);
+    }
+
     @Test
     void shouldStreamChatResponseWithValidToken() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         ChatRequestDto request = validChatRequest();
         OllamaMock.stubSuccessfulChat();
 
@@ -67,8 +77,6 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
     @Test
     void shouldGet400WhenChatRequestIsInvalid() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         ChatRequestDto request = invalidChatRequest();
 
         // when
@@ -89,8 +97,6 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
     @Test
     void shouldGet400WhenToolMessageIsMissingToolName() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         ChatRequestDto request = ChatRequestDto.builder()
                 .model("qwen3:4b-instruct")
                 .messages(List.of(
@@ -136,8 +142,6 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
     @Test
     void shouldGet404ForMissingModelInChat() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         ChatRequestDto request = validChatRequest();
         OllamaMock.stubModelNotFoundForChat();
 
@@ -158,8 +162,6 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
     @Test
     void shouldGet500WhenOllamaServerFailsForChat() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         ChatRequestDto request = validChatRequest();
         OllamaMock.stubServerErrorForChat();
 
@@ -179,8 +181,6 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
     @Test
     void shouldPassThinkFlagInChatRequest() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         ChatRequestDto request = validChatRequestWithThink();
         OllamaMock.stubSuccessfulChat();
 
@@ -205,8 +205,6 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
     @Test
     void shouldReceiveThinkingContentInChatResponse() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         ChatRequestDto request = validChatRequestWithThink();
         OllamaMock.stubSuccessfulChatWithThinking();
 
@@ -236,8 +234,6 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
 
     @Test
     void shouldStreamToolResultBeforeFinalAssistantReply() {
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         ChatRequestDto request = validToolChatRequest();
         OllamaMock.stubToolCallingChatScenario();
         ensureProductExists("iPhone 13 Pro");
@@ -273,9 +269,6 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
 
     @Test
     void shouldExposeToolDefinitionsThroughController() {
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
-
         ResponseEntity<OllamaToolDefinitionDto[]> response = executeGet(
                 "/api/ollama/chat/tools/definitions",
                 getHeadersWith(authToken),

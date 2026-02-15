@@ -4,7 +4,10 @@ import com.awesome.testing.dto.ollama.ModelNotFoundDto;
 import com.awesome.testing.dto.ollama.StreamedRequestDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.http.*;
 
 import java.util.List;
@@ -17,14 +20,21 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("ConstantConditions")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Tag("integration")
 class OllamaGenerateControllerTest extends AbstractOllamaTest {
     private static final String OLLAMA_GENERATE_ENDPOINT = "/api/ollama/generate";
+    private String authToken;
+
+    @BeforeAll
+    void initAuthToken() {
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        authToken = getToken(user);
+    }
 
     @Test
     void shouldStreamResponseWithValidToken() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         StreamedRequestDto request = validStreamedRequest();
         OllamaMock.stubSuccessfulGeneration();
 
@@ -51,8 +61,6 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
     @Test
     void shouldGet400WhenRequestIsInvalid() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         StreamedRequestDto request = invalidStreamedRequest();
 
         // when
@@ -90,8 +98,6 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
     @Test
     void shouldGet404ForMissingModel() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         StreamedRequestDto request = validStreamedRequest();
         OllamaMock.stubModelNotFound();
 
@@ -112,8 +118,6 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
     @Test
     void shouldGet500WhenOllamaServerFails() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         StreamedRequestDto request = validStreamedRequest();
         OllamaMock.stubServerError();
 
@@ -133,8 +137,6 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
     @Test
     void shouldPassThinkFlagInGenerateRequest() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         StreamedRequestDto request = validStreamedRequestWithThink();
         OllamaMock.stubSuccessfulGeneration();
 
@@ -159,8 +161,6 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
     @Test
     void shouldReceiveThinkingContentInGenerateResponse() {
         // given
-        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        String authToken = getToken(user);
         StreamedRequestDto request = validStreamedRequestWithThink();
         OllamaMock.stubSuccessfulGenerationWithThinking();
 
