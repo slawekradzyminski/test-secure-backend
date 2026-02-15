@@ -1,13 +1,20 @@
 package com.awesome.testing.endpoints.ollama;
 
 import com.awesome.testing.DomainHelper;
-import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.wiremock.spring.ConfigureWireMock;
+import org.wiremock.spring.EnableWireMock;
 
 import java.util.List;
 
-@AutoConfigureWireMock(port = 0)
+@EnableWireMock(
+        @ConfigureWireMock(
+                port = 0,
+                portProperties = "wiremock.server.port",
+                baseUrlProperties = "wiremock.server.baseUrl"
+        )
+)
 abstract class AbstractOllamaTest extends DomainHelper {
 
     protected  <T> ResponseEntity<T> executePostForEventStream(

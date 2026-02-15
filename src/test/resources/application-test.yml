@@ -70,7 +70,7 @@ logging:
     append: true
 
 ollama:
-  base-url: http://localhost:${wiremock.server.port}
+  base-url: http://localhost:${wiremock.server.port:11434}
 
 wiremock:
   reset-mappings-after-each-test: true

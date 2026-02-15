@@ -5,6 +5,8 @@ spring:
     allow-bean-definition-overriding: true
 
 server:
+  # Swagger UI in browsers can include large Cookie/Authorization headers; keep headroom above Tomcat defaults.
+  max-http-request-header-size: 64KB
   servlet:
     encoding:
       charset: UTF-8

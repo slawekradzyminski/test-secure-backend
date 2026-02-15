@@ -1,7 +1,7 @@
 package com.awesome.testing.config;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -17,24 +17,16 @@ public class PrettyPrintingHttpLogFormatter implements HttpLogFormatter {
 
     @Override
     @SuppressWarnings("all")
-    public String format(Precorrelation precorrelation, HttpRequest request) throws JsonProcessingException {
-        try {
-            Map<String, Object> content = toJson(request, precorrelation);
-            return formatWithPrettyBody(content);
-        } catch (IOException e) {
-            throw new JsonProcessingException(e) {};
-        }
+    public String format(Precorrelation precorrelation, HttpRequest request) throws IOException {
+        Map<String, Object> content = toJson(request, precorrelation);
+        return formatWithPrettyBody(content);
     }
 
     @Override
     @SuppressWarnings("all")
-    public String format(Correlation correlation, HttpResponse response) throws JsonProcessingException {
-        try {
-            Map<String, Object> content = toJson(response, correlation);
-            return formatWithPrettyBody(content);
-        } catch (IOException e) {
-            throw new JsonProcessingException(e) {};
-        }
+    public String format(Correlation correlation, HttpResponse response) throws IOException {
+        Map<String, Object> content = toJson(response, correlation);
+        return formatWithPrettyBody(content);
     }
 
     private Map<String, Object> toJson(HttpRequest request, Precorrelation precorrelation) throws IOException {
@@ -65,14 +57,14 @@ public class PrettyPrintingHttpLogFormatter implements HttpLogFormatter {
         );
     }
 
-    private String formatWithPrettyBody(Map<String, Object> content) throws JsonProcessingException {
+    private String formatWithPrettyBody(Map<String, Object> content) throws IOException {
         if (content.containsKey("body") && content.get("body") instanceof String) {
             try {
                 Object body = mapper.readValue((String) content.get("body"), Object.class);
                 Map<String, Object> mutableContent = new HashMap<>(content);
                 mutableContent.put("body", body);
                 content = mutableContent;
-            } catch (JsonProcessingException ignored) {
+            } catch (JacksonException ignored) {
                 // If body is not JSON, leave it as is
             }
         }

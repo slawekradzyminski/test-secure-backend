@@ -5,7 +5,7 @@ import java.util.HashMap;
 
 import com.awesome.testing.dto.ErrorDto;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
-import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
+import org.springframework.boot.webmvc.error.DefaultErrorAttributes;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;

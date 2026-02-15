@@ -1,33 +1,27 @@
 package com.awesome.testing.security;
 
+import com.awesome.testing.HttpHelper;
+import com.awesome.testing.dto.user.Role;
+import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.service.UserService;
 import com.awesome.testing.service.delay.DelayGenerator;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.util.List;
 import java.util.UUID;
 
-import static org.mockito.Mockito.doNothing;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.doNothing;
 
-@SpringBootTest
-@AutoConfigureMockMvc
 @ActiveProfiles("test")
-class WebSecurityConfigTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class WebSecurityConfigTest extends HttpHelper {
 
     @MockitoBean
     private UserService userService;
@@ -41,29 +35,35 @@ class WebSecurityConfigTest {
     }
 
     @Test
-    void shouldAllowSignupWithoutAuthentication() throws Exception {
-        String username = "user-" + UUID.randomUUID();
-        String email = UUID.randomUUID() + "@example.com";
+    void shouldAllowSignupWithoutAuthentication() {
+        UserRegisterDto signupRequest = UserRegisterDto.builder()
+                .username("user-" + UUID.randomUUID())
+                .email(UUID.randomUUID() + "@example.com")
+                .password("password123")
+                .firstName("Johnn")
+                .lastName("Does")
+                .roles(List.of(Role.ROLE_CLIENT))
+                .build();
         doNothing().when(userService).signup(any());
 
-        mockMvc.perform(post("/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "username": "%s",
-                                  "email": "%s",
-                                  "password": "password123",
-                                  "firstName": "Johnn",
-                                  "lastName": "Does",
-                                  "roles": ["ROLE_CLIENT"]
-                                }
-                                """.formatted(username, email)))
-                .andExpect(status().isCreated());
+        ResponseEntity<String> response = executePost(
+                "/users/signup",
+                signupRequest,
+                getJsonOnlyHeaders(),
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     @Test
-    void shouldRejectProtectedEndpointWithoutToken() throws Exception {
-        mockMvc.perform(get("/api/orders"))
-                .andExpect(status().isUnauthorized());
+    void shouldRejectProtectedEndpointWithoutToken() {
+        ResponseEntity<String> response = executeGet(
+                "/api/orders",
+                getJsonOnlyHeaders(),
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 }

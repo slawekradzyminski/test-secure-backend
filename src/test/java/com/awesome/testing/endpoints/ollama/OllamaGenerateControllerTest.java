@@ -39,7 +39,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getHeaders().getContentType().toString())
-                .isEqualTo("text/event-stream;charset=UTF-8");
+                .isEqualTo("text/event-stream");
         assertThat(response.getBody()).containsAnyOf("Hello", "world", "my friend");
 
         verify(postRequestedFor(urlEqualTo("/api/generate"))
@@ -105,7 +105,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/json;charset=UTF-8");
+        assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/json");
         assertThat(response.getBody().getError()).isEqualTo("model 'qwen3:4b-instruct' not found");
     }
 
@@ -149,7 +149,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getHeaders().getContentType().toString())
-                .isEqualTo("text/event-stream;charset=UTF-8");
+                .isEqualTo("text/event-stream");
 
         verify(postRequestedFor(urlEqualTo("/api/generate"))
                 .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
@@ -175,7 +175,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getHeaders().getContentType().toString())
-                .isEqualTo("text/event-stream;charset=UTF-8");
+                .isEqualTo("text/event-stream");
         
         // Verify response contains both thinking and content
         String responseBody = response.getBody();

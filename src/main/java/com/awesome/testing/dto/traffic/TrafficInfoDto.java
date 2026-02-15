@@ -1,12 +1,16 @@
 package com.awesome.testing.dto.traffic;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Schema(description = "Traffic info web websockets connection")
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TrafficInfoDto {
 
     @Schema(description = "Websocket endpoint", example = "/ws-traffic")

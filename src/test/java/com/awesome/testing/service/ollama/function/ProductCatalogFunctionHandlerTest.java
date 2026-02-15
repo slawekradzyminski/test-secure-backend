@@ -6,7 +6,7 @@ import com.awesome.testing.dto.ollama.ToolCallFunctionDto;
 import com.awesome.testing.dto.product.ProductListDto;
 import com.awesome.testing.dto.product.ProductSummaryDto;
 import com.awesome.testing.service.ProductService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

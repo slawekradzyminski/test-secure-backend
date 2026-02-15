@@ -85,11 +85,11 @@ public class AddToCartControllerTest extends AbstractEcommerceTest {
         CartItemDto cartItemDto = getSingleCartItemFrom(testProduct.getId());
 
         // when
-        ResponseEntity<CartDto> response = executePost(
+        ResponseEntity<String> response = executePost(
                 CART_ENDPOINT + "/items",
                 cartItemDto,
                 getJsonOnlyHeaders(),
-                CartDto.class);
+                String.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);

@@ -91,7 +91,7 @@ public class SignInControllerTest extends DomainHelper {
                 attemptLogin(new LoginDto(validUsername, "wrong"), ErrorDto.class);
 
         // then
-        assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(responseWithToken.getBody().getMessage()).isEqualTo(LOGIN_FAILED);
     }
 
@@ -103,7 +103,7 @@ public class SignInControllerTest extends DomainHelper {
                 attemptLogin(new LoginDto("wrong", validPassword), ErrorDto.class);
 
         // then
-        assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(responseWithToken.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(responseWithToken.getBody().getMessage()).isEqualTo(LOGIN_FAILED);
     }
 

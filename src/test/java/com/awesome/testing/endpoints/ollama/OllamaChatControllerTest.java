@@ -53,7 +53,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getHeaders().getContentType().toString())
-                .isEqualTo("text/event-stream;charset=UTF-8");
+                .isEqualTo("text/event-stream");
         assertThat(response.getBody()).containsAnyOf("Hi", "there", "friend");
 
         verify(postRequestedFor(urlEqualTo("/api/chat"))
@@ -151,7 +151,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/json;charset=UTF-8");
+        assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/json");
         assertThat(response.getBody().getError()).isEqualTo("model 'qwen3:4b-instruct' not found");
     }
 
@@ -195,7 +195,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getHeaders().getContentType().toString())
-                .isEqualTo("text/event-stream;charset=UTF-8");
+                .isEqualTo("text/event-stream");
 
         verify(postRequestedFor(urlEqualTo("/api/chat"))
                 .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
@@ -221,7 +221,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getHeaders().getContentType().toString())
-                .isEqualTo("text/event-stream;charset=UTF-8");
+                .isEqualTo("text/event-stream");
         
         // Verify response contains both thinking and content
         String responseBody = response.getBody();
@@ -251,7 +251,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getHeaders().getContentType().toString())
-                .isEqualTo("text/event-stream;charset=UTF-8");
+                .isEqualTo("text/event-stream");
 
         String responseBody = response.getBody();
         assertThat(responseBody).contains("\"role\":\"tool\"");

@@ -33,15 +33,15 @@ services:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - my-private-ntwk
-
-#  frontend:
-#    image: slawekradzyminski/frontend:3.1.0
-#    platform: linux/amd64
-#    restart: always
-#    ports:
-#      - "8081:8081"
-#    networks:
-#      - my-private-ntwk
+    
+  frontend:
+   image: slawekradzyminski/frontend:3.2.0
+   platform: linux/amd64
+   restart: always
+   ports:
+     - "8081:8081"
+   networks:
+     - my-private-ntwk
 
   activemq:
     image: apache/activemq-artemis:2.31.2

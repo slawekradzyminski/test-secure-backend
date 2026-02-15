@@ -6,8 +6,8 @@ import com.awesome.testing.dto.ollama.ToolCallDto;
 import com.awesome.testing.dto.ollama.ToolCallFunctionDto;
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.service.ProductService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,7 +55,7 @@ class ProductSnapshotFunctionHandlerTest {
         assertThat(response.getRole()).isEqualTo("tool");
         assertThat(response.getToolName()).isEqualTo(ProductSnapshotFunctionHandler.TOOL_NAME);
         JsonNode json = objectMapper.readTree(response.getContent());
-        assertThat(json.get("name").asText()).isEqualTo("Retro Console");
+        assertThat(json.get("name").asString()).isEqualTo("Retro Console");
         assertThat(json.get("price").asDouble()).isEqualTo(199.99);
     }
 

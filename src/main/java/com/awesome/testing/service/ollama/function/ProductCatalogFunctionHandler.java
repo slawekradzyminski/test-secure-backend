@@ -4,8 +4,8 @@ import com.awesome.testing.dto.ollama.ChatMessageDto;
 import com.awesome.testing.dto.ollama.ToolCallDto;
 import com.awesome.testing.service.ProductService;
 import com.awesome.testing.dto.product.ProductListDto;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -96,7 +96,7 @@ public class ProductCatalogFunctionHandler implements FunctionCallHandler {
                     .toolName(TOOL_NAME)
                     .content(objectMapper.writeValueAsString(Map.of("error", message)))
                     .build();
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return ChatMessageDto.builder()
                     .role("tool")
                     .toolName(TOOL_NAME)
