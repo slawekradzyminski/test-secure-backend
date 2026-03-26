@@ -33,7 +33,7 @@ class GetAllOrdersAdminControllerTest extends AbstractEcommerceTest {
     @Autowired
     private CartService cartService;
 
-    private static final String ADMIN_ORDERS_ENDPOINT = "/api/orders/admin";
+    private static final String ADMIN_ORDERS_ENDPOINT = "/api/v1/orders/admin";
 
     @Test
     void shouldGetAllOrdersAsAdmin() {

@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TrafficInfoDto {
 
-    @Schema(description = "Websocket endpoint", example = "/ws-traffic")
+    @Schema(description = "Websocket endpoint", example = "/api/v1/ws-traffic")
     private String webSocketEndpoint;
 
     @Schema(description = "Websocket topic", example = "/topic/traffic")

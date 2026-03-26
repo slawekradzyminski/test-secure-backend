@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class GetToolSystemPromptControllerTest extends DomainHelper {
 
-    private static final String TOOL_SYSTEM_PROMPT_ENDPOINT = "/users/tool-system-prompt";
+    private static final String TOOL_SYSTEM_PROMPT_ENDPOINT = "/api/v1/users/tool-system-prompt";
 
     @SuppressWarnings("ConstantConditions")
     @Test

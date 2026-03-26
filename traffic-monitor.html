@@ -148,7 +148,7 @@
       }
       
       // First get the WebSocket info
-      fetch(`${serverUrl}/api/traffic/info`, {
+      fetch(`${serverUrl}/api/v1/traffic/info`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -276,7 +276,7 @@
       }
       
       // Connect directly to the WebSocket endpoint
-      const socket = new SockJS(`${serverUrl}/ws-traffic`);
+      const socket = new SockJS(`${serverUrl}/api/v1/ws-traffic`);
       stompClient = Stomp.over(socket);
       
       // Optional: Enable debug logging to see what's happening

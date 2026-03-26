@@ -27,11 +27,11 @@ class WebSocketConfigTest {
         StompEndpointRegistry registry = mock(StompEndpointRegistry.class);
         StompWebSocketEndpointRegistration registration = mock(StompWebSocketEndpointRegistration.class, RETURNS_SELF);
 
-        when(registry.addEndpoint("/ws-traffic")).thenReturn(registration);
+        when(registry.addEndpoint("/api/v1/ws-traffic")).thenReturn(registration);
 
         config.registerStompEndpoints(registry);
 
-        verify(registry).addEndpoint("/ws-traffic");
+        verify(registry).addEndpoint("/api/v1/ws-traffic");
         verify(registration).setAllowedOriginPatterns("*");
         verify(registration).withSockJS();
     }

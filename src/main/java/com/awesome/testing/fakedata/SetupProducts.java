@@ -8,10 +8,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class SetupProducts {
+
+    private static final String IMAGE_PATH_PREFIX = "/images/";
+    private static final List<String> LEGACY_IMAGE_URL_PREFIXES = List.of(
+        "http://localhost:8082/images/",
+        "http://127.0.0.1:8082/images/"
+    );
 
     private final ProductRepository productRepository;
 
@@ -37,7 +44,7 @@ public class SetupProducts {
             new BigDecimal("999.99"),
             50,
             "Electronics",
-            "http://localhost:8082/images/iphone.png"
+            imagePath("iphone.png")
         );
 
         galaxyS21 = createProduct(
@@ -46,7 +53,7 @@ public class SetupProducts {
             new BigDecimal("799.99"),
             75,
             "Electronics",
-            "http://localhost:8082/images/samsung.png"
+            imagePath("samsung.png")
         );
 
         // Computers
@@ -56,7 +63,7 @@ public class SetupProducts {
             new BigDecimal("1999.99"),
             25,
             "Computers",
-            "http://localhost:8082/images/mac.png"
+            imagePath("mac.png")
         );
 
         // Gaming
@@ -66,7 +73,7 @@ public class SetupProducts {
             new BigDecimal("499.99"),
             30,
             "Gaming",
-            "http://localhost:8082/images/ps5.png"
+            imagePath("ps5.png")
         );
 
         // Home & Kitchen
@@ -76,7 +83,7 @@ public class SetupProducts {
             new BigDecimal("249.99"),
             100,
             "Home & Kitchen",
-            "http://localhost:8082/images/ninja.png"
+            imagePath("ninja.png")
         );
 
         // Books
@@ -86,7 +93,7 @@ public class SetupProducts {
             new BigDecimal("44.99"),
             200,
             "Books",
-            "http://localhost:8082/images/cleancode.png"
+            imagePath("cleancode.png")
         );
 
         // Wearables
@@ -96,7 +103,7 @@ public class SetupProducts {
             new BigDecimal("399.99"),
             60,
             "Wearables",
-            "http://localhost:8082/images/applewatch.png"
+            imagePath("applewatch.png")
         );
 
         // Audio
@@ -106,8 +113,20 @@ public class SetupProducts {
             new BigDecimal("349.99"),
             85,
             "Audio",
-            "http://localhost:8082/images/sony.png"
+            imagePath("sony.png")
         );
+    }
+
+    @Transactional
+    public void normalizeProductImageUrls() {
+        List<ProductEntity> products = productRepository.findAll();
+
+        for (ProductEntity product : products) {
+            String normalizedImageUrl = normalizeLegacyImageUrl(product.getImageUrl());
+            if (!normalizedImageUrl.equals(product.getImageUrl())) {
+                product.setImageUrl(normalizedImageUrl);
+            }
+        }
     }
 
     private ProductEntity createProduct(String name, String description, BigDecimal price, int quantity, String category, String imageUrl) {
@@ -121,4 +140,22 @@ public class SetupProducts {
             .build();
         return productRepository.save(product);
     }
-} 
+
+    private String normalizeLegacyImageUrl(String imageUrl) {
+        if (imageUrl == null) {
+            return null;
+        }
+
+        for (String legacyPrefix : LEGACY_IMAGE_URL_PREFIXES) {
+            if (imageUrl.startsWith(legacyPrefix)) {
+                return IMAGE_PATH_PREFIX + imageUrl.substring(legacyPrefix.length());
+            }
+        }
+
+        return imageUrl;
+    }
+
+    private String imagePath(String filename) {
+        return IMAGE_PATH_PREFIX + filename;
+    }
+}

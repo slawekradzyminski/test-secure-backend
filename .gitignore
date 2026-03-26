@@ -30,3 +30,4 @@ app.log
 docker.log
 
 logs/
+.DS_Store

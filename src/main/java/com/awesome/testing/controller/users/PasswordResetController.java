@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/users/password")
+@RequestMapping("/api/v1/users/password")
 @RequiredArgsConstructor
 @Tag(name = "password-reset", description = "Password recovery endpoints")
 public class PasswordResetController {

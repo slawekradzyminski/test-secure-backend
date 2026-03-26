@@ -23,7 +23,7 @@ import static com.awesome.testing.factory.EmailFactory.getRandomEmail;
 
 class EmailControllerTest extends AbstractEcommerceTest {
 
-    private static final String EMAIL_ENDPOINT = "/email";
+    private static final String EMAIL_ENDPOINT = "/api/v1/email";
 
     @Value("${activemq.destination}")
     private String destination;

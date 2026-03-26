@@ -41,14 +41,14 @@ RANDOM_USER="user_$(date +%s)"
 echo "Attempting to register new user..."
 REGISTER_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
   -d "{\"username\":\"$RANDOM_USER\",\"password\":\"password123\",\"email\":\"$RANDOM_USER@test.com\",\"firstName\":\"John\",\"lastName\":\"Boyd\",\"roles\":[\"ROLE_CLIENT\"]}" \
-  http://localhost:4001/users/signup)
+  http://localhost:4001/api/v1/users/signup)
 
 echo "Register response: $REGISTER_RESPONSE"
 
 echo "Attempting to login..."
 LOGIN_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
   -d "{\"username\":\"$RANDOM_USER\",\"password\":\"password123\"}" \
-  http://localhost:4001/users/signin)
+  http://localhost:4001/api/v1/users/signin)
 
 echo "Login response: $LOGIN_RESPONSE"
 
@@ -79,7 +79,7 @@ if [ -z "$TOKEN" ]; then
 fi
 
 echo "Testing Ollama generate endpoint without thinking..."
-GENERATE_RESPONSE=$(curl -s -X POST http://localhost:4001/api/ollama/generate \
+GENERATE_RESPONSE=$(curl -s -X POST http://localhost:4001/api/v1/ollama/generate \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"model":"qwen3:4b-instruct","prompt":"Say hi","stream":false,"think":false}')

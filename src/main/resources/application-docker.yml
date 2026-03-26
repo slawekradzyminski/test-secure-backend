@@ -59,7 +59,7 @@ ollama:
   base-url: http://ollama:11434 
 
 password-reset:
-  frontend-base-url: http://localhost:8081/reset
+  frontend-base-url: ${PASSWORD_RESET_FRONTEND_BASE_URL:http://localhost:8081/reset}
   token-ttl: 30m
   token-byte-length: 32
   expose-token-in-response: false

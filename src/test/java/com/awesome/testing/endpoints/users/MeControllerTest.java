@@ -20,7 +20,7 @@ class MeControllerTest extends DomainHelper {
     private String validUsername;
     private String apiToken;
 
-    private static final String ME_ENDPOINT = "/users/me";
+    private static final String ME_ENDPOINT = "/api/v1/users/me";
 
     @BeforeEach
     void prepareUserForTest() {
@@ -46,7 +46,7 @@ class MeControllerTest extends DomainHelper {
     @Test
     void shouldGet401AsUnauthorized() {
         // when
-        ResponseEntity<ErrorDto> response = executeGet("/users/me", getJsonOnlyHeaders(), ErrorDto.class);
+        ResponseEntity<ErrorDto> response = executeGet("/api/v1/users/me", getJsonOnlyHeaders(), ErrorDto.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);

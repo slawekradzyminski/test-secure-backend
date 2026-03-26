@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class GetChatSystemPromptControllerTest extends DomainHelper {
 
-    private static final String CHAT_SYSTEM_PROMPT_ENDPOINT = "/users/chat-system-prompt";
+    private static final String CHAT_SYSTEM_PROMPT_ENDPOINT = "/api/v1/users/chat-system-prompt";
 
     @SuppressWarnings("ConstantConditions")
     @Test

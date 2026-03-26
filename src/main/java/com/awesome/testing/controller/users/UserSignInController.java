@@ -17,9 +17,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
-@CrossOrigin(origins = "http://localhost:8081", maxAge = 3600)
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/v1/users")
 @Tag(name = "users", description = "User management endpoints")
 @RequiredArgsConstructor
 public class UserSignInController {

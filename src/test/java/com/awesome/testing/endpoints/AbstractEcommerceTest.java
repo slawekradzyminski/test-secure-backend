@@ -13,10 +13,10 @@ import static com.awesome.testing.factory.ProductFactory.getRandomProduct;
 
 public abstract class AbstractEcommerceTest extends DomainHelper {
 
-    protected static final String PRODUCTS_ENDPOINT = "/api/products";
-    protected static final String ORDERS_ENDPOINT = "/api/orders";
-    protected static final String CART_ITEMS_ENDPOINT = "/api/cart/items";
-    protected static final String CART_ENDPOINT = "/api/cart";
+    protected static final String PRODUCTS_ENDPOINT = "/api/v1/products";
+    protected static final String ORDERS_ENDPOINT = "/api/v1/orders";
+    protected static final String CART_ITEMS_ENDPOINT = "/api/v1/cart/items";
+    protected static final String CART_ENDPOINT = "/api/v1/cart";
 
     @Autowired
     protected ProductRepository productRepository;

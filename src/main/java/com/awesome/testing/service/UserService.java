@@ -9,6 +9,7 @@ import com.awesome.testing.security.AuthenticationHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.entity.RefreshTokenEntity;
+import com.awesome.testing.repository.PasswordResetTokenRepository;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.service.token.RefreshTokenService;
@@ -54,6 +55,7 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationHandler authenticationHandler;
     private final RefreshTokenService refreshTokenService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     public TokenPair signIn(String username, String password) {
         authenticationHandler.authUser(username, password);
@@ -75,8 +77,9 @@ public class UserService {
     }
 
     public void delete(String username) {
-        getUser(username);
+        UserEntity user = getUser(username);
         refreshTokenService.removeAllTokensForUser(username);
+        passwordResetTokenRepository.deleteAllByUser(user);
         userRepository.deleteByUsername(username);
     }
 

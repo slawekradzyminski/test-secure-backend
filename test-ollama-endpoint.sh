@@ -24,7 +24,7 @@ echo -e "${BOLD}Testing Ollama Endpoint with Think Flag${NC}\n"
 
 # Step 1: Get JWT token
 echo "1. Getting JWT token..."
-TOKEN_RESPONSE=$(curl -s -X POST "${BASE_URL}/users/signin" \
+TOKEN_RESPONSE=$(curl -s -X POST "${BASE_URL}/api/v1/users/signin" \
   -H "Content-Type: application/json" \
   -d "{\"username\":\"${USERNAME}\",\"password\":\"${PASSWORD}\"}")
 
@@ -67,7 +67,7 @@ test_ollama_endpoint() {
       --connect-timeout 30 \
       --max-time $max_wait_time \
       --keepalive-time 60 \
-      -X POST "${BASE_URL}/api/ollama/generate" \
+      -X POST "${BASE_URL}/api/v1/ollama/generate" \
       -H "Authorization: Bearer ${TOKEN}" \
       -H "Content-Type: application/json" \
       -H "Accept: text/event-stream" \
@@ -163,7 +163,7 @@ test_chat_endpoint() {
       --connect-timeout 30 \
       --max-time $max_wait_time \
       --keepalive-time 60 \
-      -X POST "${BASE_URL}/api/ollama/chat" \
+      -X POST "${BASE_URL}/api/v1/ollama/chat" \
       -H "Authorization: Bearer ${TOKEN}" \
       -H "Content-Type: application/json" \
       -H "Accept: text/event-stream" \

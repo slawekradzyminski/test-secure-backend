@@ -146,9 +146,9 @@ class PasswordResetServiceTest {
         verify(passwordEncoder).encode("newPass123");
         verify(userRepository).save(user);
         verify(refreshTokenService).removeAllTokensForUser("client");
-        verify(passwordResetTokenRepository).save(entity);
+        verify(passwordResetTokenRepository).deleteAllByUser(user);
         verify(emailService).sendEmail(any(EmailDto.class), eq("email"));
-        assertThat(entity.getConsumedAt()).isNotNull();
+        verify(passwordResetTokenRepository, never()).save(entity);
         assertThat(user.getPassword()).isEqualTo("encoded");
     }
 

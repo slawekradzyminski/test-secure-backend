@@ -1,5 +1,7 @@
 package com.awesome.testing.controller;
 
+import com.awesome.testing.controller.doc.ForbiddenApiResponse;
+import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.product.ProductUpdateDto;
@@ -20,28 +22,28 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/products")
+@RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
 @Tag(name = "Products", description = "Product management endpoints")
+@SecurityRequirement(name = "bearerAuth")
+@UnauthorizedApiResponse
 public class ProductController {
 
     private final ProductService productService;
 
     @GetMapping
-    @Operation(summary = "Get all products", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Get all products")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved products"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved products")
     })
     public ResponseEntity<List<ProductDto>> getAllProducts() {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get product by ID", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Get product by ID")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved product"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
         @ApiResponse(responseCode = "404", description = "Product not found", content = @Content)
     })
     public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
@@ -50,12 +52,11 @@ public class ProductController {
 
     @PostMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Create new product", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Create new product")
+    @ForbiddenApiResponse
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Product created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
-        @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
-        @ApiResponse(responseCode = "403", description = "Forbidden - requires admin role", content = @Content)
+        @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content)
     })
     public ResponseEntity<ProductDto> createProduct(@Valid @RequestBody ProductCreateDto productCreateDto) {
         ProductDto savedProduct = productService.createProduct(productCreateDto);
@@ -64,12 +65,11 @@ public class ProductController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Update existing product", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Update existing product")
+    @ForbiddenApiResponse
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Product updated successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
-        @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
-        @ApiResponse(responseCode = "403", description = "Forbidden - requires admin role", content = @Content),
         @ApiResponse(responseCode = "404", description = "Product not found", content = @Content)
     })
     public ResponseEntity<ProductDto> updateProduct(
@@ -80,11 +80,10 @@ public class ProductController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Delete product", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Delete product")
+    @ForbiddenApiResponse
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Product deleted successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
-            @ApiResponse(responseCode = "403", description = "Forbidden - requires admin role", content = @Content),
             @ApiResponse(responseCode = "404", description = "Product not found", content = @Content)
     })
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {

@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Tag("integration")
 class OllamaChatControllerTest extends AbstractOllamaTest {
-    private static final String OLLAMA_CHAT_ENDPOINT = "/api/ollama/chat";
+    private static final String OLLAMA_CHAT_ENDPOINT = "/api/v1/ollama/chat";
     private String authToken;
 
     @Autowired
@@ -242,7 +242,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
                 request,
                 getHeadersWith(authToken),
                 String.class,
-                "/api/ollama/chat/tools"
+                "/api/v1/ollama/chat/tools"
         );
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -270,7 +270,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
     @Test
     void shouldExposeToolDefinitionsThroughController() {
         ResponseEntity<OllamaToolDefinitionDto[]> response = executeGet(
-                "/api/ollama/chat/tools/definitions",
+                "/api/v1/ollama/chat/tools/definitions",
                 getHeadersWith(authToken),
                 OllamaToolDefinitionDto[].class
         );

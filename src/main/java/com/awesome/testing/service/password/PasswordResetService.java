@@ -125,9 +125,7 @@ public class PasswordResetService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
         refreshTokenService.removeAllTokensForUser(user.getUsername());
-
-        tokenEntity.setConsumedAt(now);
-        passwordResetTokenRepository.save(tokenEntity);
+        passwordResetTokenRepository.deleteAllByUser(user);
 
         emailService.sendEmail(emailFactory.buildResetConfirmationEmail(user), destination);
         meterRegistry.ifAvailable(registry -> registry.counter(PASSWORD_RESET_COMPLETED_METRIC).increment());

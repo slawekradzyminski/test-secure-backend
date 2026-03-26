@@ -1,5 +1,6 @@
 package com.awesome.testing.controller.cart;
 
+import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.cart.CartDto;
 import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.cart.UpdateCartItemDto;
@@ -19,19 +20,20 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/cart")
+@RequestMapping("/api/v1/cart")
 @RequiredArgsConstructor
 @Tag(name = "Cart", description = "Shopping cart management endpoints")
+@SecurityRequirement(name = "bearerAuth")
+@UnauthorizedApiResponse
 public class CartItemsController {
 
     private final CartService cartService;
 
     @PostMapping("/items")
-    @Operation(summary = "Add item to cart", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Add item to cart")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Item added successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
-        @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
         @ApiResponse(responseCode = "404", description = "Product not found", content = @Content)
     })
     public ResponseEntity<CartDto> addToCart(
@@ -41,11 +43,10 @@ public class CartItemsController {
     }
 
     @PutMapping("/items/{productId}")
-    @Operation(summary = "Update item quantity", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Update item quantity")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Item quantity updated successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
-        @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
         @ApiResponse(responseCode = "404", description = "Cart item not found", content = @Content)
     })
     public ResponseEntity<CartDto> updateCartItem(
@@ -56,10 +57,9 @@ public class CartItemsController {
     }
 
     @DeleteMapping("/items/{productId}")
-    @Operation(summary = "Remove item from cart", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Remove item from cart")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Item removed successfully"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
         @ApiResponse(responseCode = "404", description = "Cart item not found", content = @Content)
     })
     public ResponseEntity<CartDto> removeFromCart(

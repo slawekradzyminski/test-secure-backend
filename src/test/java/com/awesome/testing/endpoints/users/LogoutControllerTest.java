@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class LogoutControllerTest extends DomainHelper {
 
-    private static final String LOGOUT_ENDPOINT = "/users/logout";
-    private static final String REFRESH_ENDPOINT = "/users/refresh";
+    private static final String LOGOUT_ENDPOINT = "/api/v1/users/logout";
+    private static final String REFRESH_ENDPOINT = "/api/v1/users/refresh";
 
     @SuppressWarnings("ConstantConditions")
     @Test

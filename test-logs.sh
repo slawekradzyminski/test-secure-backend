@@ -18,12 +18,12 @@ done
 echo -e "${GREEN}Application started${NC}"
 
 echo -e "\n${BLUE}Sending login request...${NC}"
-TOKEN=$(curl -s -X POST http://localhost:4001/users/signin \
+TOKEN=$(curl -s -X POST http://localhost:4001/api/v1/users/signin \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin"}' | jq -r .token)
 
 echo -e "\n${BLUE}Sending users request...${NC}"
-curl -s -X GET http://localhost:4001/users \
+curl -s -X GET http://localhost:4001/api/v1/users \
   -H "Authorization: Bearer ${TOKEN}"
 echo
 

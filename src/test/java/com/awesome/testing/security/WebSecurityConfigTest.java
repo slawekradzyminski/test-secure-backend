@@ -45,7 +45,7 @@ class WebSecurityConfigTest extends HttpHelper {
         doNothing().when(userService).signup(any());
 
         ResponseEntity<String> response = executePost(
-                "/users/signup",
+                "/api/v1/users/signup",
                 signupRequest,
                 getJsonOnlyHeaders(),
                 String.class
@@ -57,7 +57,7 @@ class WebSecurityConfigTest extends HttpHelper {
     @Test
     void shouldRejectProtectedEndpointWithoutToken() {
         ResponseEntity<String> response = executeGet(
-                "/api/orders",
+                "/api/v1/orders",
                 getJsonOnlyHeaders(),
                 String.class
         );

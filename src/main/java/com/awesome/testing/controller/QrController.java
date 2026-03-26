@@ -1,5 +1,6 @@
 package com.awesome.testing.controller;
 
+import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.qr.CreateQrDto;
 import com.awesome.testing.service.QrService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,7 +20,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 
 @RestController
-@RequestMapping("/qr")
+@RequestMapping("/api/v1/qr")
 @Tag(name = "QR", description = "Endpoint for QR code generation")
 @RequiredArgsConstructor
 public class QrController {
@@ -28,11 +29,11 @@ public class QrController {
 
     @SneakyThrows
     @PostMapping(value = "/create", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.IMAGE_PNG_VALUE)
-    @Operation(summary = "Generator QR code", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Generate QR code", security = @SecurityRequirement(name = "bearerAuth"))
+    @UnauthorizedApiResponse
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully generated QR code"),
-            @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
-            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
+            @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content)
     })
     public byte[] createQrCode(@RequestBody @Validated CreateQrDto createQrDto) {
         BufferedImage qrImage = qrService.generateQrCode(createQrDto.getText());

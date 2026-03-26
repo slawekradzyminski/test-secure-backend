@@ -1,5 +1,6 @@
 package com.awesome.testing.controller;
 
+import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.service.EmailService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,10 +16,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/email")
+@RequestMapping("/api/v1/email")
 @Tag(name = "email", description = "Email sending endpoints")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
+@UnauthorizedApiResponse
 public class EmailController {
 
     private final EmailService emailService;
@@ -30,8 +32,7 @@ public class EmailController {
     @Operation(summary = "Send email")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Email sent successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid email data", content = @Content),
-            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
+            @ApiResponse(responseCode = "400", description = "Invalid email data", content = @Content)
     })
     public ResponseEntity<Void> sendEmail(@RequestBody @Valid EmailDto emailDto) {
         emailService.sendEmail(emailDto, destination);

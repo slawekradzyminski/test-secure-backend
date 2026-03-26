@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class DeleteProductControllerTest extends AbstractEcommerceTest {
 
-    private static final String PRODUCTS_ENDPOINT = "/api/products";
+    private static final String PRODUCTS_ENDPOINT = "/api/v1/products";
 
     @Test
     void shouldDeleteProductAsAdmin() {

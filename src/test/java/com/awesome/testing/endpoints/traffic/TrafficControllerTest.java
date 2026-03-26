@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("integration")
 class TrafficControllerTest extends DomainHelper {
 
-    private static final String API_TRAFFIC_INFO = "/api/traffic/info";
+    private static final String API_TRAFFIC_INFO = "/api/v1/traffic/info";
 
     @SuppressWarnings("ConstantConditions")
     @Test
@@ -36,7 +36,7 @@ class TrafficControllerTest extends DomainHelper {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().getWebSocketEndpoint()).isEqualTo("/ws-traffic");
+        assertThat(response.getBody().getWebSocketEndpoint()).isEqualTo("/api/v1/ws-traffic");
         assertThat(response.getBody().getTopic()).isEqualTo("/topic/traffic");
         assertThat(response.getBody().getDescription()).isEqualTo(description);
     }

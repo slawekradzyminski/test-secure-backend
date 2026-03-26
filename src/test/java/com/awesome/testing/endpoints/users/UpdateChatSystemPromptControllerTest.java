@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class UpdateChatSystemPromptControllerTest extends DomainHelper {
 
-    private static final String CHAT_SYSTEM_PROMPT_ENDPOINT = "/users/chat-system-prompt";
+    private static final String CHAT_SYSTEM_PROMPT_ENDPOINT = "/api/v1/users/chat-system-prompt";
     private static final String SYSTEM_PROMPT_TOO_LONG = "A".repeat(5001);
 
     @SuppressWarnings("ConstantConditions")

@@ -98,10 +98,10 @@ The application automatically sets up initial data when started:
 
 The application uses JWT tokens for authentication. To access protected endpoints:
 
-1. Get a token using the `/users/signin` endpoint
+1. Get a token using the `/api/v1/users/signin` endpoint
 2. Include the token in the Authorization header: `Bearer <token>`
 
-Sign in responses now include both an access token and a refresh token. The refresh token can be exchanged via `POST /users/refresh` even when the access token expires, and calling `POST /users/logout` revokes the refresh token on the server.
+Sign in responses now include both an access token and a refresh token. The refresh token can be exchanged via `POST /api/v1/users/refresh` even when the access token expires, and calling `POST /api/v1/users/logout` revokes the refresh token on the server.
 
 ## Features
 
@@ -151,52 +151,52 @@ mvn test
 
 ### Authentication
 
-- POST `/users/signin` - Authenticate user and get JWT token
-- POST `/users/signup` - Register a new user
-- POST `/users/refresh` - Refresh JWT token using a refresh token
-- POST `/users/logout` - Revoke current refresh token and logout
-- POST `/users/password/forgot` - Anonymous endpoint that queues a password-reset email (always responds with 202)
-- POST `/users/password/reset` - Completes a reset using the emailed token and a new password (anonymous)
+- POST `/api/v1/users/signin` - Authenticate user and get JWT token
+- POST `/api/v1/users/signup` - Register a new user
+- POST `/api/v1/users/refresh` - Refresh JWT token using a refresh token
+- POST `/api/v1/users/logout` - Revoke current refresh token and logout
+- POST `/api/v1/users/password/forgot` - Anonymous endpoint that queues a password-reset email (always responds with 202)
+- POST `/api/v1/users/password/reset` - Completes a reset using the emailed token and a new password (anonymous)
 
 ### User Management
 
-- GET `/users/me` - Get current user information
-- GET `/users` - Get all users (ADMIN only)
-- GET `/users/{username}` - Get user by username
-- PUT `/users/{username}` - Update user
-- DELETE `/users/{username}` - Delete user (ADMIN only)
+- GET `/api/v1/users/me` - Get current user information
+- GET `/api/v1/users` - Get all users (ADMIN only)
+- GET `/api/v1/users/{username}` - Get user by username
+- PUT `/api/v1/users/{username}` - Update user
+- DELETE `/api/v1/users/{username}` - Delete user (ADMIN only)
 
 ### Products
 
-- GET `/api/products` - Get all products (authenticated)
-- GET `/api/products/{id}` - Get product by ID (authenticated)
-- POST `/api/products` - Create new product (ADMIN only)
-- PUT `/api/products/{id}` - Update product (ADMIN only)
-- DELETE `/api/products/{id}` - Delete product (ADMIN only)
+- GET `/api/v1/products` - Get all products (authenticated)
+- GET `/api/v1/products/{id}` - Get product by ID (authenticated)
+- POST `/api/v1/products` - Create new product (ADMIN only)
+- PUT `/api/v1/products/{id}` - Update product (ADMIN only)
+- DELETE `/api/v1/products/{id}` - Delete product (ADMIN only)
 
 ### Shopping Cart
 
-- GET `/api/cart` - Get current user's cart
-- POST `/api/cart/items` - Add item to cart
-- PUT `/api/cart/items/{productId}` - Update item quantity
-- DELETE `/api/cart/items/{productId}` - Remove item from cart
-- DELETE `/api/cart` - Clear cart
+- GET `/api/v1/cart` - Get current user's cart
+- POST `/api/v1/cart/items` - Add item to cart
+- PUT `/api/v1/cart/items/{productId}` - Update item quantity
+- DELETE `/api/v1/cart/items/{productId}` - Remove item from cart
+- DELETE `/api/v1/cart` - Clear cart
 
 ### Orders
 
-- POST `/api/orders` - Create a new order
-- GET `/api/orders` - Get user's orders
-- GET `/api/orders/{id}` - Get order by ID
-- PUT `/api/orders/{id}/status` - Update order status (ADMIN only)
-- POST `/api/orders/{id}/cancel` - Cancel order
+- POST `/api/v1/orders` - Create a new order
+- GET `/api/v1/orders` - Get user's orders
+- GET `/api/v1/orders/{id}` - Get order by ID
+- PUT `/api/v1/orders/{id}/status` - Update order status (ADMIN only)
+- POST `/api/v1/orders/{id}/cancel` - Cancel order
 
 ### QR Code
 
-- POST `/qr/create` - Generate QR code from text (authenticated)
+- POST `/api/v1/qr/create` - Generate QR code from text (authenticated)
 
 ### Email
 
-- POST `/email` - Send an email (authenticated users only)
+- POST `/api/v1/email` - Send an email (authenticated users only)
 - GET `/local/email/outbox` *(local profile only)* - Inspect the in-memory email queue when running without Artemis
 - DELETE `/local/email/outbox` *(local profile only)* - Clear the local outbox buffer for a clean test run
 
@@ -219,7 +219,7 @@ through secure endpoints that require authentication.
 
 ### Ollama Endpoints
 
-- POST `/api/ollama/generate` - Generate text using Ollama models
+- POST `/api/v1/ollama/generate` - Generate text using Ollama models
     - Single text generation without conversation history
     - Requires authentication with `ROLE_CLIENT` or `ROLE_ADMIN`
     - Supports Server-Sent Events (SSE) for streaming responses
@@ -233,7 +233,7 @@ through secure endpoints that require authentication.
       }
       ```
 
-- POST `/api/ollama/chat` - Chat with Ollama models (stateless)
+- POST `/api/v1/ollama/chat` - Chat with Ollama models (stateless)
     - Supports multi-message conversations with history
     - Client maintains conversation history by sending all previous messages
     - Requires authentication with `ROLE_CLIENT` or `ROLE_ADMIN`
@@ -253,8 +253,8 @@ through secure endpoints that require authentication.
       }
       ```
 
-- POST `/api/ollama/chat/tools` - Chat with Ollama models and invoke backend functions (stateless)
-    - Accepts the same conversation history as `/api/ollama/chat` plus a `tools` array that describes available functions
+- POST `/api/v1/ollama/chat/tools` - Chat with Ollama models and invoke backend functions (stateless)
+    - Accepts the same conversation history as `/api/v1/ollama/chat` plus a `tools` array that describes available functions
     - Streams every chunk (assistant thinking, tool calls, tool results, and final reply) so workshop participants can watch the loop in real time
     - Currently exposes two functions:
         - `get_product_snapshot` – anchor every SKU answer with trusted JSON (price/stock/description). qwen3:4b-instruct hallucinates often, so this is always the first hop when you are in the product lane.
@@ -298,14 +298,14 @@ through secure endpoints that require authentication.
       }
       ```
     - When the model decides to call `get_product_snapshot`, the backend executes `ProductService`, streams a `role: "tool"` payload containing the JSON snapshot (or `{ "error": "..." }`), and then resubmits the expanded history back to Ollama so the final assistant reply references the real data.
-- GET `/api/ollama/chat/tools/definitions` - Returns the JSON schema for every supported tool so SDKs/frontends can stay in sync with the backend contract (requires the same auth as the chat endpoints)
+- GET `/api/v1/ollama/chat/tools/definitions` - Returns the JSON schema for every supported tool so SDKs/frontends can stay in sync with the backend contract (requires the same auth as the chat endpoints)
 
 ### Prompt Management
 
 Each user can configure two system prompts that the backend injects automatically:
 
-- GET/PUT `/users/chat-system-prompt` – controls the general conversation tone for `/api/ollama/chat`.
-- GET/PUT `/users/tool-system-prompt` – explains how to use the catalog tools for `/api/ollama/chat/tools`.
+- GET/PUT `/api/v1/users/chat-system-prompt` – controls the general conversation tone for `/api/v1/ollama/chat`.
+- GET/PUT `/api/v1/users/tool-system-prompt` – explains how to use the catalog tools for `/api/v1/ollama/chat/tools`.
 
 Clients can fetch these endpoints to display/edit the prompts, but they no longer need to include the strings in the `messages` array; the controller prepends them before relaying any request to Ollama.
 
@@ -353,13 +353,13 @@ tracking and visualization of all HTTP requests in the application.
 
 ### WebSocket Endpoints
 
-- WebSocket Connection: `/ws-traffic`
+- WebSocket Connection: `/api/v1/ws-traffic`
 - Subscription Topic: `/topic/traffic`
 - Data Format:
   ```json
   {
     "method": "GET",
-    "path": "/api/products",
+    "path": "/api/v1/products",
     "status": 200,
     "durationMs": 45,
     "timestamp": "2023-03-22T10:15:30.123Z"
@@ -370,7 +370,7 @@ tracking and visualization of all HTTP requests in the application.
 
 1. Connect to the WebSocket endpoint:
    ```javascript
-   const socket = new SockJS('/ws-traffic');
+   const socket = new SockJS('/api/v1/ws-traffic');
    const stompClient = Stomp.over(socket);
    
    // Include JWT token for authentication
@@ -403,17 +403,17 @@ jwebserver -p 8081 -d /Users/slawek/IdeaProjects/test-secure-backend
 
 2. Go to `http://localhost:8081/traffic-monitor.html`
 3. Enter your server URL (default: http://localhost:4001)
-4. Paste a valid JWT token (obtained from `/users/signin` endpoint)
+4. Paste a valid JWT token (obtained from `/api/v1/users/signin` endpoint)
 5. Click "Connect" to establish the WebSocket connection
 6. Watch as HTTP traffic events appear in real-time
 
 ### API Endpoints
 
-- GET `/api/traffic/info` - Get WebSocket connection information (authenticated)
+- GET `/api/v1/traffic/info` - Get WebSocket connection information (authenticated)
     - Returns:
       ```json
       {
-        "endpoint": "/ws-traffic",
+        "endpoint": "/api/v1/ws-traffic",
         "topic": "/topic/traffic",
         "description": "WebSocket endpoint for real-time HTTP traffic events"
       }

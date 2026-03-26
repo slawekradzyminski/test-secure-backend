@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Tag("integration")
 class OllamaGenerateControllerTest extends AbstractOllamaTest {
-    private static final String OLLAMA_GENERATE_ENDPOINT = "/api/ollama/generate";
+    private static final String OLLAMA_GENERATE_ENDPOINT = "/api/v1/ollama/generate";
     private String authToken;
 
     @BeforeAll

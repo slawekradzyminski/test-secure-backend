@@ -2,6 +2,7 @@ package com.awesome.testing.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -40,22 +41,24 @@ import static com.awesome.testing.utils.ErrorResponseDefinition.sendErrorRespons
 public class WebSecurityConfig {
 
     private static final List<String> ALLOWED_ENDPOINTS = List.of(
-            "/users/signin",
-            "/users/signup",
-            "/users/refresh",
-            "/users/password/forgot",
-            "/users/password/reset",
+            "/api/v1/users/signin",
+            "/api/v1/users/signup",
+            "/api/v1/users/refresh",
+            "/api/v1/users/password/forgot",
+            "/api/v1/users/password/reset",
             "/h2-console/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-resources/**",
             "/webjars/**",
             "/actuator/**",
-            "/ws-traffic/**",
+            "/api/v1/ws-traffic/**",
             "/local/email/outbox/**"
     );
 
     private final JwtTokenProvider jwtTokenProvider;
+    @Value("${app.cors.allowed-origin-patterns:http://localhost:8081,http://127.0.0.1:8081,http://host.docker.internal:8081}")
+    private List<String> allowedOriginPatterns;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -118,11 +121,7 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:8081",
-                "http://127.0.0.1:8081",
-                "http://host.docker.internal:8081"
-        ));
+        configuration.setAllowedOriginPatterns(allowedOriginPatterns);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of(
             "Authorization", 

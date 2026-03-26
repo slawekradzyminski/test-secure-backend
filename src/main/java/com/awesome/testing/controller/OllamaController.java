@@ -1,5 +1,6 @@
 package com.awesome.testing.controller;
 
+import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.ollama.ChatRequestDto;
 import com.awesome.testing.dto.ollama.ChatResponseDto;
 import com.awesome.testing.dto.ollama.GenerateResponseDto;
@@ -35,10 +36,11 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/ollama")
+@RequestMapping("/api/v1/ollama")
 @Tag(name = "ollama", description = "Ollama endpoints")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
+@UnauthorizedApiResponse
 public class OllamaController {
 
     private final OllamaService ollamaService;
@@ -50,7 +52,6 @@ public class OllamaController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful generation"),
             @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content),
-            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
             @ApiResponse(responseCode = "404", description = "Model not found", content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = ModelNotFoundDto.class)
@@ -68,7 +69,6 @@ public class OllamaController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful chat response"),
             @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content),
-            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
             @ApiResponse(responseCode = "404", description = "Model not found", content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = ModelNotFoundDto.class)
@@ -89,14 +89,13 @@ public class OllamaController {
             summary = "Chat with Ollama using backend function calling (legacy stateless endpoint)",
             description = """
                     Available tools: get_product_snapshot, list_products.
-                    Use GET /api/ollama/chat/tools/definitions for the full JSON schema.
+                    Use GET /api/v1/ollama/chat/tools/definitions for the full JSON schema.
                     This endpoint requires the caller to resend the full conversation on every request.
                     qwen3:4b-instruct stays grounded only when it keeps everything in the product lane—always snapshot a SKU first and follow up with list_products if it needs comparisons."""
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful chat response"),
             @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content),
-            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
             @ApiResponse(responseCode = "500", description = "Ollama server error", content = @Content)
     })
     @PostMapping(value = "/chat/tools", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -110,10 +109,9 @@ public class OllamaController {
                 .doOnSubscribe(subscription -> log.info("Starting tool-enabled chat stream"));
     }
 
-    @Operation(summary = "List tool definitions supported by /api/ollama/chat/tools")
+    @Operation(summary = "List tool definitions supported by /api/v1/ollama/chat/tools")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Available tool definitions returned successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
+            @ApiResponse(responseCode = "200", description = "Available tool definitions returned successfully")
     })
     @GetMapping("/chat/tools/definitions")
     public List<OllamaToolDefinitionDto> getToolDefinitions() {

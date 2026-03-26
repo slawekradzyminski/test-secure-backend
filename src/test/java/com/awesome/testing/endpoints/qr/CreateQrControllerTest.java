@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class CreateQrControllerTest extends DomainHelper {
 
-    private final String CREATE_QR_CODE_ENDPOINT = "/qr/create";
+    private final String CREATE_QR_CODE_ENDPOINT = "/api/v1/qr/create";
 
     @TempDir
     private File tempDir;

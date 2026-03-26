@@ -2,6 +2,9 @@ package com.awesome.testing.controller.email;
 
 import com.awesome.testing.service.password.LocalEmailOutbox;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -23,12 +26,19 @@ public class LocalEmailOutboxController {
 
     @GetMapping
     @Operation(summary = "Fetch all queued emails produced in the local profile")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Queued local emails returned successfully")
+    })
     public ResponseEntity<List<LocalEmailOutbox.StoredEmail>> getOutbox() {
         return ResponseEntity.ok(localEmailOutbox.getAll());
     }
 
     @DeleteMapping
     @Operation(summary = "Clear the local outbox buffer")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Outbox buffer cleared successfully"),
+            @ApiResponse(responseCode = "500", description = "Unexpected error while clearing outbox", content = @Content)
+    })
     public ResponseEntity<Void> clearOutbox() {
         localEmailOutbox.clear();
         return ResponseEntity.ok().build();

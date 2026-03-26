@@ -1,5 +1,6 @@
 package com.awesome.testing.controller.users;
 
+import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.user.UserResponseDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.service.UserService;
@@ -14,9 +15,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-@CrossOrigin(origins = "http://localhost:8081", maxAge = 3600)
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/v1/users")
 @Tag(name = "users", description = "User management endpoints")
 @RequiredArgsConstructor
 public class UserGetSingleUserController {
@@ -25,10 +25,10 @@ public class UserGetSingleUserController {
 
     @GetMapping("/{username}")
     @Operation(summary = "Get user by username", security = @SecurityRequirement(name = "bearerAuth"))
+    @UnauthorizedApiResponse
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User details",
                     content = @Content(schema = @Schema(implementation = UserResponseDto.class))),
-            @ApiResponse(responseCode = "401", description = "Unauthorized – Missing or invalid token", content = @Content),
             @ApiResponse(responseCode = "404", description = "The user doesn't exist", content = @Content)
     })
     public UserResponseDto getByUsername(@Parameter(description = "Username") @PathVariable String username) {

@@ -34,8 +34,8 @@ logbook:
     - "/v3/api-docs/**"
     - "/actuator/**"
     - "/favicon.ico"
-    - "/api/ollama/generate"
-    - "/api/ollama/chat/**"
+    - "/api/v1/ollama/generate"
+    - "/api/v1/ollama/chat/**"
   format:
     style: json
   write:
@@ -45,6 +45,10 @@ logbook:
     headers:
       - x-secret
       - cookie
+
+app:
+  cors:
+    allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:8081,http://127.0.0.1:8081,http://host.docker.internal:8081}
   
 UserController:
   signin: Authenticates user and returns its JWT token.
@@ -61,3 +65,7 @@ JmsSender:
 
 ollama:
   base-url: http://localhost:11434
+
+springdoc:
+  swagger-ui:
+    oauth2-redirect-url: ${SWAGGER_UI_OAUTH2_REDIRECT_URL:http://localhost:8081/swagger-ui/oauth2-redirect.html}

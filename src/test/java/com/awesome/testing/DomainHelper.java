@@ -10,9 +10,9 @@ import java.text.MessageFormat;
 
 public abstract class DomainHelper extends HttpHelper {
 
-    protected static final String LOGIN_ENDPOINT = "/users/signin";
-    protected static final String REGISTER_ENDPOINT = "/users/signup";
-    protected static final String USERS_ENDPOINT = "/users";
+    protected static final String LOGIN_ENDPOINT = "/api/v1/users/signin";
+    protected static final String REGISTER_ENDPOINT = "/api/v1/users/signup";
+    protected static final String USERS_ENDPOINT = "/api/v1/users";
 
     protected static final String MISSING_USER = "The user doesn't exist";
 
@@ -69,7 +69,7 @@ public abstract class DomainHelper extends HttpHelper {
     }
 
     protected String getUserEndpoint(String username) {
-        return MessageFormat.format("/users/{0}", username);
+        return MessageFormat.format("/api/v1/users/{0}", username);
     }
 
     protected HttpHeaders getHeadersWith(String token) {

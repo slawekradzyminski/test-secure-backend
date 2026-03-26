@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class RefreshControllerTest extends DomainHelper {
 
-    private static final String REFRESH_ENDPOINT = "/users/refresh";
+    private static final String REFRESH_ENDPOINT = "/api/v1/users/refresh";
 
     @SuppressWarnings("ConstantConditions")
     @Test

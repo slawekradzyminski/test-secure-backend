@@ -35,7 +35,7 @@ services:
       - my-private-ntwk
     
   frontend:
-   image: slawekradzyminski/frontend:3.2.0
+   image: slawekradzyminski/frontend:3.4.0
    platform: linux/amd64
    restart: always
    ports:

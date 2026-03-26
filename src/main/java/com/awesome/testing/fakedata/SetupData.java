@@ -19,6 +19,7 @@ public class SetupData {
     @Transactional
     public void setupData() {
         setupUsers.createUsers();
+        setupProducts.normalizeProductImageUrls();
         setupProducts.createProducts();
         setupOrders.createOrdersAndCart();
     }

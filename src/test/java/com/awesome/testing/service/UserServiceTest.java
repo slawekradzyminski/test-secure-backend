@@ -7,6 +7,7 @@ import com.awesome.testing.dto.user.UserEditDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.entity.RefreshTokenEntity;
+import com.awesome.testing.repository.PasswordResetTokenRepository;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.AuthenticationHandler;
 import com.awesome.testing.security.JwtTokenProvider;
@@ -47,6 +48,9 @@ class UserServiceTest {
 
     @Mock
     private RefreshTokenService refreshTokenService;
+
+    @Mock
+    private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @InjectMocks
     private UserService userService;
@@ -127,6 +131,7 @@ class UserServiceTest {
         userService.delete(registerDto.getUsername());
 
         verify(refreshTokenService).removeAllTokensForUser(registerDto.getUsername());
+        verify(passwordResetTokenRepository).deleteAllByUser(userEntity);
         verify(userRepository).deleteByUsername(registerDto.getUsername());
     }
 

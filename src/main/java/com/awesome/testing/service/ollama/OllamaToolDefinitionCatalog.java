@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Catalog of tool definitions exposed through /api/ollama/chat/tools.
+ * Catalog of tool definitions exposed through /api/v1/ollama/chat/tools.
  * Frontend + documentation can read from this bean to stay in sync.
  */
 @Slf4j
