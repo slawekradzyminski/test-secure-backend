@@ -31,7 +31,7 @@ class PromptInjectorTest {
     @Test
     void shouldPrependChatPrompt() {
         ChatRequestDto request = ChatRequestDto.builder()
-                .model("qwen3")
+                .model("qwen3.5:2b")
                 .messages(List.of(
                         ChatMessageDto.builder().role("user").content("Hello").build()
                 ))
@@ -53,7 +53,7 @@ class PromptInjectorTest {
     @Test
     void shouldPrependChatAndToolPromptsForToolRequests() {
         ChatRequestDto request = ChatRequestDto.builder()
-                .model("qwen3")
+                .model("qwen3.5:2b")
                 .messages(List.of(ChatMessageDto.builder().role("user").content("Compare items").build()))
                 .tools(List.of())
                 .build();
@@ -71,7 +71,7 @@ class PromptInjectorTest {
     @Test
     void shouldDeduplicateExistingPrompts() {
         ChatRequestDto request = ChatRequestDto.builder()
-                .model("qwen3")
+                .model("qwen3.5:2b")
                 .messages(List.of(
                         ChatMessageDto.builder().role("system").content("Chat Prompt").build(),
                         ChatMessageDto.builder().role("system").content("Tool Prompt").build(),

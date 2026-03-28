@@ -20,9 +20,9 @@ import java.util.Map;
 public class ChatRequestDto {
     @NotBlank
     @Schema(
-            description = "Model to use. Only this model is downloaded automatically. " +
-                    "Other model have to be manually downloaded on Ollama server",
-            example = "qwen3:4b-instruct"
+            description = "Model to use. Must be available on the Ollama server. " +
+                    "Clients can override it per request.",
+            example = "qwen3.5:2b"
     )
     private String model;
 

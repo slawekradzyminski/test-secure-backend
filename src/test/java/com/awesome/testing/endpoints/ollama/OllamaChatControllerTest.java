@@ -67,7 +67,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         assertThat(response.getBody()).containsAnyOf("Hi", "there", "friend");
 
         verify(postRequestedFor(urlEqualTo("/api/chat"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3.5:2b")))
                 .withRequestBody(matchingJsonPath("$.messages[0].role", equalTo("system")))
                 .withRequestBody(matchingJsonPath("$.messages[1].role", equalTo("user")))
                 .withRequestBody(matchingJsonPath("$.messages[1].content", equalTo("Hello")))
@@ -98,7 +98,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
     void shouldGet400WhenToolMessageIsMissingToolName() {
         // given
         ChatRequestDto request = ChatRequestDto.builder()
-                .model("qwen3:4b-instruct")
+                .model("qwen3.5:2b")
                 .messages(List.of(
                         ChatMessageDto.builder()
                                 .role("tool")
@@ -156,7 +156,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/json");
-        assertThat(response.getBody().getError()).isEqualTo("model 'qwen3:4b-instruct' not found");
+        assertThat(response.getBody().getError()).isEqualTo("model 'qwen3.5:2b' not found");
     }
 
     @Test
@@ -198,7 +198,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
                 .isEqualTo("text/event-stream");
 
         verify(postRequestedFor(urlEqualTo("/api/chat"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3.5:2b")))
                 .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
     }
 
@@ -228,7 +228,7 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
         assertThat(responseBody).contains("Hi there!");
 
         verify(postRequestedFor(urlEqualTo("/api/chat"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3.5:2b")))
                 .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
     }
 
@@ -265,6 +265,44 @@ class OllamaChatControllerTest extends AbstractOllamaTest {
                 .withRequestBody(matchingJsonPath("$.messages[0].role", equalTo("system")))
                 .withRequestBody(matchingJsonPath("$.messages[1].role", equalTo("system")))
                 .withRequestBody(matchingJsonPath("$.messages[2].content", containing("iPhone 13 Pro"))));
+    }
+
+    @Test
+    void shouldPassThinkFlagInToolChatRequest() {
+        // given
+        ChatRequestDto request = ChatRequestDto.builder()
+                .model("qwen3.5:2b")
+                .messages(List.of(
+                        ChatMessageDto.builder()
+                                .role("user")
+                                .content("Tell me the price of the iPhone 13 Pro.")
+                                .build()
+                ))
+                .tools(toolDefinitionCatalog.getDefinitions())
+                .stream(true)
+                .think(true)
+                .build();
+        OllamaMock.stubToolCallingChatScenario("tool-chat-think");
+        ensureProductExists("iPhone 13 Pro");
+
+        // when
+        ResponseEntity<String> response = executePostForEventStream(
+                request,
+                getHeadersWith(authToken),
+                String.class,
+                "/api/v1/ollama/chat/tools"
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getContentType().toString())
+                .isEqualTo("text/event-stream");
+        assertThat(response.getBody()).contains("\"role\":\"tool\"");
+
+        verify(postRequestedFor(urlEqualTo("/api/chat"))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3.5:2b")))
+                .withRequestBody(matchingJsonPath("$.think", equalTo("true")))
+                .withRequestBody(matchingJsonPath("$.tools[0].function.name", equalTo("get_product_snapshot"))));
     }
 
     @Test

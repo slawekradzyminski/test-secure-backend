@@ -53,7 +53,7 @@ LOGIN_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
 echo "Login response: $LOGIN_RESPONSE"
 
 echo "Pulling LLM model (this might take a while)..."
-curl -s -X POST http://localhost:11434/api/pull -d '{"model": "qwen3:4b-instruct"}' | while read -r line; do
+curl -s -X POST http://localhost:11434/api/pull -d '{"model": "qwen3.5:2b"}' | while read -r line; do
   if echo "$line" | grep -q '"status"'; then
     status=$(echo "$line" | grep -o '"status":"[^"]*' | cut -d'"' -f4)
     if [ ! -z "$status" ]; then
@@ -63,7 +63,7 @@ curl -s -X POST http://localhost:11434/api/pull -d '{"model": "qwen3:4b-instruct
 done
 
 echo "Verifying model is available..."
-MODEL_CHECK=$(curl -s http://localhost:11434/api/tags | grep -o '"name":"qwen3:4b-instruct"' || true)
+MODEL_CHECK=$(curl -s http://localhost:11434/api/tags | grep -o '"name":"qwen3.5:2b"' || true)
 if [ -z "$MODEL_CHECK" ]; then
   echo "Failed to pull LLM"
   docker compose down
@@ -82,12 +82,40 @@ echo "Testing Ollama generate endpoint without thinking..."
 GENERATE_RESPONSE=$(curl -s -X POST http://localhost:4001/api/v1/ollama/generate \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"qwen3:4b-instruct","prompt":"Say hi","stream":false,"think":false}')
+  -d '{"model":"qwen3.5:2b","prompt":"Say hi","stream":false,"think":false}')
 
 echo "Generate response: $GENERATE_RESPONSE"
 
 if ! echo "$GENERATE_RESPONSE" | grep -q '"done" : true'; then
   echo "Generate endpoint verification failed."
+  docker compose down
+  exit 1
+fi
+
+echo "Testing Ollama generate endpoint with thinking..."
+THINKING_GENERATE_RESPONSE=$(curl -s -X POST http://localhost:4001/api/v1/ollama/generate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"qwen3.5:2b","prompt":"What is 15 * 23? Think step by step.","stream":false,"think":true}')
+
+echo "Thinking generate response: $THINKING_GENERATE_RESPONSE"
+
+if ! echo "$THINKING_GENERATE_RESPONSE" | grep -q '"done" : true'; then
+  echo "Thinking generate endpoint verification failed."
+  docker compose down
+  exit 1
+fi
+
+echo "Testing Ollama chat endpoint with thinking..."
+CHAT_RESPONSE=$(curl -s -X POST http://localhost:4001/api/v1/ollama/chat \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"qwen3.5:2b","messages":[{"role":"user","content":"Say hi"}],"stream":false,"think":true}')
+
+echo "Chat response: $CHAT_RESPONSE"
+
+if ! echo "$CHAT_RESPONSE" | grep -q '"done" : true'; then
+  echo "Chat endpoint verification failed."
   docker compose down
   exit 1
 fi

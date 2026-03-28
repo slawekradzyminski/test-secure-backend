@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class StreamedRequestDto {
     @NotBlank
-    @Schema(description = "Model to use, needs to be downloaded in ollama server", example = "qwen3:4b-instruct")
+    @Schema(description = "Model to use, needs to be available on the Ollama server.", example = "qwen3.5:2b")
     String model;
 
     @Schema(description = "Prompt", example = "Hello, how are you?")

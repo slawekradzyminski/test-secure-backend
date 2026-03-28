@@ -53,7 +53,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
         assertThat(response.getBody()).containsAnyOf("Hello", "world", "my friend");
 
         verify(postRequestedFor(urlEqualTo("/api/generate"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3.5:2b")))
                 .withRequestBody(matchingJsonPath("$.prompt", equalTo("test prompt")))
                 .withRequestBody(matchingJsonPath("$.stream", equalTo("true"))));
     }
@@ -112,7 +112,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getHeaders().getContentType().toString()).isEqualTo("application/json");
-        assertThat(response.getBody().getError()).isEqualTo("model 'qwen3:4b-instruct' not found");
+        assertThat(response.getBody().getError()).isEqualTo("model 'qwen3.5:2b' not found");
     }
 
     @Test
@@ -154,7 +154,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
                 .isEqualTo("text/event-stream");
 
         verify(postRequestedFor(urlEqualTo("/api/generate"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3.5:2b")))
                 .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
     }
 
@@ -184,7 +184,7 @@ class OllamaGenerateControllerTest extends AbstractOllamaTest {
         assertThat(responseBody).contains("Hello");
 
         verify(postRequestedFor(urlEqualTo("/api/generate"))
-                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3:4b-instruct")))
+                .withRequestBody(matchingJsonPath("$.model", equalTo("qwen3.5:2b")))
                 .withRequestBody(matchingJsonPath("$.think", equalTo("true"))));
     }
 

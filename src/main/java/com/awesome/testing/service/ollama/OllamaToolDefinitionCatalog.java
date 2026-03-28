@@ -41,7 +41,7 @@ public class OllamaToolDefinitionCatalog {
         return OllamaToolDefinitionDto.builder()
                 .function(OllamaToolFunctionDto.builder()
                         .name("get_product_snapshot")
-                        .description("Anchor every catalog response with real price/stock/description data. qwen3:4b-instruct hallucinates if it guesses, so always lead with this snapshot and keep it paired with list_products inside the catalog lane.")
+                        .description("Anchor every catalog response with real price/stock/description data. Small local models can hallucinate if they guess, so always lead with this snapshot and keep it paired with list_products inside the catalog lane.")
                         .parameters(OllamaToolParametersDto.builder()
                                 .type("object")
                                 .properties(Map.of(

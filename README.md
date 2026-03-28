@@ -226,7 +226,7 @@ through secure endpoints that require authentication.
     - Request body:
       ```json
       {
-        "model": "qwen3:4b-instruct",
+        "model": "qwen3.5:2b",
         "prompt": "Your prompt here",
         "options": {},
         "think": false
@@ -241,7 +241,7 @@ through secure endpoints that require authentication.
     - Request body:
       ```json
       {
-        "model": "qwen3:4b-instruct",
+        "model": "qwen3.5:2b",
         "messages": [
           { "role": "system", "content": "You are a helpful assistant." },
           { "role": "user", "content": "Hello!" },
@@ -257,14 +257,14 @@ through secure endpoints that require authentication.
     - Accepts the same conversation history as `/api/v1/ollama/chat` plus a `tools` array that describes available functions
     - Streams every chunk (assistant thinking, tool calls, tool results, and final reply) so workshop participants can watch the loop in real time
     - Currently exposes two functions:
-        - `get_product_snapshot` – anchor every SKU answer with trusted JSON (price/stock/description). qwen3:4b-instruct hallucinates often, so this is always the first hop when you are in the product lane.
+        - `get_product_snapshot` – anchor every SKU answer with trusted JSON (price/stock/description). Small local models can hallucinate if they guess, so this is always the first hop when you are in the product lane.
         - `list_products` – grab a slice of the catalog right after a snapshot so the model can compare SKUs; keep it paired with `get_product_snapshot` to avoid invented cross-product claims.
       - We intentionally removed the Grokipedia lane, so every function call now focuses on internal inventory data.
 
     - Sample request:
       ```json
       {
-        "model": "qwen3:4b-instruct",
+        "model": "qwen3.5:2b",
         "messages": [
           { "role": "system", "content": "You are a helpful shopping assistant." },
           { "role": "user", "content": "How much does the Retro Console cost?" }
@@ -313,7 +313,7 @@ Clients can fetch these endpoints to display/edit the prompts, but they no longe
 
 Both endpoints support the following parameters:
 
-- `model` (required): The Ollama model to use (e.g., "qwen3:4b-instruct")
+- `model` (required): The Ollama model to use (e.g., "qwen3.5:2b")
 - `options` (optional): Model-specific options (e.g., temperature, max tokens)
 - `think` (optional): Set to `true` for 'thinking' models that benefit from reasoning before responding. Defaults to `false`
 

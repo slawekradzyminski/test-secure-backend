@@ -98,7 +98,7 @@ public class OllamaController {
                     Available tools: get_product_snapshot, list_products.
                     Use GET /api/v1/ollama/chat/tools/definitions for the full JSON schema.
                     This endpoint requires the caller to resend the full conversation on every request.
-                    qwen3:4b-instruct stays grounded only when it keeps everything in the product lane—always snapshot a SKU first and follow up with list_products if it needs comparisons."""
+                    Small local models stay grounded only when they keep everything in the product lane—always snapshot a SKU first and follow up with list_products if it needs comparisons."""
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful chat response"),

@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class OllamaFunctionCallingServiceTest {
 
-    private static final String MODEL = "qwen3:4b-instruct";
+    private static final String MODEL = "qwen3.5:2b";
     private static final Duration CHUNK_DELAY = Duration.ofMillis(50);
 
     @Mock
@@ -326,6 +326,7 @@ class OllamaFunctionCallingServiceTest {
                 .messages(List.of(createUserMessage("Tell me about the iPhone")))
                 .tools(List.of(toolDefinition))
                 .stream(true)
+                .think(true)
                 .build();
     }
 
@@ -366,4 +367,3 @@ class OllamaFunctionCallingServiceTest {
                 .build();
     }
 }
-
