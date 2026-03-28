@@ -3,6 +3,7 @@ package com.awesome.testing.controller.users;
 import com.awesome.testing.dto.password.ForgotPasswordRequestDto;
 import com.awesome.testing.dto.password.ForgotPasswordResponseDto;
 import com.awesome.testing.dto.password.ResetPasswordRequestDto;
+import com.awesome.testing.security.ratelimit.AuthRateLimitGuard;
 import com.awesome.testing.service.password.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -24,17 +25,20 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "password-reset", description = "Password recovery endpoints")
 public class PasswordResetController {
 
+    private final AuthRateLimitGuard authRateLimitGuard;
     private final PasswordResetService passwordResetService;
 
     @PostMapping("/forgot")
     @Operation(summary = "Start password reset flow")
     @ApiResponses({
             @ApiResponse(responseCode = "202", description = "Reset email queued"),
-            @ApiResponse(responseCode = "400", description = "Invalid payload", content = @Content)
+            @ApiResponse(responseCode = "400", description = "Invalid payload", content = @Content),
+            @ApiResponse(responseCode = "429", description = "Too many requests", content = @Content)
     })
     public ResponseEntity<ForgotPasswordResponseDto> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequestDto request,
             HttpServletRequest servletRequest) {
+        authRateLimitGuard.checkForgotPassword(servletRequest, request.getIdentifier());
         ForgotPasswordResponseDto response = passwordResetService.requestReset(
                 request.getIdentifier(),
                 request.getResetBaseUrl(),
@@ -47,9 +51,12 @@ public class PasswordResetController {
     @Operation(summary = "Complete password reset with a valid token")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Password reset successful"),
-            @ApiResponse(responseCode = "400", description = "Invalid token or payload", content = @Content)
+            @ApiResponse(responseCode = "400", description = "Invalid token or payload", content = @Content),
+            @ApiResponse(responseCode = "429", description = "Too many requests", content = @Content)
     })
-    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequestDto request) {
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequestDto request,
+                                              HttpServletRequest servletRequest) {
+        authRateLimitGuard.checkResetPassword(servletRequest);
         passwordResetService.resetPassword(request);
         return ResponseEntity.ok().build();
     }

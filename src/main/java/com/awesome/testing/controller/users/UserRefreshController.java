@@ -3,6 +3,7 @@ package com.awesome.testing.controller.users;
 import com.awesome.testing.dto.user.RefreshTokenRequestDto;
 import com.awesome.testing.dto.user.TokenPair;
 import com.awesome.testing.dto.user.TokenRefreshResponseDto;
+import com.awesome.testing.security.ratelimit.AuthRateLimitGuard;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserRefreshController {
 
+    private final AuthRateLimitGuard authRateLimitGuard;
     private final UserService userService;
 
     @PostMapping("/refresh")
@@ -30,9 +33,12 @@ public class UserRefreshController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "New JWT and refresh tokens",
                     content = @Content(schema = @Schema(implementation = TokenRefreshResponseDto.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid refresh token", content = @Content)
+            @ApiResponse(responseCode = "401", description = "Invalid refresh token", content = @Content),
+            @ApiResponse(responseCode = "429", description = "Too many requests", content = @Content)
     })
-    public TokenRefreshResponseDto refresh(@Valid @RequestBody RefreshTokenRequestDto request) {
+    public TokenRefreshResponseDto refresh(HttpServletRequest servletRequest,
+                                           @Valid @RequestBody RefreshTokenRequestDto request) {
+        authRateLimitGuard.checkRefresh(servletRequest);
         TokenPair tokens = userService.refresh(request.getRefreshToken());
         return TokenRefreshResponseDto.from(tokens);
     }

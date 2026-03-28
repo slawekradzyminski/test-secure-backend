@@ -8,6 +8,7 @@ import com.awesome.testing.dto.ollama.ModelNotFoundDto;
 import com.awesome.testing.dto.ollama.OllamaToolDefinitionDto;
 import com.awesome.testing.dto.ollama.StreamedRequestDto;
 import com.awesome.testing.security.CustomPrincipal;
+import com.awesome.testing.security.ratelimit.AuthRateLimitGuard;
 import com.awesome.testing.service.ollama.OllamaFunctionCallingService;
 import com.awesome.testing.service.ollama.OllamaService;
 import com.awesome.testing.service.ollama.OllamaToolDefinitionCatalog;
@@ -21,6 +22,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -47,6 +49,7 @@ public class OllamaController {
     private final OllamaFunctionCallingService functionCallingService;
     private final OllamaToolDefinitionCatalog toolDefinitionCatalog;
     private final PromptInjector promptInjector;
+    private final AuthRateLimitGuard authRateLimitGuard;
 
     @Operation(summary = "Generate text using Ollama model")
     @ApiResponses(value = {
@@ -59,7 +62,10 @@ public class OllamaController {
             @ApiResponse(responseCode = "500", description = "Ollama server error", content = @Content)
     })
     @PostMapping(value = "/generate", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<GenerateResponseDto> generateText(@Valid @RequestBody StreamedRequestDto request) {
+    public Flux<GenerateResponseDto> generateText(HttpServletRequest servletRequest,
+                                                  @AuthenticationPrincipal CustomPrincipal principal,
+                                                  @Valid @RequestBody StreamedRequestDto request) {
+        authRateLimitGuard.checkOllama(servletRequest, principal != null ? principal.getUsername() : null);
         return ollamaService.generateText(request)
                 .doOnSubscribe(subscription -> log.info("Starting stream"));
     }
@@ -76,9 +82,10 @@ public class OllamaController {
             @ApiResponse(responseCode = "500", description = "Ollama server error", content = @Content)
     })
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ChatResponseDto> chat(
+    public Flux<ChatResponseDto> chat(HttpServletRequest servletRequest,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Valid @RequestBody ChatRequestDto request) {
+        authRateLimitGuard.checkOllama(servletRequest, principal != null ? principal.getUsername() : null);
         log.info("Initiating chat request: model={}", request.getModel());
         ChatRequestDto augmented = promptInjector.augmentChatRequest(principal.getUsername(), request);
         return ollamaService.chat(augmented)
@@ -99,9 +106,10 @@ public class OllamaController {
             @ApiResponse(responseCode = "500", description = "Ollama server error", content = @Content)
     })
     @PostMapping(value = "/chat/tools", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ChatResponseDto> chatWithTools(
+    public Flux<ChatResponseDto> chatWithTools(HttpServletRequest servletRequest,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Valid @RequestBody ChatRequestDto request) {
+        authRateLimitGuard.checkOllama(servletRequest, principal != null ? principal.getUsername() : null);
         int toolCount = request.getTools() != null ? request.getTools().size() : 0;
         log.info("Initiating tool-enabled chat: model={} tools={}", request.getModel(), toolCount);
         ChatRequestDto augmented = promptInjector.augmentToolRequest(principal.getUsername(), request);

@@ -71,6 +71,10 @@
             <artifactId>logbook-spring-boot-starter</artifactId>
             <version>4.0.1</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
 
         <!-- Jakarta EE -->
         <dependency>

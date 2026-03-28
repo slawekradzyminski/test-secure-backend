@@ -46,6 +46,51 @@ logbook:
       - x-secret
       - cookie
 
+security:
+  rate-limit:
+    enabled: ${SECURITY_RATE_LIMIT_ENABLED:false}
+    trust-forwarded-headers: ${SECURITY_RATE_LIMIT_TRUST_FORWARDED_HEADERS:false}
+    cache:
+      maximum-size: ${SECURITY_RATE_LIMIT_CACHE_MAXIMUM_SIZE:10000}
+      expire-after-access: ${SECURITY_RATE_LIMIT_CACHE_EXPIRE_AFTER_ACCESS:1h}
+    policies:
+      signup-ip:
+        capacity: ${SECURITY_RATE_LIMIT_SIGNUP_IP_CAPACITY:10}
+        window: ${SECURITY_RATE_LIMIT_SIGNUP_IP_WINDOW:1h}
+      signin-ip:
+        capacity: ${SECURITY_RATE_LIMIT_SIGNIN_IP_CAPACITY:20}
+        window: ${SECURITY_RATE_LIMIT_SIGNIN_IP_WINDOW:5m}
+      signin-username:
+        capacity: ${SECURITY_RATE_LIMIT_SIGNIN_USERNAME_CAPACITY:10}
+        window: ${SECURITY_RATE_LIMIT_SIGNIN_USERNAME_WINDOW:15m}
+      signin-ip-username:
+        capacity: ${SECURITY_RATE_LIMIT_SIGNIN_IP_USERNAME_CAPACITY:5}
+        window: ${SECURITY_RATE_LIMIT_SIGNIN_IP_USERNAME_WINDOW:5m}
+      password-forgot-ip:
+        capacity: ${SECURITY_RATE_LIMIT_PASSWORD_FORGOT_IP_CAPACITY:10}
+        window: ${SECURITY_RATE_LIMIT_PASSWORD_FORGOT_IP_WINDOW:15m}
+      password-forgot-identifier:
+        capacity: ${SECURITY_RATE_LIMIT_PASSWORD_FORGOT_IDENTIFIER_CAPACITY:3}
+        window: ${SECURITY_RATE_LIMIT_PASSWORD_FORGOT_IDENTIFIER_WINDOW:30m}
+      password-reset-ip:
+        capacity: ${SECURITY_RATE_LIMIT_PASSWORD_RESET_IP_CAPACITY:10}
+        window: ${SECURITY_RATE_LIMIT_PASSWORD_RESET_IP_WINDOW:15m}
+      refresh-ip:
+        capacity: ${SECURITY_RATE_LIMIT_REFRESH_IP_CAPACITY:60}
+        window: ${SECURITY_RATE_LIMIT_REFRESH_IP_WINDOW:15m}
+      email-user:
+        capacity: ${SECURITY_RATE_LIMIT_EMAIL_USER_CAPACITY:30}
+        window: ${SECURITY_RATE_LIMIT_EMAIL_USER_WINDOW:15m}
+      qr-user:
+        capacity: ${SECURITY_RATE_LIMIT_QR_USER_CAPACITY:60}
+        window: ${SECURITY_RATE_LIMIT_QR_USER_WINDOW:15m}
+      ollama-user:
+        capacity: ${SECURITY_RATE_LIMIT_OLLAMA_USER_CAPACITY:20}
+        window: ${SECURITY_RATE_LIMIT_OLLAMA_USER_WINDOW:5m}
+      ollama-ip:
+        capacity: ${SECURITY_RATE_LIMIT_OLLAMA_IP_CAPACITY:20}
+        window: ${SECURITY_RATE_LIMIT_OLLAMA_IP_WINDOW:5m}
+
 app:
   cors:
     allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:8081,http://127.0.0.1:8081,http://host.docker.internal:8081}
