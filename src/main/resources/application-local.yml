@@ -60,3 +60,7 @@ password-reset:
   token-byte-length: 32
   expose-token-in-response: true
   local-outbox-enabled: true
+
+app:
+  seed-demo-data:
+    enabled: true

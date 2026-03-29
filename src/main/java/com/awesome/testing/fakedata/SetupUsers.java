@@ -22,7 +22,6 @@ public class SetupUsers {
     private final PasswordEncoder passwordEncoder;
 
     @Getter private UserEntity adminUser;
-    @Getter private UserEntity admin2User;
     @Getter private UserEntity clientUser;
     @Getter private UserEntity client2User;
     @Getter private UserEntity client3User;
@@ -35,21 +34,12 @@ public class SetupUsers {
 
         adminUser = createAdminUser(
                 "admin",
-                "admin",
+                "LocalDemoAdmin123!",
                 "awesome@testing.com",
                 "Slawomir",
                 "Radzyminski"
         );
         userRepository.save(adminUser);
-
-        admin2User = createAdminUser(
-                "admin2",
-                "admin2",
-                "john.doe@company.com",
-                "John",
-                "Doe"
-        );
-        userRepository.save(admin2User);
 
         clientUser = createClientUser(
                 "client",

@@ -5,6 +5,7 @@ import com.awesome.testing.dto.*;
 import com.awesome.testing.dto.user.*;
 import net.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -169,6 +170,28 @@ class EditUserControllerTest extends DomainHelper {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    void shouldIgnoreInjectedRolesWhenEditingUser() {
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        String token = getToken(user);
+
+        ResponseEntity<UserResponseDto> response = executePut(
+                getUserEndpoint(user.getUsername()),
+                Map.of(
+                        "email", getRandomEmail(),
+                        "firstName", RandomString.make(10),
+                        "lastName", RandomString.make(10),
+                        "roles", List.of(Role.ROLE_ADMIN.name())
+                ),
+                getHeadersWith(token),
+                new ParameterizedTypeReference<>() {
+                });
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getRoles()).containsExactly(Role.ROLE_CLIENT);
     }
 
     private UserEditDto getRandomUserEditBody() {

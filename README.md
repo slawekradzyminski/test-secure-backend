@@ -5,7 +5,7 @@ ActiveMQ messaging.
 
 ## Profiles
 
-The application supports two profiles:
+The application supports three main profile modes:
 
 ### Local Profile
 
@@ -17,6 +17,8 @@ To run with local profile:
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
+This profile enables demo seed data automatically.
+
 ### Docker Profile
 
 The Docker profile uses PostgreSQL and is suitable for production-like environments.
@@ -26,6 +28,33 @@ To run with Docker profile:
 ```bash
 docker compose up --build
 ```
+
+By default, the Docker profile does not load demo users or sample orders. That keeps deployed/server environments from inheriting local training credentials.
+
+### Demo Seed Profile
+
+When you need seeded demo users in a PostgreSQL-backed environment, add the `demo` profile on top of `docker`:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=docker,demo
+```
+
+Only `local` and `demo` enable startup seed data.
+
+### Public Admin Bootstrap
+
+Public deployments should create one explicit admin account through environment-backed configuration instead of demo seed data.
+
+Required variables:
+
+```bash
+APP_BOOTSTRAP_ADMIN_ENABLED=true
+APP_BOOTSTRAP_ADMIN_USERNAME=admin
+APP_BOOTSTRAP_ADMIN_PASSWORD=<16+ character secret>
+APP_BOOTSTRAP_ADMIN_EMAIL=admin@example.com
+```
+
+When enabled, startup creates that admin if it does not already exist. If the configured username/email already belongs to a non-admin user, startup fails instead of silently mutating the account.
 
 This will start:
 
@@ -83,16 +112,17 @@ The API documentation is available at:
 
 ## Initial Data
 
-The application automatically sets up initial data when started:
+Demo seed data is available only in `local` or `docker,demo` runs. Public/server deployments should keep it disabled.
 
 - Admin users (username/password):
-    - admin/admin
-    - admin2/admin2
+    - admin/LocalDemoAdmin123!
 - Client users:
     - client/client
     - client2/client2
     - client3/client3
 - Sample products in various categories
+
+Public deployments must not rely on these credentials.
 
 ## Security
 
@@ -152,7 +182,7 @@ mvn test
 ### Authentication
 
 - POST `/api/v1/users/signin` - Authenticate user and get JWT token
-- POST `/api/v1/users/signup` - Register a new user
+- POST `/api/v1/users/signup` - Register a new client user
 - POST `/api/v1/users/refresh` - Refresh JWT token using a refresh token
 - POST `/api/v1/users/logout` - Revoke current refresh token and logout
 - POST `/api/v1/users/password/forgot` - Anonymous endpoint that queues a password-reset email (always responds with 202)

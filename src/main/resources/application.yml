@@ -92,6 +92,15 @@ security:
         window: ${SECURITY_RATE_LIMIT_OLLAMA_IP_WINDOW:5m}
 
 app:
+  seed-demo-data:
+    enabled: false
+  bootstrap-admin:
+    enabled: ${APP_BOOTSTRAP_ADMIN_ENABLED:false}
+    username: ${APP_BOOTSTRAP_ADMIN_USERNAME:}
+    password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:}
+    email: ${APP_BOOTSTRAP_ADMIN_EMAIL:}
+    first-name: ${APP_BOOTSTRAP_ADMIN_FIRST_NAME:Admin}
+    last-name: ${APP_BOOTSTRAP_ADMIN_LAST_NAME:User}
   cors:
     allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:8081,http://127.0.0.1:8081,http://host.docker.internal:8081}
   

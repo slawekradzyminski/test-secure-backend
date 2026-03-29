@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static com.awesome.testing.dto.user.Role.ROLE_CLIENT;
 import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
 
 @Service
@@ -167,7 +168,7 @@ public class UserService {
                 .username(userRegisterDto.getUsername())
                 .firstName(userRegisterDto.getFirstName())
                 .lastName(userRegisterDto.getLastName())
-                .roles(userRegisterDto.getRoles())
+                .roles(List.of(ROLE_CLIENT))
                 .email(userRegisterDto.getEmail())
                 .password(passwordEncoder.encode(userRegisterDto.getPassword()))
                 .chatSystemPrompt(DEFAULT_CHAT_SYSTEM_PROMPT.strip())
