@@ -99,6 +99,7 @@ SELECT * FROM orders;
 The main tables in the database:
 
 - `app_user`: Stores user information
+- `email_event`: Stores per-user email delivery metadata for the app-owned verification endpoint
 - `products`: Stores product catalog
 - `cart_items`: Stores shopping cart items
 - `orders`: Stores order information
@@ -191,6 +192,7 @@ mvn test
 ### User Management
 
 - GET `/api/v1/users/me` - Get current user information
+- GET `/api/v1/users/me/email-events` - Get the authenticated user's latest email events
 - GET `/api/v1/users` - Get all users (ADMIN only)
 - GET `/api/v1/users/{username}` - Get user by username
 - PUT `/api/v1/users/{username}` - Update user
@@ -227,8 +229,15 @@ mvn test
 ### Email
 
 - POST `/api/v1/email` - Send an email (authenticated users only)
+- GET `/api/v1/users/me/email-events` - Inspect the authenticated user's latest email statuses without exposing Mailhog
 - GET `/local/email/outbox` *(local profile only)* - Inspect the in-memory email queue when running without Artemis
 - DELETE `/local/email/outbox` *(local profile only)* - Clear the local outbox buffer for a clean test run
+
+Public-safe email verification is now app-owned rather than Mailhog-owned. For authenticated users, the
+`/api/v1/users/me/email-events` endpoint returns only their own recent email metadata with statuses such as
+`QUEUED`, `SENT_TO_SMTP_SINK`, or `FAILED`. Because this deployment uses Mailhog as a fake inbox, the backend
+does not claim real-world inbox delivery; it only reports whether the message was queued and handed off to the
+test mail sink.
 
 #### Local Password Reset Flow
 

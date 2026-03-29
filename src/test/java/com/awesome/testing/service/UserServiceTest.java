@@ -7,6 +7,7 @@ import com.awesome.testing.dto.user.UserEditDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.entity.RefreshTokenEntity;
+import com.awesome.testing.repository.EmailEventRepository;
 import com.awesome.testing.repository.PasswordResetTokenRepository;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.AuthenticationHandler;
@@ -51,6 +52,9 @@ class UserServiceTest {
 
     @Mock
     private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Mock
+    private EmailEventRepository emailEventRepository;
 
     @InjectMocks
     private UserService userService;
@@ -153,6 +157,7 @@ class UserServiceTest {
 
         verify(refreshTokenService).removeAllTokensForUser(registerDto.getUsername());
         verify(passwordResetTokenRepository).deleteAllByUser(userEntity);
+        verify(emailEventRepository).deleteAllByUser(userEntity);
         verify(userRepository).deleteByUsername(registerDto.getUsername());
     }
 
