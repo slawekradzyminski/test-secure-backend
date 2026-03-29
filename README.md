@@ -21,7 +21,7 @@ This profile enables demo seed data automatically.
 
 ### Docker Profile
 
-The Docker profile uses PostgreSQL and is suitable for production-like environments.
+The Docker Compose setup uses PostgreSQL and includes the demo seed profile so it behaves like the lightweight local experience.
 
 To run with Docker profile:
 
@@ -29,11 +29,11 @@ To run with Docker profile:
 docker compose up --build
 ```
 
-By default, the Docker profile does not load demo users or sample orders. That keeps deployed/server environments from inheriting local training credentials.
+This starts the backend with `docker,demo`, so it loads the demo users, sample products, and sample orders into PostgreSQL.
 
 ### Demo Seed Profile
 
-When you need seeded demo users in a PostgreSQL-backed environment, add the `demo` profile on top of `docker`:
+When you need the same seeded PostgreSQL-backed experience without Docker Compose, add the `demo` profile on top of `docker`:
 
 ```bash
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=docker,demo

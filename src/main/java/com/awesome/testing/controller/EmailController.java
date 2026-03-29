@@ -2,6 +2,8 @@ package com.awesome.testing.controller;
 
 import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.email.EmailDto;
+import com.awesome.testing.entity.UserEntity;
+import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.security.ratelimit.AuthRateLimitGuard;
 import com.awesome.testing.service.EmailService;
@@ -29,6 +31,7 @@ public class EmailController {
 
     private final AuthRateLimitGuard authRateLimitGuard;
     private final EmailService emailService;
+    private final UserRepository userRepository;
 
     @Value("${activemq.destination}")
     private String destination;
@@ -44,7 +47,8 @@ public class EmailController {
                                           @AuthenticationPrincipal CustomPrincipal principal,
                                           @RequestBody @Valid EmailDto emailDto) {
         authRateLimitGuard.checkEmail(request, principal != null ? principal.getUsername() : null);
-        emailService.sendEmail(emailDto, destination);
+        UserEntity user = principal == null ? null : userRepository.findByUsername(principal.getUsername()).orElse(null);
+        emailService.sendEmail(emailDto, destination, user);
         return ResponseEntity.ok().build();
     }
 }
