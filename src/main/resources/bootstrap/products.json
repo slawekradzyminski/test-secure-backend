@@ -1,0 +1,66 @@
+[
+  {
+    "name": "iPhone 13 Pro",
+    "description": "Latest iPhone model with A15 Bionic chip, Pro camera system, and Super Retina XDR display",
+    "price": 999.99,
+    "stockQuantity": 50,
+    "category": "Electronics",
+    "imageUrl": "/images/iphone.png"
+  },
+  {
+    "name": "Samsung Galaxy S21",
+    "description": "5G smartphone with 8K video, all-day battery, and powerful performance",
+    "price": 799.99,
+    "stockQuantity": 75,
+    "category": "Electronics",
+    "imageUrl": "/images/samsung.png"
+  },
+  {
+    "name": "MacBook Pro 14",
+    "description": "Apple M1 Pro chip, 16GB RAM, 512GB SSD, Liquid Retina XDR display",
+    "price": 1999.99,
+    "stockQuantity": 25,
+    "category": "Computers",
+    "imageUrl": "/images/mac.png"
+  },
+  {
+    "name": "PlayStation 5",
+    "description": "Next-gen gaming console with 4K graphics, ray tracing, and ultra-high speed SSD",
+    "price": 499.99,
+    "stockQuantity": 30,
+    "category": "Gaming",
+    "imageUrl": "/images/ps5.png"
+  },
+  {
+    "name": "Ninja Foodi 9-in-1",
+    "description": "Deluxe XL pressure cooker and air fryer with multiple cooking functions",
+    "price": 249.99,
+    "stockQuantity": 100,
+    "category": "Home & Kitchen",
+    "imageUrl": "/images/ninja.png"
+  },
+  {
+    "name": "Clean Code",
+    "description": "A Handbook of Agile Software Craftsmanship by Robert C. Martin",
+    "price": 44.99,
+    "stockQuantity": 200,
+    "category": "Books",
+    "imageUrl": "/images/cleancode.png"
+  },
+  {
+    "name": "Apple Watch Series 7",
+    "description": "Always-On Retina display, health monitoring, and fitness tracking",
+    "price": 399.99,
+    "stockQuantity": 60,
+    "category": "Wearables",
+    "imageUrl": "/images/applewatch.png"
+  },
+  {
+    "name": "Sony WH-1000XM4",
+    "description": "Industry-leading noise canceling wireless headphones with exceptional sound",
+    "price": 349.99,
+    "stockQuantity": 85,
+    "category": "Audio",
+    "imageUrl": "/images/sony.png"
+  }
+]

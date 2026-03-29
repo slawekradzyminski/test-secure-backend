@@ -9,6 +9,7 @@ import com.awesome.testing.security.AuthenticationHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.entity.RefreshTokenEntity;
+import com.awesome.testing.repository.EmailEventRepository;
 import com.awesome.testing.repository.PasswordResetTokenRepository;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static com.awesome.testing.dto.user.Role.ROLE_CLIENT;
 import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
 
 @Service
@@ -56,6 +58,7 @@ public class UserService {
     private final AuthenticationHandler authenticationHandler;
     private final RefreshTokenService refreshTokenService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailEventRepository emailEventRepository;
 
     public TokenPair signIn(String username, String password) {
         authenticationHandler.authUser(username, password);
@@ -80,6 +83,7 @@ public class UserService {
         UserEntity user = getUser(username);
         refreshTokenService.removeAllTokensForUser(username);
         passwordResetTokenRepository.deleteAllByUser(user);
+        emailEventRepository.deleteAllByUser(user);
         userRepository.deleteByUsername(username);
     }
 
@@ -167,7 +171,7 @@ public class UserService {
                 .username(userRegisterDto.getUsername())
                 .firstName(userRegisterDto.getFirstName())
                 .lastName(userRegisterDto.getLastName())
-                .roles(userRegisterDto.getRoles())
+                .roles(List.of(ROLE_CLIENT))
                 .email(userRegisterDto.getEmail())
                 .password(passwordEncoder.encode(userRegisterDto.getPassword()))
                 .chatSystemPrompt(DEFAULT_CHAT_SYSTEM_PROMPT.strip())

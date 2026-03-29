@@ -7,6 +7,7 @@ import com.awesome.testing.dto.user.UserEditDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.entity.RefreshTokenEntity;
+import com.awesome.testing.repository.EmailEventRepository;
 import com.awesome.testing.repository.PasswordResetTokenRepository;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.AuthenticationHandler;
@@ -51,6 +52,9 @@ class UserServiceTest {
 
     @Mock
     private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Mock
+    private EmailEventRepository emailEventRepository;
 
     @InjectMocks
     private UserService userService;
@@ -105,6 +109,27 @@ class UserServiceTest {
     }
 
     @Test
+    void shouldForceClientRoleOnSignupWhenAdminRoleRequested() {
+        UserRegisterDto adminSignupRequest = UserRegisterDto.builder()
+                .username("admin-request")
+                .email("admin-request@example.com")
+                .password("password123")
+                .firstName("Admin")
+                .lastName("Request")
+                .roles(List.of(Role.ROLE_ADMIN))
+                .build();
+        when(userRepository.findByUsernameOrEmail(adminSignupRequest.getUsername(), adminSignupRequest.getEmail()))
+                .thenReturn(Optional.empty());
+        when(passwordEncoder.encode(adminSignupRequest.getPassword())).thenReturn("encoded");
+
+        userService.signup(adminSignupRequest);
+
+        ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getRoles()).containsExactly(Role.ROLE_CLIENT);
+    }
+
+    @Test
     void shouldThrowWhenSignupWithExistingUsername() {
         when(userRepository.findByUsernameOrEmail(registerDto.getUsername(), registerDto.getEmail()))
                 .thenReturn(Optional.of(buildUserEntity(registerDto.getUsername(), "other@mail.com")));
@@ -132,6 +157,7 @@ class UserServiceTest {
 
         verify(refreshTokenService).removeAllTokensForUser(registerDto.getUsername());
         verify(passwordResetTokenRepository).deleteAllByUser(userEntity);
+        verify(emailEventRepository).deleteAllByUser(userEntity);
         verify(userRepository).deleteByUsername(registerDto.getUsername());
     }
 
@@ -197,6 +223,7 @@ class UserServiceTest {
         assertThat(updated.getEmail()).isEqualTo("new@mail.com");
         assertThat(updated.getFirstName()).isEqualTo("NewFirst");
         assertThat(updated.getLastName()).isEqualTo("NewLast");
+        assertThat(updated.getRoles()).containsExactly(Role.ROLE_CLIENT);
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.awesome.testing.dto.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,7 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
@@ -43,8 +43,8 @@ public class UserRegisterDto {
     @Schema(description = "Last name", example = "Boyd")
     private String lastName;
 
-    @NotEmpty(message = "At least one role must be specified")
-    @Schema(description = "User roles", example = "[\"ROLE_CLIENT\"]")
+    @JsonIgnore
+    @Schema(hidden = true)
     private List<Role> roles;
 
 }

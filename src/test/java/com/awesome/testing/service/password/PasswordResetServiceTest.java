@@ -95,7 +95,7 @@ class PasswordResetServiceTest {
         assertThat(response.getToken()).isEqualTo("raw-token");
         verify(passwordResetTokenRepository).deleteByUserOrExpired(eq(user), any());
         verify(passwordResetTokenRepository).save(any());
-        verify(emailService).sendEmail(any(EmailDto.class), eq("email"));
+        verify(emailService).sendEmail(any(EmailDto.class), eq("email"), eq(user));
     }
 
     @Test
@@ -147,7 +147,7 @@ class PasswordResetServiceTest {
         verify(userRepository).save(user);
         verify(refreshTokenService).removeAllTokensForUser("client");
         verify(passwordResetTokenRepository).deleteAllByUser(user);
-        verify(emailService).sendEmail(any(EmailDto.class), eq("email"));
+        verify(emailService).sendEmail(any(EmailDto.class), eq("email"), eq(user));
         verify(passwordResetTokenRepository, never()).save(entity);
         assertThat(user.getPassword()).isEqualTo("encoded");
     }

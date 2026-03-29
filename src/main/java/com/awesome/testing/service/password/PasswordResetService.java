@@ -81,7 +81,7 @@ public class PasswordResetService {
 
         String resetLink = buildResetLink(requestedBaseUrl, rawToken);
         EmailDto email = emailFactory.buildResetRequestEmail(user, resetLink, properties.getTokenTtl());
-        emailService.sendEmail(email, destination);
+        emailService.sendEmail(email, destination, user);
 
         log.info("Password reset token created for user {}", user.getUsername());
         return rawToken;
@@ -127,7 +127,7 @@ public class PasswordResetService {
         refreshTokenService.removeAllTokensForUser(user.getUsername());
         passwordResetTokenRepository.deleteAllByUser(user);
 
-        emailService.sendEmail(emailFactory.buildResetConfirmationEmail(user), destination);
+        emailService.sendEmail(emailFactory.buildResetConfirmationEmail(user), destination, user);
         meterRegistry.ifAvailable(registry -> registry.counter(PASSWORD_RESET_COMPLETED_METRIC).increment());
     }
 }

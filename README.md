@@ -5,7 +5,7 @@ ActiveMQ messaging.
 
 ## Profiles
 
-The application supports two profiles:
+The application supports three main profile modes:
 
 ### Local Profile
 
@@ -17,15 +17,62 @@ To run with local profile:
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
+This profile enables demo seed data automatically.
+
 ### Docker Profile
 
-The Docker profile uses PostgreSQL and is suitable for production-like environments.
+The Docker Compose setup uses PostgreSQL and includes the demo seed profile so it behaves like the lightweight local experience.
 
 To run with Docker profile:
 
 ```bash
 docker compose up --build
 ```
+
+This starts the backend with `docker,demo`, so it loads the demo users, sample products, and sample orders into PostgreSQL.
+
+### Demo Seed Profile
+
+When you need the same seeded PostgreSQL-backed experience without Docker Compose, add the `demo` profile on top of `docker`:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=docker,demo
+```
+
+Only `local` and `demo` enable startup seed data.
+
+### Public Admin Bootstrap
+
+Public deployments should create one explicit admin account through environment-backed configuration instead of demo seed data.
+
+Required variables:
+
+```bash
+APP_BOOTSTRAP_ADMIN_ENABLED=true
+APP_BOOTSTRAP_ADMIN_USERNAME=admin
+APP_BOOTSTRAP_ADMIN_PASSWORD=<16+ character secret>
+APP_BOOTSTRAP_ADMIN_EMAIL=admin@example.com
+```
+
+When enabled, startup creates that admin if it does not already exist. If the configured username/email already belongs to a non-admin user, startup fails instead of silently mutating the account.
+
+### Public Product Bootstrap
+
+Public deployments can also bootstrap a safe baseline product catalog without re-enabling demo users or sample orders.
+
+Required variable:
+
+```bash
+APP_BOOTSTRAP_PRODUCTS_ENABLED=true
+```
+
+Optional override:
+
+```bash
+APP_BOOTSTRAP_PRODUCTS_CATALOG=classpath:bootstrap/products.json
+```
+
+When enabled, startup inserts the versioned catalog only when the `products` table is empty. If products already exist, bootstrap skips creation. This keeps clean demo resets deterministic without reintroducing local/demo seed users.
 
 This will start:
 
@@ -70,6 +117,7 @@ SELECT * FROM orders;
 The main tables in the database:
 
 - `app_user`: Stores user information
+- `email_event`: Stores per-user email delivery metadata for the app-owned verification endpoint
 - `products`: Stores product catalog
 - `cart_items`: Stores shopping cart items
 - `orders`: Stores order information
@@ -83,16 +131,18 @@ The API documentation is available at:
 
 ## Initial Data
 
-The application automatically sets up initial data when started:
+Demo seed data is available only in `local` or `docker,demo` runs. Public/server deployments should keep it disabled.
 
 - Admin users (username/password):
-    - admin/admin
-    - admin2/admin2
+    - admin/LocalDemoAdmin123!
 - Client users:
     - client/client
     - client2/client2
     - client3/client3
 - Sample products in various categories
+- Public-safe deployments can bootstrap only the product catalog through `APP_BOOTSTRAP_PRODUCTS_ENABLED=true`
+
+Public deployments must not rely on these credentials.
 
 ## Security
 
@@ -152,7 +202,7 @@ mvn test
 ### Authentication
 
 - POST `/api/v1/users/signin` - Authenticate user and get JWT token
-- POST `/api/v1/users/signup` - Register a new user
+- POST `/api/v1/users/signup` - Register a new client user
 - POST `/api/v1/users/refresh` - Refresh JWT token using a refresh token
 - POST `/api/v1/users/logout` - Revoke current refresh token and logout
 - POST `/api/v1/users/password/forgot` - Anonymous endpoint that queues a password-reset email (always responds with 202)
@@ -161,6 +211,7 @@ mvn test
 ### User Management
 
 - GET `/api/v1/users/me` - Get current user information
+- GET `/api/v1/users/me/email-events` - Get the authenticated user's latest email events
 - GET `/api/v1/users` - Get all users (ADMIN only)
 - GET `/api/v1/users/{username}` - Get user by username
 - PUT `/api/v1/users/{username}` - Update user
@@ -197,8 +248,15 @@ mvn test
 ### Email
 
 - POST `/api/v1/email` - Send an email (authenticated users only)
+- GET `/api/v1/users/me/email-events` - Inspect the authenticated user's latest email statuses without exposing Mailhog
 - GET `/local/email/outbox` *(local profile only)* - Inspect the in-memory email queue when running without Artemis
 - DELETE `/local/email/outbox` *(local profile only)* - Clear the local outbox buffer for a clean test run
+
+Public-safe email verification is now app-owned rather than Mailhog-owned. For authenticated users, the
+`/api/v1/users/me/email-events` endpoint returns only their own recent email metadata with statuses such as
+`QUEUED`, `SENT_TO_SMTP_SINK`, or `FAILED`. Because this deployment uses Mailhog as a fake inbox, the backend
+does not claim real-world inbox delivery; it only reports whether the message was queued and handed off to the
+test mail sink.
 
 #### Local Password Reset Flow
 

@@ -7,7 +7,7 @@ services:
       - "4001:4001"
     hostname: backend
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: docker,demo
       SPRING_ARTEMIS_BROKER_URL: tcp://activemq:61616
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/testdb
       SPRING_DATASOURCE_USERNAME: postgres
@@ -35,7 +35,7 @@ services:
       - my-private-ntwk
     
   frontend:
-   image: slawekradzyminski/frontend:3.5.0
+   image: slawekradzyminski/frontend:3.6.2
    platform: linux/amd64
    restart: always
    ports:
