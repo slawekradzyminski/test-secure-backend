@@ -101,6 +101,9 @@ app:
     email: ${APP_BOOTSTRAP_ADMIN_EMAIL:}
     first-name: ${APP_BOOTSTRAP_ADMIN_FIRST_NAME:Admin}
     last-name: ${APP_BOOTSTRAP_ADMIN_LAST_NAME:User}
+  bootstrap-products:
+    enabled: ${APP_BOOTSTRAP_PRODUCTS_ENABLED:false}
+    catalog: ${APP_BOOTSTRAP_PRODUCTS_CATALOG:classpath:bootstrap/products.json}
   cors:
     allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:8081,http://127.0.0.1:8081,http://host.docker.internal:8081}
   

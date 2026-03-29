@@ -56,6 +56,24 @@ APP_BOOTSTRAP_ADMIN_EMAIL=admin@example.com
 
 When enabled, startup creates that admin if it does not already exist. If the configured username/email already belongs to a non-admin user, startup fails instead of silently mutating the account.
 
+### Public Product Bootstrap
+
+Public deployments can also bootstrap a safe baseline product catalog without re-enabling demo users or sample orders.
+
+Required variable:
+
+```bash
+APP_BOOTSTRAP_PRODUCTS_ENABLED=true
+```
+
+Optional override:
+
+```bash
+APP_BOOTSTRAP_PRODUCTS_CATALOG=classpath:bootstrap/products.json
+```
+
+When enabled, startup inserts the versioned catalog only when the `products` table is empty. If products already exist, bootstrap skips creation. This keeps clean demo resets deterministic without reintroducing local/demo seed users.
+
 This will start:
 
 - Backend service on port 4001
@@ -122,6 +140,7 @@ Demo seed data is available only in `local` or `docker,demo` runs. Public/server
     - client2/client2
     - client3/client3
 - Sample products in various categories
+- Public-safe deployments can bootstrap only the product catalog through `APP_BOOTSTRAP_PRODUCTS_ENABLED=true`
 
 Public deployments must not rely on these credentials.
 
