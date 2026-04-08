@@ -215,4 +215,33 @@ class TrafficControllerTest extends DomainHelper {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).contains("Invalid instant format");
     }
+
+    @Test
+    void shouldSkipActuatorAndSwaggerInfrastructureRequests() {
+        ResponseEntity<String> actuatorResponse = executeGet("/actuator/health", getJsonOnlyHeaders(), String.class);
+        ResponseEntity<String> swaggerResponse = executeGet("/v3/api-docs", getJsonOnlyHeaders(), String.class);
+
+        assertThat(actuatorResponse.getStatusCode().is2xxSuccessful() || actuatorResponse.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                .isTrue();
+        assertThat(swaggerResponse.getStatusCode().is2xxSuccessful() || swaggerResponse.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                .isTrue();
+
+        ResponseEntity<PageDto<TrafficLogEntryDto>> actuatorLogs = executeGet(
+                API_TRAFFIC_LOGS + "?pathContains=/actuator",
+                getJsonOnlyHeaders(),
+                new ParameterizedTypeReference<>() {}
+        );
+        ResponseEntity<PageDto<TrafficLogEntryDto>> swaggerLogs = executeGet(
+                API_TRAFFIC_LOGS + "?pathContains=/v3/api-docs",
+                getJsonOnlyHeaders(),
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(actuatorLogs.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(swaggerLogs.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(actuatorLogs.getBody()).isNotNull();
+        assertThat(swaggerLogs.getBody()).isNotNull();
+        assertThat(actuatorLogs.getBody().getContent()).isEmpty();
+        assertThat(swaggerLogs.getBody().getContent()).isEmpty();
+    }
 }

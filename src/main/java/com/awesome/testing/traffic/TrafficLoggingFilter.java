@@ -15,6 +15,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 import tools.jackson.databind.ObjectMapper;
@@ -52,6 +53,7 @@ public class TrafficLoggingFilter implements Filter {
     private final TrafficLogService trafficLogService;
     private final TrafficDataSanitizer trafficDataSanitizer;
     private final TrafficProperties trafficProperties;
+    private final TrafficCapturePolicy trafficCapturePolicy;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -72,7 +74,11 @@ public class TrafficLoggingFilter implements Filter {
                 chain.doFilter(wrappedRequest, responseToUse);
             } finally {
                 long duration = (System.nanoTime() - start) / 1_000_000;
-                if (shouldCapture(wrappedRequest.getRequestURI())) {
+                wrappedRequest.setAttribute(
+                        HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE,
+                        httpReq.getAttribute(HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE)
+                );
+                if (trafficCapturePolicy.shouldCapture(wrappedRequest)) {
                     Instant timestamp = Instant.now();
                     String responseBody = captureResponseBody
                             ? readResponseBody((ContentCachingResponseWrapper) responseToUse)
@@ -106,11 +112,6 @@ public class TrafficLoggingFilter implements Filter {
         } else {
             chain.doFilter(req, res);
         }
-    }
-
-    private boolean shouldCapture(String path) {
-        return trafficProperties.getExcludedPaths().stream().noneMatch(excluded ->
-                path.equals(excluded) || path.startsWith(excluded.endsWith("/") ? excluded : excluded + "/"));
     }
 
     private Map<String, List<String>> extractHeaders(HttpServletRequest request) {
