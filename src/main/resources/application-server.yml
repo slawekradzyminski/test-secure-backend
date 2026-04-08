@@ -1,0 +1,4 @@
+app:
+  traffic:
+    obfuscate-authorization: true
+    obfuscate-emails: true

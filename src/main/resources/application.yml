@@ -106,6 +106,12 @@ app:
     catalog: ${APP_BOOTSTRAP_PRODUCTS_CATALOG:classpath:bootstrap/products.json}
   cors:
     allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:8081,http://127.0.0.1:8081,http://host.docker.internal:8081}
+  traffic:
+    max-body-length: ${APP_TRAFFIC_MAX_BODY_LENGTH:4000}
+    retention: ${APP_TRAFFIC_RETENTION:P1D}
+    cleanup-interval: ${APP_TRAFFIC_CLEANUP_INTERVAL:PT24H}
+    obfuscate-authorization: ${APP_TRAFFIC_OBFUSCATE_AUTHORIZATION:false}
+    obfuscate-emails: ${APP_TRAFFIC_OBFUSCATE_EMAILS:false}
   
 UserController:
   signin: Authenticates user and returns its JWT token.
