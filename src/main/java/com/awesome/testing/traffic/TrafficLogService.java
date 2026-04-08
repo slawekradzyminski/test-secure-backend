@@ -9,16 +9,21 @@ import java.util.Optional;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.JsonNodeFactory;
 
 @Service
 @RequiredArgsConstructor
 public class TrafficLogService {
 
     private final TrafficLogRepository trafficLogRepository;
+    private final ObjectMapper objectMapper;
 
     public TrafficLogEntity save(TrafficLogEntity entity) {
         return trafficLogRepository.save(entity);
@@ -53,11 +58,57 @@ public class TrafficLogService {
                 .queryString(entity.getQueryString())
                 .status(entity.getStatus())
                 .durationMs(entity.getDurationMs())
-                .requestHeaders(entity.getRequestHeaders())
-                .requestBody(entity.getRequestBody())
-                .responseHeaders(entity.getResponseHeaders())
-                .responseBody(entity.getResponseBody())
+                .requestHeaders(parseJsonObject(entity.getRequestHeaders()))
+                .requestContentType(entity.getRequestContentType())
+                .requestBody(parseBody(entity.getRequestBody(), entity.getRequestContentType()))
+                .requestBodyTruncated(entity.isRequestBodyTruncated())
+                .requestBodyOriginalLength(entity.getRequestBodyOriginalLength())
+                .requestBodyStoredLength(entity.getRequestBodyStoredLength())
+                .responseHeaders(parseJsonObject(entity.getResponseHeaders()))
+                .responseContentType(entity.getResponseContentType())
+                .responseBody(parseBody(entity.getResponseBody(), entity.getResponseContentType()))
+                .responseBodyTruncated(entity.isResponseBodyTruncated())
+                .responseBodyOriginalLength(entity.getResponseBodyOriginalLength())
+                .responseBodyStoredLength(entity.getResponseBodyStoredLength())
                 .build();
+    }
+
+    private JsonNode parseJsonObject(String rawJson) {
+        if (rawJson == null || rawJson.isBlank()) {
+            return JsonNodeFactory.instance.objectNode();
+        }
+        try {
+            return objectMapper.readTree(rawJson);
+        } catch (Exception ex) {
+            return JsonNodeFactory.instance.objectNode();
+        }
+    }
+
+    private JsonNode parseBody(String rawBody, String contentType) {
+        if (rawBody == null) {
+            return JsonNodeFactory.instance.textNode("");
+        }
+        if (isJsonContentType(contentType)) {
+            try {
+                return objectMapper.readTree(rawBody);
+            } catch (Exception ignored) {
+                // Fall through to preserve the stored preview as text when truncation or invalid JSON prevents parsing.
+            }
+        }
+        return JsonNodeFactory.instance.textNode(rawBody);
+    }
+
+    private boolean isJsonContentType(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return false;
+        }
+        try {
+            MediaType mediaType = MediaType.parseMediaType(contentType);
+            return mediaType.isCompatibleWith(MediaType.APPLICATION_JSON)
+                    || mediaType.getSubtype().endsWith("+json");
+        } catch (Exception ex) {
+            return false;
+        }
     }
 
     private Specification<TrafficLogEntity> buildSpecification(String clientSessionId,

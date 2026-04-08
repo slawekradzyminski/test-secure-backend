@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import tools.jackson.databind.JsonNode;
 
 @Schema(description = "Persisted HTTP traffic log entry")
 @Data
@@ -38,15 +39,39 @@ public class TrafficLogEntryDto {
     @Schema(description = "Request duration in milliseconds")
     private long durationMs;
 
-    @Schema(description = "Serialized request headers")
-    private String requestHeaders;
+    @Schema(description = "Request headers")
+    private JsonNode requestHeaders;
+
+    @Schema(description = "Request content type")
+    private String requestContentType;
 
     @Schema(description = "Sanitized request body")
-    private String requestBody;
+    private JsonNode requestBody;
 
-    @Schema(description = "Serialized response headers")
-    private String responseHeaders;
+    @Schema(description = "Whether the request body was truncated")
+    private boolean requestBodyTruncated;
+
+    @Schema(description = "Sanitized request body length before truncation")
+    private int requestBodyOriginalLength;
+
+    @Schema(description = "Stored request body length")
+    private int requestBodyStoredLength;
+
+    @Schema(description = "Response headers")
+    private JsonNode responseHeaders;
+
+    @Schema(description = "Response content type")
+    private String responseContentType;
 
     @Schema(description = "Sanitized response body")
-    private String responseBody;
+    private JsonNode responseBody;
+
+    @Schema(description = "Whether the response body was truncated")
+    private boolean responseBodyTruncated;
+
+    @Schema(description = "Sanitized response body length before truncation")
+    private int responseBodyOriginalLength;
+
+    @Schema(description = "Stored response body length")
+    private int responseBodyStoredLength;
 }

@@ -18,6 +18,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import tools.jackson.databind.JsonNode;
 
 import java.time.Instant;
 import java.util.List;
@@ -127,6 +128,10 @@ class TrafficControllerTest extends DomainHelper {
         assertThat(detailResponse.getBody()).isNotNull();
         assertThat(detailResponse.getBody().getCorrelationId()).isEqualTo(entry.getCorrelationId());
         assertThat(detailResponse.getBody().getPath()).isEqualTo("/api/v1/traffic/info");
+        assertThat(detailResponse.getBody().getRequestHeaders().isObject()).isTrue();
+        assertThat(detailResponse.getBody().getResponseBody().isObject()).isTrue();
+        assertThat(detailResponse.getBody().getResponseBody().get("webSocketEndpoint").asText())
+                .isEqualTo("/api/v1/ws-traffic");
     }
 
     @Test
@@ -200,8 +205,8 @@ class TrafficControllerTest extends DomainHelper {
         assertThat(response.getBody().getContent())
                 .allMatch(entry -> entry.getStatus() == 200)
                 .allMatch(entry -> !entry.getTimestamp().isBefore(from) && !entry.getTimestamp().isAfter(to))
-                .anyMatch(entry -> entry.getRequestBody().contains(user.getUsername())
-                        || entry.getResponseBody().contains(user.getUsername()));
+                .anyMatch(entry -> entry.getRequestBody().toString().contains(user.getUsername())
+                        || entry.getResponseBody().toString().contains(user.getUsername()));
     }
 
     @Test
@@ -220,10 +225,13 @@ class TrafficControllerTest extends DomainHelper {
     void shouldSkipActuatorAndSwaggerInfrastructureRequests() {
         ResponseEntity<String> actuatorResponse = executeGet("/actuator/health", getJsonOnlyHeaders(), String.class);
         ResponseEntity<String> swaggerResponse = executeGet("/v3/api-docs", getJsonOnlyHeaders(), String.class);
+        ResponseEntity<String> swaggerConfigResponse = executeGet("/v3/api-docs/swagger-config", getJsonOnlyHeaders(), String.class);
 
         assertThat(actuatorResponse.getStatusCode().is2xxSuccessful() || actuatorResponse.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 .isTrue();
         assertThat(swaggerResponse.getStatusCode().is2xxSuccessful() || swaggerResponse.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                .isTrue();
+        assertThat(swaggerConfigResponse.getStatusCode().is2xxSuccessful() || swaggerConfigResponse.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 .isTrue();
 
         ResponseEntity<PageDto<TrafficLogEntryDto>> actuatorLogs = executeGet(
@@ -243,5 +251,34 @@ class TrafficControllerTest extends DomainHelper {
         assertThat(swaggerLogs.getBody()).isNotNull();
         assertThat(actuatorLogs.getBody().getContent()).isEmpty();
         assertThat(swaggerLogs.getBody().getContent()).isEmpty();
+    }
+
+    @Test
+    void shouldExposeStructuredHeadersAndBodyMetadata() {
+        ResponseEntity<TrafficInfoDto> infoResponse = executeGet(
+                API_TRAFFIC_INFO,
+                getJsonOnlyHeaders(),
+                TrafficInfoDto.class
+        );
+
+        assertThat(infoResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ResponseEntity<PageDto<TrafficLogEntryDto>> logsResponse = executeGet(
+                API_TRAFFIC_LOGS + "?pathContains=/api/v1/traffic/info",
+                getJsonOnlyHeaders(),
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(logsResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(logsResponse.getBody()).isNotNull();
+        TrafficLogEntryDto entry = logsResponse.getBody().getContent().getFirst();
+
+        assertThat(entry.getRequestHeaders().isObject()).isTrue();
+        assertThat(entry.getResponseHeaders().isObject()).isTrue();
+        assertThat(entry.getResponseBody().isObject()).isTrue();
+        assertThat(entry.getResponseBody().get("topic").asText()).isEqualTo("/topic/traffic");
+        assertThat(entry.isRequestBodyTruncated()).isFalse();
+        assertThat(entry.isResponseBodyTruncated()).isFalse();
+        assertThat(entry.getResponseBodyStoredLength()).isGreaterThan(0);
     }
 }

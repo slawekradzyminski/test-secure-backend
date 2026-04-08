@@ -47,6 +47,21 @@ class TrafficCapturePolicyTest {
     }
 
     @Test
+    void shouldSkipSwaggerInfrastructureEndpoints() {
+        HttpServletRequest apiDocsRequest = mockRequest(
+                "/v3/api-docs",
+                handlerMethod(DocumentedController.class, "documentedEndpoint")
+        );
+        HttpServletRequest swaggerConfigRequest = mockRequest(
+                "/v3/api-docs/swagger-config",
+                handlerMethod(DocumentedController.class, "documentedEndpoint")
+        );
+
+        assertThat(trafficCapturePolicy.shouldCapture(apiDocsRequest)).isFalse();
+        assertThat(trafficCapturePolicy.shouldCapture(swaggerConfigRequest)).isFalse();
+    }
+
+    @Test
     void shouldSkipRequestWithoutHandlerMethod() {
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getRequestURI()).thenReturn("/login");

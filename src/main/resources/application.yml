@@ -114,6 +114,7 @@ app:
     cleanup-interval: ${APP_TRAFFIC_CLEANUP_INTERVAL:PT24H}
     obfuscate-authorization: ${APP_TRAFFIC_OBFUSCATE_AUTHORIZATION:false}
     obfuscate-emails: ${APP_TRAFFIC_OBFUSCATE_EMAILS:false}
+    obfuscate-sensitive-body-fields: ${APP_TRAFFIC_OBFUSCATE_SENSITIVE_BODY_FIELDS:false}
   
 UserController:
   signin: Authenticates user and returns its JWT token.

@@ -32,20 +32,25 @@ public class TrafficDataSanitizer {
         return sanitized;
     }
 
-    public String sanitizeBody(String body) {
+    public TrafficBodySanitizationResult sanitizeBody(String body) {
         if (body == null || body.isBlank()) {
-            return body == null ? "" : body;
+            return TrafficBodySanitizationResult.empty();
         }
 
-        String sanitized = PASSWORD_FIELD_PATTERN.matcher(body).replaceAll("$1" + MASK + "$3");
-        sanitized = TOKEN_FIELD_PATTERN.matcher(sanitized).replaceAll("$1" + MASK + "$3");
+        String sanitized = body;
+        if (properties.isObfuscateSensitiveBodyFields()) {
+            sanitized = PASSWORD_FIELD_PATTERN.matcher(sanitized).replaceAll("$1" + MASK + "$3");
+            sanitized = TOKEN_FIELD_PATTERN.matcher(sanitized).replaceAll("$1" + MASK + "$3");
+        }
         if (properties.isObfuscateEmails()) {
             sanitized = EMAIL_PATTERN.matcher(sanitized).replaceAll(MASK);
         }
+        int originalLength = sanitized.length();
         if (sanitized.length() > properties.getMaxBodyLength()) {
-            sanitized = sanitized.substring(0, properties.getMaxBodyLength()) + "...(truncated)";
+            String truncated = sanitized.substring(0, properties.getMaxBodyLength());
+            return new TrafficBodySanitizationResult(truncated, true, originalLength, truncated.length());
         }
-        return sanitized;
+        return new TrafficBodySanitizationResult(sanitized, false, originalLength, sanitized.length());
     }
 
     private List<String> sanitizeHeaderValues(String headerName, List<String> values) {

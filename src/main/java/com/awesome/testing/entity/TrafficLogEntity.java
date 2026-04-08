@@ -61,6 +61,18 @@ public class TrafficLogEntity {
     @Column(nullable = false)
     private int status;
 
+    @Column(name = "request_content_type", length = 255)
+    private String requestContentType;
+
+    @Column(name = "request_body_truncated", nullable = false)
+    private boolean requestBodyTruncated;
+
+    @Column(name = "request_body_original_length", nullable = false)
+    private int requestBodyOriginalLength;
+
+    @Column(name = "request_body_stored_length", nullable = false)
+    private int requestBodyStoredLength;
+
     @Lob
     @Column(name = "request_headers")
     private String requestHeaders;
@@ -72,6 +84,18 @@ public class TrafficLogEntity {
     @Lob
     @Column(name = "response_headers")
     private String responseHeaders;
+
+    @Column(name = "response_content_type", length = 255)
+    private String responseContentType;
+
+    @Column(name = "response_body_truncated", nullable = false)
+    private boolean responseBodyTruncated;
+
+    @Column(name = "response_body_original_length", nullable = false)
+    private int responseBodyOriginalLength;
+
+    @Column(name = "response_body_stored_length", nullable = false)
+    private int responseBodyStoredLength;
 
     @Lob
     @Column(name = "response_body")
@@ -86,9 +110,17 @@ public class TrafficLogEntity {
                              String path,
                              String queryString,
                              int status,
+                             String requestContentType,
+                             boolean requestBodyTruncated,
+                             int requestBodyOriginalLength,
+                             int requestBodyStoredLength,
                              String requestHeaders,
                              String requestBody,
                              String responseHeaders,
+                             String responseContentType,
+                             boolean responseBodyTruncated,
+                             int responseBodyOriginalLength,
+                             int responseBodyStoredLength,
                              String responseBody) {
         this.id = id;
         this.correlationId = correlationId;
@@ -99,9 +131,17 @@ public class TrafficLogEntity {
         this.path = path;
         this.queryString = queryString;
         this.status = status;
+        this.requestContentType = requestContentType;
+        this.requestBodyTruncated = requestBodyTruncated;
+        this.requestBodyOriginalLength = requestBodyOriginalLength;
+        this.requestBodyStoredLength = requestBodyStoredLength;
         this.requestHeaders = requestHeaders;
         this.requestBody = requestBody;
         this.responseHeaders = responseHeaders;
+        this.responseContentType = responseContentType;
+        this.responseBodyTruncated = responseBodyTruncated;
+        this.responseBodyOriginalLength = responseBodyOriginalLength;
+        this.responseBodyStoredLength = responseBodyStoredLength;
         this.responseBody = responseBody;
     }
 }

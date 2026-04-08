@@ -22,7 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @TestPropertySource(properties = {
         "app.traffic.obfuscate-authorization=true",
-        "app.traffic.obfuscate-emails=true"
+        "app.traffic.obfuscate-emails=true",
+        "app.traffic.obfuscate-sensitive-body-fields=true"
 })
 class TrafficControllerServerObfuscationTest extends DomainHelper {
 
@@ -63,10 +64,10 @@ class TrafficControllerServerObfuscationTest extends DomainHelper {
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(signUpEntry.getRequestBody()).doesNotContain(user.getEmail());
-        assertThat(signUpEntry.getRequestBody()).contains("***");
-        assertThat(meEntry.getRequestHeaders()).doesNotContain(token);
-        assertThat(meEntry.getRequestHeaders()).contains("Authorization");
-        assertThat(meEntry.getRequestHeaders()).contains("***");
+        assertThat(signUpEntry.getRequestBody().toString()).doesNotContain(user.getEmail());
+        assertThat(signUpEntry.getRequestBody().toString()).contains("***");
+        assertThat(meEntry.getRequestHeaders().toString()).doesNotContain(token);
+        assertThat(meEntry.getRequestHeaders().toString()).contains("Authorization");
+        assertThat(meEntry.getRequestHeaders().toString()).contains("***");
     }
 }

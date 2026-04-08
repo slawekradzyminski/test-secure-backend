@@ -83,6 +83,8 @@ public class TrafficLoggingFilter implements Filter {
                     String responseBody = captureResponseBody
                             ? readResponseBody((ContentCachingResponseWrapper) responseToUse)
                             : omittedBodyPlaceholder(responseToUse.getContentType());
+                    TrafficBodySanitizationResult requestBody = trafficDataSanitizer.sanitizeBody(readRequestBody(wrappedRequest));
+                    TrafficBodySanitizationResult sanitizedResponseBody = trafficDataSanitizer.sanitizeBody(responseBody);
                     trafficQueue.add(TrafficEventDto.builder()
                             .method(wrappedRequest.getMethod())
                             .path(wrappedRequest.getRequestURI())
@@ -99,10 +101,18 @@ public class TrafficLoggingFilter implements Filter {
                             .path(wrappedRequest.getRequestURI())
                             .queryString(wrappedRequest.getQueryString())
                             .status(responseToUse.getStatus())
+                            .requestContentType(wrappedRequest.getContentType())
+                            .requestBodyTruncated(requestBody.truncated())
+                            .requestBodyOriginalLength(requestBody.originalLength())
+                            .requestBodyStoredLength(requestBody.storedLength())
                             .requestHeaders(serializeHeaders(extractHeaders(wrappedRequest)))
-                            .requestBody(trafficDataSanitizer.sanitizeBody(readRequestBody(wrappedRequest)))
+                            .requestBody(requestBody.body())
                             .responseHeaders(serializeHeaders(extractHeaders(responseToUse)))
-                            .responseBody(trafficDataSanitizer.sanitizeBody(responseBody))
+                            .responseContentType(responseToUse.getContentType())
+                            .responseBodyTruncated(sanitizedResponseBody.truncated())
+                            .responseBodyOriginalLength(sanitizedResponseBody.originalLength())
+                            .responseBodyStoredLength(sanitizedResponseBody.storedLength())
+                            .responseBody(sanitizedResponseBody.body())
                             .build());
                 }
                 if (responseToUse instanceof ContentCachingResponseWrapper wrappedResponse) {

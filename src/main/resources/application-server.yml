@@ -2,3 +2,4 @@ app:
   traffic:
     obfuscate-authorization: true
     obfuscate-emails: true
+    obfuscate-sensitive-body-fields: true

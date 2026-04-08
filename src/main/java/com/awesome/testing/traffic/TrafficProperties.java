@@ -22,8 +22,11 @@ public class TrafficProperties {
     private Duration cleanupInterval = Duration.ofDays(1);
     private boolean obfuscateAuthorization;
     private boolean obfuscateEmails;
+    private boolean obfuscateSensitiveBodyFields;
     private List<String> excludedPaths = new ArrayList<>(List.of(
             "/api/v1/traffic/logs",
-            "/api/v1/traffic/logs/"
+            "/api/v1/traffic/logs/",
+            "/v3/api-docs",
+            "/v3/api-docs/"
     ));
 }
