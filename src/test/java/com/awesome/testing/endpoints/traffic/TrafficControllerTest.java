@@ -15,10 +15,13 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,6 +30,7 @@ class TrafficControllerTest extends DomainHelper {
 
     private static final String API_TRAFFIC_INFO = "/api/v1/traffic/info";
     private static final String API_TRAFFIC_LOGS = "/api/v1/traffic/logs";
+    private static final String CLIENT_SESSION_ID = "session-" + UUID.randomUUID();
 
     @Autowired
     private TrafficLogRepository trafficLogRepository;
@@ -92,5 +96,123 @@ class TrafficControllerTest extends DomainHelper {
         assertThat(response.getBody().getContent())
                 .noneMatch(entry -> entry.getPath().startsWith(API_TRAFFIC_LOGS));
         assertThat(response.getBody().getTotalElements()).isGreaterThanOrEqualTo(2);
+    }
+
+    @Test
+    void shouldReturnTrafficLogByCorrelationId() {
+        ResponseEntity<TrafficInfoDto> infoResponse = executeGet(
+                API_TRAFFIC_INFO,
+                getJsonOnlyHeaders(),
+                TrafficInfoDto.class
+        );
+
+        assertThat(infoResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ResponseEntity<PageDto<TrafficLogEntryDto>> logsResponse = executeGet(
+                API_TRAFFIC_LOGS + "?pathContains=/api/v1/traffic/info",
+                getJsonOnlyHeaders(),
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(logsResponse.getBody()).isNotNull();
+        TrafficLogEntryDto entry = logsResponse.getBody().getContent().getFirst();
+
+        ResponseEntity<TrafficLogEntryDto> detailResponse = executeGet(
+                API_TRAFFIC_LOGS + "/" + entry.getCorrelationId(),
+                getJsonOnlyHeaders(),
+                TrafficLogEntryDto.class
+        );
+
+        assertThat(detailResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(detailResponse.getBody()).isNotNull();
+        assertThat(detailResponse.getBody().getCorrelationId()).isEqualTo(entry.getCorrelationId());
+        assertThat(detailResponse.getBody().getPath()).isEqualTo("/api/v1/traffic/info");
+    }
+
+    @Test
+    void shouldReturnNotFoundForMissingCorrelationId() {
+        ResponseEntity<TrafficLogEntryDto> response = executeGet(
+                API_TRAFFIC_LOGS + "/" + UUID.randomUUID(),
+                getJsonOnlyHeaders(),
+                TrafficLogEntryDto.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void shouldFilterByClientSessionIdAndSortNewestFirst() {
+        HttpHeaders headers = getJsonOnlyHeaders();
+        headers.add("X-Client-Session-Id", CLIENT_SESSION_ID);
+
+        ResponseEntity<TrafficInfoDto> firstResponse = executeGet(API_TRAFFIC_INFO, headers, TrafficInfoDto.class);
+        ResponseEntity<TrafficInfoDto> secondResponse = executeGet(API_TRAFFIC_INFO, headers, TrafficInfoDto.class);
+
+        assertThat(firstResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(secondResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ResponseEntity<PageDto<TrafficLogEntryDto>> logsResponse = executeGet(
+                API_TRAFFIC_LOGS + "?clientSessionId=" + CLIENT_SESSION_ID,
+                getJsonOnlyHeaders(),
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(logsResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(logsResponse.getBody()).isNotNull();
+        assertThat(logsResponse.getBody().getContent()).hasSize(2);
+        assertThat(logsResponse.getBody().getContent())
+                .allMatch(entry -> CLIENT_SESSION_ID.equals(entry.getClientSessionId()));
+        assertThat(logsResponse.getBody().getContent().get(0).getTimestamp())
+                .isAfterOrEqualTo(logsResponse.getBody().getContent().get(1).getTimestamp());
+    }
+
+    @Test
+    void shouldClampPageSizeAndAllowFilteringByStatusTextAndDateRange() {
+        UserRegisterDto user = UserFactory.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        registerUser(user);
+
+        executePost(
+                LOGIN_ENDPOINT,
+                LoginDto.builder()
+                        .username(user.getUsername())
+                        .password(user.getPassword())
+                        .build(),
+                getJsonOnlyHeaders(),
+                LoginResponseDto.class
+        );
+
+        Instant from = Instant.now().minusSeconds(60);
+        Instant to = Instant.now().plusSeconds(60);
+
+        ResponseEntity<PageDto<TrafficLogEntryDto>> response = executeGet(
+                API_TRAFFIC_LOGS
+                        + "?size=500&status=200&text=" + user.getUsername()
+                        + "&from=" + from
+                        + "&to=" + to,
+                getJsonOnlyHeaders(),
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getPageSize()).isLessThanOrEqualTo(100);
+        assertThat(response.getBody().getContent()).isNotEmpty();
+        assertThat(response.getBody().getContent())
+                .allMatch(entry -> entry.getStatus() == 200)
+                .allMatch(entry -> !entry.getTimestamp().isBefore(from) && !entry.getTimestamp().isAfter(to))
+                .anyMatch(entry -> entry.getRequestBody().contains(user.getUsername())
+                        || entry.getResponseBody().contains(user.getUsername()));
+    }
+
+    @Test
+    void shouldReturnBadRequestForInvalidFromInstant() {
+        ResponseEntity<String> response = executeGet(
+                API_TRAFFIC_LOGS + "?from=not-an-instant",
+                getJsonOnlyHeaders(),
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).contains("Invalid instant format");
     }
 }

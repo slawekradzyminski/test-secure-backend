@@ -20,6 +20,9 @@ public class TrafficLogEntryDto {
     @Schema(description = "Request timestamp")
     private Instant timestamp;
 
+    @Schema(description = "Client-provided session identifier")
+    private String clientSessionId;
+
     @Schema(description = "HTTP method")
     private String method;
 

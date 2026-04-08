@@ -4,6 +4,7 @@ import com.awesome.testing.dto.order.PageDto;
 import com.awesome.testing.dto.traffic.TrafficInfoDto;
 import com.awesome.testing.dto.traffic.TrafficLogEntryDto;
 import com.awesome.testing.traffic.TrafficLogService;
+import com.awesome.testing.traffic.TrafficProperties;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -12,6 +13,7 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,7 +27,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class TrafficController {
 
+    private static final Sort DEFAULT_SORT = Sort.by(Sort.Direction.DESC, "timestamp");
+
     private final TrafficLogService trafficLogService;
+    private final TrafficProperties trafficProperties;
 
     @GetMapping("/info")
     @Operation(
@@ -51,21 +56,24 @@ public class TrafficController {
     public ResponseEntity<PageDto<TrafficLogEntryDto>> getTrafficLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String clientSessionId,
             @RequestParam(required = false) String method,
             @RequestParam(required = false) Integer status,
             @RequestParam(required = false) String pathContains,
             @RequestParam(required = false) String text,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to) {
+        int resolvedSize = Math.max(1, Math.min(size, trafficProperties.getMaxPageSize()));
         return ResponseEntity.ok(PageDto.from(
                 trafficLogService.findLogs(
+                        clientSessionId,
                         method,
                         status,
                         pathContains,
                         text,
                         parseInstant(from),
                         parseInstant(to),
-                        PageRequest.of(page, size)
+                        PageRequest.of(page, resolvedSize, DEFAULT_SORT)
                 )
         ));
     }

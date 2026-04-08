@@ -4,35 +4,38 @@ import com.awesome.testing.dto.traffic.TrafficLogEntryDto;
 import com.awesome.testing.entity.TrafficLogEntity;
 import com.awesome.testing.repository.TrafficLogRepository;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Optional;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class TrafficLogService {
 
     private final TrafficLogRepository trafficLogRepository;
-
-    public TrafficLogService(TrafficLogRepository trafficLogRepository) {
-        this.trafficLogRepository = trafficLogRepository;
-    }
 
     public TrafficLogEntity save(TrafficLogEntity entity) {
         return trafficLogRepository.save(entity);
     }
 
-    public Page<TrafficLogEntryDto> findLogs(String method,
+    public Page<TrafficLogEntryDto> findLogs(String clientSessionId,
+                                             String method,
                                              Integer status,
                                              String pathContains,
                                              String text,
                                              Instant from,
                                              Instant to,
                                              Pageable pageable) {
-        return trafficLogRepository.findAll(buildSpecification(method, status, pathContains, text, from, to), pageable)
+        return trafficLogRepository.findAll(
+                        buildSpecification(clientSessionId, method, status, pathContains, text, from, to),
+                        pageable
+                )
                 .map(this::toDto);
     }
 
@@ -44,6 +47,7 @@ public class TrafficLogService {
         return TrafficLogEntryDto.builder()
                 .correlationId(entity.getCorrelationId())
                 .timestamp(entity.getTimestamp())
+                .clientSessionId(entity.getClientSessionId())
                 .method(entity.getMethod())
                 .path(entity.getPath())
                 .queryString(entity.getQueryString())
@@ -56,32 +60,28 @@ public class TrafficLogService {
                 .build();
     }
 
-    private Specification<TrafficLogEntity> buildSpecification(String method,
+    private Specification<TrafficLogEntity> buildSpecification(String clientSessionId,
+                                                               String method,
                                                                Integer status,
                                                                String pathContains,
                                                                String text,
                                                                Instant from,
                                                                Instant to) {
-        List<Specification<TrafficLogEntity>> specifications = new ArrayList<>();
-        addIfPresent(specifications, equalsIgnoreCase("method", method));
-        addIfPresent(specifications, equalsValue("status", status));
-        addIfPresent(specifications, likeIgnoreCase("path", pathContains));
-        addIfPresent(specifications, instantGreaterThanOrEqualTo("timestamp", from));
-        addIfPresent(specifications, instantLessThanOrEqualTo("timestamp", to));
-        addIfPresent(specifications, fullTextLike(text));
-
         Specification<TrafficLogEntity> specification = null;
-        for (Specification<TrafficLogEntity> candidate : specifications) {
-            specification = specification == null ? candidate : specification.and(candidate);
+        for (Specification<TrafficLogEntity> candidate : Arrays.asList(
+                equalsIgnoreCase("clientSessionId", clientSessionId),
+                equalsIgnoreCase("method", method),
+                equalsValue("status", status),
+                likeIgnoreCase("path", pathContains),
+                instantGreaterThanOrEqualTo("timestamp", from),
+                instantLessThanOrEqualTo("timestamp", to),
+                fullTextLike(text)
+        )) {
+            if (candidate != null) {
+                specification = specification == null ? candidate : specification.and(candidate);
+            }
         }
         return specification;
-    }
-
-    private void addIfPresent(List<Specification<TrafficLogEntity>> specifications,
-                              Specification<TrafficLogEntity> specification) {
-        if (specification != null) {
-            specifications.add(specification);
-        }
     }
 
     private Specification<TrafficLogEntity> equalsIgnoreCase(String field, String value) {
@@ -126,10 +126,17 @@ public class TrafficLogService {
         }
         String normalized = "%" + value.toLowerCase() + "%";
         return (root, query, cb) -> cb.or(
-                cb.like(cb.lower(root.get("path")), normalized),
-                cb.like(cb.lower(cb.coalesce(root.get("queryString"), "")), normalized),
-                cb.like(cb.lower(cb.coalesce(root.get("requestBody"), "")), normalized),
-                cb.like(cb.lower(cb.coalesce(root.get("responseBody"), "")), normalized)
+                likeLower(cb, root.get("path"), normalized),
+                likeLower(cb, root.get("clientSessionId"), normalized),
+                likeLower(cb, root.get("queryString"), normalized),
+                likeLower(cb, root.get("requestBody").as(String.class), normalized),
+                likeLower(cb, root.get("responseBody").as(String.class), normalized)
         );
+    }
+
+    private Predicate likeLower(jakarta.persistence.criteria.CriteriaBuilder cb,
+                                                             Expression<String> expression,
+                                                             String normalized) {
+        return cb.like(cb.lower(cb.coalesce(expression, "")), normalized);
     }
 }

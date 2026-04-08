@@ -14,7 +14,10 @@ import org.springframework.stereotype.Component;
 @Setter
 public class TrafficProperties {
 
+    private static final int DEFAULT_MAX_PAGE_SIZE = 100;
+
     private int maxBodyLength = 4000;
+    private int maxPageSize = DEFAULT_MAX_PAGE_SIZE;
     private Duration retention = Duration.ofDays(1);
     private Duration cleanupInterval = Duration.ofDays(1);
     private boolean obfuscateAuthorization;

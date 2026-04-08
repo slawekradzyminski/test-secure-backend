@@ -43,6 +43,7 @@ logbook:
   filter.enabled: true
   obfuscate:
     headers:
+      - authorization
       - x-secret
       - cookie
 
@@ -108,6 +109,7 @@ app:
     allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:8081,http://127.0.0.1:8081,http://host.docker.internal:8081}
   traffic:
     max-body-length: ${APP_TRAFFIC_MAX_BODY_LENGTH:4000}
+    max-page-size: ${APP_TRAFFIC_MAX_PAGE_SIZE:100}
     retention: ${APP_TRAFFIC_RETENTION:P1D}
     cleanup-interval: ${APP_TRAFFIC_CLEANUP_INTERVAL:PT24H}
     obfuscate-authorization: ${APP_TRAFFIC_OBFUSCATE_AUTHORIZATION:false}
