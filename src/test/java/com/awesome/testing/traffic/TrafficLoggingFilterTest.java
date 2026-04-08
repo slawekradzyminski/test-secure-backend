@@ -126,6 +126,27 @@ class TrafficLoggingFilterTest {
     }
 
     @Test
+    void shouldSkipResponseBodyCaptureForStreamingPathsWithoutAcceptHeader() throws IOException, ServletException {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getRequestURI()).thenReturn("/api/v1/ollama/generate");
+        when(request.getHeader("Accept")).thenReturn(null);
+        when(request.getHeaderNames()).thenReturn(Collections.enumeration(List.of()));
+        when(request.getCharacterEncoding()).thenReturn("UTF-8");
+        when(response.getStatus()).thenReturn(200);
+        when(response.getContentType()).thenReturn(MediaType.TEXT_EVENT_STREAM_VALUE);
+        when(response.getHeaderNames()).thenReturn(List.of("Content-Type"));
+        when(response.getHeaders("Content-Type")).thenReturn(List.of(MediaType.TEXT_EVENT_STREAM_VALUE));
+
+        filter.doFilter(request, response, chain);
+
+        ArgumentCaptor<TrafficLogEntity> entityCaptor = ArgumentCaptor.forClass(TrafficLogEntity.class);
+        verify(trafficLogService).save(entityCaptor.capture());
+        assertThat(entityCaptor.getValue().getResponseBody()).isEqualTo("[omitted for media type text/event-stream]");
+    }
+
+    @Test
     void shouldSkipResponseBodyCaptureForBinaryResponses() throws IOException, ServletException {
         HttpServletRequest request = mock(HttpServletRequest.class);
         HttpServletResponse response = mock(HttpServletResponse.class);

@@ -38,6 +38,10 @@ public class TrafficLoggingFilter implements Filter {
 
     private static final String CLIENT_SESSION_HEADER = "X-Client-Session-Id";
     private static final String CLIENT_SESSION_COOKIE = "clientSessionId";
+    private static final List<String> STREAMING_PATH_PREFIXES = List.of(
+            "/api/v1/ollama/generate",
+            "/api/v1/ollama/chat"
+    );
     private static final List<String> OMITTED_RESPONSE_MEDIA_TYPES = List.of(
             MediaType.TEXT_EVENT_STREAM_VALUE,
             MediaType.IMAGE_PNG_VALUE,
@@ -128,7 +132,8 @@ public class TrafficLoggingFilter implements Filter {
     }
 
     private boolean shouldCaptureResponseBody(HttpServletRequest request) {
-        return !isOmittedMediaType(request.getHeader("Accept"));
+        return STREAMING_PATH_PREFIXES.stream().noneMatch(request.getRequestURI()::startsWith)
+                && !isOmittedMediaType(request.getHeader("Accept"));
     }
 
     private boolean isOmittedMediaType(String mediaTypeValue) {
