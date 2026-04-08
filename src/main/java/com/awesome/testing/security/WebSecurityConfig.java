@@ -128,6 +128,7 @@ public class WebSecurityConfig {
             "Authorization", 
             "Content-Type", 
             "X-Requested-With", 
+            "X-Client-Session-Id",
             "Accept", 
             "Cache-Control",
             "Last-Event-ID",
@@ -135,6 +136,7 @@ public class WebSecurityConfig {
         ));
         configuration.setExposedHeaders(List.of(
             "Content-Type",
+            "X-Client-Session-Id",
             "X-Requested-With",
             "Cache-Control",
             "Last-Event-ID"
