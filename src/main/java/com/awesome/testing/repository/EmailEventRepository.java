@@ -10,6 +10,8 @@ public interface EmailEventRepository extends JpaRepository<EmailEventEntity, In
 
     List<EmailEventEntity> findTop20ByUserOrderByCreatedAtDesc(UserEntity user);
 
+    long countByUserUsername(String username);
+
     @Transactional
     void deleteAllByUser(UserEntity user);
 }

@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
         UserDeleteController.class,
         UserEditController.class,
         UserGetSingleUserController.class,
+        UserRightToBeForgottenController.class,
 })
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class UserExceptionHandler {

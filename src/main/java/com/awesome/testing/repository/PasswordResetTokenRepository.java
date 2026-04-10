@@ -13,6 +13,8 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
 
     Optional<PasswordResetTokenEntity> findByTokenHash(String tokenHash);
 
+    long countByUserUsername(String username);
+
     @Modifying
     @Query("delete from PasswordResetTokenEntity p where p.user = :user or p.expiresAt < :now")
     void deleteByUserOrExpired(@Param("user") UserEntity user, @Param("now") Instant now);

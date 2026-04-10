@@ -44,6 +44,7 @@ class OpenApiContractTest extends HttpHelper {
         assertSecuredEndpoint(spec, "/api/v1/orders", "get");
         assertSecuredEndpoint(spec, "/api/v1/cart", "get");
         assertSecuredEndpoint(spec, "/api/v1/users/me/email-events", "get");
+        assertSecuredEndpoint(spec, "/api/v1/users/{username}/right-to-be-forgotten", "delete");
         assertThat(spec.path("paths").has("/local/email/outbox")).isFalse();
 
         assertOperationResponsesContain(spec, "/api/v1/users/signin", "post", List.of("200", "400", "422"));

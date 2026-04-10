@@ -18,6 +18,10 @@ import java.util.stream.Collectors;
 
 @Repository
 public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
+    void deleteByUsername(String username);
+
+    long countByUsername(String username);
+
     @Query("SELECT o.id FROM OrderEntity o WHERE o.username = :username")
     Page<Long> findOrderIdsByUsername(@Param("username") String username, Pageable pageable);
 

@@ -10,8 +10,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.entity.RefreshTokenEntity;
 import com.awesome.testing.repository.EmailEventRepository;
+import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.PasswordResetTokenRepository;
 import com.awesome.testing.repository.UserRepository;
+import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.service.token.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +61,8 @@ public class UserService {
     private final RefreshTokenService refreshTokenService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailEventRepository emailEventRepository;
+    private final CartItemRepository cartItemRepository;
+    private final OrderRepository orderRepository;
 
     public TokenPair signIn(String username, String password) {
         authenticationHandler.authUser(username, password);
@@ -80,10 +84,16 @@ public class UserService {
     }
 
     public void delete(String username) {
+        forget(username);
+    }
+
+    public void forget(String username) {
         UserEntity user = getUser(username);
         refreshTokenService.removeAllTokensForUser(username);
         passwordResetTokenRepository.deleteAllByUser(user);
         emailEventRepository.deleteAllByUser(user);
+        cartItemRepository.deleteByUsername(username);
+        orderRepository.deleteByUsername(username);
         userRepository.deleteByUsername(username);
     }
 

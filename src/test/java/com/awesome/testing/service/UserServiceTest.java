@@ -8,8 +8,10 @@ import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.entity.RefreshTokenEntity;
 import com.awesome.testing.repository.EmailEventRepository;
+import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.PasswordResetTokenRepository;
 import com.awesome.testing.repository.UserRepository;
+import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.security.AuthenticationHandler;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.service.token.RefreshTokenService;
@@ -55,6 +57,12 @@ class UserServiceTest {
 
     @Mock
     private EmailEventRepository emailEventRepository;
+
+    @Mock
+    private CartItemRepository cartItemRepository;
+
+    @Mock
+    private OrderRepository orderRepository;
 
     @InjectMocks
     private UserService userService;
@@ -158,6 +166,8 @@ class UserServiceTest {
         verify(refreshTokenService).removeAllTokensForUser(registerDto.getUsername());
         verify(passwordResetTokenRepository).deleteAllByUser(userEntity);
         verify(emailEventRepository).deleteAllByUser(userEntity);
+        verify(cartItemRepository).deleteByUsername(registerDto.getUsername());
+        verify(orderRepository).deleteByUsername(registerDto.getUsername());
         verify(userRepository).deleteByUsername(registerDto.getUsername());
     }
 
