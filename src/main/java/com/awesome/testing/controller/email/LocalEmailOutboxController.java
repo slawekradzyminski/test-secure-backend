@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @Profile("local")
 @RequiredArgsConstructor
-@RequestMapping("/local/email/outbox")
+@RequestMapping("/api/v1/local/email/outbox")
 @Tag(name = "local-email-outbox", description = "Helpers for inspecting the local JMS stub")
 public class LocalEmailOutboxController {
 

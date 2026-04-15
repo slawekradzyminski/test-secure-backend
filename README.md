@@ -249,8 +249,8 @@ mvn test
 
 - POST `/api/v1/email` - Send an email (authenticated users only)
 - GET `/api/v1/users/me/email-events` - Inspect the authenticated user's latest email statuses without exposing Mailhog
-- GET `/local/email/outbox` *(local profile only)* - Inspect the in-memory email queue when running without Artemis
-- DELETE `/local/email/outbox` *(local profile only)* - Clear the local outbox buffer for a clean test run
+- GET `/api/v1/local/email/outbox` *(local profile only)* - Inspect the in-memory email queue when running without Artemis
+- DELETE `/api/v1/local/email/outbox` *(local profile only)* - Clear the local outbox buffer for a clean test run
 
 Public-safe email verification is now app-owned rather than Mailhog-owned. For authenticated users, the
 `/api/v1/users/me/email-events` endpoint returns only their own recent email metadata with statuses such as

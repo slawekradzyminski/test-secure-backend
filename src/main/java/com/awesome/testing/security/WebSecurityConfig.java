@@ -54,7 +54,7 @@ public class WebSecurityConfig {
             "/actuator/**",
             "/api/v1/traffic/**",
             "/api/v1/ws-traffic/**",
-            "/local/email/outbox/**"
+            "/api/v1/local/email/outbox/**"
     );
 
     private final JwtTokenProvider jwtTokenProvider;

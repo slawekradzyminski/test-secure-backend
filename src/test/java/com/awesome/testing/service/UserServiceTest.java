@@ -23,6 +23,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
@@ -100,13 +101,12 @@ class UserServiceTest {
 
     @Test
     void shouldSignupNewUserWhenUnique() {
-        when(userRepository.findByUsernameOrEmail(registerDto.getUsername(), registerDto.getEmail())).thenReturn(Optional.empty());
         when(passwordEncoder.encode(registerDto.getPassword())).thenReturn("encoded");
 
         userService.signup(registerDto);
 
         ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
-        verify(userRepository).save(captor.capture());
+        verify(userRepository).saveAndFlush(captor.capture());
         UserEntity saved = captor.getValue();
         assertThat(saved.getUsername()).isEqualTo(registerDto.getUsername());
         assertThat(saved.getEmail()).isEqualTo(registerDto.getEmail());
@@ -126,21 +126,43 @@ class UserServiceTest {
                 .lastName("Request")
                 .roles(List.of(Role.ROLE_ADMIN))
                 .build();
-        when(userRepository.findByUsernameOrEmail(adminSignupRequest.getUsername(), adminSignupRequest.getEmail()))
-                .thenReturn(Optional.empty());
         when(passwordEncoder.encode(adminSignupRequest.getPassword())).thenReturn("encoded");
 
         userService.signup(adminSignupRequest);
 
         ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
-        verify(userRepository).save(captor.capture());
+        verify(userRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getRoles()).containsExactly(Role.ROLE_CLIENT);
     }
 
     @Test
     void shouldThrowWhenSignupWithExistingUsername() {
-        when(userRepository.findByUsernameOrEmail(registerDto.getUsername(), registerDto.getEmail()))
-                .thenReturn(Optional.of(buildUserEntity(registerDto.getUsername(), "other@mail.com")));
+        when(userRepository.existsByUsername(registerDto.getUsername())).thenReturn(true);
+
+        assertThatThrownBy(() -> userService.signup(registerDto))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Username is already in use");
+
+        verify(userRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void shouldThrowWhenSignupWithExistingEmail() {
+        when(userRepository.existsByEmail(registerDto.getEmail())).thenReturn(true);
+
+        assertThatThrownBy(() -> userService.signup(registerDto))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Email is already in use");
+
+        verify(userRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void shouldMapConcurrentDuplicateUsernameDuringSignupToBadRequest() {
+        when(passwordEncoder.encode(registerDto.getPassword())).thenReturn("encoded");
+        when(userRepository.saveAndFlush(any(UserEntity.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate username"));
+        when(userRepository.existsByUsername(registerDto.getUsername())).thenReturn(false, true);
 
         assertThatThrownBy(() -> userService.signup(registerDto))
                 .isInstanceOf(CustomException.class)
@@ -148,9 +170,11 @@ class UserServiceTest {
     }
 
     @Test
-    void shouldThrowWhenSignupWithExistingEmail() {
-        when(userRepository.findByUsernameOrEmail(registerDto.getUsername(), registerDto.getEmail()))
-                .thenReturn(Optional.of(buildUserEntity("other", registerDto.getEmail())));
+    void shouldMapConcurrentDuplicateEmailDuringSignupToBadRequest() {
+        when(passwordEncoder.encode(registerDto.getPassword())).thenReturn("encoded");
+        when(userRepository.saveAndFlush(any(UserEntity.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate email"));
+        when(userRepository.existsByEmail(registerDto.getEmail())).thenReturn(false, true);
 
         assertThatThrownBy(() -> userService.signup(registerDto))
                 .isInstanceOf(CustomException.class)

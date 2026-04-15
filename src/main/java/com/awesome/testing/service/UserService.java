@@ -17,6 +17,7 @@ import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.service.token.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -77,10 +78,13 @@ public class UserService {
 
     @Transactional
     public void signup(UserRegisterDto userRegisterDto) {
-        userRepository.findByUsernameOrEmail(userRegisterDto.getUsername(), userRegisterDto.getEmail())
-                .ifPresent(existingUser -> handleDuplicateUsersErrors(userRegisterDto, existingUser));
+        ensureUniqueSignupIdentity(userRegisterDto);
 
-        userRepository.save(getUser(userRegisterDto));
+        try {
+            userRepository.saveAndFlush(getUser(userRegisterDto));
+        } catch (DataIntegrityViolationException ex) {
+            handleDuplicateUsersErrors(userRegisterDto, ex);
+        }
     }
 
     public void delete(String username) {
@@ -169,11 +173,23 @@ public class UserService {
         return true;
     }
 
-    private static void handleDuplicateUsersErrors(UserRegisterDto userRegisterDto, UserEntity existingUser) {
-        if (existingUser.getUsername().equals(userRegisterDto.getUsername())) {
+    private void ensureUniqueSignupIdentity(UserRegisterDto userRegisterDto) {
+        if (userRepository.existsByUsername(userRegisterDto.getUsername())) {
             throw new CustomException("Username is already in use", HttpStatus.BAD_REQUEST);
         }
-        throw new CustomException("Email is already in use", HttpStatus.BAD_REQUEST);
+        if (userRepository.existsByEmail(userRegisterDto.getEmail())) {
+            throw new CustomException("Email is already in use", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private void handleDuplicateUsersErrors(UserRegisterDto userRegisterDto, DataIntegrityViolationException ex) {
+        if (userRepository.existsByUsername(userRegisterDto.getUsername())) {
+            throw new CustomException("Username is already in use", HttpStatus.BAD_REQUEST, ex);
+        }
+        if (userRepository.existsByEmail(userRegisterDto.getEmail())) {
+            throw new CustomException("Email is already in use", HttpStatus.BAD_REQUEST, ex);
+        }
+        throw ex;
     }
 
     private UserEntity getUser(UserRegisterDto userRegisterDto) {

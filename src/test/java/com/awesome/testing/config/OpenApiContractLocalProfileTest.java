@@ -25,7 +25,7 @@ class OpenApiContractLocalProfileTest extends HttpHelper {
         assertThat(response.getBody()).isNotBlank();
 
         JsonNode spec = new ObjectMapper().readTree(response.getBody());
-        JsonNode outboxPath = spec.path("paths").path("/local/email/outbox");
+        JsonNode outboxPath = spec.path("paths").path("/api/v1/local/email/outbox");
         assertThat(outboxPath.isObject()).isTrue();
 
         JsonNode getOperation = outboxPath.path("get");
