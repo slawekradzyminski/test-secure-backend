@@ -64,6 +64,11 @@ public class PasswordResetService {
 
     private String handleResetRequestForUser(UserEntity user, String requestedBaseUrl,
                                              String clientIp, String userAgent, Instant now) {
+        if (isSsoOnlyUser(user)) {
+            log.info("Password reset requested for SSO-only user {}, skipping local password reset", user.getUsername());
+            return null;
+        }
+
         passwordResetTokenRepository.deleteByUserOrExpired(user, now);
 
         String rawToken = tokenGenerator.generateToken();
@@ -85,6 +90,10 @@ public class PasswordResetService {
 
         log.info("Password reset token created for user {}", user.getUsername());
         return rawToken;
+    }
+
+    private boolean isSsoOnlyUser(UserEntity user) {
+        return StringUtils.hasText(user.getAuthProvider()) && StringUtils.hasText(user.getProviderSubject());
     }
 
     private String buildResetLink(String requestedBaseUrl, String token) {

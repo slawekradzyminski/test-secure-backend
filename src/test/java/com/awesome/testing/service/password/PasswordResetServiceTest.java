@@ -118,6 +118,21 @@ class PasswordResetServiceTest {
     }
 
     @Test
+    void shouldNotCreatePasswordResetForSsoOnlyUser() {
+        UserEntity user = sampleUser();
+        user.setAuthProvider("keycloak");
+        user.setProviderSubject("sso-subject");
+        when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
+
+        ForgotPasswordResponseDto response = passwordResetService.requestReset("client", null, "127.0.0.1", "JUnit");
+
+        assertThat(response.getToken()).isNull();
+        verify(passwordResetTokenRepository, never()).deleteByUserOrExpired(any(), any());
+        verify(passwordResetTokenRepository, never()).save(any());
+        verify(emailService, never()).sendEmail(any(), anyString(), any());
+    }
+
+    @Test
     void shouldResetPasswordAndInvalidateRefreshTokens() {
         UserEntity user = sampleUser();
 

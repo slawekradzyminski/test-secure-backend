@@ -153,6 +153,61 @@ The application uses JWT tokens for authentication. To access protected endpoint
 
 Sign in responses now include both an access token and a refresh token. The refresh token can be exchanged via `POST /api/v1/users/refresh` even when the access token expires, and calling `POST /api/v1/users/logout` revokes the refresh token on the server.
 
+The training stack also includes an OIDC-based SSO bridge by default. The frontend authenticates with the configured identity provider and exchanges the returned OIDC ID token through `POST /api/v1/users/sso/exchange`. The backend validates the external token, provisions or reuses a local user, and returns the same app-issued JWT and refresh token shape as password login. Protected APIs continue to accept only the app JWT, not raw identity-provider tokens. Set `APP_SSO_ENABLED=false` only when you intentionally want to disable the exchange endpoint.
+
+The local identity provider is Keycloak, started by the sibling `awesome-localstack` repository. Keycloak owns the SSO users and their passwords. This backend owns only the application session, local user record, app roles, refresh tokens, carts, orders, and other domain data. In other words, SSO proves who the user is; the backend still issues and validates the app's own JWT for protected API calls.
+
+The default local SSO configuration is:
+
+- issuer: `http://localhost:8082/realms/awesome-testing`
+- audience/client id: `awesome-testing-frontend`
+- exchange endpoint: `POST /api/v1/users/sso/exchange`
+- admin console: `http://localhost:8082/admin/`
+- Keycloak admin login: `admin` / `admin`
+
+The LocalStack Keycloak realm includes two training users:
+
+- `sso-client` / `SsoClient123!`
+- `sso-admin` / `SsoAdmin123!`
+
+The local Keycloak client also enables direct access grants for Playwright training fixtures. That lets tests obtain an ID token over HTTP, exchange it through the backend, and start UI tests with app-issued tokens already in browser storage. This is a local training convenience, not a production recommendation.
+
+### Testing SSO Locally
+
+The easiest local SSO check uses the sibling LocalStack repository:
+
+```bash
+cd ../awesome-localstack
+docker compose -f lightweight-docker-compose.yml up
+```
+
+Then open `http://localhost:8081/login`, click **Sign in with SSO**, and log in through Keycloak with:
+
+- `sso-client` / `SsoClient123!`
+- `sso-admin` / `SsoAdmin123!`
+
+Expected result: the browser returns to `http://localhost:8081`, the app stores its normal `token` and `refreshToken`, and protected pages work with the app-issued JWT.
+
+For a curl-level negative check, an invalid ID token should be rejected:
+
+```bash
+curl -i -X POST http://localhost:4001/api/v1/users/sso/exchange \
+  -H "Content-Type: application/json" \
+  -H "Origin: http://localhost:8081" \
+  --data '{"idToken":"not-a-real-token"}'
+```
+
+Expected result: `401` with `{"message":"Invalid SSO token"}`.
+
+For Playwright E2E tests in `../playwright-2025`, run the local Keycloak/backend/frontend stack. The specs assume SSO is enabled in the LocalStack profile:
+
+```bash
+cd ../playwright-2025
+npx playwright test tests/ui/sso.live.ui.spec.ts tests/ui/sso.fixture.ui.spec.ts tests/api/sso.exchange.api.spec.ts
+```
+
+`sso.live.ui.spec.ts` drives the real browser redirect through Keycloak. `uiSsoAuthFixture` obtains the Keycloak ID token over HTTP, exchanges it with this backend, and injects only the resulting app `token` and `refreshToken` into local storage before the test starts.
+
 ## Features
 
 - User authentication with JWT tokens
@@ -204,6 +259,7 @@ mvn test
 - POST `/api/v1/users/signin` - Authenticate user and get JWT token
 - POST `/api/v1/users/signup` - Register a new client user
 - POST `/api/v1/users/refresh` - Refresh JWT token using a refresh token
+- POST `/api/v1/users/sso/exchange` - Exchange a valid OIDC ID token for an app JWT and refresh token
 - POST `/api/v1/users/logout` - Revoke current refresh token and logout
 - POST `/api/v1/users/password/forgot` - Anonymous endpoint that queues a password-reset email (always responds with 202)
 - POST `/api/v1/users/password/reset` - Completes a reset using the emailed token and a new password (anonymous)

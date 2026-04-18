@@ -17,7 +17,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "app_user")
+@Table(name = "app_user",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_app_user_auth_provider_subject",
+                columnNames = {"auth_provider", "provider_subject"}
+        ))
 public class UserEntity {
 
     @Id
@@ -36,6 +40,17 @@ public class UserEntity {
     @Size(min = 8, message = "Minimum password length: 8 characters")
     @NonNull
     private String password;
+
+    @Size(max = 100)
+    @Column(name = "auth_provider")
+    private String authProvider;
+
+    @Size(max = 255)
+    @Column(name = "provider_subject")
+    private String providerSubject;
+
+    @Column(name = "email_verified")
+    private Boolean emailVerified;
 
     @ElementCollection(fetch = FetchType.EAGER)
     List<Role> roles;

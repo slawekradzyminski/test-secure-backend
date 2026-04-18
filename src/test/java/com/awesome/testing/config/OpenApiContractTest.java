@@ -37,6 +37,7 @@ class OpenApiContractTest extends HttpHelper {
         assertPublicEndpointIsNotMarkedAsSecured(spec, "/api/v1/users/signin", "post");
         assertPublicEndpointIsNotMarkedAsSecured(spec, "/api/v1/users/signup", "post");
         assertPublicEndpointIsNotMarkedAsSecured(spec, "/api/v1/users/refresh", "post");
+        assertPublicEndpointIsNotMarkedAsSecured(spec, "/api/v1/users/sso/exchange", "post");
         assertPublicEndpointIsNotMarkedAsSecured(spec, "/api/v1/users/password/forgot", "post");
         assertPublicEndpointIsNotMarkedAsSecured(spec, "/api/v1/users/password/reset", "post");
 

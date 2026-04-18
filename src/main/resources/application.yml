@@ -105,6 +105,16 @@ app:
   bootstrap-products:
     enabled: ${APP_BOOTSTRAP_PRODUCTS_ENABLED:false}
     catalog: ${APP_BOOTSTRAP_PRODUCTS_CATALOG:classpath:bootstrap/products.json}
+  sso:
+    enabled: ${APP_SSO_ENABLED:true}
+    auth-provider: ${APP_SSO_AUTH_PROVIDER:keycloak}
+    issuer-uri: ${APP_SSO_ISSUER_URI:http://localhost:8082/realms/awesome-testing}
+    jwk-set-uri: ${APP_SSO_JWK_SET_URI:http://localhost:8082/realms/awesome-testing/protocol/openid-connect/certs}
+    audience: ${APP_SSO_AUDIENCE:awesome-testing-frontend}
+    username-claim: ${APP_SSO_USERNAME_CLAIM:preferred_username}
+    email-claim: ${APP_SSO_EMAIL_CLAIM:email}
+    first-name-claim: ${APP_SSO_FIRST_NAME_CLAIM:given_name}
+    last-name-claim: ${APP_SSO_LAST_NAME_CLAIM:family_name}
   cors:
     allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:8081,http://127.0.0.1:8081,http://host.docker.internal:8081}
   traffic:
