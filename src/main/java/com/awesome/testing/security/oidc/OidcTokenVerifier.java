@@ -91,7 +91,8 @@ public class OidcTokenVerifier {
                 email,
                 claim(jwt, ssoProperties.getFirstNameClaim()).orElse(null),
                 claim(jwt, ssoProperties.getLastNameClaim()).orElse(null),
-                Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified"))
+                Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified")),
+                claim(jwt, "identity_provider").orElse(null)
         );
     }
 

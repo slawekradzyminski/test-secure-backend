@@ -51,12 +51,19 @@ public class SsoLoginService {
     }
 
     private UserEntity findOrProvisionUser(OidcUserClaims claims) {
+        String authProvider = resolveAuthProvider(claims);
         return userRepository.findByAuthProviderAndProviderSubject(
-                        ssoProperties.getAuthProvider(),
+                        authProvider,
                         claims.subject()
                 )
                 .map(user -> updateProfile(user, claims))
                 .orElseGet(() -> provisionUser(claims));
+    }
+
+    private String resolveAuthProvider(OidcUserClaims claims) {
+        return claims.identityProvider() != null && !claims.identityProvider().isBlank()
+                ? claims.identityProvider()
+                : ssoProperties.getAuthProvider();
     }
 
     private UserEntity provisionUser(OidcUserClaims claims) {
@@ -74,7 +81,7 @@ public class SsoLoginService {
                 .roles(List.of(Role.ROLE_CLIENT))
                 .firstName(claims.firstName())
                 .lastName(claims.lastName())
-                .authProvider(ssoProperties.getAuthProvider())
+                .authProvider(resolveAuthProvider(claims))
                 .providerSubject(claims.subject())
                 .emailVerified(claims.emailVerified())
                 .chatSystemPrompt(UserService.DEFAULT_CHAT_SYSTEM_PROMPT.strip())

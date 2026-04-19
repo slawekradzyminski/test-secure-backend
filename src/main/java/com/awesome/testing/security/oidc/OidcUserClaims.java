@@ -6,6 +6,7 @@ public record OidcUserClaims(
         String email,
         String firstName,
         String lastName,
-        boolean emailVerified
+        boolean emailVerified,
+        String identityProvider
 ) {
 }

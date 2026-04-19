@@ -228,7 +228,34 @@ class SsoLoginServiceTest {
     }
 
     private OidcUserClaims claims(String subject, String username, String email) {
-        return new OidcUserClaims(subject, username, email, "Sso", "Client", true);
+        return new OidcUserClaims(subject, username, email, "Sso", "Client", true, null);
+    }
+
+    @Test
+    void shouldUseIdentityProviderFromClaimsWhenPresent() {
+        OidcUserClaims claims = new OidcUserClaims(
+                "google-subject", "google-user", "google-user@gmail.com",
+                "Google", "User", true, "google"
+        );
+        when(oidcTokenVerifier.verify("id-token")).thenReturn(claims);
+        when(userRepository.findByAuthProviderAndProviderSubject("google", "google-subject"))
+                .thenReturn(Optional.empty());
+        when(userRepository.findByEmail("google-user@gmail.com")).thenReturn(Optional.empty());
+        when(userRepository.existsByUsername("google-user")).thenReturn(false);
+        when(passwordEncoder.encode(any())).thenReturn("encoded-password");
+        when(userRepository.saveAndFlush(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(jwtTokenProvider.createToken("google-user", List.of(Role.ROLE_CLIENT))).thenReturn("app-jwt");
+        when(refreshTokenService.createToken(any(UserEntity.class))).thenReturn(refreshToken(null));
+
+        LoginResponseDto response = ssoLoginService.exchange("id-token");
+
+        assertThat(response.getUsername()).isEqualTo("google-user");
+
+        ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
+        verify(userRepository).saveAndFlush(captor.capture());
+        UserEntity provisioned = captor.getValue();
+        assertThat(provisioned.getAuthProvider()).isEqualTo("google");
+        assertThat(provisioned.getProviderSubject()).isEqualTo("google-subject");
     }
 
     private RefreshTokenEntity refreshToken(UserEntity user) {
