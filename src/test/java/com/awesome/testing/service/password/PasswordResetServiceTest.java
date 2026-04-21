@@ -1,6 +1,7 @@
 package com.awesome.testing.service.password;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -28,9 +29,11 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -133,6 +136,52 @@ class PasswordResetServiceTest {
     }
 
     @Test
+    void shouldAppendResetTokenWithAmpersandWhenBaseUrlAlreadyHasQueryString() {
+        UserEntity user = sampleUser();
+        when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
+        when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");
+        when(passwordResetTokenGenerator.hashToken("raw-token")).thenReturn("hash-token");
+        when(passwordResetTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(emailFactory.buildResetRequestEmail(any(), anyString(), any())).thenReturn(
+                EmailDto.builder().to(user.getEmail()).subject("Reset").message("Body").build()
+        );
+
+        passwordResetService.requestReset(
+                "client",
+                "https://shop.example/reset?source=email",
+                "127.0.0.1",
+                "JUnit"
+        );
+
+        ArgumentCaptor<String> resetLinkCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailFactory).buildResetRequestEmail(eq(user), resetLinkCaptor.capture(), any());
+        assertThat(resetLinkCaptor.getValue())
+                .isEqualTo("https://shop.example/reset?source=email&token=raw-token");
+    }
+
+    @Test
+    void shouldRejectResetBaseUrlWithoutHttpScheme() {
+        UserEntity user = sampleUser();
+        when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
+        when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");
+        when(passwordResetTokenGenerator.hashToken("raw-token")).thenReturn("hash-token");
+        when(passwordResetTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThatThrownBy(() -> passwordResetService.requestReset(
+                "client",
+                "javascript:alert(1)",
+                "127.0.0.1",
+                "JUnit"
+        ))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Reset base URL must start with http:// or https://")
+                .extracting("httpStatus")
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        verify(emailService, never()).sendEmail(any(), anyString(), any());
+    }
+
+    @Test
     void shouldResetPasswordAndInvalidateRefreshTokens() {
         UserEntity user = sampleUser();
 
@@ -177,6 +226,83 @@ class PasswordResetServiceTest {
 
         assertThrows(CustomException.class, () -> passwordResetService.resetPassword(request));
         verify(passwordResetTokenRepository, never()).findByTokenHash(anyString());
+    }
+
+    @Test
+    void shouldFailWhenResetTokenDoesNotExist() {
+        when(passwordResetTokenGenerator.hashToken("missing-token")).thenReturn("missing-hash");
+        when(passwordResetTokenRepository.findByTokenHash("missing-hash")).thenReturn(Optional.empty());
+
+        ResetPasswordRequestDto request = ResetPasswordRequestDto.builder()
+                .token("missing-token")
+                .newPassword("newPass123")
+                .confirmPassword("newPass123")
+                .build();
+
+        assertThatThrownBy(() -> passwordResetService.resetPassword(request))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Invalid password reset token")
+                .extracting("httpStatus")
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        verify(passwordEncoder, never()).encode(anyString());
+    }
+
+    @Test
+    void shouldDeleteExpiredResetTokenAndFail() {
+        UserEntity user = sampleUser();
+        PasswordResetTokenEntity entity = PasswordResetTokenEntity.builder()
+                .tokenHash("hash-token")
+                .requestedAt(Instant.now().minusSeconds(900))
+                .expiresAt(Instant.now().minusSeconds(1))
+                .user(user)
+                .build();
+        when(passwordResetTokenGenerator.hashToken("submitted-token")).thenReturn("hash-token");
+        when(passwordResetTokenRepository.findByTokenHash("hash-token")).thenReturn(Optional.of(entity));
+
+        ResetPasswordRequestDto request = ResetPasswordRequestDto.builder()
+                .token("submitted-token")
+                .newPassword("newPass123")
+                .confirmPassword("newPass123")
+                .build();
+
+        assertThatThrownBy(() -> passwordResetService.resetPassword(request))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Password reset token has expired")
+                .extracting("httpStatus")
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        verify(passwordResetTokenRepository).delete(entity);
+        verify(passwordEncoder, never()).encode(anyString());
+    }
+
+    @Test
+    void shouldFailWhenResetTokenWasAlreadyConsumed() {
+        UserEntity user = sampleUser();
+        PasswordResetTokenEntity entity = PasswordResetTokenEntity.builder()
+                .tokenHash("hash-token")
+                .requestedAt(Instant.now().minusSeconds(60))
+                .expiresAt(Instant.now().plusSeconds(600))
+                .consumedAt(Instant.now().minusSeconds(30))
+                .user(user)
+                .build();
+        when(passwordResetTokenGenerator.hashToken("submitted-token")).thenReturn("hash-token");
+        when(passwordResetTokenRepository.findByTokenHash("hash-token")).thenReturn(Optional.of(entity));
+
+        ResetPasswordRequestDto request = ResetPasswordRequestDto.builder()
+                .token("submitted-token")
+                .newPassword("newPass123")
+                .confirmPassword("newPass123")
+                .build();
+
+        assertThatThrownBy(() -> passwordResetService.resetPassword(request))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Password reset token was already used")
+                .extracting("httpStatus")
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).save(any());
     }
 
     private UserEntity sampleUser() {
