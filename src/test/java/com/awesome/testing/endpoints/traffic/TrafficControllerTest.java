@@ -18,7 +18,6 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import tools.jackson.databind.JsonNode;
 
 import java.time.Instant;
 import java.util.List;
@@ -130,7 +129,7 @@ class TrafficControllerTest extends DomainHelper {
         assertThat(detailResponse.getBody().getPath()).isEqualTo("/api/v1/traffic/info");
         assertThat(detailResponse.getBody().getRequestHeaders().isObject()).isTrue();
         assertThat(detailResponse.getBody().getResponseBody().isObject()).isTrue();
-        assertThat(detailResponse.getBody().getResponseBody().get("webSocketEndpoint").asText())
+        assertThat(detailResponse.getBody().getResponseBody().get("webSocketEndpoint").asString())
                 .isEqualTo("/api/v1/ws-traffic");
     }
 
@@ -276,7 +275,7 @@ class TrafficControllerTest extends DomainHelper {
         assertThat(entry.getRequestHeaders().isObject()).isTrue();
         assertThat(entry.getResponseHeaders().isObject()).isTrue();
         assertThat(entry.getResponseBody().isObject()).isTrue();
-        assertThat(entry.getResponseBody().get("topic").asText()).isEqualTo("/topic/traffic");
+        assertThat(entry.getResponseBody().get("topic").asString()).isEqualTo("/topic/traffic");
         assertThat(entry.isRequestBodyTruncated()).isFalse();
         assertThat(entry.isResponseBodyTruncated()).isFalse();
         assertThat(entry.getResponseBodyStoredLength()).isGreaterThan(0);

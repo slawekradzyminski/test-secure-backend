@@ -27,6 +27,7 @@ class BootstrapProductsTest {
     private ProductRepository productRepository;
 
     @Test
+    @SuppressWarnings("unchecked")
     void shouldCreateBootstrapProductsWhenCatalogIsEmpty() throws Exception {
         when(productRepository.count()).thenReturn(0L);
 

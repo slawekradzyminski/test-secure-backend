@@ -4,8 +4,8 @@ import jakarta.persistence.EntityManagerFactory;
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.transaction.ChainedTransactionManager;
 import org.springframework.jms.connection.JmsTransactionManager;
+import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -36,14 +36,12 @@ class DockerisedConfigTest {
     }
 
     @Test
-    void shouldCreateChainedTransactionManager() {
+    void shouldCreateJpaTransactionManagerAndJmsTransactionManager() {
         EntityManagerFactory entityManagerFactory = mock(EntityManagerFactory.class);
-        PlatformTransactionManager transactionManager = config.transactionManager(
-                entityManagerFactory,
-                config.connectionFactory());
+        PlatformTransactionManager transactionManager = config.transactionManager(entityManagerFactory);
 
-        assertThat(config.jpaTransactionManager(entityManagerFactory)).isNotNull();
+        assertThat(config.jpaTransactionManager(entityManagerFactory)).isInstanceOf(JpaTransactionManager.class);
         assertThat(config.jmsTransactionManager()).isInstanceOf(JmsTransactionManager.class);
-        assertThat(transactionManager).isInstanceOf(ChainedTransactionManager.class);
+        assertThat(transactionManager).isInstanceOf(JpaTransactionManager.class);
     }
 }

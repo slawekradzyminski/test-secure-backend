@@ -87,7 +87,7 @@ public class TrafficLogService {
 
     private JsonNode parseBody(String rawBody, String contentType) {
         if (rawBody == null) {
-            return JsonNodeFactory.instance.textNode("");
+            return JsonNodeFactory.instance.stringNode("");
         }
         if (isJsonContentType(contentType)) {
             try {
@@ -96,7 +96,7 @@ public class TrafficLogService {
                 // Fall through to preserve the stored preview as text when truncation or invalid JSON prevents parsing.
             }
         }
-        return JsonNodeFactory.instance.textNode(rawBody);
+        return JsonNodeFactory.instance.stringNode(rawBody);
     }
 
     private boolean isJsonContentType(String contentType) {

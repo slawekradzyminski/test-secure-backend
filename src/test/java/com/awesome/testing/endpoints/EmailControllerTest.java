@@ -6,14 +6,15 @@ import com.awesome.testing.dto.email.EmailTemplate;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.repository.EmailEventRepository;
+import com.awesome.testing.service.delay.DelayGenerator;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jms.core.JmsTemplate;
-import com.awesome.testing.service.delay.DelayGenerator;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
@@ -42,6 +43,11 @@ class EmailControllerTest extends AbstractEcommerceTest {
 
     @MockitoBean
     private DelayGenerator delayGenerator;
+
+    @BeforeEach
+    void cleanEmailEvents() {
+        emailEventRepository.deleteAll();
+    }
 
     @Test
     void shouldSendEmail() {

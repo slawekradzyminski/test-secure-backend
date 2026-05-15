@@ -10,13 +10,12 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.connection.CachingConnectionFactory;
+import org.springframework.jms.connection.JmsTransactionManager;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.jms.connection.JmsTransactionManager;
-import org.springframework.data.transaction.ChainedTransactionManager;
 
 @Slf4j
 @TestConfiguration
@@ -68,13 +67,8 @@ public class TestConfig {
 
     @Primary
     @Bean(name = "transactionManager")
-    public PlatformTransactionManager transactionManager(
-            EntityManagerFactory entityManagerFactory,
-            CachingConnectionFactory cachingConnectionFactory) {
-        return new ChainedTransactionManager(
-                jpaTransactionManager(entityManagerFactory),
-                jmsTransactionManager(cachingConnectionFactory)
-        );
+    public PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
+        return jpaTransactionManager(entityManagerFactory);
     }
 
     @Bean

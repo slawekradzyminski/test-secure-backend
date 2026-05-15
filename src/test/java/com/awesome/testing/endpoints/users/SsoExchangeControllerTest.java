@@ -51,6 +51,7 @@ class SsoExchangeControllerTest extends HttpHelper {
     }
 
     @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
     void shouldReturnValidationErrorWhenTokenBlank() {
         ResponseEntity<Map> response = executePost(
                 EXCHANGE_ENDPOINT,
