@@ -7,11 +7,8 @@ import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.security.ratelimit.AuthRateLimitGuard;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -29,14 +26,12 @@ public class UserSignInController {
     private final UserService userService;
 
     @PostMapping("/signin")
-    @Operation(summary = "Authenticate user and return JWT token")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully authenticated",
-                    content = @Content(schema = @Schema(implementation = LoginResponseDto.class))),
-            @ApiResponse(responseCode = "400", description = "Field validation failed", content = @Content),
-            @ApiResponse(responseCode = "422", description = "Invalid username/password supplied", content = @Content),
-            @ApiResponse(responseCode = "429", description = "Too many requests", content = @Content)
-    })
+    @Operation(summary = "Authenticate user and return JWT token",
+            description = "Authenticates local credentials and returns a JWT access token with a refresh token.")
+    @ApiResponse(responseCode = "200", description = "Successfully authenticated")
+    @ApiResponse(responseCode = "400", description = "Field validation failed")
+    @ApiResponse(responseCode = "422", description = "Invalid username/password supplied")
+    @ApiResponse(responseCode = "429", description = "Too many requests")
     public LoginResponseDto login(
             HttpServletRequest request,
             @Parameter(description = "Login details") @Valid @RequestBody LoginDto loginDetails) {

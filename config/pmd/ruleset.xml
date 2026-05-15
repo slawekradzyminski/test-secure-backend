@@ -22,7 +22,11 @@
         <exclude name="CommentDefaultAccessModifier"/>
         <exclude name="MethodArgumentCouldBeFinal"/>
         <exclude name="LocalVariableCouldBeFinal"/>
+        <exclude name="UnnecessaryImport"/>
         <exclude name="UnnecessaryAnnotationValueElement"/>
         <exclude name="UseUnderscoresInNumericLiterals"/>
+    </rule>
+    <rule ref="category/java/codestyle.xml/UnnecessaryImport">
+        <priority>2</priority>
     </rule>
 </ruleset>

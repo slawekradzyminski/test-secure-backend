@@ -1,22 +1,19 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.qr.CreateQrDto;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.security.ratelimit.AuthRateLimitGuard;
 import com.awesome.testing.service.QrService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.imageio.ImageIO;
@@ -34,16 +31,16 @@ public class QrController {
 
     @SneakyThrows
     @PostMapping(value = "/create", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.IMAGE_PNG_VALUE)
-    @Operation(summary = "Generate QR code", security = @SecurityRequirement(name = "bearerAuth"))
-    @UnauthorizedApiResponse
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully generated QR code"),
-            @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
-            @ApiResponse(responseCode = "429", description = "Too many requests", content = @Content)
-    })
+    @Operation(summary = "Generate QR code",
+            description = "Generates a PNG QR code for the supplied text payload.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponse(responseCode = "200", description = "Successfully generated QR code")
+    @ApiResponse(responseCode = "400", description = "Invalid input")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "429", description = "Too many requests")
     public byte[] createQrCode(HttpServletRequest request,
                                @AuthenticationPrincipal CustomPrincipal principal,
-                               @RequestBody @Validated CreateQrDto createQrDto) {
+                               @Valid @RequestBody CreateQrDto createQrDto) {
         authRateLimitGuard.checkQr(request, principal != null ? principal.getUsername() : null);
         BufferedImage qrImage = qrService.generateQrCode(createQrDto.getText());
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

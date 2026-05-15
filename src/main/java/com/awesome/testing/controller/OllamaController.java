@@ -1,6 +1,5 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.ollama.ChatRequestDto;
 import com.awesome.testing.dto.ollama.ChatResponseDto;
 import com.awesome.testing.dto.ollama.GenerateResponseDto;
@@ -14,11 +13,10 @@ import com.awesome.testing.service.ollama.OllamaService;
 import com.awesome.testing.service.ollama.OllamaToolDefinitionCatalog;
 import com.awesome.testing.service.prompt.PromptInjector;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -42,7 +40,7 @@ import java.util.List;
 @Tag(name = "ollama", description = "Ollama endpoints")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
-@UnauthorizedApiResponse
+@ApiResponse(responseCode = "401", description = "Unauthorized")
 public class OllamaController {
 
     private final OllamaService ollamaService;
@@ -51,16 +49,15 @@ public class OllamaController {
     private final PromptInjector promptInjector;
     private final AuthRateLimitGuard authRateLimitGuard;
 
-    @Operation(summary = "Generate text using Ollama model")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successful generation"),
-            @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Model not found", content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ModelNotFoundDto.class)
-            )),
-            @ApiResponse(responseCode = "500", description = "Ollama server error", content = @Content)
-    })
+    @Operation(summary = "Generate text using Ollama model",
+            description = "Streams generated text chunks from the configured Ollama backend for a single prompt.")
+    @ApiResponse(responseCode = "200", description = "Successful generation")
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "404", description = "Model not found",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ModelNotFoundDto.class)))
+    @ApiResponse(responseCode = "429", description = "Too many requests")
+    @ApiResponse(responseCode = "500", description = "Ollama server error")
     @PostMapping(value = "/generate", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<GenerateResponseDto> generateText(HttpServletRequest servletRequest,
                                                   @AuthenticationPrincipal CustomPrincipal principal,
@@ -72,15 +69,13 @@ public class OllamaController {
 
     @Operation(summary = "Chat with Ollama model (stateless endpoint)",
             description = "Streams responses and expects the caller to manage the entire conversation history client-side.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successful chat response"),
-            @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Model not found", content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ModelNotFoundDto.class)
-            )),
-            @ApiResponse(responseCode = "500", description = "Ollama server error", content = @Content)
-    })
+    @ApiResponse(responseCode = "200", description = "Successful chat response")
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "404", description = "Model not found",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = ModelNotFoundDto.class)))
+    @ApiResponse(responseCode = "429", description = "Too many requests")
+    @ApiResponse(responseCode = "500", description = "Ollama server error")
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ChatResponseDto> chat(HttpServletRequest servletRequest,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
@@ -100,11 +95,10 @@ public class OllamaController {
                     This endpoint requires the caller to resend the full conversation on every request.
                     Small local models stay grounded only when they keep everything in the product lane—always snapshot a SKU first and follow up with list_products if it needs comparisons."""
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successful chat response"),
-            @ApiResponse(responseCode = "400", description = "Invalid request", content = @Content),
-            @ApiResponse(responseCode = "500", description = "Ollama server error", content = @Content)
-    })
+    @ApiResponse(responseCode = "200", description = "Successful chat response")
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "429", description = "Too many requests")
+    @ApiResponse(responseCode = "500", description = "Ollama server error")
     @PostMapping(value = "/chat/tools", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ChatResponseDto> chatWithTools(HttpServletRequest servletRequest,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
@@ -117,10 +111,9 @@ public class OllamaController {
                 .doOnSubscribe(subscription -> log.info("Starting tool-enabled chat stream"));
     }
 
-    @Operation(summary = "List tool definitions supported by /api/v1/ollama/chat/tools")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Available tool definitions returned successfully")
-    })
+    @Operation(summary = "List tool definitions supported by /api/v1/ollama/chat/tools",
+            description = "Returns the backend function-calling tool schemas that clients can send to the tool-enabled chat endpoint.")
+    @ApiResponse(responseCode = "200", description = "Available tool definitions returned successfully")
     @GetMapping("/chat/tools/definitions")
     public List<OllamaToolDefinitionDto> getToolDefinitions() {
         return toolDefinitionCatalog.getDefinitions();

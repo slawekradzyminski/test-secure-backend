@@ -20,6 +20,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Global API exception advice for behavior shared by all controllers.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
 
@@ -76,7 +79,7 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorDto> handleBadCredentialsException(BadCredentialsException ex) {
         return ResponseEntity
-                .status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .status(HttpStatus.UNPROCESSABLE_CONTENT)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ErrorDto("Invalid username/password supplied"));
     }
@@ -87,14 +90,6 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
                 .status(HttpStatus.UNAUTHORIZED)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ErrorDto("Unauthorized"));
-    }
-
-    @ExceptionHandler(ProductNotFoundException.class)
-    public ResponseEntity<ErrorDto> handleProductNotFoundException(ProductNotFoundException ex) {
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorDto(ex.getMessage()));
     }
 
 }

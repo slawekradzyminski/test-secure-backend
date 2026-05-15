@@ -1,15 +1,11 @@
 package com.awesome.testing.controller.users;
 
-import com.awesome.testing.controller.doc.ForbiddenApiResponse;
-import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.user.UserEditDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -28,13 +24,14 @@ public class UserEditController {
 
     @PutMapping("/{username}")
     @PreAuthorize("@userService.exists(#username) and (hasRole('ROLE_ADMIN') or #username == authentication.principal.username)")
-    @Operation(summary = "Update user", security = @SecurityRequirement(name = "bearerAuth"))
-    @UnauthorizedApiResponse
-    @ForbiddenApiResponse
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User was updated"),
-            @ApiResponse(responseCode = "404", description = "The user doesn't exist", content = @Content)
-    })
+    @Operation(summary = "Update user",
+            description = "Updates editable profile fields for an existing user. Users may edit themselves; administrators may edit any user.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponse(responseCode = "200", description = "User was updated")
+    @ApiResponse(responseCode = "400", description = "Bad request")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
+    @ApiResponse(responseCode = "404", description = "The user doesn't exist")
     public UserEntity edit(
             @Parameter(description = "Username") @PathVariable String username,
             @Parameter(description = "User details") @Valid @RequestBody UserEditDto userDto) {

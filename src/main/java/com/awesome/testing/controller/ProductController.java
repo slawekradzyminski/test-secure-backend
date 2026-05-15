@@ -1,15 +1,11 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.controller.doc.ForbiddenApiResponse;
-import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.product.ProductUpdateDto;
 import com.awesome.testing.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,38 +22,36 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Products", description = "Product management endpoints")
 @SecurityRequirement(name = "bearerAuth")
-@UnauthorizedApiResponse
+@ApiResponse(responseCode = "401", description = "Unauthorized")
 public class ProductController {
 
     private final ProductService productService;
 
     @GetMapping
-    @Operation(summary = "Get all products")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved products")
-    })
+    @Operation(summary = "Get all products",
+            description = "Returns the complete product catalog visible to authenticated clients.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved products")
     public ResponseEntity<List<ProductDto>> getAllProducts() {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get product by ID")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved product"),
-        @ApiResponse(responseCode = "404", description = "Product not found", content = @Content)
-    })
+    @Operation(summary = "Get product by ID",
+            description = "Returns one product by numeric identifier, or 404 when the product does not exist.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved product")
+    @ApiResponse(responseCode = "400", description = "Bad request")
+    @ApiResponse(responseCode = "404", description = "Product not found")
     public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Create new product")
-    @ForbiddenApiResponse
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Product created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content)
-    })
+    @Operation(summary = "Create new product",
+            description = "Creates a catalog product from the supplied payload. Requires an administrator role.")
+    @ApiResponse(responseCode = "201", description = "Product created successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid input")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<ProductDto> createProduct(@Valid @RequestBody ProductCreateDto productCreateDto) {
         ProductDto savedProduct = productService.createProduct(productCreateDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
@@ -65,13 +59,12 @@ public class ProductController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Update existing product")
-    @ForbiddenApiResponse
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Product updated successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
-        @ApiResponse(responseCode = "404", description = "Product not found", content = @Content)
-    })
+    @Operation(summary = "Update existing product",
+            description = "Updates mutable product fields for an existing catalog item. Requires an administrator role.")
+    @ApiResponse(responseCode = "200", description = "Product updated successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid input")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
+    @ApiResponse(responseCode = "404", description = "Product not found")
     public ResponseEntity<ProductDto> updateProduct(
             @PathVariable Long id,
             @Valid @RequestBody ProductUpdateDto productUpdateDto) {
@@ -80,12 +73,12 @@ public class ProductController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Delete product")
-    @ForbiddenApiResponse
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Product deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Product not found", content = @Content)
-    })
+    @Operation(summary = "Delete product",
+            description = "Deletes an existing product by identifier. Requires an administrator role.")
+    @ApiResponse(responseCode = "204", description = "Product deleted successfully")
+    @ApiResponse(responseCode = "400", description = "Bad request")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
+    @ApiResponse(responseCode = "404", description = "Product not found")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         return productService.deleteProduct(id)
                 ? ResponseEntity.noContent().build()

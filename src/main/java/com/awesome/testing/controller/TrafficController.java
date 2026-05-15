@@ -7,7 +7,6 @@ import com.awesome.testing.traffic.TrafficLogService;
 import com.awesome.testing.traffic.TrafficProperties;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -37,9 +36,7 @@ public class TrafficController {
             summary = "Get traffic monitoring information",
             description = "Returns information about WebSocket endpoints for traffic monitoring"
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully returned info")
-    })
+    @ApiResponse(responseCode = "200", description = "Successfully returned info")
     public TrafficInfoDto getTrafficInfo() {
         return TrafficInfoDto.builder()
                 .webSocketEndpoint("/api/v1/ws-traffic")
@@ -49,10 +46,10 @@ public class TrafficController {
     }
 
     @GetMapping("/logs")
-    @Operation(summary = "Get paginated HTTP traffic logs")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully returned traffic logs")
-    })
+    @Operation(summary = "Get paginated HTTP traffic logs",
+            description = "Returns captured HTTP traffic logs with optional filters for session, method, status, path, text, and time range.")
+    @ApiResponse(responseCode = "200", description = "Successfully returned traffic logs")
+    @ApiResponse(responseCode = "400", description = "Bad request")
     public ResponseEntity<PageDto<TrafficLogEntryDto>> getTrafficLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -79,11 +76,10 @@ public class TrafficController {
     }
 
     @GetMapping("/logs/{correlationId}")
-    @Operation(summary = "Get traffic log by correlation identifier")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully returned traffic log"),
-            @ApiResponse(responseCode = "404", description = "Traffic log not found")
-    })
+    @Operation(summary = "Get traffic log by correlation identifier",
+            description = "Returns one captured HTTP traffic log entry using its correlation identifier.")
+    @ApiResponse(responseCode = "200", description = "Successfully returned traffic log")
+    @ApiResponse(responseCode = "404", description = "Traffic log not found")
     public ResponseEntity<TrafficLogEntryDto> getTrafficLog(@PathVariable String correlationId) {
         return trafficLogService.findByCorrelationId(correlationId)
                 .map(ResponseEntity::ok)

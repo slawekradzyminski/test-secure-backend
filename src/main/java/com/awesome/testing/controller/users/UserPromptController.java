@@ -1,15 +1,13 @@
 package com.awesome.testing.controller.users;
 
-import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.systemprompt.ChatSystemPromptDto;
 import com.awesome.testing.dto.systemprompt.ToolSystemPromptDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -22,16 +20,15 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "users", description = "User management endpoints")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
-@UnauthorizedApiResponse
+@ApiResponse(responseCode = "401", description = "Unauthorized")
 public class UserPromptController {
 
     private final UserService userService;
 
     @GetMapping("/chat-system-prompt")
-    @Operation(summary = "Get your chat system prompt")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Chat system prompt retrieved successfully")
-    })
+    @Operation(summary = "Get your chat system prompt",
+            description = "Returns the authenticated user's chat prompt override, or the default prompt when no override is stored.")
+    @ApiResponse(responseCode = "200", description = "Chat system prompt retrieved successfully")
     public ChatSystemPromptDto getChatSystemPrompt(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal) {
         String username = principal.getUsername();
@@ -42,10 +39,10 @@ public class UserPromptController {
     }
 
     @PutMapping("/chat-system-prompt")
-    @Operation(summary = "Update your chat system prompt")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Chat system prompt was updated")
-    })
+    @Operation(summary = "Update your chat system prompt",
+            description = "Stores a new chat prompt override for the authenticated user.")
+    @ApiResponse(responseCode = "200", description = "Chat system prompt was updated")
+    @ApiResponse(responseCode = "400", description = "Bad request")
     public ChatSystemPromptDto updateChatSystemPrompt(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Parameter(description = "Chat system prompt") @Valid @RequestBody ChatSystemPromptDto systemPromptDto) {
@@ -57,10 +54,9 @@ public class UserPromptController {
     }
 
     @GetMapping("/tool-system-prompt")
-    @Operation(summary = "Get your tool system prompt")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Tool system prompt retrieved successfully")
-    })
+    @Operation(summary = "Get your tool system prompt",
+            description = "Returns the authenticated user's tool-calling prompt override, or the default prompt when no override is stored.")
+    @ApiResponse(responseCode = "200", description = "Tool system prompt retrieved successfully")
     public ToolSystemPromptDto getToolSystemPrompt(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal) {
         String username = principal.getUsername();
@@ -71,10 +67,10 @@ public class UserPromptController {
     }
 
     @PutMapping("/tool-system-prompt")
-    @Operation(summary = "Update your tool system prompt")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Tool system prompt was updated")
-    })
+    @Operation(summary = "Update your tool system prompt",
+            description = "Stores a new tool-calling prompt override for the authenticated user.")
+    @ApiResponse(responseCode = "200", description = "Tool system prompt was updated")
+    @ApiResponse(responseCode = "400", description = "Bad request")
     public ToolSystemPromptDto updateToolSystemPrompt(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Parameter(description = "Tool system prompt") @Valid @RequestBody ToolSystemPromptDto systemPromptDto) {

@@ -1,22 +1,27 @@
-package com.awesome.testing.controller;
+package com.awesome.testing.controller.exception;
 
+import com.awesome.testing.controller.OllamaController;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+
 import java.time.Instant;
 
+/**
+ * Controller-scoped advice for Ollama proxy endpoints.
+ */
 @RestControllerAdvice(assignableTypes = OllamaController.class)
 public class OllamaExceptionHandler {
-    
+
     public record ErrorResponse(
-        int status,
-        String message,
-        String timestamp
+            int status,
+            String message,
+            String timestamp
     ) {}
-    
+
     @ExceptionHandler(WebClientResponseException.class)
     public ResponseEntity<String> handleWebClientResponseException(WebClientResponseException ex) {
         return ResponseEntity
@@ -28,12 +33,12 @@ public class OllamaExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleMessageNotReadable(HttpMessageNotReadableException ex) {
         return ResponseEntity
-            .badRequest()
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(new ErrorResponse(
-                400,
-                "Invalid JSON format: " + ex.getMostSpecificCause().getMessage(),
-                Instant.now().toString()
-            ));
+                .badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorResponse(
+                        400,
+                        "Invalid JSON format: " + ex.getMostSpecificCause().getMessage(),
+                        Instant.now().toString()
+                ));
     }
-} 
+}

@@ -52,13 +52,15 @@ class OpenApiEndpointDocumentationCoverageTest {
         if (operation == null || operation.summary().isBlank()) {
             violations.add(endpoint + " is missing @Operation with a non-empty summary");
         }
+        if (operation == null || operation.description().isBlank()) {
+            violations.add(endpoint + " is missing @Operation with a non-empty description");
+        }
 
         ApiResponses apiResponses = AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(), ApiResponses.class);
         ApiResponse[] directResponses = AnnotatedElementUtils.findMergedRepeatableAnnotations(
                 handlerMethod.getMethod(),
                 ApiResponse.class
         ).toArray(ApiResponse[]::new);
-
         boolean hasResponses = apiResponses != null && apiResponses.value().length > 0;
         if (!hasResponses && directResponses.length == 0) {
             violations.add(endpoint + " is missing @ApiResponses/@ApiResponse");

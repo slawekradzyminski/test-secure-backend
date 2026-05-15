@@ -1,10 +1,8 @@
 package com.awesome.testing.controller.users;
 
-import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,11 +20,11 @@ public class UserLogoutController {
     private final UserService userService;
 
     @PostMapping("/logout")
-    @Operation(summary = "Logout user and revoke refresh token", security = @SecurityRequirement(name = "bearerAuth"))
-    @UnauthorizedApiResponse
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully logged out")
-    })
+    @Operation(summary = "Logout user and revoke refresh token",
+            description = "Revokes all refresh tokens for the authenticated user.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponse(responseCode = "200", description = "Successfully logged out")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
     public void logout(HttpServletRequest httpRequest) {
         String username = userService.whoAmI(httpRequest).getUsername();
         userService.logout(username);

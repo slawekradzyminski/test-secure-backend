@@ -1,13 +1,9 @@
 package com.awesome.testing.controller.users;
 
-import com.awesome.testing.controller.doc.ForbiddenApiResponse;
-import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -30,13 +26,12 @@ public class UserRightToBeForgottenController {
     @DeleteMapping("/{username}/right-to-be-forgotten")
     @PreAuthorize("@userService.exists(#username) and (hasRole('ROLE_ADMIN') or #username == authentication.principal.username)")
     @Operation(summary = "Delete user account and all user-owned data",
+            description = "Deletes the user account together with refresh tokens, reset tokens, email events, cart items, and orders.",
             security = @SecurityRequirement(name = "bearerAuth"))
-    @UnauthorizedApiResponse
-    @ForbiddenApiResponse
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "User account and user-owned data were deleted"),
-            @ApiResponse(responseCode = "404", description = "The user doesn't exist", content = @Content)
-    })
+    @ApiResponse(responseCode = "204", description = "User account and user-owned data were deleted")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
+    @ApiResponse(responseCode = "404", description = "The user doesn't exist")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void forget(@Parameter(description = "Username") @PathVariable String username) {
         userService.forget(username);

@@ -1,6 +1,7 @@
 package com.awesome.testing.security.ratelimit;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -100,6 +101,6 @@ public class AuthRateLimitGuard {
         if (!StringUtils.hasText(value)) {
             return null;
         }
-        return value.trim().toLowerCase();
+        return value.trim().toLowerCase(Locale.ROOT);
     }
 }

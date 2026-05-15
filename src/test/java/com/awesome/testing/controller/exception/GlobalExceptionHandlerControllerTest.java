@@ -69,7 +69,7 @@ class GlobalExceptionHandlerControllerTest {
         ResponseEntity<ErrorDto> response =
                 controller.handleBadCredentialsException(new BadCredentialsException("bad"));
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(response.getStatusCode().value()).isEqualTo(422);
         assertThat(response.getBody().getMessage()).isEqualTo("Invalid username/password supplied");
     }
 
@@ -80,15 +80,6 @@ class GlobalExceptionHandlerControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(response.getBody().getMessage()).isEqualTo("Unauthorized");
-    }
-
-    @Test
-    void shouldHandleProductNotFound() {
-        ResponseEntity<ErrorDto> response =
-                controller.handleProductNotFoundException(new ProductNotFoundException("missing"));
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(response.getBody().getMessage()).isEqualTo("missing");
     }
 
     private static final class Dummy {

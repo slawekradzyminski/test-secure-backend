@@ -1,16 +1,13 @@
 package com.awesome.testing.controller.cart;
 
-import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.cart.CartDto;
 import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.cart.UpdateCartItemDto;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.CartService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,18 +21,17 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Cart", description = "Shopping cart management endpoints")
 @SecurityRequirement(name = "bearerAuth")
-@UnauthorizedApiResponse
+@ApiResponse(responseCode = "401", description = "Unauthorized")
 public class CartItemsController {
 
     private final CartService cartService;
 
     @PostMapping("/items")
-    @Operation(summary = "Add item to cart")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Item added successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
-        @ApiResponse(responseCode = "404", description = "Product not found", content = @Content)
-    })
+    @Operation(summary = "Add item to cart",
+            description = "Adds a product to the authenticated user's cart or increases the quantity of an existing cart item.")
+    @ApiResponse(responseCode = "200", description = "Item added successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid input")
+    @ApiResponse(responseCode = "404", description = "Product not found")
     public ResponseEntity<CartDto> addToCart(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Valid @RequestBody CartItemDto cartItemDto) {
@@ -43,12 +39,11 @@ public class CartItemsController {
     }
 
     @PutMapping("/items/{productId}")
-    @Operation(summary = "Update item quantity")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Item quantity updated successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
-        @ApiResponse(responseCode = "404", description = "Cart item not found", content = @Content)
-    })
+    @Operation(summary = "Update item quantity",
+            description = "Sets the quantity for a product already in the authenticated user's cart. Quantity zero removes the item.")
+    @ApiResponse(responseCode = "200", description = "Item quantity updated successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid input")
+    @ApiResponse(responseCode = "404", description = "Cart item not found")
     public ResponseEntity<CartDto> updateCartItem(
             @Parameter(hidden = true)  @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long productId,
@@ -57,11 +52,11 @@ public class CartItemsController {
     }
 
     @DeleteMapping("/items/{productId}")
-    @Operation(summary = "Remove item from cart")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Item removed successfully"),
-        @ApiResponse(responseCode = "404", description = "Cart item not found", content = @Content)
-    })
+    @Operation(summary = "Remove item from cart",
+            description = "Removes a product from the authenticated user's cart and returns the updated cart.")
+    @ApiResponse(responseCode = "200", description = "Item removed successfully")
+    @ApiResponse(responseCode = "400", description = "Bad request")
+    @ApiResponse(responseCode = "404", description = "Cart item not found")
     public ResponseEntity<CartDto> removeFromCart(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long productId) {

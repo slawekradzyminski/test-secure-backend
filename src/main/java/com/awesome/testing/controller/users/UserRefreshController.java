@@ -6,10 +6,7 @@ import com.awesome.testing.dto.user.TokenRefreshResponseDto;
 import com.awesome.testing.security.ratelimit.AuthRateLimitGuard;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -29,13 +26,12 @@ public class UserRefreshController {
     private final UserService userService;
 
     @PostMapping("/refresh")
-    @Operation(summary = "Refresh JWT token using refresh token")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "New JWT and refresh tokens",
-                    content = @Content(schema = @Schema(implementation = TokenRefreshResponseDto.class))),
-            @ApiResponse(responseCode = "401", description = "Invalid refresh token", content = @Content),
-            @ApiResponse(responseCode = "429", description = "Too many requests", content = @Content)
-    })
+    @Operation(summary = "Refresh JWT token using refresh token",
+            description = "Rotates a valid refresh token and returns a fresh access token plus replacement refresh token.")
+    @ApiResponse(responseCode = "200", description = "New JWT and refresh tokens")
+    @ApiResponse(responseCode = "400", description = "Bad request")
+    @ApiResponse(responseCode = "401", description = "Invalid refresh token")
+    @ApiResponse(responseCode = "429", description = "Too many requests")
     public TokenRefreshResponseDto refresh(HttpServletRequest servletRequest,
                                            @Valid @RequestBody RefreshTokenRequestDto request) {
         authRateLimitGuard.checkRefresh(servletRequest);

@@ -5,6 +5,7 @@ import com.awesome.testing.entity.TrafficLogEntity;
 import com.awesome.testing.repository.TrafficLogRepository;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
@@ -139,7 +140,7 @@ public class TrafficLogService {
         if (value == null || value.isBlank()) {
             return null;
         }
-        return (root, query, cb) -> cb.equal(cb.lower(root.get(field)), value.toLowerCase());
+        return (root, query, cb) -> cb.equal(cb.lower(root.get(field)), value.toLowerCase(Locale.ROOT));
     }
 
     private Specification<TrafficLogEntity> equalsValue(String field, Integer value) {
@@ -153,7 +154,7 @@ public class TrafficLogService {
         if (value == null || value.isBlank()) {
             return null;
         }
-        String normalized = "%" + value.toLowerCase() + "%";
+        String normalized = "%" + value.toLowerCase(Locale.ROOT) + "%";
         return (root, query, cb) -> cb.like(cb.lower(root.get(field)), normalized);
     }
 
@@ -175,7 +176,7 @@ public class TrafficLogService {
         if (value == null || value.isBlank()) {
             return null;
         }
-        String normalized = "%" + value.toLowerCase() + "%";
+        String normalized = "%" + value.toLowerCase(Locale.ROOT) + "%";
         return (root, query, cb) -> cb.or(
                 likeLower(cb, root.get("path"), normalized),
                 likeLower(cb, root.get("clientSessionId"), normalized),

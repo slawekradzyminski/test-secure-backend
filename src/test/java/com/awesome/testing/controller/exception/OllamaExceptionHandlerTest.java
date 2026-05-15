@@ -1,6 +1,4 @@
 package com.awesome.testing.controller.exception;
-
-import com.awesome.testing.controller.OllamaExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -69,7 +67,6 @@ class OllamaExceptionHandlerTest {
         assertThat(response.getBody().timestamp()).isNotNull();
     }
 }
-
 
 
 

@@ -1,6 +1,13 @@
 package com.awesome.testing.service.ollama;
 
-import com.awesome.testing.dto.ollama.*;
+import com.awesome.testing.dto.ollama.ChatMessageDto;
+import com.awesome.testing.dto.ollama.ChatRequestDto;
+import com.awesome.testing.dto.ollama.ChatResponseDto;
+import com.awesome.testing.dto.ollama.GenerateRequestDto;
+import com.awesome.testing.dto.ollama.GenerateResponseDto;
+import com.awesome.testing.dto.ollama.StreamedRequestDto;
+import com.awesome.testing.dto.ollama.ToolCallDto;
+import com.awesome.testing.dto.ollama.ToolCallFunctionDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

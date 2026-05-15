@@ -1,16 +1,11 @@
 package com.awesome.testing.controller.users;
 
-import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.email.EmailEventDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.service.UserService;
 import com.awesome.testing.service.email.EmailEventService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,11 +31,8 @@ public class UserEmailEventController {
                     + "Statuses reflect handoff to the Mailhog-backed test sink, not real-world inbox delivery.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    @UnauthorizedApiResponse
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Recent email events returned successfully",
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = EmailEventDto.class))))
-    })
+    @ApiResponse(responseCode = "200", description = "Recent email events returned successfully")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
     public List<EmailEventDto> getMyEmailEvents(HttpServletRequest request) {
         UserEntity user = userService.whoAmI(request);
         return emailEventService.getLatestEventsFor(user);

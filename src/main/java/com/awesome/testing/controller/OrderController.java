@@ -1,7 +1,5 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.controller.doc.ForbiddenApiResponse;
-import com.awesome.testing.controller.doc.UnauthorizedApiResponse;
 import com.awesome.testing.dto.order.AddressDto;
 import com.awesome.testing.dto.order.OrderDto;
 import com.awesome.testing.dto.order.PageDto;
@@ -9,10 +7,8 @@ import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,17 +25,16 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Orders", description = "Order management endpoints")
 @SecurityRequirement(name = "bearerAuth")
-@UnauthorizedApiResponse
+@ApiResponse(responseCode = "401", description = "Unauthorized")
 public class OrderController {
 
     private final OrderService orderService;
 
     @PostMapping
-    @Operation(summary = "Create a new order from cart")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Order created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid input or empty cart", content = @Content)
-    })
+    @Operation(summary = "Create a new order from cart",
+            description = "Creates an order for the authenticated user from the current cart and clears the cart after success.")
+    @ApiResponse(responseCode = "201", description = "Order created successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid input or empty cart")
     public ResponseEntity<OrderDto> createOrder(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Valid @RequestBody AddressDto addressDto) {
@@ -48,10 +43,10 @@ public class OrderController {
     }
 
     @GetMapping
-    @Operation(summary = "Get user's orders")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Orders retrieved successfully")
-    })
+    @Operation(summary = "Get user's orders",
+            description = "Returns the authenticated user's orders with optional status filtering and pagination.")
+    @ApiResponse(responseCode = "200", description = "Orders retrieved successfully")
+    @ApiResponse(responseCode = "400", description = "Bad request")
     public ResponseEntity<PageDto<OrderDto>> getUserOrders(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @RequestParam(defaultValue = "0") int page,
@@ -63,11 +58,11 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get order by ID")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Order retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
-    })
+    @Operation(summary = "Get order by ID",
+            description = "Returns a single order. Administrators may access any order; clients may access only their own orders.")
+    @ApiResponse(responseCode = "200", description = "Order retrieved successfully")
+    @ApiResponse(responseCode = "400", description = "Bad request")
+    @ApiResponse(responseCode = "404", description = "Order not found")
     public ResponseEntity<OrderDto> getOrder(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long id) {
@@ -81,13 +76,12 @@ public class OrderController {
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Update order status (Admin only)")
-    @ForbiddenApiResponse
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Order status updated successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid status transition", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
-    })
+    @Operation(summary = "Update order status (Admin only)",
+            description = "Updates an order status using administrator privileges and validates unsupported transitions.")
+    @ApiResponse(responseCode = "200", description = "Order status updated successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid status transition")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
+    @ApiResponse(responseCode = "404", description = "Order not found")
     public ResponseEntity<OrderDto> updateOrderStatus(
             @PathVariable Long id,
             @RequestBody OrderStatus status) {
@@ -95,13 +89,12 @@ public class OrderController {
     }
 
     @PostMapping("/{id}/cancel")
-    @Operation(summary = "Cancel order")
-    @ForbiddenApiResponse
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Order cancelled successfully"),
-            @ApiResponse(responseCode = "400", description = "Order cannot be cancelled", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Order not found", content = @Content)
-    })
+    @Operation(summary = "Cancel order",
+            description = "Cancels an order when its current status allows cancellation. Clients may cancel only their own orders.")
+    @ApiResponse(responseCode = "200", description = "Order cancelled successfully")
+    @ApiResponse(responseCode = "400", description = "Order cannot be cancelled")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
+    @ApiResponse(responseCode = "404", description = "Order not found")
     public ResponseEntity<OrderDto> cancelOrder(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long id) {
@@ -112,11 +105,11 @@ public class OrderController {
     
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Get all orders (Admin only)")
-    @ForbiddenApiResponse
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Orders retrieved successfully")
-    })
+    @Operation(summary = "Get all orders (Admin only)",
+            description = "Returns all orders in the system with optional status filtering and pagination. Requires an administrator role.")
+    @ApiResponse(responseCode = "200", description = "Orders retrieved successfully")
+    @ApiResponse(responseCode = "400", description = "Bad request")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<PageDto<OrderDto>> getAllOrders(
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(defaultValue = "0") int page,

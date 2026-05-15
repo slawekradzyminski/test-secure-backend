@@ -1,6 +1,7 @@
 package com.awesome.testing.security.ratelimit;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Locale;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -71,6 +72,25 @@ class AuthRateLimitGuardTest {
     @Test
     void shouldRateLimitOllamaByUsernameWhenAuthenticated() {
         guard.checkOllama(request, " ClientUser ");
+
+        verify(rateLimitService).check(
+                "/api/v1/ollama",
+                "username",
+                "clientuser",
+                properties.getPolicies().getOllamaUser()
+        );
+        verify(clientAddressResolver, never()).resolve(request);
+    }
+
+    @Test
+    void shouldNormalizeUsernameIndependentlyOfDefaultLocale() {
+        Locale previousDefault = Locale.getDefault();
+        Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+        try {
+            guard.checkOllama(request, " CLIENTUSER ");
+        } finally {
+            Locale.setDefault(previousDefault);
+        }
 
         verify(rateLimitService).check(
                 "/api/v1/ollama",

@@ -1,7 +1,12 @@
 package com.awesome.testing.fakedata;
 
 import com.awesome.testing.dto.order.OrderStatus;
-import com.awesome.testing.entity.*;
+import com.awesome.testing.entity.AddressEntity;
+import com.awesome.testing.entity.CartItemEntity;
+import com.awesome.testing.entity.OrderEntity;
+import com.awesome.testing.entity.OrderItemEntity;
+import com.awesome.testing.entity.ProductEntity;
+import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
