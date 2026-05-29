@@ -56,9 +56,14 @@ class TrafficCapturePolicyTest {
                 "/v3/api-docs/swagger-config",
                 handlerMethod(DocumentedController.class, "documentedEndpoint")
         );
+        HttpServletRequest yamlRequest = mockRequest(
+                "/v3/api-docs.yaml",
+                handlerMethod(DocumentedController.class, "documentedEndpoint")
+        );
 
         assertThat(trafficCapturePolicy.shouldCapture(apiDocsRequest)).isFalse();
         assertThat(trafficCapturePolicy.shouldCapture(swaggerConfigRequest)).isFalse();
+        assertThat(trafficCapturePolicy.shouldCapture(yamlRequest)).isFalse();
     }
 
     @Test

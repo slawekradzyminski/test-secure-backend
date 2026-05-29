@@ -31,6 +31,7 @@ logbook:
   exclude: 
     - "/swagger-ui/**"
     - "/v3/api-docs"
+    - "/v3/api-docs.yaml"
     - "/v3/api-docs/**"
     - "/actuator/**"
     - "/favicon.ico"
@@ -145,3 +146,9 @@ ollama:
 springdoc:
   swagger-ui:
     oauth2-redirect-url: ${SWAGGER_UI_OAUTH2_REDIRECT_URL:http://localhost:8081/swagger-ui/oauth2-redirect.html}
+    urls:
+      - name: OpenAPI JSON
+        url: /v3/api-docs
+      - name: OpenAPI YAML
+        url: /v3/api-docs.yaml
+    urls-primary-name: OpenAPI JSON

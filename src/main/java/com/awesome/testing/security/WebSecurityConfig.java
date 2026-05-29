@@ -48,6 +48,8 @@ public class WebSecurityConfig {
             "/api/v1/users/password/forgot",
             "/api/v1/users/password/reset",
             "/h2-console/**",
+            "/v3/api-docs",
+            "/v3/api-docs.yaml",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-resources/**",
@@ -80,6 +82,7 @@ public class WebSecurityConfig {
             
             // Then allow public endpoints
             PathPatternRequestMatcher.Builder matcherBuilder = PathPatternRequestMatcher.withDefaults();
+            auth.requestMatchers(request -> isApiDocsRequest(request.getRequestURI())).permitAll();
             ALLOWED_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(matcherBuilder.matcher(endpoint)).permitAll());
             
             // Finally, require authentication for all other endpoints
@@ -96,6 +99,12 @@ public class WebSecurityConfig {
         http.addFilterBefore(new JwtTokenFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    private boolean isApiDocsRequest(String path) {
+        return path.equals("/v3/api-docs")
+                || path.equals("/v3/api-docs.yaml")
+                || path.startsWith("/v3/api-docs/");
     }
 
     private void handleAccessDenied(HttpServletRequest request,

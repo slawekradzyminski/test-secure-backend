@@ -15,6 +15,8 @@ import org.springframework.jms.connection.JmsTransactionManager;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Slf4j
@@ -74,5 +76,11 @@ public class TestConfig {
     @Bean
     public DelayGenerator delayGenerator() {
         return () -> 0;
+    }
+
+    @Bean
+    @Primary
+    public PasswordEncoder testPasswordEncoder() {
+        return new BCryptPasswordEncoder(4);
     }
 }

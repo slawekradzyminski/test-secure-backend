@@ -13,7 +13,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 @SuppressWarnings("unused")
 @Configuration
-@Profile("!local")
+@Profile("!local & !test")
 public class DockerisedConfig {
 
     @Value("${spring.artemis.broker-url}")

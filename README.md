@@ -128,6 +128,7 @@ The API documentation is available at:
 
 - Swagger UI: [http://localhost:4001/swagger-ui/index.html](http://localhost:4001/swagger-ui/index.html)
 - OpenAPI JSON: [http://localhost:4001/v3/api-docs](http://localhost:4001/v3/api-docs)
+- OpenAPI YAML: [http://localhost:4001/v3/api-docs.yaml](http://localhost:4001/v3/api-docs.yaml)
 
 ## Initial Data
 

@@ -4,6 +4,7 @@ import com.awesome.testing.HttpHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -76,11 +77,29 @@ class OpenApiContractTest extends HttpHelper {
         }
     }
 
+    @Test
+    void generatedOpenApiSpecShouldBeAvailableAsYaml() {
+        assertYamlApiSpec("/v3/api-docs.yaml");
+    }
+
     private JsonNode readApiSpec() throws Exception {
         ResponseEntity<String> response = executeGet("/v3/api-docs", getJsonOnlyHeaders(), String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotBlank();
         return new ObjectMapper().readTree(response.getBody());
+    }
+
+    private void assertYamlApiSpec(String path) {
+        ResponseEntity<String> response = executeGet(path, getYamlHeaders(), String.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotBlank();
+        assertThat(response.getBody()).contains("openapi:");
+    }
+
+    private HttpHeaders getYamlHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.ACCEPT, "*/*");
+        return headers;
     }
 
     private void assertPublicEndpointIsNotMarkedAsSecured(JsonNode spec, String path, String method) {

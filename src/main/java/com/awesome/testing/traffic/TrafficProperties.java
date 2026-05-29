@@ -27,6 +27,7 @@ public class TrafficProperties {
             "/api/v1/traffic/logs",
             "/api/v1/traffic/logs/",
             "/v3/api-docs",
+            "/v3/api-docs.yaml",
             "/v3/api-docs/"
     ));
 }
