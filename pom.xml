@@ -184,7 +184,7 @@
         <dependency>
             <groupId>net.datafaker</groupId>
             <artifactId>datafaker</artifactId>
-            <version>2.5.4</version>
+            <version>2.7.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -245,7 +245,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.14</version>
+                <version>0.8.15</version>
                 <configuration>
                     <skip>${skip.jacoco}</skip>
                     <!-- Fake data bootstrap populates demo data outside of tests; exclude it from coverage accounting -->
