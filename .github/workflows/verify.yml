@@ -25,7 +25,7 @@ jobs:
 
       - name: Publish Test Report
         if: ${{ !cancelled() }}
-        uses: dorny/test-reporter@v2.3.0
+        uses: dorny/test-reporter@v3.0.0
         with:
           name: Test Results
           path: target/surefire-reports/*.xml
@@ -69,7 +69,7 @@ jobs:
 
       - name: Publish Integration Test Report
         if: ${{ !cancelled() }}
-        uses: dorny/test-reporter@v2.3.0
+        uses: dorny/test-reporter@v3.0.0
         with:
           name: Integration Test Results
           path: target/failsafe-reports/TEST-*.xml
