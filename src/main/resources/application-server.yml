@@ -11,6 +11,8 @@ logging:
     org.zalando.logbook: INFO
 
 spring:
+  main:
+    lazy-initialization: true
   jpa:
     open-in-view: false
     properties:
