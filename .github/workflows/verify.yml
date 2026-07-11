@@ -34,7 +34,7 @@ jobs:
 
       - name: Upload Coverage Report
         if: always()
-        uses: actions/upload-artifact@v6.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: jacoco-report
           path: |
@@ -96,7 +96,7 @@ jobs:
 
       - name: Upload app.log as artifact
         if: always()
-        uses: actions/upload-artifact@v6.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: app-log
           path: app.log
@@ -122,7 +122,7 @@ jobs:
 
       - name: Upload docker.log as artifact
         if: always()
-        uses: actions/upload-artifact@v6.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: docker-log
           path: docker.log
