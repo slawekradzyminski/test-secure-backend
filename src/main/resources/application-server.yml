@@ -3,3 +3,16 @@ app:
     obfuscate-authorization: true
     obfuscate-emails: true
     obfuscate-sensitive-body-fields: true
+
+# The Docker profile is intentionally verbose for local teaching/debugging.
+# Production keeps request logging useful without TRACE-level auto-configuration noise.
+logging:
+  level:
+    org.zalando.logbook: INFO
+
+spring:
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
