@@ -37,6 +37,8 @@ logbook:
     - "/favicon.ico"
     - "/api/v1/ollama/generate"
     - "/api/v1/ollama/chat/**"
+    - "/api/v1/users/2fa/**"
+    - "/api/v1/users/signin/2fa"
   format:
     style: json
   write:
@@ -47,6 +49,19 @@ logbook:
       - authorization
       - x-secret
       - cookie
+    json-body-fields:
+      - password
+      - newPassword
+      - confirmPassword
+      - token
+      - refreshToken
+      - accessToken
+      - challengeToken
+      - code
+      - secret
+      - otpAuthUri
+      - qrCodeDataUri
+      - recoveryCodes
 
 security:
   rate-limit:

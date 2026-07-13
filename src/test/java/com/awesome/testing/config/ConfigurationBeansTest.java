@@ -3,10 +3,13 @@ package com.awesome.testing.config;
 import io.swagger.v3.oas.models.OpenAPI;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.zalando.logbook.BodyFilter;
 import org.zalando.logbook.HttpLogFormatter;
+import org.zalando.logbook.autoconfigure.LogbookProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,6 +25,13 @@ class ConfigurationBeansTest {
 
     @Autowired
     private HttpLogFormatter httpLogFormatter;
+
+    @Autowired
+    @Qualifier("jsonBodyFieldsFilter")
+    private BodyFilter logbookBodyFilter;
+
+    @Autowired
+    private LogbookProperties logbookProperties;
 
     @Test
     void swaggerConfigShouldCreateOpenAPIBean() {
@@ -42,5 +52,17 @@ class ConfigurationBeansTest {
         assertThat(httpLogFormatter).isNotNull();
         assertThat(httpLogFormatter).isInstanceOf(PrettyPrintingHttpLogFormatter.class);
     }
-}
 
+    @Test
+    void logbookShouldNotExposeAuthenticationSecrets() {
+        String body = "{\"password\":\"secret-password\",\"token\":\"secret-token\",\"code\":\"123456\"}";
+
+        String filtered = logbookBodyFilter.filter("application/json", body);
+
+        assertThat(filtered)
+                .doesNotContain("secret-password", "secret-token", "123456")
+                .contains("XXX");
+        assertThat(logbookProperties.getExclude())
+                .contains("/api/v1/users/2fa/**", "/api/v1/users/signin/2fa");
+    }
+}
