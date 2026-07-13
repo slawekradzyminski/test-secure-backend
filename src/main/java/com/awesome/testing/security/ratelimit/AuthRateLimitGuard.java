@@ -5,6 +5,10 @@ import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 
 @Component
 @RequiredArgsConstructor
@@ -12,6 +16,8 @@ public class AuthRateLimitGuard {
 
     private static final String SIGNUP_ENDPOINT = "/api/v1/users/signup";
     private static final String SIGNIN_ENDPOINT = "/api/v1/users/signin";
+    private static final String MFA_SIGNIN_ENDPOINT = "/api/v1/users/signin/2fa";
+    private static final String MFA_MANAGEMENT_ENDPOINT = "/api/v1/users/2fa";
     private static final String PASSWORD_FORGOT_ENDPOINT = "/api/v1/users/password/forgot";
     private static final String PASSWORD_RESET_ENDPOINT = "/api/v1/users/password/reset";
     private static final String REFRESH_ENDPOINT = "/api/v1/users/refresh";
@@ -51,6 +57,23 @@ public class AuthRateLimitGuard {
         if (normalizedIdentifier != null) {
             rateLimitService.check(PASSWORD_FORGOT_ENDPOINT, "identifier", normalizedIdentifier,
                     properties.getPolicies().getPasswordForgotIdentifier());
+        }
+    }
+
+    public void checkMfaSignIn(HttpServletRequest request, String challengeToken) {
+        String clientIp = clientAddressResolver.resolve(request);
+        rateLimitService.check(MFA_SIGNIN_ENDPOINT, "ip", clientIp, properties.getPolicies().getMfaIp());
+        if (StringUtils.hasText(challengeToken)) {
+            rateLimitService.check(MFA_SIGNIN_ENDPOINT, "challenge", sha256(challengeToken),
+                    properties.getPolicies().getMfaChallenge());
+        }
+    }
+
+    public void checkMfaManagement(String username) {
+        String normalizedUsername = normalize(username);
+        if (normalizedUsername != null) {
+            rateLimitService.check(MFA_MANAGEMENT_ENDPOINT, "username", normalizedUsername,
+                    properties.getPolicies().getMfaUser());
         }
     }
 
@@ -102,5 +125,14 @@ public class AuthRateLimitGuard {
             return null;
         }
         return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static String sha256(String value) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 is not available", ex);
+        }
     }
 }

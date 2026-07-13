@@ -18,7 +18,12 @@ class TrafficDataSanitizerTest {
         properties.setMaxBodyLength(500);
         TrafficDataSanitizer sanitizer = new TrafficDataSanitizer(properties);
 
-        String body = "{\"email\":\"john@example.com\",\"password\":\"secret\",\"token\":\"abc123\"}";
+        String body = """
+                {"email":"john@example.com","password":"password-value","token":"token-value",
+                "code":"123456","secret":"BASE32SECRET","otpAuthUri":"otpauth://sensitive",
+                "qrCodeDataUri":"data:image/png;base64,sensitive","challengeToken":"challenge-value",
+                "recoveryCodes":["RECOVERY-ONE","RECOVERY-TWO"]}
+                """;
 
         Map<String, List<String>> sanitizedHeaders = sanitizer.sanitizeHeaders(Map.of(
                 "Authorization", List.of("Bearer very-secret-token"),
@@ -29,8 +34,9 @@ class TrafficDataSanitizerTest {
         assertThat(sanitizedHeaders.get("Authorization")).containsExactly("***");
         assertThat(sanitizedHeaders.get("X-Test")).containsExactly("ok");
         assertThat(sanitizedBody.body()).doesNotContain("john@example.com");
-        assertThat(sanitizedBody.body()).doesNotContain("secret");
-        assertThat(sanitizedBody.body()).doesNotContain("abc123");
+        assertThat(sanitizedBody.body()).doesNotContain(
+                "password-value", "token-value", "123456", "BASE32SECRET", "otpauth://sensitive",
+                "data:image/png;base64,sensitive", "challenge-value", "RECOVERY-ONE", "RECOVERY-TWO");
         assertThat(sanitizedBody.body()).contains("***");
         assertThat(sanitizedBody.truncated()).isFalse();
     }

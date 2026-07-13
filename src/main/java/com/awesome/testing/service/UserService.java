@@ -16,6 +16,9 @@ import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.service.token.RefreshTokenService;
+import com.awesome.testing.dto.user.LoginResponseDto;
+import com.awesome.testing.service.mfa.MfaChallenge;
+import com.awesome.testing.service.mfa.MfaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -64,16 +67,22 @@ public class UserService {
     private final EmailEventRepository emailEventRepository;
     private final CartItemRepository cartItemRepository;
     private final OrderRepository orderRepository;
+    private final MfaService mfaService;
 
-    public TokenPair signIn(String username, String password) {
+    public LoginResponseDto signIn(String username, String password) {
         authenticationHandler.authUser(username, password);
         UserEntity user = getUser(username);
+        if (mfaService.isEnabled(user)) {
+            MfaChallenge challenge = mfaService.startSignIn(user);
+            return LoginResponseDto.mfaChallenge(user, challenge.rawToken(), challenge.expiresAt());
+        }
         String jwt = jwtTokenProvider.createToken(username, user.getRoles());
         String refreshToken = refreshTokenService.createToken(user).getToken();
-        return TokenPair.builder()
+        TokenPair tokens = TokenPair.builder()
                 .token(jwt)
                 .refreshToken(refreshToken)
                 .build();
+        return LoginResponseDto.from(tokens, user);
     }
 
     @Transactional
@@ -98,6 +107,7 @@ public class UserService {
         emailEventRepository.deleteAllByUser(user);
         cartItemRepository.deleteByUsername(username);
         orderRepository.deleteByUsername(username);
+        mfaService.deleteForUser(user);
         userRepository.deleteByUsername(username);
     }
 

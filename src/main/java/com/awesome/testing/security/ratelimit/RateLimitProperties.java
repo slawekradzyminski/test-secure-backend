@@ -29,6 +29,9 @@ public class RateLimitProperties {
         private Policy signinIp = new Policy(20, Duration.ofMinutes(5));
         private Policy signinUsername = new Policy(10, Duration.ofMinutes(15));
         private Policy signinIpUsername = new Policy(5, Duration.ofMinutes(5));
+        private Policy mfaIp = new Policy(10, Duration.ofMinutes(5));
+        private Policy mfaChallenge = new Policy(5, Duration.ofMinutes(5));
+        private Policy mfaUser = new Policy(20, Duration.ofMinutes(15));
         private Policy passwordForgotIp = new Policy(10, Duration.ofMinutes(15));
         private Policy passwordForgotIdentifier = new Policy(3, Duration.ofMinutes(30));
         private Policy passwordResetIp = new Policy(10, Duration.ofMinutes(15));

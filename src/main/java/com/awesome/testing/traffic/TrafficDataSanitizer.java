@@ -13,11 +13,14 @@ public class TrafficDataSanitizer {
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
             "(?i)\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}\\b"
     );
-    private static final Pattern PASSWORD_FIELD_PATTERN = Pattern.compile(
-            "(?i)(\"password\"\\s*:\\s*\")([^\"]*)(\")"
+    private static final Pattern SENSITIVE_STRING_FIELD_PATTERN = Pattern.compile(
+            "(?i)(\"(?:password|code|secret|otpAuthUri|qrCodeDataUri)\"\\s*:\\s*\")([^\"]*)(\")"
     );
     private static final Pattern TOKEN_FIELD_PATTERN = Pattern.compile(
-            "(?i)(\"(?:token|refreshToken|accessToken)\"\\s*:\\s*\")([^\"]*)(\")"
+            "(?i)(\"(?:token|refreshToken|accessToken|challengeToken)\"\\s*:\\s*\")([^\"]*)(\")"
+    );
+    private static final Pattern RECOVERY_CODES_FIELD_PATTERN = Pattern.compile(
+            "(?i)(\"recoveryCodes\"\\s*:\\s*)\\[[^]]*]"
     );
 
     private final TrafficProperties properties;
@@ -39,8 +42,9 @@ public class TrafficDataSanitizer {
 
         String sanitized = body;
         if (properties.isObfuscateSensitiveBodyFields()) {
-            sanitized = PASSWORD_FIELD_PATTERN.matcher(sanitized).replaceAll("$1" + MASK + "$3");
+            sanitized = SENSITIVE_STRING_FIELD_PATTERN.matcher(sanitized).replaceAll("$1" + MASK + "$3");
             sanitized = TOKEN_FIELD_PATTERN.matcher(sanitized).replaceAll("$1" + MASK + "$3");
+            sanitized = RECOVERY_CODES_FIELD_PATTERN.matcher(sanitized).replaceAll("$1[\"" + MASK + "\"]");
         }
         if (properties.isObfuscateEmails()) {
             sanitized = EMAIL_PATTERN.matcher(sanitized).replaceAll(MASK);

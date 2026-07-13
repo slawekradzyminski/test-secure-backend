@@ -37,6 +37,7 @@ class OpenApiContractTest extends HttpHelper {
         assertThat(spec.path("components").path("securitySchemes").has("bearerAuth")).isTrue();
 
         assertPublicEndpointIsNotMarkedAsSecured(spec, "/api/v1/users/signin", "post");
+        assertPublicEndpointIsNotMarkedAsSecured(spec, "/api/v1/users/signin/2fa", "post");
         assertPublicEndpointIsNotMarkedAsSecured(spec, "/api/v1/users/signup", "post");
         assertPublicEndpointIsNotMarkedAsSecured(spec, "/api/v1/users/refresh", "post");
         assertPublicEndpointIsNotMarkedAsSecured(spec, "/api/v1/users/sso/exchange", "post");
@@ -47,6 +48,8 @@ class OpenApiContractTest extends HttpHelper {
         assertSecuredEndpoint(spec, "/api/v1/orders", "get");
         assertSecuredEndpoint(spec, "/api/v1/cart", "get");
         assertSecuredEndpoint(spec, "/api/v1/users/me/email-events", "get");
+        assertSecuredEndpoint(spec, "/api/v1/users/2fa/status", "get");
+        assertSecuredEndpoint(spec, "/api/v1/users/2fa/setup", "post");
         assertSecuredEndpoint(spec, "/api/v1/users/{username}/right-to-be-forgotten", "delete");
         assertThat(spec.path("paths").has("/api/v1/local/email/outbox")).isFalse();
 
@@ -166,6 +169,12 @@ class OpenApiContractTest extends HttpHelper {
 
         assertOperationResponsesContain(spec, "/api/v1/users/signup", "post", List.of("201", "400"));
         assertOperationResponsesContain(spec, "/api/v1/users/signin", "post", List.of("200", "400", "422"));
+        assertOperationResponsesContain(spec, "/api/v1/users/signin/2fa", "post", List.of("200", "400", "401"));
+        assertOperationResponsesContain(spec, "/api/v1/users/2fa/status", "get", List.of("200", "401"));
+        assertOperationResponsesContain(spec, "/api/v1/users/2fa/setup", "post", List.of("200", "401", "409"));
+        assertOperationResponsesContain(spec, "/api/v1/users/2fa/confirm", "post", List.of("200", "400", "401", "409", "410"));
+        assertOperationResponsesContain(spec, "/api/v1/users/2fa/recovery-codes", "post", List.of("200", "400", "401", "409"));
+        assertOperationResponsesContain(spec, "/api/v1/users/2fa/disable", "post", List.of("200", "400", "401", "409"));
         assertOperationResponsesContain(spec, "/api/v1/users/refresh", "post", List.of("200", "400", "401"));
         assertOperationResponsesContain(spec, "/api/v1/users/sso/exchange", "post", List.of("200", "400", "401", "404", "409"));
         assertResponseSchemaRef(spec, "/api/v1/users/sso/exchange", "post", "409", "ErrorDto");
@@ -202,6 +211,11 @@ class OpenApiContractTest extends HttpHelper {
         List.of(
                 List.of("/api/v1/users/signup", "post"),
                 List.of("/api/v1/users/signin", "post"),
+                List.of("/api/v1/users/signin/2fa", "post"),
+                List.of("/api/v1/users/2fa/setup", "post"),
+                List.of("/api/v1/users/2fa/confirm", "post"),
+                List.of("/api/v1/users/2fa/recovery-codes", "post"),
+                List.of("/api/v1/users/2fa/disable", "post"),
                 List.of("/api/v1/users/refresh", "post"),
                 List.of("/api/v1/users/password/forgot", "post"),
                 List.of("/api/v1/users/password/reset", "post"),

@@ -26,6 +26,8 @@ public class TrafficProperties {
     private List<String> excludedPaths = new ArrayList<>(List.of(
             "/api/v1/traffic/logs",
             "/api/v1/traffic/logs/",
+            "/api/v1/users/2fa",
+            "/api/v1/users/signin/2fa",
             "/v3/api-docs",
             "/v3/api-docs.yaml",
             "/v3/api-docs/"

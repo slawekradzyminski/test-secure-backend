@@ -22,6 +22,7 @@
         <mockito.version>5.23.0</mockito.version>
         <postgresql.version>42.7.11</postgresql.version>
         <reactor-bom.version>2025.0.5</reactor-bom.version>
+        <otp-java.version>2.1.0</otp-java.version>
     </properties>
 
     <parent>
@@ -84,6 +85,11 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.bastiaanjansen</groupId>
+            <artifactId>otp-java</artifactId>
+            <version>${otp-java.version}</version>
         </dependency>
 
         <!-- Jakarta EE -->

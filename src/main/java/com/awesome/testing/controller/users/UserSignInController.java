@@ -2,8 +2,6 @@ package com.awesome.testing.controller.users;
 
 import com.awesome.testing.dto.user.LoginDto;
 import com.awesome.testing.dto.user.LoginResponseDto;
-import com.awesome.testing.dto.user.TokenPair;
-import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.security.ratelimit.AuthRateLimitGuard;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,10 +34,7 @@ public class UserSignInController {
             HttpServletRequest request,
             @Parameter(description = "Login details") @Valid @RequestBody LoginDto loginDetails) {
         authRateLimitGuard.checkSignIn(request, loginDetails.getUsername());
-        TokenPair tokens = userService.signIn(loginDetails.getUsername(), loginDetails.getPassword());
-        UserEntity user = userService.search(loginDetails.getUsername());
-
-        return LoginResponseDto.from(tokens, user);
+        return userService.signIn(loginDetails.getUsername(), loginDetails.getPassword());
     }
 
 }

@@ -133,4 +133,36 @@ class AuthRateLimitGuardTest {
                 properties.getPolicies().getQrUser()
         );
     }
+
+    @Test
+    void shouldRateLimitMfaCompletionByIpAndHashedChallengeIdentity() {
+        when(clientAddressResolver.resolve(request)).thenReturn("203.0.113.10");
+
+        guard.checkMfaSignIn(request, "sensitive-challenge-token");
+
+        verify(rateLimitService).check(
+                "/api/v1/users/signin/2fa",
+                "ip",
+                "203.0.113.10",
+                properties.getPolicies().getMfaIp()
+        );
+        verify(rateLimitService).check(
+                "/api/v1/users/signin/2fa",
+                "challenge",
+                "38c009ab1defb093ff04c80235bd195fb709a91b35d69cd1f7c2bac5038e89be",
+                properties.getPolicies().getMfaChallenge()
+        );
+    }
+
+    @Test
+    void shouldRateLimitMfaManagementByNormalizedUsername() {
+        guard.checkMfaManagement(" ClientUser ");
+
+        verify(rateLimitService).check(
+                "/api/v1/users/2fa",
+                "username",
+                "clientuser",
+                properties.getPolicies().getMfaUser()
+        );
+    }
 }

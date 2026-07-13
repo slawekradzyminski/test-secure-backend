@@ -68,6 +68,15 @@ security:
       signin-ip-username:
         capacity: ${SECURITY_RATE_LIMIT_SIGNIN_IP_USERNAME_CAPACITY:5}
         window: ${SECURITY_RATE_LIMIT_SIGNIN_IP_USERNAME_WINDOW:5m}
+      mfa-ip:
+        capacity: ${SECURITY_RATE_LIMIT_MFA_IP_CAPACITY:10}
+        window: ${SECURITY_RATE_LIMIT_MFA_IP_WINDOW:5m}
+      mfa-challenge:
+        capacity: ${SECURITY_RATE_LIMIT_MFA_CHALLENGE_CAPACITY:5}
+        window: ${SECURITY_RATE_LIMIT_MFA_CHALLENGE_WINDOW:5m}
+      mfa-user:
+        capacity: ${SECURITY_RATE_LIMIT_MFA_USER_CAPACITY:20}
+        window: ${SECURITY_RATE_LIMIT_MFA_USER_WINDOW:15m}
       password-forgot-ip:
         capacity: ${SECURITY_RATE_LIMIT_PASSWORD_FORGOT_IP_CAPACITY:10}
         window: ${SECURITY_RATE_LIMIT_PASSWORD_FORGOT_IP_WINDOW:15m}
@@ -94,6 +103,18 @@ security:
         window: ${SECURITY_RATE_LIMIT_OLLAMA_IP_WINDOW:5m}
 
 app:
+  mfa:
+    issuer: ${APP_MFA_ISSUER:Awesome Testing}
+    encryption-password: ${APP_MFA_ENCRYPTION_PASSWORD:local-development-mfa-key-change-me}
+    encryption-salt: ${APP_MFA_ENCRYPTION_SALT:8f9c82cf1d4a63b107a82fc60e0c27ab}
+    require-secure-encryption: ${APP_MFA_REQUIRE_SECURE_ENCRYPTION:false}
+    challenge-ttl: ${APP_MFA_CHALLENGE_TTL:5m}
+    setup-ttl: ${APP_MFA_SETUP_TTL:15m}
+    period: 30s
+    adjacent-time-steps: 1
+    secret-bits: 160
+    recovery-code-count: 8
+    challenge-token-bytes: 32
   seed-demo-data:
     enabled: false
   bootstrap-admin:

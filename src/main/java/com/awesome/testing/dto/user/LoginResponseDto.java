@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -36,6 +37,15 @@ public class LoginResponseDto {
     @Schema(description = "User roles", example = "[\"ROLE_CLIENT\"]")
     List<Role> roles;
 
+    @Schema(description = "Whether a second factor is required before tokens can be issued")
+    boolean mfaRequired;
+
+    @Schema(description = "Short-lived, single-use MFA challenge token")
+    String challengeToken;
+
+    @Schema(description = "MFA challenge expiration time")
+    Instant challengeExpiresAt;
+
     public static LoginResponseDto from(TokenPair tokenPair, UserEntity user) {
         return LoginResponseDto.builder()
                 .username(user.getUsername())
@@ -45,6 +55,19 @@ public class LoginResponseDto {
                 .token(tokenPair.getToken())
                 .refreshToken(tokenPair.getRefreshToken())
                 .email(user.getEmail())
+                .build();
+    }
+
+    public static LoginResponseDto mfaChallenge(UserEntity user, String challengeToken, Instant expiresAt) {
+        return LoginResponseDto.builder()
+                .username(user.getUsername())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .roles(user.getRoles())
+                .email(user.getEmail())
+                .mfaRequired(true)
+                .challengeToken(challengeToken)
+                .challengeExpiresAt(expiresAt)
                 .build();
     }
 

@@ -44,6 +44,11 @@ class OpenApiRateLimitDocumentationTest extends HttpHelper {
         return List.of(
                 new RateLimitedOperation("/api/v1/users/signup", "post"),
                 new RateLimitedOperation("/api/v1/users/signin", "post"),
+                new RateLimitedOperation("/api/v1/users/signin/2fa", "post"),
+                new RateLimitedOperation("/api/v1/users/2fa/setup", "post"),
+                new RateLimitedOperation("/api/v1/users/2fa/confirm", "post"),
+                new RateLimitedOperation("/api/v1/users/2fa/recovery-codes", "post"),
+                new RateLimitedOperation("/api/v1/users/2fa/disable", "post"),
                 new RateLimitedOperation("/api/v1/users/refresh", "post"),
                 new RateLimitedOperation("/api/v1/users/password/forgot", "post"),
                 new RateLimitedOperation("/api/v1/users/password/reset", "post"),

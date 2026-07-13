@@ -3,6 +3,7 @@ package com.awesome.testing.service;
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.TokenPair;
+import com.awesome.testing.dto.user.LoginResponseDto;
 import com.awesome.testing.dto.user.UserEditDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.entity.UserEntity;
@@ -15,6 +16,8 @@ import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.security.AuthenticationHandler;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.service.token.RefreshTokenService;
+import com.awesome.testing.service.mfa.MfaChallenge;
+import com.awesome.testing.service.mfa.MfaService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +68,9 @@ class UserServiceTest {
     @Mock
     private OrderRepository orderRepository;
 
+    @Mock
+    private MfaService mfaService;
+
     @InjectMocks
     private UserService userService;
 
@@ -92,11 +98,28 @@ class UserServiceTest {
         RefreshTokenEntity refreshTokenEntity = buildRefreshToken("refresh-token", userEntity);
         when(refreshTokenService.createToken(userEntity)).thenReturn(refreshTokenEntity);
 
-        TokenPair tokens = userService.signIn(registerDto.getUsername(), registerDto.getPassword());
+        LoginResponseDto response = userService.signIn(registerDto.getUsername(), registerDto.getPassword());
 
         verify(authenticationHandler).authUser(registerDto.getUsername(), registerDto.getPassword());
-        assertThat(tokens.getToken()).isEqualTo("jwt-token");
-        assertThat(tokens.getRefreshToken()).isEqualTo("refresh-token");
+        assertThat(response.getToken()).isEqualTo("jwt-token");
+        assertThat(response.getRefreshToken()).isEqualTo("refresh-token");
+        assertThat(response.isMfaRequired()).isFalse();
+    }
+
+    @Test
+    void shouldReturnChallengeWithoutTokensWhenMfaIsEnabled() {
+        when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
+        when(mfaService.isEnabled(userEntity)).thenReturn(true);
+        when(mfaService.startSignIn(userEntity)).thenReturn(new MfaChallenge(
+                "challenge-token", Instant.parse("2026-07-13T20:00:00Z")));
+
+        LoginResponseDto response = userService.signIn(registerDto.getUsername(), registerDto.getPassword());
+
+        assertThat(response.isMfaRequired()).isTrue();
+        assertThat(response.getChallengeToken()).isEqualTo("challenge-token");
+        assertThat(response.getToken()).isNull();
+        assertThat(response.getRefreshToken()).isNull();
+        verifyNoInteractions(jwtTokenProvider, refreshTokenService);
     }
 
     @Test
@@ -192,6 +215,7 @@ class UserServiceTest {
         verify(emailEventRepository).deleteAllByUser(userEntity);
         verify(cartItemRepository).deleteByUsername(registerDto.getUsername());
         verify(orderRepository).deleteByUsername(registerDto.getUsername());
+        verify(mfaService).deleteForUser(userEntity);
         verify(userRepository).deleteByUsername(registerDto.getUsername());
     }
 
