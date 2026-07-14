@@ -2,6 +2,8 @@ package com.awesome.testing.security.mfa;
 
 import com.awesome.testing.config.properties.MfaProperties;
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -34,10 +36,12 @@ class TotpServiceTest {
         URI uri = service.createOtpAuthUri(SECRET, "alice@example.test");
 
         assertThat(uri.getScheme()).isEqualTo("otpauth");
-        assertThat(uri.toString())
-                .contains("totp/Awesome+Testing:alice%40example.test")
+        assertThat(uri.getHost()).isEqualTo("totp");
+        assertThat(URLDecoder.decode(uri.getRawPath(), StandardCharsets.UTF_8))
+                .isEqualTo("/Awesome Testing:alice@example.test");
+        assertThat(URLDecoder.decode(uri.getRawQuery(), StandardCharsets.UTF_8))
                 .contains("secret=" + SECRET)
-                .contains("issuer=Awesome+Testing")
+                .contains("issuer=Awesome Testing")
                 .contains("algorithm=SHA1")
                 .contains("digits=6")
                 .contains("period=30");
