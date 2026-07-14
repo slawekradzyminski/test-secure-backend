@@ -8,11 +8,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 @Configuration
 public class AsyncConfig {
 
-    @Bean
+    @Bean(name = {"taskScheduler", "emailTaskScheduler"})
     public TaskScheduler emailTaskScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         scheduler.setPoolSize(4);
-        scheduler.setThreadNamePrefix("email-sender-");
+        scheduler.setThreadNamePrefix("app-scheduler-");
         scheduler.setWaitForTasksToCompleteOnShutdown(true);
         scheduler.setAwaitTerminationSeconds(15);
         return scheduler;
