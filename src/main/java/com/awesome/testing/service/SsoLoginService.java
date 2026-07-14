@@ -5,13 +5,13 @@ import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.user.LoginResponseDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.TokenPair;
-import com.awesome.testing.entity.RefreshTokenEntity;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.security.oidc.OidcTokenVerifier;
 import com.awesome.testing.security.oidc.OidcUserClaims;
 import com.awesome.testing.service.token.RefreshTokenService;
+import com.awesome.testing.service.token.IssuedRefreshToken;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -112,10 +112,10 @@ public class SsoLoginService {
 
     private TokenPair createTokens(UserEntity user) {
         String jwt = jwtTokenProvider.createToken(user.getUsername(), user.getRoles());
-        RefreshTokenEntity refreshToken = refreshTokenService.createToken(user);
+        IssuedRefreshToken refreshToken = refreshTokenService.createToken(user);
         return TokenPair.builder()
                 .token(jwt)
-                .refreshToken(refreshToken.getToken())
+                .refreshToken(refreshToken.value())
                 .build();
     }
 

@@ -8,7 +8,6 @@ import com.awesome.testing.controller.exception.UserNotFoundException;
 import com.awesome.testing.security.AuthenticationHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import com.awesome.testing.entity.UserEntity;
-import com.awesome.testing.entity.RefreshTokenEntity;
 import com.awesome.testing.repository.EmailEventRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.PasswordResetTokenRepository;
@@ -16,6 +15,7 @@ import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.service.token.RefreshTokenService;
+import com.awesome.testing.service.token.IssuedRefreshToken;
 import com.awesome.testing.dto.user.LoginResponseDto;
 import com.awesome.testing.service.mfa.MfaChallenge;
 import com.awesome.testing.service.mfa.MfaService;
@@ -77,7 +77,7 @@ public class UserService {
             return LoginResponseDto.mfaChallenge(user, challenge.rawToken(), challenge.expiresAt());
         }
         String jwt = jwtTokenProvider.createToken(username, user.getRoles());
-        String refreshToken = refreshTokenService.createToken(user).getToken();
+        String refreshToken = refreshTokenService.createToken(user).value();
         TokenPair tokens = TokenPair.builder()
                 .token(jwt)
                 .refreshToken(refreshToken)
@@ -121,13 +121,12 @@ public class UserService {
     }
 
     public TokenPair refresh(String refreshToken) {
-        RefreshTokenEntity rotatedToken = refreshTokenService.rotateToken(refreshToken);
-        UserEntity user = rotatedToken.getUser();
+        IssuedRefreshToken rotatedToken = refreshTokenService.rotateToken(refreshToken);
+        UserEntity user = rotatedToken.user();
         String jwt = jwtTokenProvider.createToken(user.getUsername(), user.getRoles());
-        String rotatedRefreshToken = rotatedToken.getToken();
         return TokenPair.builder()
                 .token(jwt)
-                .refreshToken(rotatedRefreshToken)
+                .refreshToken(rotatedToken.value())
                 .build();
     }
 

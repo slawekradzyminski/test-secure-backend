@@ -37,7 +37,6 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class TrafficLoggingFilter implements Filter {
 
-    private static final String CLIENT_SESSION_HEADER = "X-Client-Session-Id";
     private static final String CLIENT_SESSION_COOKIE = "clientSessionId";
     private static final List<String> STREAMING_PATH_PREFIXES = List.of(
             "/api/v1/ollama/generate",
@@ -80,12 +79,14 @@ public class TrafficLoggingFilter implements Filter {
                 );
                 if (trafficCapturePolicy.shouldCapture(wrappedRequest)) {
                     Instant timestamp = Instant.now();
+                    String clientSessionId = resolveClientSessionId(wrappedRequest);
                     String responseBody = captureResponseBody
                             ? readResponseBody((ContentCachingResponseWrapper) responseToUse)
                             : omittedBodyPlaceholder(responseToUse.getContentType());
                     TrafficBodySanitizationResult requestBody = trafficDataSanitizer.sanitizeBody(readRequestBody(wrappedRequest));
                     TrafficBodySanitizationResult sanitizedResponseBody = trafficDataSanitizer.sanitizeBody(responseBody);
                     trafficQueue.add(TrafficEventDto.builder()
+                            .clientSessionId(clientSessionId)
                             .method(wrappedRequest.getMethod())
                             .path(wrappedRequest.getRequestURI())
                             .status(responseToUse.getStatus())
@@ -94,7 +95,7 @@ public class TrafficLoggingFilter implements Filter {
                             .build());
                     trafficLogService.save(TrafficLogEntity.builder()
                             .correlationId(UUID.randomUUID().toString())
-                            .clientSessionId(resolveClientSessionId(wrappedRequest))
+                            .clientSessionId(clientSessionId)
                             .timestamp(timestamp)
                             .durationMs(duration)
                             .method(wrappedRequest.getMethod())
@@ -173,8 +174,8 @@ public class TrafficLoggingFilter implements Filter {
     }
 
     private String resolveClientSessionId(HttpServletRequest request) {
-        String headerValue = request.getHeader(CLIENT_SESSION_HEADER);
-        if (headerValue != null && !headerValue.isBlank()) {
+        String headerValue = TrafficSession.validOrNull(request.getHeader(TrafficSession.HEADER));
+        if (headerValue != null) {
             return headerValue;
         }
         Cookie[] cookies = request.getCookies();
@@ -182,8 +183,8 @@ public class TrafficLoggingFilter implements Filter {
             return null;
         }
         for (Cookie cookie : cookies) {
-            if (CLIENT_SESSION_COOKIE.equals(cookie.getName()) && cookie.getValue() != null && !cookie.getValue().isBlank()) {
-                return cookie.getValue();
+            if (CLIENT_SESSION_COOKIE.equals(cookie.getName())) {
+                return TrafficSession.validOrNull(cookie.getValue());
             }
         }
         return null;

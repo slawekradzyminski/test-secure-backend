@@ -8,9 +8,10 @@ import java.time.Instant;
 @Data
 @Builder
 public class TrafficEventDto {
+    private String clientSessionId;
     private String method;
     private String path;
     private int status;
     private long durationMs;
     private Instant timestamp;
-} 
+}

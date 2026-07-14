@@ -14,16 +14,17 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
+import tools.jackson.databind.ObjectMapper;
 
 @SuppressWarnings("unused")
 @Slf4j
 @Configuration
-@Profile("local")
+@Profile({"local", "aitesters"})
 public class LocalConfig {
 
     @Bean
-    public MessageConverter jacksonJmsMessageConverter() {
-        return new JsonTextMessageConverter();
+    public MessageConverter jacksonJmsMessageConverter(ObjectMapper objectMapper) {
+        return new JsonTextMessageConverter(objectMapper);
     }
 
     @Bean

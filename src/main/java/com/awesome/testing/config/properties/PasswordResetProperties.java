@@ -36,4 +36,14 @@ public class PasswordResetProperties {
      * Whether local profile should store outgoing emails in an in-memory outbox.
      */
     private boolean localOutboxEnabled = true;
+
+    /**
+     * Whether access to the local email outbox requires a separate shared key.
+     */
+    private boolean requireOutboxAccessKey = false;
+
+    /**
+     * Shared key used only by trusted test automation to inspect the local outbox.
+     */
+    private String outboxAccessKey = "";
 }

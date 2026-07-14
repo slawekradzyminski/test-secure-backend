@@ -7,7 +7,6 @@ import com.awesome.testing.dto.user.LoginResponseDto;
 import com.awesome.testing.dto.user.UserEditDto;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.entity.UserEntity;
-import com.awesome.testing.entity.RefreshTokenEntity;
 import com.awesome.testing.repository.EmailEventRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.PasswordResetTokenRepository;
@@ -16,6 +15,7 @@ import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.security.AuthenticationHandler;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.service.token.RefreshTokenService;
+import com.awesome.testing.service.token.IssuedRefreshToken;
 import com.awesome.testing.service.mfa.MfaChallenge;
 import com.awesome.testing.service.mfa.MfaService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,9 +29,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -95,7 +95,7 @@ class UserServiceTest {
     void shouldSignInWhenCredentialsAreValid() {
         when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
         when(jwtTokenProvider.createToken(registerDto.getUsername(), userEntity.getRoles())).thenReturn("jwt-token");
-        RefreshTokenEntity refreshTokenEntity = buildRefreshToken("refresh-token", userEntity);
+        IssuedRefreshToken refreshTokenEntity = buildRefreshToken("refresh-token", userEntity);
         when(refreshTokenService.createToken(userEntity)).thenReturn(refreshTokenEntity);
 
         LoginResponseDto response = userService.signIn(registerDto.getUsername(), registerDto.getPassword());
@@ -242,7 +242,7 @@ class UserServiceTest {
 
     @Test
     void shouldRefreshToken() {
-        RefreshTokenEntity rotatedToken = buildRefreshToken("new-refresh", userEntity);
+        IssuedRefreshToken rotatedToken = buildRefreshToken("new-refresh", userEntity);
         when(refreshTokenService.rotateToken("old-refresh")).thenReturn(rotatedToken);
         when(jwtTokenProvider.createToken(userEntity.getUsername(), userEntity.getRoles())).thenReturn("refreshed");
 
@@ -358,11 +358,7 @@ class UserServiceTest {
                 .build();
     }
 
-    private static RefreshTokenEntity buildRefreshToken(String tokenValue, UserEntity owner) {
-        return RefreshTokenEntity.builder()
-                .token(tokenValue)
-                .user(owner)
-                .expiresAt(Instant.now().plusSeconds(3600))
-                .build();
+    private static IssuedRefreshToken buildRefreshToken(String tokenValue, UserEntity owner) {
+        return new IssuedRefreshToken(tokenValue, owner);
     }
 }

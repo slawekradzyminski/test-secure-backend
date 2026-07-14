@@ -4,13 +4,13 @@ import com.awesome.testing.config.properties.SsoProperties;
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.user.LoginResponseDto;
 import com.awesome.testing.dto.user.Role;
-import com.awesome.testing.entity.RefreshTokenEntity;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.security.oidc.OidcTokenVerifier;
 import com.awesome.testing.security.oidc.OidcUserClaims;
 import com.awesome.testing.service.token.RefreshTokenService;
+import com.awesome.testing.service.token.IssuedRefreshToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +21,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -258,12 +257,8 @@ class SsoLoginServiceTest {
         assertThat(provisioned.getProviderSubject()).isEqualTo("google-subject");
     }
 
-    private RefreshTokenEntity refreshToken(UserEntity user) {
-        return RefreshTokenEntity.builder()
-                .token("refresh-token")
-                .expiresAt(Instant.now().plusSeconds(60))
-                .user(user)
-                .build();
+    private IssuedRefreshToken refreshToken(UserEntity user) {
+        return new IssuedRefreshToken("refresh-token", user);
     }
 
 }

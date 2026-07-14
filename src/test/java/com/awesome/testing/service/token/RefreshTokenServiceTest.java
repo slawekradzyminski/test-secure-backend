@@ -53,12 +53,10 @@ class RefreshTokenServiceTest {
     @Test
     void shouldCreateRefreshToken() {
         mockSavePassthrough();
-        RefreshTokenEntity token = refreshTokenService.createToken(user);
+        IssuedRefreshToken token = refreshTokenService.createToken(user);
 
-        assertThat(token.getUser()).isEqualTo(user);
-        assertThat(token.getToken()).isNotBlank();
-        assertThat(token.getExpiresAt()).isAfter(Instant.now());
-        assertThat(token.isRevoked()).isFalse();
+        assertThat(token.user()).isEqualTo(user);
+        assertThat(token.value()).isNotBlank();
         verify(refreshTokenRepository).save(any(RefreshTokenEntity.class));
     }
 
@@ -66,28 +64,36 @@ class RefreshTokenServiceTest {
     void shouldRotateTokenAndRevokePrevious() {
         mockSavePassthrough();
         RefreshTokenEntity existing = RefreshTokenEntity.builder()
-                .token("existing")
+                .tokenHash(refreshTokenService.hashToken("existing"))
+                .familyId("family-1")
+                .createdAt(Instant.now().minusSeconds(10))
                 .user(user)
                 .expiresAt(Instant.now().plusSeconds(120))
                 .build();
-        when(refreshTokenRepository.findByToken("existing")).thenReturn(Optional.of(existing));
+        when(refreshTokenRepository.findByTokenHash(refreshTokenService.hashToken("existing")))
+                .thenReturn(Optional.of(existing));
 
-        RefreshTokenEntity rotated = refreshTokenService.rotateToken("existing");
+        IssuedRefreshToken rotated = refreshTokenService.rotateToken("existing");
 
         assertThat(existing.isRevoked()).isTrue();
-        assertThat(rotated.getUser()).isEqualTo(user);
-        assertThat(rotated.getToken()).isNotEqualTo("existing");
+        assertThat(existing.getConsumedAt()).isNotNull();
+        assertThat(existing.getReplacedByTokenHash()).hasSize(64);
+        assertThat(rotated.user()).isEqualTo(user);
+        assertThat(rotated.value()).isNotEqualTo("existing");
         verify(refreshTokenRepository).save(eq(existing));
     }
 
     @Test
     void shouldFailToRotateExpiredToken() {
         RefreshTokenEntity expired = RefreshTokenEntity.builder()
-                .token("expired")
+                .tokenHash(refreshTokenService.hashToken("expired"))
+                .familyId("family-2")
+                .createdAt(Instant.now().minusSeconds(10))
                 .user(user)
                 .expiresAt(Instant.now().minusSeconds(5))
                 .build();
-        when(refreshTokenRepository.findByToken("expired")).thenReturn(Optional.of(expired));
+        when(refreshTokenRepository.findByTokenHash(refreshTokenService.hashToken("expired")))
+                .thenReturn(Optional.of(expired));
 
         assertThatThrownBy(() -> refreshTokenService.rotateToken("expired"))
                 .isInstanceOf(CustomException.class)
@@ -96,32 +102,56 @@ class RefreshTokenServiceTest {
 
     @Test
     void shouldRevokeTokenWhenOwnerMatches() {
-        mockSavePassthrough();
         RefreshTokenEntity token = RefreshTokenEntity.builder()
-                .token("to-revoke")
+                .tokenHash(refreshTokenService.hashToken("to-revoke"))
+                .familyId("family-3")
+                .createdAt(Instant.now())
                 .user(user)
                 .expiresAt(Instant.now().plusSeconds(60))
                 .build();
-        when(refreshTokenRepository.findByToken("to-revoke")).thenReturn(Optional.of(token));
+        when(refreshTokenRepository.findByTokenHash(refreshTokenService.hashToken("to-revoke")))
+                .thenReturn(Optional.of(token));
 
         refreshTokenService.revokeToken("to-revoke", user.getUsername());
 
-        assertThat(token.isRevoked()).isTrue();
-        verify(refreshTokenRepository).save(token);
+        verify(refreshTokenRepository).revokeFamily("family-3");
     }
 
     @Test
     void shouldThrowWhenRevokingWithDifferentUser() {
         RefreshTokenEntity token = RefreshTokenEntity.builder()
-                .token("other")
+                .tokenHash(refreshTokenService.hashToken("other"))
+                .familyId("family-4")
+                .createdAt(Instant.now())
                 .user(user)
                 .expiresAt(Instant.now().plusSeconds(60))
                 .build();
-        when(refreshTokenRepository.findByToken("other")).thenReturn(Optional.of(token));
+        when(refreshTokenRepository.findByTokenHash(refreshTokenService.hashToken("other")))
+                .thenReturn(Optional.of(token));
 
         assertThatThrownBy(() -> refreshTokenService.revokeToken("other", "intruder"))
                 .isInstanceOf(CustomException.class)
                 .hasMessage("Invalid refresh token");
+    }
+
+    @Test
+    void shouldRevokeWholeFamilyWhenConsumedTokenIsReused() {
+        RefreshTokenEntity consumed = RefreshTokenEntity.builder()
+                .tokenHash(refreshTokenService.hashToken("reused"))
+                .familyId("compromised-family")
+                .createdAt(Instant.now().minusSeconds(10))
+                .consumedAt(Instant.now().minusSeconds(5))
+                .revoked(true)
+                .user(user)
+                .expiresAt(Instant.now().plusSeconds(60))
+                .build();
+        when(refreshTokenRepository.findByTokenHash(refreshTokenService.hashToken("reused")))
+                .thenReturn(Optional.of(consumed));
+
+        assertThatThrownBy(() -> refreshTokenService.rotateToken("reused"))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Invalid refresh token");
+        verify(refreshTokenRepository).revokeFamily("compromised-family");
     }
 
     @Test

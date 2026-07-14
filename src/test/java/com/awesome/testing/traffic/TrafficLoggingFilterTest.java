@@ -58,7 +58,7 @@ class TrafficLoggingFilterTest {
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(request.getMethod()).thenReturn("GET");
         when(request.getRequestURI()).thenReturn("/api/test");
-        when(request.getHeader("X-Client-Session-Id")).thenReturn("client-123");
+        when(request.getHeader("X-Client-Session-Id")).thenReturn("client-session-123");
         when(request.getHeaderNames()).thenReturn(Collections.enumeration(List.of()));
         when(request.getCharacterEncoding()).thenReturn("UTF-8");
         when(request.getAttribute(HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE))
@@ -80,7 +80,29 @@ class TrafficLoggingFilterTest {
 
         ArgumentCaptor<TrafficLogEntity> entityCaptor = ArgumentCaptor.forClass(TrafficLogEntity.class);
         verify(trafficLogService).save(entityCaptor.capture());
-        assertThat(entityCaptor.getValue().getClientSessionId()).isEqualTo("client-123");
+        assertThat(entityCaptor.getValue().getClientSessionId()).isEqualTo("client-session-123");
+    }
+
+    @Test
+    void shouldIgnoreInvalidClientSessionId() throws IOException, ServletException {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getRequestURI()).thenReturn("/api/test");
+        when(request.getHeader("X-Client-Session-Id")).thenReturn("../invalid");
+        when(request.getHeaderNames()).thenReturn(Collections.enumeration(List.of()));
+        when(request.getCharacterEncoding()).thenReturn("UTF-8");
+        when(request.getAttribute(HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE))
+                .thenReturn(handlerMethod(TestController.class, "documentedEndpoint"));
+        when(response.getStatus()).thenReturn(200);
+        when(response.getHeaderNames()).thenReturn(List.of());
+        when(response.getCharacterEncoding()).thenReturn("UTF-8");
+
+        filter.doFilter(request, response, chain);
+
+        ArgumentCaptor<TrafficLogEntity> entityCaptor = ArgumentCaptor.forClass(TrafficLogEntity.class);
+        verify(trafficLogService).save(entityCaptor.capture());
+        assertThat(entityCaptor.getValue().getClientSessionId()).isNull();
     }
 
     @Test

@@ -14,7 +14,11 @@ import tools.jackson.databind.ObjectMapper;
  */
 public class JsonTextMessageConverter implements MessageConverter {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    public JsonTextMessageConverter(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public Message toMessage(Object object, Session session) throws JMSException {

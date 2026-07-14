@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -25,14 +26,14 @@ class LocalConfigTest {
 
     @Test
     void shouldCreateJacksonJmsMessageConverter() {
-        MessageConverter converter = config.jacksonJmsMessageConverter();
+        MessageConverter converter = config.jacksonJmsMessageConverter(new ObjectMapper());
 
         assertThat(converter).isInstanceOf(JsonTextMessageConverter.class);
     }
 
     @Test
     void shouldCreateStubJmsTemplate() {
-        MessageConverter converter = new JsonTextMessageConverter();
+        MessageConverter converter = new JsonTextMessageConverter(new ObjectMapper());
         LocalEmailOutbox outbox = mock(LocalEmailOutbox.class);
         PasswordResetProperties properties = new PasswordResetProperties();
 

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 
@@ -28,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TrafficControllerServerObfuscationTest extends DomainHelper {
 
     private static final String API_TRAFFIC_LOGS = "/api/v1/traffic/logs";
+    private static final String CLIENT_SESSION_ID = "server-obfuscation-test";
 
     @Autowired
     private TrafficLogRepository trafficLogRepository;
@@ -42,11 +44,13 @@ class TrafficControllerServerObfuscationTest extends DomainHelper {
         UserRegisterDto user = UserFactory.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         String token = getToken(user);
 
-        executeGet("/api/v1/users/me", getHeadersWith(token), String.class);
+        HttpHeaders headers = getHeadersWith(token);
+        headers.add("X-Client-Session-Id", CLIENT_SESSION_ID);
+        executeGet("/api/v1/users/me", headers, String.class);
 
         ResponseEntity<PageDto<TrafficLogEntryDto>> response = executeGet(
                 API_TRAFFIC_LOGS + "?pathContains=/api/v1/users",
-                getJsonOnlyHeaders(),
+                headers,
                 new ParameterizedTypeReference<>() {}
         );
 
@@ -54,18 +58,11 @@ class TrafficControllerServerObfuscationTest extends DomainHelper {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getContent()).isNotEmpty();
 
-        TrafficLogEntryDto signUpEntry = response.getBody().getContent().stream()
-                .filter(entry -> entry.getPath().equals(REGISTER_ENDPOINT))
-                .findFirst()
-                .orElseThrow();
-
         TrafficLogEntryDto meEntry = response.getBody().getContent().stream()
                 .filter(entry -> entry.getPath().equals("/api/v1/users/me"))
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(signUpEntry.getRequestBody().toString()).doesNotContain(user.getEmail());
-        assertThat(signUpEntry.getRequestBody().toString()).contains("***");
         assertThat(meEntry.getRequestHeaders().toString()).doesNotContain(token);
         assertThat(meEntry.getRequestHeaders().toString()).contains("Authorization");
         assertThat(meEntry.getRequestHeaders().toString()).contains("***");

@@ -4,8 +4,6 @@ import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.order.PageDto;
 import com.awesome.testing.dto.traffic.TrafficInfoDto;
 import com.awesome.testing.dto.traffic.TrafficLogEntryDto;
-import com.awesome.testing.dto.user.LoginDto;
-import com.awesome.testing.dto.user.LoginResponseDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.factory.UserFactory;
@@ -41,50 +39,39 @@ class TrafficControllerTest extends DomainHelper {
     }
 
     @Test
-    void shouldReturnTrafficInfoWithoutAuthentication() {
-        ResponseEntity<TrafficInfoDto> response = executeGet(
+    void shouldRejectTrafficInfoWithoutAuthentication() {
+        HttpHeaders headers = getJsonOnlyHeaders();
+        headers.add("X-Client-Session-Id", CLIENT_SESSION_ID);
+        ResponseEntity<String> response = executeGet(
                 API_TRAFFIC_INFO,
-                getJsonOnlyHeaders(),
-                TrafficInfoDto.class);
+                headers,
+                String.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getWebSocketEndpoint()).isEqualTo("/api/v1/ws-traffic");
-        assertThat(response.getBody().getTopic()).isEqualTo("/topic/traffic");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
-    void shouldReturnEmptyTrafficLogsPageWithoutAuthentication() {
-        ResponseEntity<PageDto<TrafficLogEntryDto>> response = executeGet(
+    void shouldRejectTrafficLogsWithoutAuthentication() {
+        HttpHeaders headers = getJsonOnlyHeaders();
+        headers.add("X-Client-Session-Id", CLIENT_SESSION_ID);
+        ResponseEntity<String> response = executeGet(
                 API_TRAFFIC_LOGS,
-                getJsonOnlyHeaders(),
-                new ParameterizedTypeReference<>() {}
+                headers,
+                String.class
         );
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getContent()).isEmpty();
-        assertThat(response.getBody().getTotalElements()).isZero();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
     void shouldReturnPaginatedTrafficLogsAndExcludeTrafficEndpointRequests() {
         UserRegisterDto user = UserFactory.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        registerUser(user);
-
-        executePost(
-                LOGIN_ENDPOINT,
-                LoginDto.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .build(),
-                getJsonOnlyHeaders(),
-                LoginResponseDto.class
-        );
+        HttpHeaders headers = authenticatedHeaders(user);
+        executeGet("/api/v1/users/me", headers, String.class);
 
         ResponseEntity<PageDto<TrafficLogEntryDto>> response = executeGet(
                 API_TRAFFIC_LOGS + "?page=0&size=5&pathContains=/api/v1/users",
-                getJsonOnlyHeaders(),
+                headers,
                 new ParameterizedTypeReference<>() {}
         );
 
@@ -95,14 +82,15 @@ class TrafficControllerTest extends DomainHelper {
                 .allMatch(entry -> entry.getPath().startsWith("/api/v1/users"));
         assertThat(response.getBody().getContent())
                 .noneMatch(entry -> entry.getPath().startsWith(API_TRAFFIC_LOGS));
-        assertThat(response.getBody().getTotalElements()).isGreaterThanOrEqualTo(2);
+        assertThat(response.getBody().getTotalElements()).isGreaterThanOrEqualTo(1);
     }
 
     @Test
     void shouldReturnTrafficLogByCorrelationId() {
+        HttpHeaders headers = authenticatedHeaders();
         ResponseEntity<TrafficInfoDto> infoResponse = executeGet(
                 API_TRAFFIC_INFO,
-                getJsonOnlyHeaders(),
+                headers,
                 TrafficInfoDto.class
         );
 
@@ -110,7 +98,7 @@ class TrafficControllerTest extends DomainHelper {
 
         ResponseEntity<PageDto<TrafficLogEntryDto>> logsResponse = executeGet(
                 API_TRAFFIC_LOGS + "?pathContains=/api/v1/traffic/info",
-                getJsonOnlyHeaders(),
+                headers,
                 new ParameterizedTypeReference<>() {}
         );
 
@@ -119,7 +107,7 @@ class TrafficControllerTest extends DomainHelper {
 
         ResponseEntity<TrafficLogEntryDto> detailResponse = executeGet(
                 API_TRAFFIC_LOGS + "/" + entry.getCorrelationId(),
-                getJsonOnlyHeaders(),
+                headers,
                 TrafficLogEntryDto.class
         );
 
@@ -135,9 +123,10 @@ class TrafficControllerTest extends DomainHelper {
 
     @Test
     void shouldReturnNotFoundForMissingCorrelationId() {
+        HttpHeaders headers = authenticatedHeaders();
         ResponseEntity<TrafficLogEntryDto> response = executeGet(
                 API_TRAFFIC_LOGS + "/" + UUID.randomUUID(),
-                getJsonOnlyHeaders(),
+                headers,
                 TrafficLogEntryDto.class
         );
 
@@ -146,8 +135,7 @@ class TrafficControllerTest extends DomainHelper {
 
     @Test
     void shouldFilterByClientSessionIdAndSortNewestFirst() {
-        HttpHeaders headers = getJsonOnlyHeaders();
-        headers.add("X-Client-Session-Id", CLIENT_SESSION_ID);
+        HttpHeaders headers = authenticatedHeaders();
 
         ResponseEntity<TrafficInfoDto> firstResponse = executeGet(API_TRAFFIC_INFO, headers, TrafficInfoDto.class);
         ResponseEntity<TrafficInfoDto> secondResponse = executeGet(API_TRAFFIC_INFO, headers, TrafficInfoDto.class);
@@ -156,8 +144,8 @@ class TrafficControllerTest extends DomainHelper {
         assertThat(secondResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         ResponseEntity<PageDto<TrafficLogEntryDto>> logsResponse = executeGet(
-                API_TRAFFIC_LOGS + "?clientSessionId=" + CLIENT_SESSION_ID,
-                getJsonOnlyHeaders(),
+                API_TRAFFIC_LOGS,
+                headers,
                 new ParameterizedTypeReference<>() {}
         );
 
@@ -171,19 +159,30 @@ class TrafficControllerTest extends DomainHelper {
     }
 
     @Test
+    void shouldNotExposeAnotherBrowserSessionsTraffic() {
+        HttpHeaders currentSession = authenticatedHeaders();
+        HttpHeaders otherSession = new HttpHeaders();
+        otherSession.putAll(currentSession);
+        otherSession.set("X-Client-Session-Id", "different-session-1234");
+
+        executeGet(API_TRAFFIC_INFO, otherSession, TrafficInfoDto.class);
+
+        ResponseEntity<PageDto<TrafficLogEntryDto>> response = executeGet(
+                API_TRAFFIC_LOGS + "?pathContains=/api/v1/traffic/info",
+                currentSession,
+                new ParameterizedTypeReference<>() {}
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getContent()).isEmpty();
+    }
+
+    @Test
     void shouldClampPageSizeAndAllowFilteringByStatusTextAndDateRange() {
         UserRegisterDto user = UserFactory.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
-        registerUser(user);
-
-        executePost(
-                LOGIN_ENDPOINT,
-                LoginDto.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .build(),
-                getJsonOnlyHeaders(),
-                LoginResponseDto.class
-        );
+        HttpHeaders headers = authenticatedHeaders(user);
+        executeGet("/api/v1/users/me", headers, String.class);
 
         Instant from = Instant.now().minusSeconds(60);
         Instant to = Instant.now().plusSeconds(60);
@@ -193,7 +192,7 @@ class TrafficControllerTest extends DomainHelper {
                         + "?size=500&status=200&text=" + user.getUsername()
                         + "&from=" + from
                         + "&to=" + to,
-                getJsonOnlyHeaders(),
+                headers,
                 new ParameterizedTypeReference<>() {}
         );
 
@@ -210,9 +209,10 @@ class TrafficControllerTest extends DomainHelper {
 
     @Test
     void shouldReturnBadRequestForInvalidFromInstant() {
+        HttpHeaders headers = authenticatedHeaders();
         ResponseEntity<String> response = executeGet(
                 API_TRAFFIC_LOGS + "?from=not-an-instant",
-                getJsonOnlyHeaders(),
+                headers,
                 String.class
         );
 
@@ -222,6 +222,7 @@ class TrafficControllerTest extends DomainHelper {
 
     @Test
     void shouldSkipActuatorAndSwaggerInfrastructureRequests() {
+        HttpHeaders headers = authenticatedHeaders();
         ResponseEntity<String> actuatorResponse = executeGet("/actuator/health", getJsonOnlyHeaders(), String.class);
         ResponseEntity<String> swaggerResponse = executeGet("/v3/api-docs", getJsonOnlyHeaders(), String.class);
         ResponseEntity<String> swaggerConfigResponse = executeGet("/v3/api-docs/swagger-config", getJsonOnlyHeaders(), String.class);
@@ -235,12 +236,12 @@ class TrafficControllerTest extends DomainHelper {
 
         ResponseEntity<PageDto<TrafficLogEntryDto>> actuatorLogs = executeGet(
                 API_TRAFFIC_LOGS + "?pathContains=/actuator",
-                getJsonOnlyHeaders(),
+                headers,
                 new ParameterizedTypeReference<>() {}
         );
         ResponseEntity<PageDto<TrafficLogEntryDto>> swaggerLogs = executeGet(
                 API_TRAFFIC_LOGS + "?pathContains=/v3/api-docs",
-                getJsonOnlyHeaders(),
+                headers,
                 new ParameterizedTypeReference<>() {}
         );
 
@@ -254,9 +255,10 @@ class TrafficControllerTest extends DomainHelper {
 
     @Test
     void shouldExposeStructuredHeadersAndBodyMetadata() {
+        HttpHeaders headers = authenticatedHeaders();
         ResponseEntity<TrafficInfoDto> infoResponse = executeGet(
                 API_TRAFFIC_INFO,
-                getJsonOnlyHeaders(),
+                headers,
                 TrafficInfoDto.class
         );
 
@@ -264,7 +266,7 @@ class TrafficControllerTest extends DomainHelper {
 
         ResponseEntity<PageDto<TrafficLogEntryDto>> logsResponse = executeGet(
                 API_TRAFFIC_LOGS + "?pathContains=/api/v1/traffic/info",
-                getJsonOnlyHeaders(),
+                headers,
                 new ParameterizedTypeReference<>() {}
         );
 
@@ -275,9 +277,20 @@ class TrafficControllerTest extends DomainHelper {
         assertThat(entry.getRequestHeaders().isObject()).isTrue();
         assertThat(entry.getResponseHeaders().isObject()).isTrue();
         assertThat(entry.getResponseBody().isObject()).isTrue();
-        assertThat(entry.getResponseBody().get("topic").asString()).isEqualTo("/topic/traffic");
+        assertThat(entry.getResponseBody().get("topic").asString())
+                .isEqualTo("/topic/traffic/" + CLIENT_SESSION_ID);
         assertThat(entry.isRequestBodyTruncated()).isFalse();
         assertThat(entry.isResponseBodyTruncated()).isFalse();
         assertThat(entry.getResponseBodyStoredLength()).isGreaterThan(0);
+    }
+
+    private HttpHeaders authenticatedHeaders() {
+        return authenticatedHeaders(UserFactory.getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+    }
+
+    private HttpHeaders authenticatedHeaders(UserRegisterDto user) {
+        HttpHeaders headers = getHeadersWith(getToken(user));
+        headers.add("X-Client-Session-Id", CLIENT_SESSION_ID);
+        return headers;
     }
 }

@@ -10,6 +10,7 @@ public class TrafficEventFactory {
 
     public static TrafficEventDto trafficEvent() {
         return TrafficEventDto.builder()
+                .clientSessionId("test-session-1234")
                 .method("GET")
                 .path("/api/test")
                 .status(200)

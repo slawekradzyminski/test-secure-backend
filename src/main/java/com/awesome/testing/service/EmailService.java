@@ -8,7 +8,11 @@ import com.awesome.testing.service.email.EmailEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +22,8 @@ public class EmailService {
     private final JmsTemplate jmsTemplate;
     private final DelayGenerator delayGenerator;
     private final EmailEventService emailEventService;
+    @Qualifier("emailTaskScheduler")
+    private final TaskScheduler emailTaskScheduler;
 
     public void sendEmail(EmailDto emailDto, String destination) {
         sendEmail(emailDto, destination, null);
@@ -25,23 +31,23 @@ public class EmailService {
 
     public void sendEmail(EmailDto emailDto, String destination, UserEntity user) {
         Integer emailEventId = user == null ? null : emailEventService.recordQueued(user, emailDto);
-        Thread.ofVirtual().start(() -> {
-            try {
-                long delay = delayGenerator.getDelayMillis();
-                logDelay(delay);
-                Thread.sleep(delay);
-                jmsTemplate.convertAndSend(destination, emailDto);
-                markSent(emailEventId);
-                log.info("Email sent to {}", emailDto.getTo());
-            } catch (RuntimeException e) {
-                markFailed(emailEventId, e);
-                throw e;
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                markFailed(emailEventId, e);
-                log.error("Email sending was interrupted", e);
-            }
-        });
+        long delay = delayGenerator.getDelayMillis();
+        logDelay(delay);
+        try {
+            emailTaskScheduler.schedule(() -> {
+                try {
+                    jmsTemplate.convertAndSend(destination, emailDto);
+                    markSent(emailEventId);
+                    log.info("Email sent to {}", emailDto.getTo());
+                } catch (RuntimeException e) {
+                    markFailed(emailEventId, e);
+                    log.error("Email sending failed for {}", emailDto.getTo(), e);
+                }
+            }, Instant.now().plusMillis(delay));
+        } catch (RuntimeException e) {
+            markFailed(emailEventId, e);
+            log.error("Email scheduling failed for {}", emailDto.getTo(), e);
+        }
     }
 
     private void markSent(Integer emailEventId) {

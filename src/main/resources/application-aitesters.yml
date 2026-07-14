@@ -1,0 +1,71 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: sa
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jms.artemis.ArtemisAutoConfiguration
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: false
+        id:
+          new_generator_mappings: false
+  h2:
+    console:
+      enabled: false
+  jackson:
+    serialization:
+      indent-output: false
+
+activemq:
+  destination: email
+
+server:
+  port: 4001
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+
+security:
+  jwt:
+    token:
+      secret-key: ${JWT_SECRET_KEY:local-development-jwt-key-change-me}
+      expire-length: 3600000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info,prometheus}
+
+logging:
+  level:
+    root: INFO
+    org.zalando.logbook: INFO
+
+ollama:
+  base-url: http://ollama-mock:11434
+
+password-reset:
+  frontend-base-url: ${PASSWORD_RESET_FRONTEND_BASE_URL:https://aitesters.byst.re/reset}
+  token-ttl: 30m
+  token-byte-length: 32
+  expose-token-in-response: false
+  local-outbox-enabled: true
+  require-outbox-access-key: true
+  outbox-access-key: ${LOCAL_EMAIL_OUTBOX_ACCESS_KEY:}
+
+app:
+  seed-demo-data:
+    enabled: true
+  sso:
+    enabled: false
+  traffic:
+    obfuscate-authorization: true
+    obfuscate-emails: true
+    obfuscate-sensitive-body-fields: true

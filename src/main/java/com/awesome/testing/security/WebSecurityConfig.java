@@ -59,9 +59,7 @@ public class WebSecurityConfig {
             "/actuator/health/**",
             "/actuator/info",
             "/actuator/prometheus",
-            "/api/v1/traffic/**",
-            "/api/v1/ws-traffic/**",
-            "/api/v1/local/email/outbox/**"
+            "/api/v1/ws-traffic/**"
     );
 
     private final JwtTokenProvider jwtTokenProvider;

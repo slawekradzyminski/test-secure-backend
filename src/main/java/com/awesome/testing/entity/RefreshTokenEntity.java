@@ -30,11 +30,23 @@ public class RefreshTokenEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 255)
-    private String token;
+    @Column(name = "token_hash", nullable = false, unique = true, length = 64)
+    private String tokenHash;
+
+    @Column(name = "family_id", nullable = false, length = 36)
+    private String familyId;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
+
+    @Column(name = "consumed_at")
+    private Instant consumedAt;
+
+    @Column(name = "replaced_by_token_hash", length = 64)
+    private String replacedByTokenHash;
 
     @Builder.Default
     @Column(nullable = false)

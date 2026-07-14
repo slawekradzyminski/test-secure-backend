@@ -21,7 +21,9 @@ public class TrafficPublisher {
     public void broadcastTraffic() {
         while (!queue.isEmpty()) {
             TrafficEventDto event = queue.poll();
-            messagingTemplate.convertAndSend("/topic/traffic", event);
+            if (event != null && event.getClientSessionId() != null) {
+                messagingTemplate.convertAndSend(TrafficSession.topic(event.getClientSessionId()), event);
+            }
         }
     }
 } 

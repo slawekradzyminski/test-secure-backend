@@ -18,6 +18,7 @@ import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.PlatformTransactionManager;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @TestConfiguration
@@ -45,8 +46,8 @@ public class TestConfig {
     }
 
     @Bean
-    public MessageConverter jacksonJmsMessageConverter() {
-        return new JsonTextMessageConverter();
+    public MessageConverter jacksonJmsMessageConverter(ObjectMapper objectMapper) {
+        return new JsonTextMessageConverter(objectMapper);
     }
 
     @Bean

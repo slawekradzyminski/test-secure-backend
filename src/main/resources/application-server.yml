@@ -12,7 +12,7 @@ logging:
 
 spring:
   main:
-    lazy-initialization: true
+    lazy-initialization: false
   jpa:
     properties:
       hibernate:

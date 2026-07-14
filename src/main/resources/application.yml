@@ -5,6 +5,8 @@ spring:
     allow-bean-definition-overriding: true
   jpa:
     open-in-view: false
+  flyway:
+    enabled: false
 
 server:
   # Swagger UI in browsers can include large Cookie/Authorization headers; keep headroom above Tomcat defaults.

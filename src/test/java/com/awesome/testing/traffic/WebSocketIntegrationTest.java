@@ -41,7 +41,8 @@ class WebSocketIntegrationTest {
         trafficPublisher.broadcastTraffic();
 
         ArgumentCaptor<TrafficEventDto> eventCaptor = ArgumentCaptor.forClass(TrafficEventDto.class);
-        verify(messagingTemplate, atLeastOnce()).convertAndSend(eq("/topic/traffic"), eventCaptor.capture());
+        verify(messagingTemplate, atLeastOnce())
+                .convertAndSend(eq("/topic/traffic/test-session-1234"), eventCaptor.capture());
         List<TrafficEventDto> capturedEvents = eventCaptor.getAllValues();
         TrafficEventDto capturedEvent = capturedEvents.getLast();
         assertThat(capturedEvent.getMethod()).isEqualTo(testEvent.getMethod());
@@ -50,4 +51,3 @@ class WebSocketIntegrationTest {
         assertThat(capturedEvent.getDurationMs()).isEqualTo(testEvent.getDurationMs());
     }
 }
-

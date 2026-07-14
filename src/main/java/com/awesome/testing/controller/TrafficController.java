@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+import com.awesome.testing.traffic.TrafficSession;
 
 @RestController
 @RequestMapping("/api/v1/traffic")
@@ -37,10 +39,12 @@ public class TrafficController {
             description = "Returns information about WebSocket endpoints for traffic monitoring"
     )
     @ApiResponse(responseCode = "200", description = "Successfully returned info")
-    public TrafficInfoDto getTrafficInfo() {
+    public TrafficInfoDto getTrafficInfo(
+            @RequestHeader(TrafficSession.HEADER) String clientSessionId) {
+        String validatedSessionId = TrafficSession.requireValid(clientSessionId);
         return TrafficInfoDto.builder()
                 .webSocketEndpoint("/api/v1/ws-traffic")
-                .topic("/topic/traffic")
+                .topic(TrafficSession.topic(validatedSessionId))
                 .description("Connect to the WebSocket endpoint and subscribe to the topic to receive real-time HTTP traffic events")
                 .build();
     }
@@ -53,7 +57,7 @@ public class TrafficController {
     public ResponseEntity<PageDto<TrafficLogEntryDto>> getTrafficLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String clientSessionId,
+            @RequestHeader(TrafficSession.HEADER) String clientSessionId,
             @RequestParam(required = false) String method,
             @RequestParam(required = false) Integer status,
             @RequestParam(required = false) String pathContains,
@@ -63,7 +67,7 @@ public class TrafficController {
         int resolvedSize = Math.max(1, Math.min(size, trafficProperties.getMaxPageSize()));
         return ResponseEntity.ok(PageDto.from(
                 trafficLogService.findLogs(
-                        clientSessionId,
+                        TrafficSession.requireValid(clientSessionId),
                         method,
                         status,
                         pathContains,
@@ -80,8 +84,13 @@ public class TrafficController {
             description = "Returns one captured HTTP traffic log entry using its correlation identifier.")
     @ApiResponse(responseCode = "200", description = "Successfully returned traffic log")
     @ApiResponse(responseCode = "404", description = "Traffic log not found")
-    public ResponseEntity<TrafficLogEntryDto> getTrafficLog(@PathVariable String correlationId) {
-        return trafficLogService.findByCorrelationId(correlationId)
+    public ResponseEntity<TrafficLogEntryDto> getTrafficLog(
+            @PathVariable String correlationId,
+            @RequestHeader(TrafficSession.HEADER) String clientSessionId) {
+        return trafficLogService.findByCorrelationIdAndClientSessionId(
+                        correlationId,
+                        TrafficSession.requireValid(clientSessionId)
+                )
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

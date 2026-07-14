@@ -9,11 +9,12 @@ import org.springframework.jms.core.JmsMessagingTemplate;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.annotation.EnableJms;
+import tools.jackson.databind.ObjectMapper;
 
 @SuppressWarnings("unused")
 @Configuration
 @EnableJms
-@Profile("!local")
+@Profile("!local & !aitesters")
 public class EmailConfig {
 
     @Bean
@@ -25,8 +26,8 @@ public class EmailConfig {
     }
 
     @Bean
-    public MessageConverter jacksonJmsMessageConverter() {
-        return new JsonTextMessageConverter();
+    public MessageConverter jacksonJmsMessageConverter(ObjectMapper objectMapper) {
+        return new JsonTextMessageConverter(objectMapper);
     }
 
     @Bean

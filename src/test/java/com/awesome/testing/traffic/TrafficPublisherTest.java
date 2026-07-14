@@ -38,7 +38,7 @@ class TrafficPublisherTest {
         trafficPublisher.broadcastTraffic();
         
         // then
-        verify(messagingTemplate).convertAndSend("/topic/traffic", event);
+        verify(messagingTemplate).convertAndSend("/topic/traffic/test-session-1234", event);
     }
     
     @Test
@@ -50,4 +50,4 @@ class TrafficPublisherTest {
         
         // then - no exception thrown and no method calls on messagingTemplate
     }
-} 
+}

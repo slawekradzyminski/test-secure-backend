@@ -1,6 +1,7 @@
 package com.awesome.testing.traffic;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.StompWebSocketEndpointRegistration;
@@ -10,7 +11,14 @@ import static org.mockito.Mockito.*;
 
 class WebSocketConfigTest {
 
-    private final WebSocketConfig config = new WebSocketConfig();
+    private WebSocketConfig config;
+
+    @BeforeEach
+    void setUp() {
+        config = new WebSocketConfig(mock(TrafficWebSocketAuthorizationInterceptor.class));
+        org.springframework.test.util.ReflectionTestUtils.setField(
+                config, "allowedOriginPatterns", java.util.List.of("http://localhost:8081"));
+    }
 
     @Test
     void shouldConfigureMessageBroker() {
@@ -32,7 +40,7 @@ class WebSocketConfigTest {
         config.registerStompEndpoints(registry);
 
         verify(registry).addEndpoint("/api/v1/ws-traffic");
-        verify(registration).setAllowedOriginPatterns("*");
+        verify(registration).setAllowedOriginPatterns("http://localhost:8081");
         verify(registration).withSockJS();
     }
 
@@ -47,7 +55,6 @@ class WebSocketConfigTest {
         verify(registration).setSendTimeLimit(20000);
     }
 }
-
 
 
 
