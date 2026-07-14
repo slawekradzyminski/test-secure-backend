@@ -32,6 +32,9 @@ public class RefreshTokenService {
     @Value("${security.jwt.refresh-token.expire-length:604800000}")
     private long refreshTokenValidityInMs;
 
+    @Value("${security.jwt.refresh-token.legacy-uuid-format:false}")
+    private boolean legacyUuidFormat;
+
     public IssuedRefreshToken createToken(UserEntity user) {
         return createToken(user, UUID.randomUUID().toString());
     }
@@ -105,10 +108,14 @@ public class RefreshTokenService {
     }
 
     private IssuedTokenValue newTokenValue() {
+        String value = legacyUuidFormat ? UUID.randomUUID().toString() : newSecureTokenValue();
+        return new IssuedTokenValue(value, hashToken(value));
+    }
+
+    private String newSecureTokenValue() {
         byte[] tokenBytes = new byte[TOKEN_BYTES];
         secureRandom.nextBytes(tokenBytes);
-        String value = Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
-        return new IssuedTokenValue(value, hashToken(value));
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
     }
 
     String hashToken(String token) {

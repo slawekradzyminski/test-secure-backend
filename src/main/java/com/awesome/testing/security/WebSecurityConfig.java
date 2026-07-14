@@ -1,5 +1,6 @@
 package com.awesome.testing.security;
 
+import com.awesome.testing.traffic.TrafficProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,6 +64,7 @@ public class WebSecurityConfig {
     );
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final TrafficProperties trafficProperties;
     @Value("${app.cors.allowed-origin-patterns:http://localhost:8081,http://127.0.0.1:8081,http://host.docker.internal:8081}")
     private List<String> allowedOriginPatterns;
 
@@ -86,6 +88,9 @@ public class WebSecurityConfig {
             PathPatternRequestMatcher.Builder matcherBuilder = PathPatternRequestMatcher.withDefaults();
             auth.requestMatchers(request -> isApiDocsRequest(request.getRequestURI())).permitAll();
             ALLOWED_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(matcherBuilder.matcher(endpoint)).permitAll());
+            if (trafficProperties.isLegacyPublicAccess()) {
+                auth.requestMatchers(matcherBuilder.matcher("/api/v1/traffic/**")).permitAll();
+            }
             
             // Finally, require authentication for all other endpoints
             auth.anyRequest().authenticated();

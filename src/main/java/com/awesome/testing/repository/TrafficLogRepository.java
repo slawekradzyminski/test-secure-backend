@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface TrafficLogRepository extends JpaRepository<TrafficLogEntity, Long>, JpaSpecificationExecutor<TrafficLogEntity> {
 
+    Optional<TrafficLogEntity> findByCorrelationId(String correlationId);
+
     Optional<TrafficLogEntity> findByCorrelationIdAndClientSessionId(String correlationId, String clientSessionId);
 
     @Transactional

@@ -71,6 +71,8 @@ security:
   jwt:
     token:
       require-secure-key: ${JWT_REQUIRE_SECURE_KEY:false}
+    refresh-token:
+      legacy-uuid-format: ${JWT_REFRESH_TOKEN_LEGACY_UUID_FORMAT:false}
   rate-limit:
     enabled: ${SECURITY_RATE_LIMIT_ENABLED:false}
     trust-forwarded-headers: ${SECURITY_RATE_LIMIT_TRUST_FORWARDED_HEADERS:false}
@@ -169,6 +171,7 @@ app:
     obfuscate-authorization: ${APP_TRAFFIC_OBFUSCATE_AUTHORIZATION:false}
     obfuscate-emails: ${APP_TRAFFIC_OBFUSCATE_EMAILS:false}
     obfuscate-sensitive-body-fields: ${APP_TRAFFIC_OBFUSCATE_SENSITIVE_BODY_FIELDS:false}
+    legacy-public-access: ${APP_TRAFFIC_LEGACY_PUBLIC_ACCESS:false}
   
 UserController:
   signin: Authenticates user and returns its JWT token.

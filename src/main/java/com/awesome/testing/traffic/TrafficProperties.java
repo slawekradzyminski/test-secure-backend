@@ -23,6 +23,7 @@ public class TrafficProperties {
     private boolean obfuscateAuthorization;
     private boolean obfuscateEmails;
     private boolean obfuscateSensitiveBodyFields;
+    private boolean legacyPublicAccess;
     private List<String> excludedPaths = new ArrayList<>(List.of(
             "/api/v1/traffic/logs",
             "/api/v1/traffic/logs/",

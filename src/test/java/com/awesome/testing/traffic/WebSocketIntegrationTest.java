@@ -30,7 +30,7 @@ class WebSocketIntegrationTest {
     @BeforeEach
     void setUp() {
         trafficQueue = new ConcurrentLinkedQueue<>();
-        trafficPublisher = new TrafficPublisher(trafficQueue, messagingTemplate);
+        trafficPublisher = new TrafficPublisher(trafficQueue, messagingTemplate, new TrafficProperties());
     }
 
     @Test

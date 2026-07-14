@@ -16,13 +16,19 @@ public class TrafficPublisher {
 
     private final Queue<TrafficEventDto> queue;
     private final SimpMessagingTemplate messagingTemplate;
+    private final TrafficProperties trafficProperties;
 
     @Scheduled(fixedDelay = 500)
     public void broadcastTraffic() {
         while (!queue.isEmpty()) {
             TrafficEventDto event = queue.poll();
-            if (event != null && event.getClientSessionId() != null) {
-                messagingTemplate.convertAndSend(TrafficSession.topic(event.getClientSessionId()), event);
+            if (event != null) {
+                if (trafficProperties.isLegacyPublicAccess()) {
+                    messagingTemplate.convertAndSend("/topic/traffic", event);
+                }
+                if (event.getClientSessionId() != null) {
+                    messagingTemplate.convertAndSend(TrafficSession.topic(event.getClientSessionId()), event);
+                }
             }
         }
     }

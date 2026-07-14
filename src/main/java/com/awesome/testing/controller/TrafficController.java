@@ -40,11 +40,11 @@ public class TrafficController {
     )
     @ApiResponse(responseCode = "200", description = "Successfully returned info")
     public TrafficInfoDto getTrafficInfo(
-            @RequestHeader(TrafficSession.HEADER) String clientSessionId) {
-        String validatedSessionId = TrafficSession.requireValid(clientSessionId);
+            @RequestHeader(name = TrafficSession.HEADER, required = false) String clientSessionId) {
+        String validatedSessionId = resolveSession(clientSessionId);
         return TrafficInfoDto.builder()
                 .webSocketEndpoint("/api/v1/ws-traffic")
-                .topic(TrafficSession.topic(validatedSessionId))
+                .topic(validatedSessionId == null ? "/topic/traffic" : TrafficSession.topic(validatedSessionId))
                 .description("Connect to the WebSocket endpoint and subscribe to the topic to receive real-time HTTP traffic events")
                 .build();
     }
@@ -57,7 +57,7 @@ public class TrafficController {
     public ResponseEntity<PageDto<TrafficLogEntryDto>> getTrafficLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestHeader(TrafficSession.HEADER) String clientSessionId,
+            @RequestHeader(name = TrafficSession.HEADER, required = false) String clientSessionId,
             @RequestParam(required = false) String method,
             @RequestParam(required = false) Integer status,
             @RequestParam(required = false) String pathContains,
@@ -67,7 +67,7 @@ public class TrafficController {
         int resolvedSize = Math.max(1, Math.min(size, trafficProperties.getMaxPageSize()));
         return ResponseEntity.ok(PageDto.from(
                 trafficLogService.findLogs(
-                        TrafficSession.requireValid(clientSessionId),
+                        resolveSession(clientSessionId),
                         method,
                         status,
                         pathContains,
@@ -86,13 +86,21 @@ public class TrafficController {
     @ApiResponse(responseCode = "404", description = "Traffic log not found")
     public ResponseEntity<TrafficLogEntryDto> getTrafficLog(
             @PathVariable String correlationId,
-            @RequestHeader(TrafficSession.HEADER) String clientSessionId) {
-        return trafficLogService.findByCorrelationIdAndClientSessionId(
-                        correlationId,
-                        TrafficSession.requireValid(clientSessionId)
-                )
+            @RequestHeader(name = TrafficSession.HEADER, required = false) String clientSessionId) {
+        String resolvedSessionId = resolveSession(clientSessionId);
+        return (resolvedSessionId == null
+                ? trafficLogService.findByCorrelationId(correlationId)
+                : trafficLogService.findByCorrelationIdAndClientSessionId(correlationId, resolvedSessionId))
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    private String resolveSession(String clientSessionId) {
+        if (trafficProperties.isLegacyPublicAccess()
+                && (clientSessionId == null || clientSessionId.isBlank())) {
+            return null;
+        }
+        return TrafficSession.requireValid(clientSessionId);
     }
 
     private Instant parseInstant(String value) {

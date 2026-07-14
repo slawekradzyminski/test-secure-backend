@@ -52,6 +52,11 @@ public class TrafficLogService {
                 .map(this::toDto);
     }
 
+    public Optional<TrafficLogEntryDto> findByCorrelationId(String correlationId) {
+        return trafficLogRepository.findByCorrelationId(correlationId)
+                .map(this::toDto);
+    }
+
     private TrafficLogEntryDto toDto(TrafficLogEntity entity) {
         return TrafficLogEntryDto.builder()
                 .correlationId(entity.getCorrelationId())

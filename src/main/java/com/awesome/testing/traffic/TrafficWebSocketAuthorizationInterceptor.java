@@ -20,6 +20,7 @@ public class TrafficWebSocketAuthorizationInterceptor implements ChannelIntercep
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final TrafficProperties trafficProperties;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -38,6 +39,9 @@ public class TrafficWebSocketAuthorizationInterceptor implements ChannelIntercep
     private void authenticate(StompHeaderAccessor accessor) {
         String authorization = accessor.getFirstNativeHeader(AUTHORIZATION_HEADER);
         if (authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
+            if (trafficProperties.isLegacyPublicAccess()) {
+                return;
+            }
             throw new AccessDeniedException("A bearer token is required for traffic monitoring");
         }
         String token = authorization.substring(BEARER_PREFIX.length());
@@ -55,6 +59,10 @@ public class TrafficWebSocketAuthorizationInterceptor implements ChannelIntercep
     }
 
     private void authorizeSubscription(StompHeaderAccessor accessor) {
+        if (trafficProperties.isLegacyPublicAccess()
+                && "/topic/traffic".equals(accessor.getDestination())) {
+            return;
+        }
         Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
         Object clientSessionId = sessionAttributes == null
                 ? null

@@ -25,7 +25,7 @@ class TrafficPublisherTest {
     @BeforeEach
     void setUp() {
         queue = new ConcurrentLinkedQueue<>();
-        trafficPublisher = new TrafficPublisher(queue, messagingTemplate);
+        trafficPublisher = new TrafficPublisher(queue, messagingTemplate, new TrafficProperties());
     }
     
     @Test
@@ -49,5 +49,19 @@ class TrafficPublisherTest {
         trafficPublisher.broadcastTraffic();
         
         // then - no exception thrown and no method calls on messagingTemplate
+    }
+
+    @Test
+    void shouldAlsoBroadcastToGlobalTopicWhenLegacyPublicAccessIsEnabled() {
+        TrafficProperties properties = new TrafficProperties();
+        properties.setLegacyPublicAccess(true);
+        trafficPublisher = new TrafficPublisher(queue, messagingTemplate, properties);
+        TrafficEventDto event = trafficEvent();
+        queue.add(event);
+
+        trafficPublisher.broadcastTraffic();
+
+        verify(messagingTemplate).convertAndSend("/topic/traffic", event);
+        verify(messagingTemplate).convertAndSend("/topic/traffic/test-session-1234", event);
     }
 }

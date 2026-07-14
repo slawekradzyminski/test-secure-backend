@@ -3,6 +3,12 @@ app:
     obfuscate-authorization: true
     obfuscate-emails: true
     obfuscate-sensitive-body-fields: true
+    legacy-public-access: true
+
+security:
+  jwt:
+    refresh-token:
+      legacy-uuid-format: true
 
 # The Docker profile is intentionally verbose for local teaching/debugging.
 # Production keeps request logging useful without TRACE-level auto-configuration noise.

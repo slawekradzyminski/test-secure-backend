@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +49,7 @@ class RefreshTokenServiceTest {
                 "refreshTokenValidityInMs",
                 Duration.ofHours(1).toMillis()
         );
+        ReflectionTestUtils.setField(refreshTokenService, "legacyUuidFormat", false);
     }
 
     @Test
@@ -56,7 +58,18 @@ class RefreshTokenServiceTest {
         IssuedRefreshToken token = refreshTokenService.createToken(user);
 
         assertThat(token.user()).isEqualTo(user);
-        assertThat(token.value()).isNotBlank();
+        assertThat(token.value()).hasSize(43);
+        verify(refreshTokenRepository).save(any(RefreshTokenEntity.class));
+    }
+
+    @Test
+    void shouldCreateUuidRefreshTokenForLegacyCompatibility() {
+        mockSavePassthrough();
+        ReflectionTestUtils.setField(refreshTokenService, "legacyUuidFormat", true);
+
+        IssuedRefreshToken token = refreshTokenService.createToken(user);
+
+        assertThat(UUID.fromString(token.value()).toString()).isEqualTo(token.value());
         verify(refreshTokenRepository).save(any(RefreshTokenEntity.class));
     }
 

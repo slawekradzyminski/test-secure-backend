@@ -22,12 +22,14 @@ import org.springframework.security.core.Authentication;
 class TrafficWebSocketAuthorizationInterceptorTest {
 
     private JwtTokenProvider jwtTokenProvider;
+    private TrafficProperties trafficProperties;
     private TrafficWebSocketAuthorizationInterceptor interceptor;
 
     @BeforeEach
     void setUp() {
         jwtTokenProvider = mock(JwtTokenProvider.class);
-        interceptor = new TrafficWebSocketAuthorizationInterceptor(jwtTokenProvider);
+        trafficProperties = new TrafficProperties();
+        interceptor = new TrafficWebSocketAuthorizationInterceptor(jwtTokenProvider, trafficProperties);
     }
 
     @Test
@@ -64,6 +66,17 @@ class TrafficWebSocketAuthorizationInterceptorTest {
 
         assertThatThrownBy(() -> interceptor.preSend(message(accessor), mock(MessageChannel.class)))
                 .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void shouldAllowAnonymousGlobalTrafficWhenLegacyPublicAccessIsEnabled() {
+        trafficProperties.setLegacyPublicAccess(true);
+        StompHeaderAccessor connect = accessor(StompCommand.CONNECT);
+        StompHeaderAccessor subscribe = accessor(StompCommand.SUBSCRIBE);
+        subscribe.setDestination("/topic/traffic");
+
+        assertThat(interceptor.preSend(message(connect), mock(MessageChannel.class))).isNotNull();
+        assertThat(interceptor.preSend(message(subscribe), mock(MessageChannel.class))).isNotNull();
     }
 
     private static StompHeaderAccessor accessor(StompCommand command) {
