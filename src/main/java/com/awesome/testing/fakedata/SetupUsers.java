@@ -28,45 +28,41 @@ public class SetupUsers {
 
     @Transactional
     public void createUsers() {
-        if (userRepository.count() > 0) {
-            return;
-        }
+        adminUser = userRepository.findByUsername("admin")
+                .orElseGet(() -> userRepository.save(createAdminUser(
+                        "admin",
+                        "LocalDemoAdmin123!",
+                        "awesome@testing.com",
+                        "Slawomir",
+                        "Radzyminski"
+                )));
 
-        adminUser = createAdminUser(
-                "admin",
-                "LocalDemoAdmin123!",
-                "awesome@testing.com",
-                "Slawomir",
-                "Radzyminski"
-        );
-        userRepository.save(adminUser);
+        clientUser = userRepository.findByUsername("client")
+                .orElseGet(() -> userRepository.save(createClientUser(
+                        "client",
+                        "client",
+                        "alice.smith@yahoo.com",
+                        "Alice",
+                        "Smith"
+                )));
 
-        clientUser = createClientUser(
-                "client",
-                "client",
-                "alice.smith@yahoo.com",
-                "Alice",
-                "Smith"
-        );
-        userRepository.save(clientUser);
+        client2User = userRepository.findByUsername("client2")
+                .orElseGet(() -> userRepository.save(createClientUser(
+                        "client2",
+                        "client2",
+                        "bob.johnson@google.com",
+                        "Bob",
+                        "Johnson"
+                )));
 
-        client2User = createClientUser(
-                "client2",
-                "client2",
-                "bob.johnson@google.com",
-                "Bob",
-                "Johnson"
-        );
-        userRepository.save(client2User);
-
-        client3User = createClientUser(
-                "client3",
-                "client3",
-                "charlie.brown@example.com",
-                "Charlie",
-                "Brown"
-        );
-        userRepository.save(client3User);
+        client3User = userRepository.findByUsername("client3")
+                .orElseGet(() -> userRepository.save(createClientUser(
+                        "client3",
+                        "client3",
+                        "charlie.brown@example.com",
+                        "Charlie",
+                        "Brown"
+                )));
     }
 
     private UserEntity createAdminUser(String username, String password, String email, String firstName, String lastName) {

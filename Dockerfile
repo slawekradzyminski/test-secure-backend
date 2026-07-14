@@ -27,6 +27,6 @@ RUN apt-get update \
 COPY --from=build --chown=app:app /app/target/jwt-auth-service-1.0.0.jar .
 USER app
 EXPOSE 4001
-HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=180s --retries=3 \
     CMD curl --fail --silent --show-error http://localhost:4001/actuator/health || exit 1
 ENTRYPOINT ["java", "-jar", "jwt-auth-service-1.0.0.jar"]

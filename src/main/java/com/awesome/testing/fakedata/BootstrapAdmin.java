@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,7 @@ import java.util.List;
 @Slf4j
 @Component
 @Profile("!test")
+@Order(0)
 @ConditionalOnProperty(name = "app.bootstrap-admin.enabled", havingValue = "true")
 public class BootstrapAdmin implements CommandLineRunner {
 
