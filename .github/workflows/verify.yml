@@ -26,7 +26,7 @@ jobs:
       - name: Generate CycloneDX SBOM
         uses: anchore/sbom-action@v0.24.0
         with:
-          path: target/jwt-auth-service-1.0.0.jar
+          path: target
           format: cyclonedx-json
           artifact-name: backend-sbom.cdx.json
 
