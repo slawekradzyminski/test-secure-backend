@@ -3,6 +3,8 @@ spring:
     active: docker
   main:
     allow-bean-definition-overriding: true
+  jpa:
+    open-in-view: false
 
 server:
   # Swagger UI in browsers can include large Cookie/Authorization headers; keep headroom above Tomcat defaults.
@@ -64,6 +66,9 @@ logbook:
       - recoveryCodes
 
 security:
+  jwt:
+    token:
+      require-secure-key: ${JWT_REQUIRE_SECURE_KEY:false}
   rate-limit:
     enabled: ${SECURITY_RATE_LIMIT_ENABLED:false}
     trust-forwarded-headers: ${SECURITY_RATE_LIMIT_TRUST_FORWARDED_HEADERS:false}

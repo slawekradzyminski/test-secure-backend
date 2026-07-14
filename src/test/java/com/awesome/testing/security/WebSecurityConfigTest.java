@@ -64,4 +64,26 @@ class WebSecurityConfigTest extends HttpHelper {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
+
+    @Test
+    void shouldAllowHealthEndpointWithoutAuthentication() {
+        ResponseEntity<String> response = executeGet(
+                "/actuator/health",
+                getJsonOnlyHeaders(),
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void shouldRejectDiagnosticActuatorEndpointWithoutAuthentication() {
+        ResponseEntity<String> response = executeGet(
+                "/actuator/env",
+                getJsonOnlyHeaders(),
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
 }

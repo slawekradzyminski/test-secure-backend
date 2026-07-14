@@ -28,8 +28,9 @@ class JwtTokenProviderTest {
 
     @BeforeEach
     void init() {
-        ReflectionTestUtils.setField(jwtTokenProvider, "secretKey", "very-secret-key");
+        ReflectionTestUtils.setField(jwtTokenProvider, "secretKey", "test-jwt-key-with-at-least-32-bytes");
         ReflectionTestUtils.setField(jwtTokenProvider, "validityInMilliseconds", 3600000L);
+        ReflectionTestUtils.setField(jwtTokenProvider, "requireSecureKey", false);
         jwtTokenProvider.init();
     }
 
@@ -60,5 +61,26 @@ class JwtTokenProviderTest {
         assertThatThrownBy(() -> jwtTokenProvider.validateToken("invalid"))
                 .isInstanceOf(CustomException.class)
                 .hasMessage("Invalid or expired token");
+    }
+
+    @Test
+    void shouldRejectKnownDevelopmentKeyWhenSecureKeyIsRequired() {
+        JwtTokenProvider provider = new JwtTokenProvider(myUserDetails);
+        ReflectionTestUtils.setField(provider, "secretKey", "secret-key");
+        ReflectionTestUtils.setField(provider, "requireSecureKey", true);
+
+        assertThatThrownBy(provider::init)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("JWT signing key must contain at least 32 random bytes");
+    }
+
+    @Test
+    void shouldRejectMissingKeyInEveryEnvironment() {
+        JwtTokenProvider provider = new JwtTokenProvider(myUserDetails);
+        ReflectionTestUtils.setField(provider, "secretKey", " ");
+
+        assertThatThrownBy(provider::init)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("JWT signing key must be configured");
     }
 }

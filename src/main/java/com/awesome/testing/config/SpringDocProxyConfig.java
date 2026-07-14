@@ -50,7 +50,9 @@ public class SpringDocProxyConfig {
 
             if (port == null || port.isBlank()) {
                 int uriPort = request.getURI().getPort();
-                port = uriPort > 0 ? Integer.toString(uriPort) : null;
+                if (uriPort > 0) {
+                    port = Integer.toString(uriPort);
+                }
             }
 
             if (host == null || host.isBlank()) {

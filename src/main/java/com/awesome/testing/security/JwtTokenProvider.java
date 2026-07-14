@@ -3,6 +3,7 @@ package com.awesome.testing.security;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,11 +31,21 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 public class JwtTokenProvider {
 
+    private static final int MINIMUM_SECURE_KEY_BYTES = 32;
+    private static final Set<String> INSECURE_DEVELOPMENT_KEYS = Set.of(
+            "secret-key",
+            "test-key",
+            "local-development-jwt-key-change-me"
+    );
+
     @Value("${security.jwt.token.secret-key:secret-key}")
     private String secretKey;
 
     @Value("${security.jwt.token.expire-length:3600000}")
     private long validityInMilliseconds; // 1h
+
+    @Value("${security.jwt.token.require-secure-key:false}")
+    private boolean requireSecureKey;
 
     private final MyUserDetails myUserDetails;
     private SecretKey key;
@@ -42,8 +53,21 @@ public class JwtTokenProvider {
     @SuppressWarnings("unused")
     @PostConstruct
     protected void init() {
-        String longSecretKey = secretKey + secretKey + secretKey + secretKey; // Repeat 4 times to ensure length
-        key = Keys.hmacShaKeyFor(longSecretKey.getBytes(StandardCharsets.UTF_8));
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException("JWT signing key must be configured");
+        }
+
+        byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
+        if (requireSecureKey
+                && (keyBytes.length < MINIMUM_SECURE_KEY_BYTES || INSECURE_DEVELOPMENT_KEYS.contains(secretKey))) {
+            throw new IllegalStateException("JWT signing key must contain at least 32 random bytes");
+        }
+
+        if (keyBytes.length < MINIMUM_SECURE_KEY_BYTES) {
+            int repetitions = Math.ceilDiv(MINIMUM_SECURE_KEY_BYTES, keyBytes.length);
+            keyBytes = secretKey.repeat(repetitions).getBytes(StandardCharsets.UTF_8);
+        }
+        key = Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String createToken(String username, List<Role> roles) {

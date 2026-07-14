@@ -27,7 +27,7 @@ public class RateLimitService {
     private final Clock clock;
     private final ObjectProvider<MeterRegistry> meterRegistry;
 
-    private volatile Cache<String, WindowState> cache;
+    private volatile Cache<String, WindowState> rateLimitCache;
 
     public void check(String endpoint, String keyType, String key, RateLimitProperties.Policy policy) {
         if (!properties.isEnabled() || policy == null || !policy.isActive() || !StringUtils.hasText(key)) {
@@ -52,16 +52,16 @@ public class RateLimitService {
     }
 
     private Cache<String, WindowState> cache() {
-        Cache<String, WindowState> local = cache;
+        Cache<String, WindowState> local = rateLimitCache;
         if (local == null) {
             synchronized (this) {
-                local = cache;
+                local = rateLimitCache;
                 if (local == null) {
                     local = Caffeine.newBuilder()
                             .maximumSize(properties.getCache().getMaximumSize())
                             .expireAfterAccess(properties.getCache().getExpireAfterAccess().toMillis(), TimeUnit.MILLISECONDS)
                             .build();
-                    cache = local;
+                    rateLimitCache = local;
                 }
             }
         }

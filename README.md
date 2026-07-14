@@ -154,6 +154,8 @@ The application uses JWT tokens for authentication. To access protected endpoint
 
 Sign in responses now include both an access token and a refresh token. The refresh token can be exchanged via `POST /api/v1/users/refresh` even when the access token expires, and calling `POST /api/v1/users/logout` revokes the refresh token on the server.
 
+Production deployments must provide `JWT_SECRET_KEY` with at least 32 random bytes and set `JWT_REQUIRE_SECURE_KEY=true`. The application then refuses to start with a missing, short, or known development key. Rotating the key invalidates existing access tokens, so users may need to refresh their session or sign in again.
+
 The training stack also includes an OIDC-based SSO bridge by default. The frontend authenticates with the configured identity provider and exchanges the returned OIDC ID token through `POST /api/v1/users/sso/exchange`. The backend validates the external token, provisions or reuses a local user, and returns the same app-issued JWT and refresh token shape as password login. Protected APIs continue to accept only the app JWT, not raw identity-provider tokens. Set `APP_SSO_ENABLED=false` only when you intentionally want to disable the exchange endpoint.
 
 The local identity provider is Keycloak, started by the sibling `awesome-localstack` repository. Keycloak owns the SSO users and their passwords. This backend owns only the application session, local user record, app roles, refresh tokens, carts, orders, and other domain data. In other words, SSO proves who the user is; the backend still issues and validates the app's own JWT for protected API calls.
@@ -233,7 +235,7 @@ npx playwright test tests/ui/sso.live.ui.spec.ts tests/ui/sso.fixture.ui.spec.ts
 ### Prerequisites
 
 - Java 25 (Temurin distribution recommended)
-- Maven 3.x
+- Maven Wrapper (bundled Maven 3.9.16)
 - ActiveMQ (for email functionality)
 
 ### Running the Application

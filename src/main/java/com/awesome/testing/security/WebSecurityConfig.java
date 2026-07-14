@@ -55,7 +55,10 @@ public class WebSecurityConfig {
             "/swagger-ui/**",
             "/swagger-resources/**",
             "/webjars/**",
-            "/actuator/**",
+            "/actuator/health",
+            "/actuator/health/**",
+            "/actuator/info",
+            "/actuator/prometheus",
             "/api/v1/traffic/**",
             "/api/v1/ws-traffic/**",
             "/api/v1/local/email/outbox/**"

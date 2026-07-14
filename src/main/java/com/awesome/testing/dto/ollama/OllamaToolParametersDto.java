@@ -26,9 +26,8 @@ public class OllamaToolParametersDto {
 
     @Schema(description = "JSON schema properties describing the arguments.")
     @NotEmpty
-    @Valid
     @Builder.Default
-    private Map<String, OllamaToolSchemaPropertyDto> properties = Collections.emptyMap();
+    private Map<String, @Valid OllamaToolSchemaPropertyDto> properties = Collections.emptyMap();
 
     @Schema(description = "List of required properties for this schema.")
     private List<String> required;

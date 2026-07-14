@@ -9,7 +9,6 @@ spring:
       ddl-auto: create-drop
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
         format_sql: false
         id:
           new_generator_mappings: false
@@ -49,6 +48,12 @@ security:
     token:
       secret-key: test-key
       expire-length: 3600000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,env
 
 logging:
   level:

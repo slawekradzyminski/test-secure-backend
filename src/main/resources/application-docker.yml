@@ -9,7 +9,6 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         id:
           new_generator_mappings: false
@@ -39,7 +38,7 @@ server:
 security:
   jwt:
     token:
-      secret-key: secret-key
+      secret-key: ${JWT_SECRET_KEY:local-development-jwt-key-change-me}
       expire-length: 3600000
 
 management:

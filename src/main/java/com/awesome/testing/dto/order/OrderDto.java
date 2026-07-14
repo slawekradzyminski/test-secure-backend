@@ -27,9 +27,8 @@ public class OrderDto {
     private String username;
 
     @Builder.Default
-    @Valid
     @Schema(description = "Order items")
-    private List<OrderItemDto> items = new ArrayList<>();
+    private List<@Valid OrderItemDto> items = new ArrayList<>();
 
     @Schema(description = "Total amount", example = "1999.98")
     private BigDecimal totalAmount;
@@ -60,4 +59,4 @@ public class OrderDto {
                 .updatedAt(order.getUpdatedAt())
                 .build();
     }
-} 
+}

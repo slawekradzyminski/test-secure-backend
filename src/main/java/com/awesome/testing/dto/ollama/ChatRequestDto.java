@@ -35,7 +35,6 @@ public class ChatRequestDto {
      * 3. [user: "Hi", assistant: "Hello!", user: "How are you?", assistant: "I'm good!", user: "Great!"]
      */
     @NotEmpty(message = "At least one message is required")
-    @Valid
     @Schema(
             description = "Complete conversation history in chronological order.",
             example = """
@@ -46,7 +45,7 @@ public class ChatRequestDto {
                       { "role": "user", "content": "What programming language did I say I love?" }
                     ]"""
     )
-    private List<ChatMessageDto> messages;
+    private List<@Valid ChatMessageDto> messages;
 
     /**
      * Optional model parameters (e.g., temperature, maxTokens, etc.)

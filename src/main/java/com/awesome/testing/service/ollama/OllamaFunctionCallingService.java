@@ -17,7 +17,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -54,7 +53,6 @@ public class OllamaFunctionCallingService {
                 iteration + 1, history.size(), baseRequest.getTools().size());
 
         Sinks.Many<ChatResponseDto> replaySink = Sinks.many().replay().all();
-        List<ChatResponseDto> collectedChunks = new ArrayList<>();
 
         ChatRequestDto iterationRequest = ChatRequestDto.builder()
                 .model(baseRequest.getModel())
@@ -74,7 +72,6 @@ public class OllamaFunctionCallingService {
                 .doOnNext(resp -> {
                     logToolCalls(ctx, resp.getMessage() != null ? resp.getMessage().getToolCalls() : null);
                     handleChunk(ctx, resp);
-                    collectedChunks.add(resp);
                     replaySink.tryEmitNext(resp);
                 })
                 .doOnError(e -> {
@@ -114,7 +111,7 @@ public class OllamaFunctionCallingService {
             history.add(toolRequestMessage);
             List<String> requestedTools = toolRequestMessage.getToolCalls().stream()
                     .map(call -> call.getFunction().getName())
-                    .collect(Collectors.toList());
+                    .toList();
             log.info("Iteration {}: Ollama requested {} tool call(s): {}",
                     iteration + 1, requestedTools.size(), requestedTools);
 

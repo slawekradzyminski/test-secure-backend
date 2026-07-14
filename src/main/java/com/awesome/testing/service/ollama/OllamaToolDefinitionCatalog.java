@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Catalog of tool definitions exposed through /api/v1/ollama/chat/tools.
@@ -29,7 +28,7 @@ public class OllamaToolDefinitionCatalog {
         );
         List<String> names = definitions.stream()
                 .map(def -> def.getFunction().getName())
-                .collect(Collectors.toList());
+                .toList();
         log.info("Registered {} Ollama tool definitions: {}", definitions.size(), names);
     }
 
