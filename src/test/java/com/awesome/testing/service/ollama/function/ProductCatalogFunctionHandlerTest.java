@@ -14,6 +14,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -101,6 +102,47 @@ class ProductCatalogFunctionHandlerTest {
 
         assertThat(result.getContent()).contains("\"total\":0");
         verify(productService).listProducts(0, 25, null, null);
+    }
+
+    @Test
+    void shouldRepairBonsaiParameterMarkupLeakedIntoCategory() {
+        ProductListDto listDto = ProductListDto.builder()
+                .products(List.of())
+                .total(0)
+                .page(0)
+                .size(100)
+                .build();
+        when(productService.listProducts(0, 100, "electronics", true)).thenReturn(listDto);
+
+        ToolCallDto toolCall = ToolCallDto.builder()
+                .function(ToolCallFunctionDto.builder()
+                        .name("list_products")
+                        .arguments(Map.of(
+                                "category", "electronics</parameter>\n<parameter=inStockOnly>\ntrue",
+                                "limit", 100
+                        ))
+                        .build())
+                .build();
+
+        ChatMessageDto result = handler.handle(toolCall);
+
+        assertThat(result.getContent()).contains("\"total\":0");
+        verify(productService).listProducts(0, 100, "electronics", true);
+    }
+
+    @Test
+    void shouldRejectUnrecognizedToolMarkupInCategory() {
+        ToolCallDto toolCall = ToolCallDto.builder()
+                .function(ToolCallFunctionDto.builder()
+                        .name("list_products")
+                        .arguments(Map.of("category", "electronics<unexpected>value"))
+                        .build())
+                .build();
+
+        ChatMessageDto result = handler.handle(toolCall);
+
+        assertThat(result.getContent()).contains("category must be a plain category name without tool markup");
+        verifyNoInteractions(productService);
     }
 
     @Test
