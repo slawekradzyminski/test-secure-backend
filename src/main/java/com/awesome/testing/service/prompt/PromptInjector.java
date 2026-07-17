@@ -32,10 +32,7 @@ public class PromptInjector {
         List<ChatMessageDto> cleanedHistory = stripExistingPrompts(original.getMessages(), chatPrompt, toolPrompt);
 
         List<ChatMessageDto> augmentedHistory = new ArrayList<>();
-        augmentedHistory.add(systemMessage(chatPrompt));
-        if (includeToolPrompt) {
-            augmentedHistory.add(systemMessage(toolPrompt));
-        }
+        augmentedHistory.add(systemMessage(mergePrompts(chatPrompt, toolPrompt)));
         augmentedHistory.addAll(cleanedHistory);
 
         return ChatRequestDto.builder()
@@ -47,6 +44,16 @@ public class PromptInjector {
                 .keepAlive(original.getKeepAlive())
                 .think(original.getThink())
                 .build();
+    }
+
+    private static String mergePrompts(String chatPrompt, String toolPrompt) {
+        if (toolPrompt == null || toolPrompt.isBlank()) {
+            return chatPrompt;
+        }
+        if (chatPrompt == null || chatPrompt.isBlank()) {
+            return toolPrompt;
+        }
+        return chatPrompt.strip() + "\n\n" + toolPrompt.strip();
     }
 
     private static List<ChatMessageDto> stripExistingPrompts(List<ChatMessageDto> history,

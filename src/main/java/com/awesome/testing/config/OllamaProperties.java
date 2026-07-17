@@ -10,5 +10,6 @@ import org.springframework.validation.annotation.Validated;
 public class OllamaProperties {
 
     private String baseUrl;
+    private int maxToolCallIterations = 8;
 
-} 
+}

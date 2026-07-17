@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -18,6 +20,9 @@ import java.util.Map;
 public class ProductCatalogFunctionHandler implements FunctionCallHandler {
 
     static final String TOOL_NAME = "list_products";
+    private static final Pattern LEAKED_IN_STOCK_ARGUMENT = Pattern.compile(
+            "^\\s*([^<>]*?)\\s*</parameter>\\s*<parameter=inStockOnly>\\s*(true|false)\\s*(?:</parameter>)?\\s*$",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     private final ProductService productService;
     private final ObjectMapper objectMapper;
@@ -33,10 +38,13 @@ public class ProductCatalogFunctionHandler implements FunctionCallHandler {
             Map<String, Object> args = toolCall.getFunction().getArguments();
             int offset = parseInt(args != null ? args.get("offset") : null, 0);
             int limit = parseInt(args != null ? args.get("limit") : null, 25);
-            String category = parseCategory(args != null ? args.get("category") : null);
-            Boolean inStockOnly = parseBoolean(args != null ? args.get("inStockOnly") : null);
+            ParsedCategory parsedCategory = parseCategory(args != null ? args.get("category") : null);
+            Boolean explicitInStockOnly = parseBoolean(args != null ? args.get("inStockOnly") : null);
+            Boolean inStockOnly = explicitInStockOnly != null
+                    ? explicitInStockOnly
+                    : parsedCategory.leakedInStockOnly();
 
-            ProductListDto list = productService.listProducts(offset, limit, category, inStockOnly);
+            ProductListDto list = productService.listProducts(offset, limit, parsedCategory.category(), inStockOnly);
             return ChatMessageDto.builder()
                     .role("tool")
                     .toolName(TOOL_NAME)
@@ -68,12 +76,28 @@ public class ProductCatalogFunctionHandler implements FunctionCallHandler {
         throw new IllegalArgumentException("Unsupported number format");
     }
 
-    private String parseCategory(Object value) {
+    private ParsedCategory parseCategory(Object value) {
         if (value == null) {
-            return null;
+            return new ParsedCategory(null, null);
         }
         String category = value.toString().trim();
-        return category.isBlank() ? null : category;
+        if (category.isBlank()) {
+            return new ParsedCategory(null, null);
+        }
+
+        Matcher leakedArgument = LEAKED_IN_STOCK_ARGUMENT.matcher(category);
+        if (leakedArgument.matches()) {
+            String repairedCategory = leakedArgument.group(1).trim();
+            Boolean repairedInStockOnly = Boolean.valueOf(leakedArgument.group(2));
+            log.warn("Repaired leaked tool markup in list_products category; category='{}', inStockOnly={}",
+                    repairedCategory, repairedInStockOnly);
+            return new ParsedCategory(repairedCategory.isBlank() ? null : repairedCategory, repairedInStockOnly);
+        }
+
+        if (category.contains("<") || category.contains(">")) {
+            throw new IllegalArgumentException("category must be a plain category name without tool markup");
+        }
+        return new ParsedCategory(category, null);
     }
 
     private Boolean parseBoolean(Object value) {
@@ -103,5 +127,8 @@ public class ProductCatalogFunctionHandler implements FunctionCallHandler {
                     .content("{\"error\":\"" + message + "\"}")
                     .build();
         }
+    }
+
+    private record ParsedCategory(String category, Boolean leakedInStockOnly) {
     }
 }

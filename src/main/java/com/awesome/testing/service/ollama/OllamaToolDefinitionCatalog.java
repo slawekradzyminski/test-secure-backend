@@ -66,7 +66,7 @@ public class OllamaToolDefinitionCatalog {
                                 .properties(Map.of(
                                         "offset", property("integer", "Zero-based offset into the catalog (default 0)."),
                                         "limit", property("integer", "Number of products to fetch (default 25, max 100)."),
-                                        "category", property("string", "Case-insensitive category filter, e.g., 'electronics'."),
+                                        "category", property("string", "Plain case-insensitive category name, e.g., 'electronics'. Never include XML or <parameter> markup in this value."),
                                         "inStockOnly", property("boolean", "If true, only return products with stockQuantity > 0.")
                                 ))
                                 .build())

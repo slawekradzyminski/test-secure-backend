@@ -1,5 +1,6 @@
 package com.awesome.testing.service.ollama;
 
+import com.awesome.testing.config.OllamaProperties;
 import com.awesome.testing.dto.ollama.*;
 import com.awesome.testing.service.ollama.function.OllamaToolRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,7 +53,8 @@ class OllamaFunctionCallingServiceTest {
 
     @BeforeEach
     void setUp() {
-        functionCallingService = new OllamaFunctionCallingService(ollamaWebClient, toolRegistry);
+        OllamaProperties properties = new OllamaProperties();
+        functionCallingService = new OllamaFunctionCallingService(ollamaWebClient, toolRegistry, properties);
     }
 
     @Test
