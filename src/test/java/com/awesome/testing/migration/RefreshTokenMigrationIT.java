@@ -37,6 +37,7 @@ class RefreshTokenMigrationIT {
             assertThat(columnExists(statement, "fresh", "refresh_token", "token_hash")).isTrue();
             assertThat(columnExists(statement, "fresh", "refresh_token", "family_id")).isTrue();
             assertThat(columnExists(statement, "fresh", "refresh_token", "token")).isFalse();
+            assertThat(columnExists(statement, "fresh", "password_reset_token", "version")).isTrue();
         }
     }
 

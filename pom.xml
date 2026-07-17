@@ -370,6 +370,7 @@
                                 <include>**/OllamaGenerateControllerTest.class</include>
                                 <include>**/TrafficControllerTest.class</include>
                                 <include>**/RefreshTokenMigrationIT.class</include>
+                                <include>**/PasswordResetTokenConcurrencyIT.class</include>
                             </includes>
                             <argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
                         </configuration>

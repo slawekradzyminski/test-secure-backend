@@ -26,6 +26,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @RequiredArgsConstructor
@@ -50,11 +51,10 @@ public class PasswordResetService {
     private String destination;
 
     @Transactional
-    public ForgotPasswordResponseDto requestReset(String identifier, String requestedBaseUrl,
-                                                  String clientIp, String userAgent) {
+    public ForgotPasswordResponseDto requestReset(String identifier, String clientIp, String userAgent) {
         Instant now = Instant.now();
         Optional<String> maybeToken = userRepository.findByUsernameOrEmail(identifier, identifier)
-                .map(user -> handleResetRequestForUser(user, requestedBaseUrl, clientIp, userAgent, now));
+                .map(user -> handleResetRequestForUser(user, clientIp, userAgent, now));
         meterRegistry.ifAvailable(registry -> registry.counter(PASSWORD_RESET_REQUESTED_METRIC).increment());
         return ForgotPasswordResponseDto.builder()
                 .message("If the account exists, password reset instructions have been sent.")
@@ -62,8 +62,7 @@ public class PasswordResetService {
                 .build();
     }
 
-    private String handleResetRequestForUser(UserEntity user, String requestedBaseUrl,
-                                             String clientIp, String userAgent, Instant now) {
+    private String handleResetRequestForUser(UserEntity user, String clientIp, String userAgent, Instant now) {
         if (isSsoOnlyUser(user)) {
             log.info("Password reset requested for SSO-only user {}, skipping local password reset", user.getUsername());
             return null;
@@ -84,7 +83,7 @@ public class PasswordResetService {
                 .build();
         passwordResetTokenRepository.save(entity);
 
-        String resetLink = buildResetLink(requestedBaseUrl, rawToken);
+        String resetLink = buildResetLink(rawToken);
         EmailDto email = emailFactory.buildResetRequestEmail(user, resetLink, properties.getTokenTtl());
         emailService.sendEmail(email, destination, user);
 
@@ -96,20 +95,32 @@ public class PasswordResetService {
         return StringUtils.hasText(user.getAuthProvider()) && StringUtils.hasText(user.getProviderSubject());
     }
 
-    private String buildResetLink(String requestedBaseUrl, String token) {
-        String baseUrl = StringUtils.hasText(requestedBaseUrl) ? requestedBaseUrl : properties.getFrontendBaseUrl();
+    private String buildResetLink(String token) {
+        String baseUrl = properties.getFrontendBaseUrl();
         try {
             URI uri = new URI(baseUrl);
             if (uri.getScheme() == null || !(uri.getScheme().equalsIgnoreCase("http")
-                    || uri.getScheme().equalsIgnoreCase("https"))) {
-                throw new CustomException("Reset base URL must start with http:// or https://", HttpStatus.BAD_REQUEST);
+                    || uri.getScheme().equalsIgnoreCase("https")) || !StringUtils.hasText(uri.getHost())) {
+                throw invalidFrontendBaseUrl();
             }
-            String base = uri.toString();
-            String separator = base.contains("?") ? "&" : "?";
-            return base + separator + "token=" + token;
+            return UriComponentsBuilder.fromUri(uri)
+                    .replaceQueryParam("token", token)
+                    .build()
+                    .encode()
+                    .toUriString();
         } catch (URISyntaxException e) {
-            throw new CustomException("Invalid reset base URL", HttpStatus.BAD_REQUEST, e);
+            throw invalidFrontendBaseUrl(e);
         }
+    }
+
+    private IllegalStateException invalidFrontendBaseUrl() {
+        return new IllegalStateException(
+                "password-reset.frontend-base-url must be an absolute HTTP(S) URL");
+    }
+
+    private IllegalStateException invalidFrontendBaseUrl(Exception cause) {
+        return new IllegalStateException(
+                "password-reset.frontend-base-url must be an absolute HTTP(S) URL", cause);
     }
 
     @Transactional
@@ -118,7 +129,8 @@ public class PasswordResetService {
             throw new CustomException("Passwords do not match", HttpStatus.BAD_REQUEST);
         }
 
-        PasswordResetTokenEntity tokenEntity = passwordResetTokenRepository.findByTokenHash(tokenGenerator.hashToken(request.getToken()))
+        PasswordResetTokenEntity tokenEntity = passwordResetTokenRepository
+                .findByTokenHashForUpdate(tokenGenerator.hashToken(request.getToken()))
                 .orElseThrow(() -> new CustomException("Invalid password reset token", HttpStatus.BAD_REQUEST));
 
         Instant now = Instant.now();

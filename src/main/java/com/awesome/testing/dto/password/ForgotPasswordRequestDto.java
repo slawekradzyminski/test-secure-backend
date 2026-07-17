@@ -17,9 +17,4 @@ public class ForgotPasswordRequestDto {
             example = "client")
     @NotBlank(message = "Identifier is required")
     private String identifier;
-
-    @Schema(description = "Optional override for the frontend reset page base URL. "
-            + "Must include scheme (http/https). When not provided the backend default is used.",
-            example = "http://localhost:8081/reset")
-    private String resetBaseUrl;
 }

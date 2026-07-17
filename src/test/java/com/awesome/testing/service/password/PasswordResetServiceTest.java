@@ -93,7 +93,7 @@ class PasswordResetServiceTest {
                 EmailDto.builder().to(user.getEmail()).subject("Reset").message("Body").build()
         );
 
-        ForgotPasswordResponseDto response = passwordResetService.requestReset("client", null, "127.0.0.1", "JUnit");
+        ForgotPasswordResponseDto response = passwordResetService.requestReset("client", "127.0.0.1", "JUnit");
 
         assertThat(response.getToken()).isEqualTo("raw-token");
         verify(passwordResetTokenRepository).deleteByUserOrExpired(eq(user), any());
@@ -115,7 +115,7 @@ class PasswordResetServiceTest {
                 EmailDto.builder().to(user.getEmail()).subject("Reset").message("Body").build()
         );
 
-        ForgotPasswordResponseDto response = passwordResetService.requestReset("client", null, "127.0.0.1", "JUnit");
+        ForgotPasswordResponseDto response = passwordResetService.requestReset("client", "127.0.0.1", "JUnit");
 
         assertThat(response.getToken()).isNull();
     }
@@ -127,7 +127,7 @@ class PasswordResetServiceTest {
         user.setProviderSubject("sso-subject");
         when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
 
-        ForgotPasswordResponseDto response = passwordResetService.requestReset("client", null, "127.0.0.1", "JUnit");
+        ForgotPasswordResponseDto response = passwordResetService.requestReset("client", "127.0.0.1", "JUnit");
 
         assertThat(response.getToken()).isNull();
         verify(passwordResetTokenRepository, never()).deleteByUserOrExpired(any(), any());
@@ -136,7 +136,8 @@ class PasswordResetServiceTest {
     }
 
     @Test
-    void shouldAppendResetTokenWithAmpersandWhenBaseUrlAlreadyHasQueryString() {
+    void shouldBuildResetLinkFromTrustedConfiguration() {
+        properties.setFrontendBaseUrl("https://shop.example/reset?source=email");
         UserEntity user = sampleUser();
         when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
         when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");
@@ -148,7 +149,6 @@ class PasswordResetServiceTest {
 
         passwordResetService.requestReset(
                 "client",
-                "https://shop.example/reset?source=email",
                 "127.0.0.1",
                 "JUnit"
         );
@@ -160,7 +160,8 @@ class PasswordResetServiceTest {
     }
 
     @Test
-    void shouldRejectResetBaseUrlWithoutHttpScheme() {
+    void shouldRejectInvalidConfiguredResetBaseUrl() {
+        properties.setFrontendBaseUrl("javascript:alert(1)");
         UserEntity user = sampleUser();
         when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
         when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");
@@ -169,14 +170,11 @@ class PasswordResetServiceTest {
 
         assertThatThrownBy(() -> passwordResetService.requestReset(
                 "client",
-                "javascript:alert(1)",
                 "127.0.0.1",
                 "JUnit"
         ))
-                .isInstanceOf(CustomException.class)
-                .hasMessage("Reset base URL must start with http:// or https://")
-                .extracting("httpStatus")
-                .isEqualTo(HttpStatus.BAD_REQUEST);
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("password-reset.frontend-base-url must be an absolute HTTP(S) URL");
 
         verify(emailService, never()).sendEmail(any(), anyString(), any());
     }
@@ -193,7 +191,7 @@ class PasswordResetServiceTest {
                 .build();
 
         when(passwordResetTokenGenerator.hashToken("submitted-token")).thenReturn("hash-token");
-        when(passwordResetTokenRepository.findByTokenHash("hash-token")).thenReturn(Optional.of(entity));
+        when(passwordResetTokenRepository.findByTokenHashForUpdate("hash-token")).thenReturn(Optional.of(entity));
         when(passwordEncoder.encode("newPass123")).thenReturn("encoded");
         when(emailFactory.buildResetConfirmationEmail(user)).thenReturn(
                 EmailDto.builder().to(user.getEmail()).subject("Done").message("Ok").build()
@@ -225,13 +223,13 @@ class PasswordResetServiceTest {
                 .build();
 
         assertThrows(CustomException.class, () -> passwordResetService.resetPassword(request));
-        verify(passwordResetTokenRepository, never()).findByTokenHash(anyString());
+        verify(passwordResetTokenRepository, never()).findByTokenHashForUpdate(anyString());
     }
 
     @Test
     void shouldFailWhenResetTokenDoesNotExist() {
         when(passwordResetTokenGenerator.hashToken("missing-token")).thenReturn("missing-hash");
-        when(passwordResetTokenRepository.findByTokenHash("missing-hash")).thenReturn(Optional.empty());
+        when(passwordResetTokenRepository.findByTokenHashForUpdate("missing-hash")).thenReturn(Optional.empty());
 
         ResetPasswordRequestDto request = ResetPasswordRequestDto.builder()
                 .token("missing-token")
@@ -258,7 +256,7 @@ class PasswordResetServiceTest {
                 .user(user)
                 .build();
         when(passwordResetTokenGenerator.hashToken("submitted-token")).thenReturn("hash-token");
-        when(passwordResetTokenRepository.findByTokenHash("hash-token")).thenReturn(Optional.of(entity));
+        when(passwordResetTokenRepository.findByTokenHashForUpdate("hash-token")).thenReturn(Optional.of(entity));
 
         ResetPasswordRequestDto request = ResetPasswordRequestDto.builder()
                 .token("submitted-token")
@@ -287,7 +285,7 @@ class PasswordResetServiceTest {
                 .user(user)
                 .build();
         when(passwordResetTokenGenerator.hashToken("submitted-token")).thenReturn("hash-token");
-        when(passwordResetTokenRepository.findByTokenHash("hash-token")).thenReturn(Optional.of(entity));
+        when(passwordResetTokenRepository.findByTokenHashForUpdate("hash-token")).thenReturn(Optional.of(entity));
 
         ResetPasswordRequestDto request = ResetPasswordRequestDto.builder()
                 .token("submitted-token")

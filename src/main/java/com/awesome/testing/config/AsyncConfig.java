@@ -13,8 +13,6 @@ public class AsyncConfig {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         scheduler.setPoolSize(4);
         scheduler.setThreadNamePrefix("app-scheduler-");
-        scheduler.setWaitForTasksToCompleteOnShutdown(true);
-        scheduler.setAwaitTerminationSeconds(15);
         return scheduler;
     }
 }

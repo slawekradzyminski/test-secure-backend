@@ -38,7 +38,6 @@ public class PasswordResetController {
         authRateLimitGuard.checkForgotPassword(servletRequest, request.getIdentifier());
         ForgotPasswordResponseDto response = passwordResetService.requestReset(
                 request.getIdentifier(),
-                request.getResetBaseUrl(),
                 servletRequest.getRemoteAddr(),
                 servletRequest.getHeader("User-Agent"));
         return ResponseEntity.accepted().body(response);

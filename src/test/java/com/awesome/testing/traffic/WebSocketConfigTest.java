@@ -3,6 +3,7 @@ package com.awesome.testing.traffic;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.StompWebSocketEndpointRegistration;
 import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
@@ -54,7 +55,19 @@ class WebSocketConfigTest {
         verify(registration).setSendBufferSizeLimit(512 * 1024);
         verify(registration).setSendTimeLimit(20000);
     }
-}
 
+    @Test
+    void shouldConfigureManagedChannelExecutors() {
+        ChannelRegistration inbound = mock(ChannelRegistration.class, RETURNS_DEEP_STUBS);
+        ChannelRegistration outbound = mock(ChannelRegistration.class, RETURNS_DEEP_STUBS);
+
+        config.configureClientInboundChannel(inbound);
+        config.configureClientOutboundChannel(outbound);
+
+        verify(inbound).taskExecutor(any(org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor.class));
+        verify(inbound).interceptors(any(TrafficWebSocketAuthorizationInterceptor.class));
+        verify(outbound).taskExecutor(any(org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor.class));
+    }
+}
 
 

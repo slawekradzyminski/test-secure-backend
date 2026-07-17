@@ -8,6 +8,7 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final TrafficWebSocketAuthorizationInterceptor authorizationInterceptor;
+    private final ThreadPoolTaskExecutor clientInboundExecutor = channelExecutor("clientInboundChannel-");
+    private final ThreadPoolTaskExecutor clientOutboundExecutor = channelExecutor("clientOutboundChannel-");
 
     @Value("${app.cors.allowed-origin-patterns:http://localhost:8081,http://127.0.0.1:8081,http://host.docker.internal:8081}")
     private List<String> allowedOriginPatterns;
@@ -37,7 +40,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.taskExecutor(clientInboundExecutor);
         registration.interceptors(authorizationInterceptor);
+    }
+
+    @Override
+    public void configureClientOutboundChannel(ChannelRegistration registration) {
+        registration.taskExecutor(clientOutboundExecutor);
     }
     
     @Override
@@ -45,5 +54,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registration.setMessageSizeLimit(128 * 1024);
         registration.setSendBufferSizeLimit(512 * 1024);
         registration.setSendTimeLimit(20_000);
+    }
+
+    private static ThreadPoolTaskExecutor channelExecutor(String threadNamePrefix) {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(Runtime.getRuntime().availableProcessors() * 2);
+        executor.setAllowCoreThreadTimeOut(true);
+        executor.setStrictEarlyShutdown(true);
+        executor.setThreadNamePrefix(threadNamePrefix);
+        return executor;
     }
 }
