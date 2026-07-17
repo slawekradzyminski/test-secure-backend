@@ -1,5 +1,6 @@
 package com.awesome.testing.service.ollama;
 
+import com.awesome.testing.config.OllamaProperties;
 import com.awesome.testing.dto.ollama.ChatMessageDto;
 import com.awesome.testing.dto.ollama.ChatRequestDto;
 import com.awesome.testing.dto.ollama.ChatResponseDto;
@@ -23,10 +24,9 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class OllamaFunctionCallingService {
 
-    private static final int MAX_TOOL_CALL_ITERATIONS = 3;
-
     private final WebClient ollamaWebClient;
     private final OllamaToolRegistry toolRegistry;
+    private final OllamaProperties ollamaProperties;
 
     public Flux<ChatResponseDto> chatWithTools(ChatRequestDto request) {
         if (request.getTools() == null || request.getTools().isEmpty()) {
@@ -44,8 +44,9 @@ public class OllamaFunctionCallingService {
                                                 List<ChatMessageDto> history,
                                                 int iteration,
                                                 OllamaRequestHandler ctx) {
-        if (iteration >= MAX_TOOL_CALL_ITERATIONS) {
-            log.error("Exceeded maximum tool call iterations ({}) for model {}", MAX_TOOL_CALL_ITERATIONS, baseRequest.getModel());
+        int maxIterations = ollamaProperties.getMaxToolCallIterations();
+        if (iteration >= maxIterations) {
+            log.error("Exceeded maximum tool call iterations ({}) for model {}", maxIterations, baseRequest.getModel());
             return Flux.error(new IllegalStateException("Exceeded maximum tool call iterations"));
         }
 

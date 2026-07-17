@@ -8,5 +8,5 @@
 # Course API Contract
 
 - Use the tests from the [AI Testers API course repository](https://github.com/AI-Testers-pl/ait2api1-api-ai) as the compatibility feedback loop for `https://awesome.byst.re`.
-- After backend changes, run the suite from the [latest available lesson (`l12` currently)](https://github.com/AI-Testers-pl/ait2api1-api-ai/tree/master/l12) and keep it green (`cd l12 && npm ci && npm test`).
+- After awesome-localstack deployments, run the suite from the [latest available lesson (`l12` currently)](https://github.com/AI-Testers-pl/ait2api1-api-ai/tree/master/l12) and keep it green (`cd l12 && npm ci && npm test`).
 - The lesson tests define the required course contract. Endpoints and behavior not covered by that suite may change; covered behavior must remain compatible.

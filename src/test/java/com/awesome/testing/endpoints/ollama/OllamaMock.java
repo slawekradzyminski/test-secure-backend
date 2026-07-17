@@ -53,6 +53,45 @@ public class OllamaMock {
                 ));
     }
 
+    public static void stubSuccessfulNextTokenLogprobs() {
+        stubFor(post(urlEqualTo("/api/generate"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {
+                                  "model":"llama3.2:1b",
+                                  "response":" Paris",
+                                  "done":true,
+                                  "logprobs":[{
+                                    "token":" Paris",
+                                    "logprob":-0.2,
+                                    "bytes":[32,80,97,114,105,115],
+                                    "top_logprobs":[
+                                      {"token":" Paris","logprob":-0.2},
+                                      {"token":" Lyon","logprob":-1.6},
+                                      {"token":" London","logprob":-2.2}
+                                    ]
+                                  }]
+                                }
+                                """)));
+    }
+
+    public static void stubMissingNextTokenLogprobs() {
+        stubFor(post(urlEqualTo("/api/generate"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"model":"llama3.2:1b","response":" Paris","done":true,"logprobs":null}
+                                """)));
+    }
+
+    public static void stubEmptyNextTokenResponse() {
+        stubFor(post(urlEqualTo("/api/generate"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("")));
+    }
+
     // api/chat
     public static void stubSuccessfulChat() {
         stubFor(post(urlEqualTo("/api/chat"))

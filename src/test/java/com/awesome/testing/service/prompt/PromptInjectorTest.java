@@ -51,7 +51,7 @@ class PromptInjectorTest {
     }
 
     @Test
-    void shouldPrependChatAndToolPromptsForToolRequests() {
+    void shouldMergeChatAndToolPromptsIntoOneSystemMessageForToolRequests() {
         ChatRequestDto request = ChatRequestDto.builder()
                 .model("qwen3.5:2b")
                 .messages(List.of(ChatMessageDto.builder().role("user").content("Compare items").build()))
@@ -62,10 +62,10 @@ class PromptInjectorTest {
 
         ChatRequestDto result = promptInjector.augmentToolRequest("bob", request);
 
-        assertThat(result.getMessages()).hasSize(3);
-        assertThat(result.getMessages().get(0).getContent()).isEqualTo("Chat Prompt");
-        assertThat(result.getMessages().get(1).getContent()).isEqualTo("Tool Prompt");
-        assertThat(result.getMessages().get(2).getContent()).isEqualTo("Compare items");
+        assertThat(result.getMessages()).hasSize(2);
+        assertThat(result.getMessages().get(0).getRole()).isEqualTo("system");
+        assertThat(result.getMessages().get(0).getContent()).isEqualTo("Chat Prompt\n\nTool Prompt");
+        assertThat(result.getMessages().get(1).getContent()).isEqualTo("Compare items");
     }
 
     @Test
@@ -83,9 +83,9 @@ class PromptInjectorTest {
 
         ChatRequestDto result = promptInjector.augmentToolRequest("carol", request);
 
-        assertThat(result.getMessages()).hasSize(3);
-        assertThat(result.getMessages().get(0).getContent()).isEqualTo("Chat Prompt");
-        assertThat(result.getMessages().get(1).getContent()).isEqualTo("Tool Prompt");
-        assertThat(result.getMessages().get(2).getContent()).isEqualTo("Hi");
+        assertThat(result.getMessages()).hasSize(2);
+        assertThat(result.getMessages().get(0).getRole()).isEqualTo("system");
+        assertThat(result.getMessages().get(0).getContent()).isEqualTo("Chat Prompt\n\nTool Prompt");
+        assertThat(result.getMessages().get(1).getContent()).isEqualTo("Hi");
     }
 }
