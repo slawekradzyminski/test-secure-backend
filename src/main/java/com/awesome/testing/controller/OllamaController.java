@@ -3,12 +3,19 @@ package com.awesome.testing.controller;
 import com.awesome.testing.dto.ollama.ChatRequestDto;
 import com.awesome.testing.dto.ollama.ChatResponseDto;
 import com.awesome.testing.dto.ollama.GenerateResponseDto;
+import com.awesome.testing.dto.ollama.LearningEmbeddingRequestDto;
+import com.awesome.testing.dto.ollama.LearningEmbeddingResponseDto;
 import com.awesome.testing.dto.ollama.ModelNotFoundDto;
+import com.awesome.testing.dto.ollama.LearningNextTokenRequestDto;
+import com.awesome.testing.dto.ollama.LearningNextTokenResponseDto;
+import com.awesome.testing.dto.ollama.LearningTokenCountRequestDto;
+import com.awesome.testing.dto.ollama.LearningTokenCountResponseDto;
 import com.awesome.testing.dto.ollama.OllamaToolDefinitionDto;
 import com.awesome.testing.dto.ollama.StreamedRequestDto;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.security.ratelimit.AuthRateLimitGuard;
 import com.awesome.testing.service.ollama.OllamaFunctionCallingService;
+import com.awesome.testing.service.ollama.OllamaLearningService;
 import com.awesome.testing.service.ollama.OllamaService;
 import com.awesome.testing.service.ollama.OllamaToolDefinitionCatalog;
 import com.awesome.testing.service.prompt.PromptInjector;
@@ -44,10 +51,56 @@ import java.util.List;
 public class OllamaController {
 
     private final OllamaService ollamaService;
+    private final OllamaLearningService ollamaLearningService;
     private final OllamaFunctionCallingService functionCallingService;
     private final OllamaToolDefinitionCatalog toolDefinitionCatalog;
     private final PromptInjector promptInjector;
     private final AuthRateLimitGuard authRateLimitGuard;
+
+    @Operation(summary = "Inspect live next-token probabilities",
+            description = "Runs one raw Ollama generation step and returns a stable, ranked top-logprob teaching response.")
+    @ApiResponse(responseCode = "200", description = "Next-token candidates returned successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "422", description = "The selected model or runtime did not expose logprobs")
+    @ApiResponse(responseCode = "429", description = "Too many requests")
+    @PostMapping(value = "/learning/next-token", produces = MediaType.APPLICATION_JSON_VALUE)
+    public LearningNextTokenResponseDto nextTokenDistribution(
+            HttpServletRequest servletRequest,
+            @AuthenticationPrincipal CustomPrincipal principal,
+            @Valid @RequestBody LearningNextTokenRequestDto request) {
+        authRateLimitGuard.checkOllama(servletRequest, principal != null ? principal.getUsername() : null);
+        return ollamaLearningService.nextTokenDistribution(request).block();
+    }
+
+    @Operation(summary = "Verify a prompt token count with Ollama",
+            description = "Runs one raw generation step and returns the number of prompt tokens processed by the model.")
+    @ApiResponse(responseCode = "200", description = "Prompt token count returned successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "422", description = "The selected model or runtime did not expose a prompt token count")
+    @ApiResponse(responseCode = "429", description = "Too many requests")
+    @PostMapping(value = "/learning/token-count", produces = MediaType.APPLICATION_JSON_VALUE)
+    public LearningTokenCountResponseDto countPromptTokens(
+            HttpServletRequest servletRequest,
+            @AuthenticationPrincipal CustomPrincipal principal,
+            @Valid @RequestBody LearningTokenCountRequestDto request) {
+        authRateLimitGuard.checkOllama(servletRequest, principal != null ? principal.getUsername() : null);
+        return ollamaLearningService.countPromptTokens(request).block();
+    }
+
+    @Operation(summary = "Generate text embeddings for the learning lab",
+            description = "Embeds two to eight texts with a dedicated Ollama embedding model.")
+    @ApiResponse(responseCode = "200", description = "Embedding vectors returned successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "422", description = "The selected model or runtime did not return valid embeddings")
+    @ApiResponse(responseCode = "429", description = "Too many requests")
+    @PostMapping(value = "/learning/embeddings", produces = MediaType.APPLICATION_JSON_VALUE)
+    public LearningEmbeddingResponseDto embedTexts(
+            HttpServletRequest servletRequest,
+            @AuthenticationPrincipal CustomPrincipal principal,
+            @Valid @RequestBody LearningEmbeddingRequestDto request) {
+        authRateLimitGuard.checkOllama(servletRequest, principal != null ? principal.getUsername() : null);
+        return ollamaLearningService.embedTexts(request).block();
+    }
 
     @Operation(summary = "Generate text using Ollama model",
             description = "Streams generated text chunks from the configured Ollama backend for a single prompt.")

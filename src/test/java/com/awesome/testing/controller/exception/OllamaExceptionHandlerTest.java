@@ -1,9 +1,11 @@
 package com.awesome.testing.controller.exception;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.nio.charset.StandardCharsets;
@@ -50,6 +52,18 @@ class OllamaExceptionHandlerTest {
     }
 
     @Test
+    void shouldDescribeAnUnavailableLocalOllamaService() {
+        WebClientRequestException exception = mock(WebClientRequestException.class);
+
+        ResponseEntity<OllamaExceptionHandler.ErrorResponse> response =
+                handler.handleWebClientRequestException(exception);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).contains("Start the local Ollama service");
+    }
+
+    @Test
     void shouldHandleHttpMessageNotReadableException() {
         HttpMessageNotReadableException exception = mock(HttpMessageNotReadableException.class);
         RuntimeException cause = new RuntimeException("Unexpected character");
@@ -67,6 +81,5 @@ class OllamaExceptionHandlerTest {
         assertThat(response.getBody().timestamp()).isNotNull();
     }
 }
-
 
 

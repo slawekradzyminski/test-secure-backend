@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.time.Instant;
@@ -28,6 +29,18 @@ public class OllamaExceptionHandler {
                 .status(ex.getStatusCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(ex.getResponseBodyAsString());
+    }
+
+    @ExceptionHandler(WebClientRequestException.class)
+    public ResponseEntity<ErrorResponse> handleWebClientRequestException(WebClientRequestException ex) {
+        return ResponseEntity
+                .status(503)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorResponse(
+                        503,
+                        "Ollama is unavailable. Start the local Ollama service and try again.",
+                        Instant.now().toString()
+                ));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
