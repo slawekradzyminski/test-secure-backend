@@ -53,6 +53,94 @@ public class OllamaMock {
                 ));
     }
 
+    public static void stubSuccessfulNextTokenLogprobs() {
+        stubFor(post(urlEqualTo("/api/generate"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {
+                                  "model":"llama3.2:1b",
+                                  "response":" Paris",
+                                  "done":true,
+                                  "logprobs":[{
+                                    "token":" Paris",
+                                    "logprob":-0.2,
+                                    "bytes":[32,80,97,114,105,115],
+                                    "top_logprobs":[
+                                      {"token":" Paris","logprob":-0.2},
+                                      {"token":" Lyon","logprob":-1.6},
+                                      {"token":" London","logprob":-2.2}
+                                    ]
+                                  }]
+                                }
+                                """)));
+    }
+
+    public static void stubMissingNextTokenLogprobs() {
+        stubFor(post(urlEqualTo("/api/generate"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"model":"llama3.2:1b","response":" Paris","done":true,"logprobs":null}
+                                """)));
+    }
+
+    public static void stubEmptyNextTokenResponse() {
+        stubFor(post(urlEqualTo("/api/generate"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("")));
+    }
+
+    public static void stubSuccessfulTokenCount() {
+        stubFor(post(urlEqualTo("/api/generate"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {
+                                  "model":"hf.co/prism-ml/Bonsai-27B-gguf:Q1_0",
+                                  "response":" pieces",
+                                  "done":true,
+                                  "prompt_eval_count":7
+                                }
+                                """)));
+    }
+
+    public static void stubMissingTokenCount() {
+        stubFor(post(urlEqualTo("/api/generate"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"model":"hf.co/prism-ml/Bonsai-27B-gguf:Q1_0","response":" pieces","done":true}
+                                """)));
+    }
+
+    public static void stubSuccessfulEmbeddings() {
+        stubFor(post(urlEqualTo("/api/embed"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {
+                                  "model":"embeddinggemma",
+                                  "embeddings":[
+                                    [0.8,0.4,0.2,0.1],
+                                    [0.75,0.45,0.18,0.12],
+                                    [-0.2,0.1,0.8,0.5]
+                                  ],
+                                  "prompt_eval_count":19
+                                }
+                                """)));
+    }
+
+    public static void stubInvalidEmbeddings() {
+        stubFor(post(urlEqualTo("/api/embed"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"model":"embeddinggemma","embeddings":[[0.8],[0.7]],"prompt_eval_count":4}
+                                """)));
+    }
+
     // api/chat
     public static void stubSuccessfulChat() {
         stubFor(post(urlEqualTo("/api/chat"))
