@@ -13,7 +13,8 @@ RUN --mount=type=cache,target=/root/.m2 \
 
 COPY src ./src
 RUN --mount=type=cache,target=/root/.m2 \
-    ./mvnw -B -Dmaven.test.skip=true clean package
+    ./mvnw -B -Dmaven.test.skip=true clean package \
+    && cp target/jwt-auth-service-*.jar app.jar
 
 FROM eclipse-temurin:25-jre-jammy
 WORKDIR /app
@@ -24,9 +25,9 @@ RUN apt-get update \
     && mkdir -p /app/logs \
     && chown app:app /app/logs \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=build --chown=app:app /app/target/jwt-auth-service-1.0.0.jar .
+COPY --from=build --chown=app:app /app/app.jar .
 USER app
 EXPOSE 4001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=180s --retries=3 \
     CMD curl --fail --silent --show-error http://localhost:4001/actuator/health || exit 1
-ENTRYPOINT ["java", "-jar", "jwt-auth-service-1.0.0.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
