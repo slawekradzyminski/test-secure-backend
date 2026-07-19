@@ -4,7 +4,7 @@
 
     <groupId>murraco</groupId>
     <artifactId>jwt-auth-service</artifactId>
-    <version>3.7.10</version>
+    <version>3.7.11</version>
     <packaging>jar</packaging>
 
     <name>spring-boot-jwt</name>
