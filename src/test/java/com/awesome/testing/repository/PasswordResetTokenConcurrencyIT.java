@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @DataJpaTest(showSql = false, properties = {
         "spring.jpa.hibernate.ddl-auto=validate",
@@ -34,7 +35,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class PasswordResetTokenConcurrencyIT {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:16-alpine");
+            new PostgreSQLContainer(
+                    DockerImageName.parse(
+                                    "postgres:16-alpine@sha256:"
+                                            + "57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777")
+                            .asCompatibleSubstituteFor("postgres"));
 
     static {
         POSTGRES.start();

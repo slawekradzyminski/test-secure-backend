@@ -19,7 +19,7 @@ services:
       - my-private-ntwk
 
   postgres:
-    image: postgres:16.14-bookworm
+    image: postgres:16.14-bookworm@sha256:92620daddcd947f8d5ab5ba66e848702fe443d87fed30c4cea8e389fd78dfc55
     restart: always
     environment:
       POSTGRES_DB: testdb
@@ -33,7 +33,7 @@ services:
       - my-private-ntwk
     
   frontend:
-   image: slawekradzyminski/frontend:3.7.11@sha256:b1c0bb05b1aaf5ca8e38552dcb137d8ba908975fa1c8c0eb7d80ca003afa03f8
+   image: slawekradzyminski/frontend:3.7.12@sha256:59acd367dca78a0aea8776467885eda39d56b8259906a0f110d7063e6ff7e112
    restart: always
    ports:
      - "8081:80"
@@ -59,7 +59,7 @@ services:
       - my-private-ntwk
 
   ollama:
-    image: slawekradzyminski/ollama-qwen35-2b:0.18.3
+    image: slawekradzyminski/ollama-qwen35-2b:0.18.3@sha256:e5f0c74f0d086459837cee887574869da1703a7dbefc3cbd2702eb26b73c1953
     container_name: ollama
     restart: unless-stopped
     ports:
