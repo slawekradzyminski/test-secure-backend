@@ -4,7 +4,7 @@
 
     <groupId>murraco</groupId>
     <artifactId>jwt-auth-service</artifactId>
-    <version>3.7.13</version>
+    <version>3.7.14</version>
     <packaging>jar</packaging>
 
     <name>spring-boot-jwt</name>
@@ -16,12 +16,12 @@
         <start-class>com.awesome.testing.JwtAuthServiceApp</start-class>
         <skip.pmd>false</skip.pmd>
         <skip.jacoco>false</skip.jacoco>
-        <artemis.version>2.54.0</artemis.version>
+        <artemis.version>2.55.0</artemis.version>
         <caffeine.version>3.2.4</caffeine.version>
         <lombok.version>1.18.46</lombok.version>
         <mockito.version>5.23.0</mockito.version>
-        <postgresql.version>42.7.11</postgresql.version>
-        <reactor-bom.version>2025.0.5</reactor-bom.version>
+        <postgresql.version>42.7.13</postgresql.version>
+        <reactor-bom.version>2025.0.6</reactor-bom.version>
         <otp-java.version>2.2.0</otp-java.version>
     </properties>
 
@@ -88,7 +88,7 @@
         <dependency>
             <groupId>org.zalando</groupId>
             <artifactId>logbook-spring-boot-starter</artifactId>
-            <version>4.0.4</version>
+            <version>4.1.0</version>
         </dependency>
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
