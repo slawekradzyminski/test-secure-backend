@@ -11,11 +11,16 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 class RefreshTokenMigrationIT {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:16-alpine");
+            new PostgreSQLContainer(
+                    DockerImageName.parse(
+                                    "postgres:16-alpine@sha256:"
+                                            + "57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777")
+                            .asCompatibleSubstituteFor("postgres"));
 
     @BeforeAll
     static void startPostgres() {
