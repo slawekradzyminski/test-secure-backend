@@ -132,6 +132,8 @@ class AuthRateLimitGuardTest {
                 "clientuser",
                 properties.getPolicies().getQrUser()
         );
+        verify(clientAddressResolver, never()).resolve(request);
+        verifyNoMoreInteractions(rateLimitService);
     }
 
     @Test

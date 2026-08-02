@@ -143,6 +143,25 @@ class PasswordResetServiceTest {
     }
 
     @Test
+    void shouldAllowLocalResetWhenSsoIdentityIsIncomplete() {
+        UserEntity user = sampleUser();
+        user.setAuthProvider("keycloak");
+        when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
+        when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");
+        when(passwordResetTokenGenerator.hashToken("raw-token")).thenReturn("hash-token");
+        when(emailFactory.buildResetRequestEmail(any(), anyString(), any())).thenReturn(
+                EmailDto.builder().to(user.getEmail()).subject("Reset").message("Body").build()
+        );
+
+        ForgotPasswordResponseDto response = passwordResetService.requestReset(
+                "client", "127.0.0.1", "JUnit");
+
+        assertThat(response.getToken()).isEqualTo("raw-token");
+        verify(passwordResetTokenRepository).save(any());
+        verify(emailService).sendEmail(any(EmailDto.class), eq("email"), eq(user));
+    }
+
+    @Test
     void shouldBuildResetLinkFromTrustedConfiguration() {
         properties.setFrontendBaseUrl("https://shop.example/reset?source=email");
         UserEntity user = sampleUser();
