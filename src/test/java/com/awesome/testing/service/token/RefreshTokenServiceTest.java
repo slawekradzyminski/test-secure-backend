@@ -63,6 +63,16 @@ class RefreshTokenServiceTest {
     }
 
     @Test
+    void shouldCreateDistinctSecureRefreshTokens() {
+        mockSavePassthrough();
+
+        IssuedRefreshToken first = refreshTokenService.createToken(user);
+        IssuedRefreshToken second = refreshTokenService.createToken(user);
+
+        assertThat(first.value()).isNotEqualTo(second.value());
+    }
+
+    @Test
     void shouldCreateUuidRefreshTokenForLegacyCompatibility() {
         mockSavePassthrough();
         ReflectionTestUtils.setField(refreshTokenService, "legacyUuidFormat", true);

@@ -4,7 +4,7 @@
 
     <groupId>murraco</groupId>
     <artifactId>jwt-auth-service</artifactId>
-    <version>3.7.14</version>
+    <version>3.7.15</version>
     <packaging>jar</packaging>
 
     <name>spring-boot-jwt</name>
@@ -23,6 +23,8 @@
         <postgresql.version>42.7.13</postgresql.version>
         <reactor-bom.version>2025.0.6</reactor-bom.version>
         <otp-java.version>2.2.0</otp-java.version>
+        <pitest.version>1.25.8</pitest.version>
+        <pitest.junit5.version>1.2.3</pitest.junit5.version>
     </properties>
 
     <parent>
@@ -405,6 +407,61 @@
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>mutation-testing</id>
+            <properties>
+                <skip.pmd>true</skip.pmd>
+                <skip.jacoco>true</skip.jacoco>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <version>${pitest.version}</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.pitest</groupId>
+                                <artifactId>pitest-junit5-plugin</artifactId>
+                                <version>${pitest.junit5.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <targetClasses>
+                                <param>com.awesome.testing.service.ProductService</param>
+                                <param>com.awesome.testing.service.CartService</param>
+                                <param>com.awesome.testing.service.OrderService</param>
+                                <param>com.awesome.testing.service.token.RefreshTokenService</param>
+                                <param>com.awesome.testing.service.password.PasswordResetService</param>
+                                <param>com.awesome.testing.security.ratelimit.AuthRateLimitGuard</param>
+                                <param>com.awesome.testing.traffic.TrafficCapturePolicy</param>
+                                <param>com.awesome.testing.traffic.TrafficDataSanitizer</param>
+                                <param>com.awesome.testing.service.ollama.function.ProductCatalogFunctionHandler</param>
+                                <param>com.awesome.testing.service.ollama.function.ProductSnapshotFunctionHandler</param>
+                            </targetClasses>
+                            <targetTests>
+                                <param>com.awesome.testing.service.ProductServiceTest</param>
+                                <param>com.awesome.testing.service.CartServiceTest</param>
+                                <param>com.awesome.testing.service.OrderServiceTest</param>
+                                <param>com.awesome.testing.service.token.RefreshTokenServiceTest</param>
+                                <param>com.awesome.testing.service.password.PasswordResetServiceTest</param>
+                                <param>com.awesome.testing.security.ratelimit.AuthRateLimitGuardTest</param>
+                                <param>com.awesome.testing.traffic.TrafficCapturePolicyTest</param>
+                                <param>com.awesome.testing.traffic.TrafficDataSanitizerTest</param>
+                                <param>com.awesome.testing.service.ollama.function.ProductCatalogFunctionHandlerTest</param>
+                                <param>com.awesome.testing.service.ollama.function.ProductSnapshotFunctionHandlerTest</param>
+                            </targetTests>
+                            <threads>4</threads>
+                            <timestampedReports>false</timestampedReports>
+                            <outputFormats>
+                                <param>HTML</param>
+                                <param>XML</param>
+                            </outputFormats>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

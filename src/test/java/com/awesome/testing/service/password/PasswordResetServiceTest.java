@@ -7,6 +7,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,9 +25,12 @@ import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.service.EmailService;
 import com.awesome.testing.service.token.PasswordResetTokenGenerator;
 import com.awesome.testing.service.token.RefreshTokenService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,6 +89,7 @@ class PasswordResetServiceTest {
 
     @Test
     void shouldGenerateTokenAndSendEmailForExistingUser() {
+        Counter requestedCounter = mockMetricCounter("password.reset.requested");
         UserEntity user = sampleUser();
         when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
         when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");
@@ -99,6 +105,7 @@ class PasswordResetServiceTest {
         verify(passwordResetTokenRepository).deleteByUserOrExpired(eq(user), any());
         verify(passwordResetTokenRepository).save(any());
         verify(emailService).sendEmail(any(EmailDto.class), eq("email"), eq(user));
+        verify(requestedCounter).increment();
     }
 
     @Test
@@ -181,6 +188,7 @@ class PasswordResetServiceTest {
 
     @Test
     void shouldResetPasswordAndInvalidateRefreshTokens() {
+        Counter completedCounter = mockMetricCounter("password.reset.completed");
         UserEntity user = sampleUser();
 
         PasswordResetTokenEntity entity = PasswordResetTokenEntity.builder()
@@ -211,6 +219,7 @@ class PasswordResetServiceTest {
         verify(passwordResetTokenRepository).deleteAllByUser(user);
         verify(emailService).sendEmail(any(EmailDto.class), eq("email"), eq(user));
         verify(passwordResetTokenRepository, never()).save(entity);
+        verify(completedCounter).increment();
         assertThat(user.getPassword()).isEqualTo("encoded");
     }
 
@@ -310,5 +319,17 @@ class PasswordResetServiceTest {
                 .password("secret")
                 .roles(List.of(Role.ROLE_CLIENT))
                 .build();
+    }
+
+    private Counter mockMetricCounter(String metricName) {
+        MeterRegistry registry = mock(MeterRegistry.class);
+        Counter counter = mock(Counter.class);
+        doAnswer(invocation -> {
+            Consumer<MeterRegistry> action = invocation.getArgument(0);
+            action.accept(registry);
+            return null;
+        }).when(meterRegistryProvider).ifAvailable(any());
+        when(registry.counter(metricName)).thenReturn(counter);
+        return counter;
     }
 }
