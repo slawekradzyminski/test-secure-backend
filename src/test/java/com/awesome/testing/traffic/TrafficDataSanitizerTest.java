@@ -77,4 +77,31 @@ class TrafficDataSanitizerTest {
         assertThat(sanitizedBody.originalLength()).isEqualTo(16);
         assertThat(sanitizedBody.storedLength()).isEqualTo(10);
     }
+
+    @Test
+    void shouldNotTruncateBodyAtTheExactConfiguredLimit() {
+        TrafficProperties properties = new TrafficProperties();
+        properties.setMaxBodyLength(10);
+        TrafficDataSanitizer sanitizer = new TrafficDataSanitizer(properties);
+
+        TrafficBodySanitizationResult result = sanitizer.sanitizeBody("0123456789");
+
+        assertThat(result.body()).isEqualTo("0123456789");
+        assertThat(result.truncated()).isFalse();
+        assertThat(result.originalLength()).isEqualTo(10);
+        assertThat(result.storedLength()).isEqualTo(10);
+    }
+
+    @Test
+    void shouldObfuscateEmailsInNonAuthorizationHeaders() {
+        TrafficProperties properties = new TrafficProperties();
+        properties.setObfuscateEmails(true);
+        TrafficDataSanitizer sanitizer = new TrafficDataSanitizer(properties);
+
+        Map<String, List<String>> result = sanitizer.sanitizeHeaders(Map.of(
+                "X-Contact", List.of("owner@example.com", "safe-value")
+        ));
+
+        assertThat(result.get("X-Contact")).containsExactly("***", "safe-value");
+    }
 }

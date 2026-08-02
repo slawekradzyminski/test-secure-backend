@@ -82,6 +82,55 @@ class ProductCatalogFunctionHandlerTest {
     }
 
     @Test
+    void shouldPreserveExplicitFalseBooleanArgument() {
+        ProductListDto listDto = ProductListDto.builder()
+                .products(List.of())
+                .total(0)
+                .page(0)
+                .size(25)
+                .build();
+        when(productService.listProducts(0, 25, null, false)).thenReturn(listDto);
+        ToolCallDto toolCall = ToolCallDto.builder()
+                .function(ToolCallFunctionDto.builder()
+                        .name("list_products")
+                        .arguments(Map.of("inStockOnly", false))
+                        .build())
+                .build();
+
+        handler.handle(toolCall);
+
+        verify(productService).listProducts(0, 25, null, false);
+    }
+
+    @Test
+    void shouldPreserveBooleanTrueAndParseStringFalse() {
+        ProductListDto listDto = ProductListDto.builder()
+                .products(List.of())
+                .total(0)
+                .page(0)
+                .size(25)
+                .build();
+        when(productService.listProducts(0, 25, null, true)).thenReturn(listDto);
+        when(productService.listProducts(0, 25, null, false)).thenReturn(listDto);
+
+        handler.handle(ToolCallDto.builder()
+                .function(ToolCallFunctionDto.builder()
+                        .name("list_products")
+                        .arguments(Map.of("inStockOnly", true))
+                        .build())
+                .build());
+        handler.handle(ToolCallDto.builder()
+                .function(ToolCallFunctionDto.builder()
+                        .name("list_products")
+                        .arguments(Map.of("inStockOnly", "false"))
+                        .build())
+                .build());
+
+        verify(productService).listProducts(0, 25, null, true);
+        verify(productService).listProducts(0, 25, null, false);
+    }
+
+    @Test
     void shouldTreatBlankCategoryAndMissingBooleanAsNull() {
         ProductListDto listDto = ProductListDto.builder()
                 .products(List.of())

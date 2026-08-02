@@ -47,6 +47,17 @@ class TrafficCapturePolicyTest {
     }
 
     @Test
+    void shouldHonorExcludedPrefixThatAlreadyEndsWithSlash() {
+        trafficProperties.setExcludedPaths(java.util.List.of("/private/"));
+        HttpServletRequest request = mockRequest(
+                "/private/child",
+                handlerMethod(DocumentedController.class, "documentedEndpoint")
+        );
+
+        assertThat(trafficCapturePolicy.shouldCapture(request)).isFalse();
+    }
+
+    @Test
     void shouldSkipSwaggerInfrastructureEndpoints() {
         HttpServletRequest apiDocsRequest = mockRequest(
                 "/v3/api-docs",

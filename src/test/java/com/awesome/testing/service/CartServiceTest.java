@@ -71,6 +71,10 @@ class CartServiceTest {
         assertThat(cart.getUsername()).isEqualTo(USERNAME);
         assertThat(cart.getTotalItems()).isEqualTo(1);
         assertThat(cart.getTotalPrice()).isEqualTo(product.getPrice());
+        assertThat(cart.getItems()).singleElement().satisfies(item -> {
+            assertThat(item.getProductId()).isEqualTo(product.getId());
+            assertThat(item.getQuantity()).isEqualTo(1);
+        });
     }
 
     @Test
@@ -100,6 +104,7 @@ class CartServiceTest {
 
     @Test
     void shouldIncreaseQuantityWhenItemAlreadyExists() {
+        product.setPrice(BigDecimal.valueOf(1250));
         CartItemDto dto = CartItemDto.builder()
                 .productId(product.getId())
                 .quantity(3)
@@ -112,8 +117,10 @@ class CartServiceTest {
         CartDto cart = cartService.addToCart(USERNAME, dto);
 
         assertThat(cartItem.getQuantity()).isEqualTo(4);
+        assertThat(cartItem.getPrice()).isEqualByComparingTo("1250");
         verify(cartItemRepository).save(cartItem);
         assertThat(cart.getTotalItems()).isEqualTo(4);
+        assertThat(cart.getTotalPrice()).isEqualByComparingTo("5000");
     }
 
     @Test
@@ -130,6 +137,7 @@ class CartServiceTest {
 
     @Test
     void shouldUpdateCartItemQuantity() {
+        product.setPrice(BigDecimal.valueOf(1250));
         UpdateCartItemDto dto = UpdateCartItemDto.builder().quantity(5).build();
         when(cartItemRepository.findByUsernameAndProductId(USERNAME, product.getId()))
                 .thenReturn(Optional.of(cartItem));
@@ -138,7 +146,9 @@ class CartServiceTest {
         CartDto cart = cartService.updateCartItem(USERNAME, product.getId(), dto);
 
         assertThat(cartItem.getQuantity()).isEqualTo(5);
+        assertThat(cartItem.getPrice()).isEqualByComparingTo("1250");
         assertThat(cart.getTotalItems()).isEqualTo(5);
+        assertThat(cart.getTotalPrice()).isEqualByComparingTo("6250");
         verify(cartItemRepository).save(cartItem);
     }
 

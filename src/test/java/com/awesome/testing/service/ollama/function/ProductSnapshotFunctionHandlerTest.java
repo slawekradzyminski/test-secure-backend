@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -85,6 +86,14 @@ class ProductSnapshotFunctionHandlerTest {
 
         assertThat(response.getContent()).contains("error");
         assertThat(response.getContent()).contains("productId must be a number");
+    }
+
+    @Test
+    void shouldRejectBlankProductName() {
+        ChatMessageDto response = handler.handle(toolCallWithArgs(Map.of("name", "   ")));
+
+        assertThat(response.getContent()).contains("name must be provided when productId is absent");
+        verifyNoInteractions(productService);
     }
 
     private ToolCallDto toolCallWithArgs(Map<String, Object> args) {

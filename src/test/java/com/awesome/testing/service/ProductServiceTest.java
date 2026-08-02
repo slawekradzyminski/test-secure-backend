@@ -3,6 +3,7 @@ package com.awesome.testing.service;
 import com.awesome.testing.controller.exception.ProductNotFoundException;
 import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.dto.product.ProductDto;
+import com.awesome.testing.dto.product.ProductSummaryDto;
 import com.awesome.testing.dto.product.ProductUpdateDto;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
@@ -124,18 +125,24 @@ class ProductServiceTest {
     @Test
     void shouldUpdateProduct() {
         ProductUpdateDto updateDto = ProductUpdateDto.builder()
+                .name("Updated laptop")
                 .description("Updated description")
                 .price(BigDecimal.valueOf(999))
                 .stockQuantity(7)
+                .category("Computers")
+                .imageUrl("https://example.com/updated-laptop.png")
                 .build();
         when(productRepository.findById(1L)).thenReturn(Optional.of(entity));
         when(productRepository.saveAndFlush(entity)).thenReturn(entity);
 
         ProductDto updated = productService.updateProduct(1L, updateDto);
 
+        assertThat(updated.getName()).isEqualTo("Updated laptop");
         assertThat(updated.getDescription()).isEqualTo("Updated description");
         assertThat(updated.getPrice()).isEqualTo(BigDecimal.valueOf(999));
         assertThat(updated.getStockQuantity()).isEqualTo(7);
+        assertThat(updated.getCategory()).isEqualTo("Computers");
+        assertThat(updated.getImageUrl()).isEqualTo("https://example.com/updated-laptop.png");
         verify(productRepository).saveAndFlush(entity);
     }
 
@@ -146,6 +153,7 @@ class ProductServiceTest {
         boolean deleted = productService.deleteProduct(1L);
 
         assertThat(deleted).isTrue();
+        verify(productRepository).delete(entity);
     }
 
     @Test
@@ -159,17 +167,27 @@ class ProductServiceTest {
 
     @Test
     void shouldListProductsWithOffsetLimit() {
+        List<ProductEntity> products = java.util.stream.LongStream.rangeClosed(1, 5)
+                .mapToObj(id -> ProductEntity.builder()
+                        .id(id)
+                        .name("Product " + id)
+                        .price(BigDecimal.TEN)
+                        .stockQuantity(1)
+                        .build())
+                .toList();
         when(productRepository.findAll(
                 org.mockito.ArgumentMatchers.<Specification<ProductEntity>>any(),
-                eq(PageRequest.of(0, 15))))
-                .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 15), 1));
+                eq(PageRequest.of(0, 5))))
+                .thenReturn(new PageImpl<>(products, PageRequest.of(0, 5), 5));
 
-        var result = productService.listProducts(10, 5, null, null);
+        var result = productService.listProducts(2, 3, null, null);
 
-        assertThat(result.getProducts()).hasSize(0); // only 1 item total, offset skips it
-        assertThat(result.getTotal()).isEqualTo(1);
+        assertThat(result.getProducts())
+                .extracting(ProductSummaryDto::getId)
+                .containsExactly(3L, 4L, 5L);
+        assertThat(result.getTotal()).isEqualTo(5);
         verify(productRepository).findAll(
                 org.mockito.ArgumentMatchers.<Specification<ProductEntity>>any(),
-                eq(PageRequest.of(0, 15)));
+                eq(PageRequest.of(0, 5)));
     }
 }
