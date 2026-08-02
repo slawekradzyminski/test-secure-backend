@@ -33,7 +33,7 @@ services:
       - my-private-ntwk
     
   frontend:
-   image: slawekradzyminski/frontend:3.7.12@sha256:59acd367dca78a0aea8776467885eda39d56b8259906a0f110d7063e6ff7e112
+   image: slawekradzyminski/frontend:3.7.13@sha256:8f7e5cb457d277c9dd85098cb1354a646830c544d78bddca2a110ec8e1591cea
    restart: always
    ports:
      - "8081:80"
