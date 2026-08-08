@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM eclipse-temurin:25-jdk-jammy@sha256:0348e7b24ad4479cf35927b750671bb4b78465c303003b08536f6f2fa6f180cd AS build
+FROM eclipse-temurin:25-jdk-jammy@sha256:f122992af75e61d87892f8a37c60f7cfa498b18748c1c9f8563da9a3b1893278 AS build
 WORKDIR /app
 
 RUN apt-get update \
@@ -16,7 +16,7 @@ RUN --mount=type=cache,target=/root/.m2 \
     ./mvnw -B -Dmaven.test.skip=true clean package \
     && cp target/jwt-auth-service-*.jar app.jar
 
-FROM eclipse-temurin:25-jre-jammy@sha256:b8ba5fca9d88b6ecc3a46c8e75b744f84aca9a9d08587901b5ab480baf641ab5
+FROM eclipse-temurin:25-jre-jammy@sha256:5bd5dbe00f40ea149de434a75029713765a2912cfc1fd770cc7c7aff007384ea
 WORKDIR /app
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
