@@ -23,7 +23,7 @@
         <postgresql.version>42.7.13</postgresql.version>
         <reactor-bom.version>2025.0.6</reactor-bom.version>
         <otp-java.version>2.2.0</otp-java.version>
-        <pitest.version>1.25.8</pitest.version>
+        <pitest.version>1.25.9</pitest.version>
         <pitest.junit5.version>1.2.3</pitest.junit5.version>
     </properties>
 
