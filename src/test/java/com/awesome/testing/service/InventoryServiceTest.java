@@ -2,9 +2,13 @@ package com.awesome.testing.service;
 
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.inventory.InventoryAdjustmentDto;
+import com.awesome.testing.dto.inventory.InventoryItemDto;
 import com.awesome.testing.dto.inventory.InventoryMovementDto;
+import com.awesome.testing.dto.inventory.StockStatus;
+import com.awesome.testing.entity.OrderEntity;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.entity.inventory.InventoryMovementEntity;
+import com.awesome.testing.entity.inventory.InventoryMovementType;
 import com.awesome.testing.repository.ProductRepository;
 import com.awesome.testing.repository.inventory.InventoryMovementRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -134,6 +138,93 @@ class InventoryServiceTest {
         assertThat(product.getStockQuantity()).isEqualTo(5);
         verify(productRepository, never()).save(any());
         verify(movementRepository, never()).save(any());
+    }
+
+    @Test
+    void adjustAllowsTheExactZeroBoundary() {
+        InventoryAdjustmentDto request = request(-5, "sold at counter");
+        when(productRepository.findByIdForUpdate(PRODUCT_ID)).thenReturn(Optional.of(product));
+        when(movementRepository.findByProductIdAndRequestId(PRODUCT_ID, request.getRequestId()))
+                .thenReturn(Optional.empty());
+        when(movementRepository.save(any(InventoryMovementEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        InventoryMovementDto result = inventoryService.adjust(PRODUCT_ID, request, "admin");
+
+        assertThat(result.getQuantityAfter()).isZero();
+        assertThat(product.getStockQuantity()).isZero();
+        verify(productRepository).save(product);
+    }
+
+    @Test
+    void adjustAllowsTheExactIntegerMaximumBoundary() {
+        product.setStockQuantity(1);
+        InventoryAdjustmentDto request = request(Integer.MAX_VALUE - 1, "bulk import");
+        when(productRepository.findByIdForUpdate(PRODUCT_ID)).thenReturn(Optional.of(product));
+        when(movementRepository.findByProductIdAndRequestId(PRODUCT_ID, request.getRequestId()))
+                .thenReturn(Optional.empty());
+        when(movementRepository.save(any(InventoryMovementEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        InventoryMovementDto result = inventoryService.adjust(PRODUCT_ID, request, "admin");
+
+        assertThat(result.getQuantityAfter()).isEqualTo(Integer.MAX_VALUE);
+        assertThat(product.getStockQuantity()).isEqualTo(Integer.MAX_VALUE);
+    }
+
+    @Test
+    void deductAndRestorePersistAuditableOrderMovements() {
+        OrderEntity order = OrderEntity.builder().id(7L).username("buyer").build();
+        when(movementRepository.save(any(InventoryMovementEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        InventoryMovementEntity deducted = inventoryService.deduct(product, 5, order);
+
+        assertThat(product.getStockQuantity()).isZero();
+        assertThat(deducted.getType()).isEqualTo(InventoryMovementType.ORDER_DEDUCTED);
+        assertThat(deducted.getDelta()).isEqualTo(-5);
+        assertThat(deducted.getQuantityAfter()).isZero();
+        assertThat(deducted.getOrder()).isSameAs(order);
+
+        InventoryMovementEntity restored = inventoryService.restore(product, 5, order);
+
+        assertThat(product.getStockQuantity()).isEqualTo(5);
+        assertThat(restored.getType()).isEqualTo(InventoryMovementType.ORDER_RESTORED);
+        assertThat(restored.getDelta()).isEqualTo(5);
+        assertThat(restored.getQuantityAfter()).isEqualTo(5);
+        verify(productRepository, org.mockito.Mockito.times(2)).save(product);
+    }
+
+    @Test
+    void availabilityAcceptsBoundariesAndRejectsInvalidQuantities() {
+        inventoryService.checkAvailable(product, 0);
+        inventoryService.checkAvailable(product, 5);
+
+        assertThatThrownBy(() -> inventoryService.checkAvailable(product, -1))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Insufficient stock for product 1");
+        assertThatThrownBy(() -> inventoryService.checkAvailable(product, 6))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Insufficient stock for product 1");
+    }
+
+    @Test
+    void getClassifiesOutOfStockLowStockAndInStockBoundaries() {
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
+
+        product.setStockQuantity(0);
+        InventoryItemDto outOfStock = inventoryService.get(PRODUCT_ID, 1);
+        product.setStockQuantity(1);
+        InventoryItemDto lowStock = inventoryService.get(PRODUCT_ID, 1);
+        product.setStockQuantity(2);
+        InventoryItemDto inStock = inventoryService.get(PRODUCT_ID, 1);
+
+        assertThat(outOfStock.getStockStatus()).isEqualTo(StockStatus.OUT_OF_STOCK);
+        assertThat(lowStock.getStockStatus()).isEqualTo(StockStatus.LOW_STOCK);
+        assertThat(inStock.getStockStatus()).isEqualTo(StockStatus.IN_STOCK);
+        assertThatThrownBy(() -> inventoryService.get(PRODUCT_ID, 0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("lowStockThreshold must be at least 1");
     }
 
     private InventoryAdjustmentDto request(int delta, String reason) {

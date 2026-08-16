@@ -94,6 +94,9 @@ class OrderServiceTest {
         assertThat(order.getId()).isEqualTo(5L);
         assertThat(order.getItems()).hasSize(1);
         assertThat(order.getTotalAmount()).isEqualTo(BigDecimal.valueOf(2000));
+        verify(orderRepository).save(argThat(saved -> saved.getInventoryState() == InventoryState.DEDUCTED));
+        verify(inventoryService).checkAvailable(cartItem.getProduct(), 2);
+        verify(inventoryService).deduct(eq(cartItem.getProduct()), eq(2), any(OrderEntity.class));
         verify(cartItemRepository).deleteByUsername(USERNAME);
     }
 

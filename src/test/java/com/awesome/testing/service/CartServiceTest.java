@@ -102,6 +102,7 @@ class CartServiceTest {
 
         assertThat(cart.getTotalItems()).isEqualTo(2);
         assertThat(cart.getItems()).hasSize(1);
+        verify(inventoryService).checkAvailable(product, 2);
         verify(cartItemRepository).save(any(CartItemEntity.class));
     }
 
@@ -154,6 +155,7 @@ class CartServiceTest {
         assertThat(cartItem.getPrice()).isEqualByComparingTo("1250");
         assertThat(cart.getTotalItems()).isEqualTo(5);
         assertThat(cart.getTotalPrice()).isEqualByComparingTo("6250");
+        verify(inventoryService).checkAvailable(product, 5);
         verify(cartItemRepository).save(cartItem);
     }
 
