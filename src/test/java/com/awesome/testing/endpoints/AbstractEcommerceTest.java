@@ -6,11 +6,13 @@ import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import static com.awesome.testing.factory.ProductFactory.getRandomProduct;
 
+@ResourceLock("ecommerce-database")
 public abstract class AbstractEcommerceTest extends DomainHelper {
 
     protected static final String PRODUCTS_ENDPOINT = "/api/v1/products";

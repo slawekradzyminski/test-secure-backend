@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 
 import java.util.List;
 import java.util.Map;
@@ -18,6 +20,9 @@ import java.util.stream.Collectors;
 
 @Repository
 public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select o from OrderEntity o where o.id = :id")
+    Optional<OrderEntity> findByIdForUpdate(@Param("id") Long id);
     void deleteByUsername(String username);
 
     long countByUsername(String username);

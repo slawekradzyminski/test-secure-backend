@@ -4,7 +4,7 @@
 
     <groupId>murraco</groupId>
     <artifactId>jwt-auth-service</artifactId>
-    <version>3.7.15</version>
+    <version>3.7.16</version>
     <packaging>jar</packaging>
 
     <name>spring-boot-jwt</name>
@@ -396,6 +396,8 @@
                                 <include>**/TrafficControllerTest.class</include>
                                 <include>**/RefreshTokenMigrationIT.class</include>
                                 <include>**/PasswordResetTokenConcurrencyIT.class</include>
+                                <include>**/InventoryMigrationIT.class</include>
+                                <include>**/InventoryConcurrencyIT.class</include>
                             </includes>
                             <argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
                         </configuration>
@@ -435,6 +437,7 @@
                                 <param>com.awesome.testing.service.ProductService</param>
                                 <param>com.awesome.testing.service.CartService</param>
                                 <param>com.awesome.testing.service.OrderService</param>
+                                <param>com.awesome.testing.service.InventoryService</param>
                                 <param>com.awesome.testing.service.token.RefreshTokenService</param>
                                 <param>com.awesome.testing.service.password.PasswordResetService</param>
                                 <param>com.awesome.testing.security.ratelimit.AuthRateLimitGuard</param>
@@ -447,6 +450,7 @@
                                 <param>com.awesome.testing.service.ProductServiceTest</param>
                                 <param>com.awesome.testing.service.CartServiceTest</param>
                                 <param>com.awesome.testing.service.OrderServiceTest</param>
+                                <param>com.awesome.testing.service.InventoryServiceTest</param>
                                 <param>com.awesome.testing.service.token.RefreshTokenServiceTest</param>
                                 <param>com.awesome.testing.service.password.PasswordResetServiceTest</param>
                                 <param>com.awesome.testing.security.ratelimit.AuthRateLimitGuardTest</param>

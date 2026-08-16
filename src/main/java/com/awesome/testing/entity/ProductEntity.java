@@ -4,6 +4,7 @@ import com.awesome.testing.dto.product.ProductCreateDto;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Check;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "products")
+@Check(name = "ck_products_stock_nonnegative", constraints = "stock_quantity >= 0")
 @Data
 @Builder
 @NoArgsConstructor
@@ -31,6 +33,10 @@ public class ProductEntity {
 
     @Column(nullable = false)
     private Integer stockQuantity;
+
+    @Version
+    @Column(nullable = false)
+    private Long version;
 
     @Column(nullable = false)
     private String category;

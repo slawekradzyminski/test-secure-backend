@@ -36,6 +36,9 @@ class CartServiceTest {
     @Mock
     private ProductRepository productRepository;
 
+    @Mock
+    private InventoryService inventoryService;
+
     @InjectMocks
     private CartService cartService;
 
@@ -99,6 +102,7 @@ class CartServiceTest {
 
         assertThat(cart.getTotalItems()).isEqualTo(2);
         assertThat(cart.getItems()).hasSize(1);
+        verify(inventoryService).checkAvailable(product, 2);
         verify(cartItemRepository).save(any(CartItemEntity.class));
     }
 
@@ -133,6 +137,8 @@ class CartServiceTest {
 
         assertThatThrownBy(() -> cartService.addToCart(USERNAME, dto))
                 .isInstanceOf(ProductNotFoundException.class);
+
+        verify(cartItemRepository, never()).save(any());
     }
 
     @Test
@@ -149,6 +155,7 @@ class CartServiceTest {
         assertThat(cartItem.getPrice()).isEqualByComparingTo("1250");
         assertThat(cart.getTotalItems()).isEqualTo(5);
         assertThat(cart.getTotalPrice()).isEqualByComparingTo("6250");
+        verify(inventoryService).checkAvailable(product, 5);
         verify(cartItemRepository).save(cartItem);
     }
 
@@ -173,6 +180,8 @@ class CartServiceTest {
         assertThatThrownBy(() -> cartService.updateCartItem(USERNAME, product.getId(),
                 UpdateCartItemDto.builder().quantity(1).build()))
                 .isInstanceOf(CartItemNotFoundException.class);
+
+        verify(cartItemRepository, never()).save(any());
     }
 
     @Test

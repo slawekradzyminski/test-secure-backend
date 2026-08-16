@@ -22,6 +22,7 @@ public class CartService {
 
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
+    private final InventoryService inventoryService;
 
     @Transactional(readOnly = true)
     public CartDto getCart(String username) {
@@ -37,6 +38,7 @@ public class CartService {
                 .map(existingItem -> updateItem(cartItemDto, existingItem, product))
                 .orElseGet(() -> createItem(username, cartItemDto, product));
 
+        inventoryService.checkAvailable(product, cartItem.getQuantity());
         cartItemRepository.save(cartItem);
         return getCartDto(username);
     }
@@ -52,6 +54,7 @@ public class CartService {
         }
 
         cartItem.setQuantity(quantity);
+        inventoryService.checkAvailable(cartItem.getProduct(), quantity);
         cartItem.setPrice(cartItem.getProduct().getPrice());
         cartItemRepository.save(cartItem);
 
