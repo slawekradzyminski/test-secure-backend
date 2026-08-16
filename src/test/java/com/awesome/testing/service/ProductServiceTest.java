@@ -26,13 +26,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doAnswer;
 
 @ExtendWith(MockitoExtension.class)
 class ProductServiceTest {
 
     @Mock
     private ProductRepository productRepository;
+
+    @Mock
+    private InventoryService inventoryService;
 
     @InjectMocks
     private ProductService productService;
@@ -132,7 +137,12 @@ class ProductServiceTest {
                 .category("Computers")
                 .imageUrl("https://example.com/updated-laptop.png")
                 .build();
-        when(productRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(entity));
+        doAnswer(invocation -> {
+            entity.setStockQuantity(entity.getStockQuantity()
+                    + invocation.<com.awesome.testing.dto.inventory.InventoryAdjustmentDto>getArgument(1).getDelta());
+            return null;
+        }).when(inventoryService).adjust(eq(1L), any(), eq("admin"));
         when(productRepository.saveAndFlush(entity)).thenReturn(entity);
 
         ProductDto updated = productService.updateProduct(1L, updateDto);
@@ -144,6 +154,17 @@ class ProductServiceTest {
         assertThat(updated.getCategory()).isEqualTo("Computers");
         assertThat(updated.getImageUrl()).isEqualTo("https://example.com/updated-laptop.png");
         verify(productRepository).saveAndFlush(entity);
+    }
+
+    @Test
+    void shouldThrowWhenUpdatingMissingProductWithoutSaving() {
+        when(productRepository.findById(2L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> productService.updateProduct(2L, ProductUpdateDto.builder().build()))
+                .isInstanceOf(ProductNotFoundException.class)
+                .hasMessage("Product not found");
+
+        verify(productRepository, never()).saveAndFlush(any(ProductEntity.class));
     }
 
     @Test

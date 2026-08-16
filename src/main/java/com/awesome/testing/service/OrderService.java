@@ -8,8 +8,11 @@ import com.awesome.testing.entity.AddressEntity;
 import com.awesome.testing.entity.CartItemEntity;
 import com.awesome.testing.entity.OrderEntity;
 import com.awesome.testing.entity.OrderItemEntity;
+import com.awesome.testing.entity.ProductEntity;
+import com.awesome.testing.entity.inventory.InventoryState;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
+import com.awesome.testing.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,17 +32,35 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final CartItemRepository cartItemRepository;
+    private final ProductRepository productRepository;
+    private final InventoryService inventoryService;
 
     @Transactional
     public OrderDto createOrder(String username, AddressDto addressDto) {
-        List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
+        List<CartItemEntity> cartItems = cartItemRepository.findByUsernameForUpdate(username);
         if (cartItems.isEmpty()) {
             throw new CustomException("Cart is empty", HttpStatus.BAD_REQUEST);
         }
 
         OrderEntity order = getInitialEmptyOrder(username, addressDto);
+        order.setInventoryState(InventoryState.DEDUCTED);
         cartItems.forEach(cartItem -> updateOrder(cartItem, order));
+        Map<Long, Integer> quantities = cartItems.stream()
+                .collect(Collectors.groupingBy(
+                        cartItem -> cartItem.getProduct().getId(),
+                        TreeMap::new,
+                        Collectors.summingInt(CartItemEntity::getQuantity)));
+        List<ProductEntity> locked = quantities.keySet().stream()
+                .map(id -> productRepository.findByIdForUpdate(id)
+                        .orElseThrow(() -> new CustomException("Product not found", HttpStatus.NOT_FOUND)))
+                .toList();
+        for (ProductEntity product : locked) {
+            inventoryService.checkAvailable(product, quantities.get(product.getId()));
+        }
         OrderEntity savedOrder = orderRepository.save(order);
+        for (ProductEntity product : locked) {
+            inventoryService.deduct(product, quantities.get(product.getId()), savedOrder);
+        }
         cartItemRepository.deleteByUsername(username);
 
         return OrderDto.from(savedOrder);
@@ -59,20 +83,23 @@ public class OrderService {
 
     @Transactional
     public OrderDto updateOrderStatus(Long orderId, OrderStatus newStatus) {
-        OrderEntity order = orderRepository.findById(orderId)
+        OrderEntity order = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
 
         if (newStatus == OrderStatus.CANCELLED && !canBeCancelled(order.getStatus())) {
             throw new CustomException("Order cannot be cancelled in current status", HttpStatus.BAD_REQUEST);
         }
 
+        if (newStatus == OrderStatus.CANCELLED) {
+            return cancelLocked(order);
+        }
         order.setStatus(newStatus);
         return OrderDto.from(orderRepository.save(order));
     }
 
     @Transactional
     public OrderDto cancelOrder(Long orderId, String username, boolean isAdmin) {
-        OrderEntity order = orderRepository.findById(orderId)
+        OrderEntity order = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
 
         if (!isAdmin && !order.getUsername().equals(username)) {
@@ -83,10 +110,9 @@ public class OrderService {
             throw new CustomException("Order cannot be cancelled in current status", HttpStatus.BAD_REQUEST);
         }
 
-        order.setStatus(OrderStatus.CANCELLED);
-        return OrderDto.from(orderRepository.save(order));
+        return cancelLocked(order);
     }
-    
+
     @Transactional(readOnly = true)
     public Page<OrderDto> getAllOrders(OrderStatus status, Pageable pageable) {
         Page<OrderEntity> orders = status == null ?
@@ -121,6 +147,27 @@ public class OrderService {
 
     private boolean canBeCancelled(OrderStatus status) {
         return status == OrderStatus.PENDING || status == OrderStatus.PAID;
+    }
+
+    private OrderDto cancelLocked(OrderEntity order) {
+        if (!canBeCancelled(order.getStatus())) {
+            throw new CustomException("Order cannot be cancelled in current status", HttpStatus.BAD_REQUEST);
+        }
+        if (order.getInventoryState() == InventoryState.DEDUCTED) {
+            Map<Long, Integer> quantities = order.getItems().stream()
+                    .collect(Collectors.groupingBy(
+                            item -> item.getProduct().getId(),
+                            TreeMap::new,
+                            Collectors.summingInt(OrderItemEntity::getQuantity)));
+            quantities.forEach((productId, quantity) -> {
+                ProductEntity product = productRepository.findByIdForUpdate(productId)
+                        .orElseThrow(() -> new CustomException("Product not found", HttpStatus.NOT_FOUND));
+                inventoryService.restore(product, quantity, order);
+            });
+            order.setInventoryState(InventoryState.RESTORED);
+        }
+        order.setStatus(OrderStatus.CANCELLED);
+        return OrderDto.from(orderRepository.save(order));
     }
 
 }

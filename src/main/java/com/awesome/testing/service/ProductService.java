@@ -6,6 +6,7 @@ import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.product.ProductListDto;
 import com.awesome.testing.dto.product.ProductSummaryDto;
 import com.awesome.testing.dto.product.ProductUpdateDto;
+import com.awesome.testing.dto.inventory.InventoryAdjustmentDto;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.UUID;
 import jakarta.persistence.criteria.Predicate;
 
 import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
@@ -27,6 +29,7 @@ import static com.awesome.testing.utils.EntityUpdater.updateIfNotNull;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final InventoryService inventoryService;
 
     @Transactional(readOnly = true)
     public List<ProductDto> getAllProducts() {
@@ -74,9 +77,7 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public ProductDto getProductById(Long id) {
-        return productRepository.findById(id)
-                .map(ProductDto::from)
-                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
+        return ProductDto.from(findProductById(id));
     }
 
     @Transactional(readOnly = true)
@@ -88,17 +89,27 @@ public class ProductService {
 
     @Transactional
     public ProductDto createProduct(ProductCreateDto productCreateDto) {
-        ProductEntity product = ProductEntity.from(productCreateDto);
-        productRepository.save(product);
+        ProductEntity product = productRepository.save(ProductEntity.from(productCreateDto));
+        inventoryService.initial(product, "admin");
         return ProductDto.from(product);
     }
 
     @Transactional
     public ProductDto updateProduct(Long id, ProductUpdateDto productUpdateDto) {
-        ProductEntity product = productRepository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
+        ProductEntity product = productUpdateDto.getStockQuantity() == null
+                ? findProductById(id)
+                : productRepository.findByIdForUpdate(id)
+                        .orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
+        Integer oldStock = product.getStockQuantity();
         applyProductUpdates(productUpdateDto, product);
+        if (productUpdateDto.getStockQuantity() != null && !productUpdateDto.getStockQuantity().equals(oldStock)) {
+            inventoryService.adjust(id, InventoryAdjustmentDto.builder()
+                    .delta(productUpdateDto.getStockQuantity() - oldStock)
+                    .reason("Product update")
+                    .requestId(UUID.randomUUID())
+                    .build(), "admin");
+        }
         productRepository.saveAndFlush(product);
         return ProductDto.from(product);
     }
@@ -117,9 +128,13 @@ public class ProductService {
         updateIfNotNull(productUpdateDto.getName(), ProductEntity::setName, product);
         updateIfNotNull(productUpdateDto.getDescription(), ProductEntity::setDescription, product);
         updateIfNotNull(productUpdateDto.getPrice(), ProductEntity::setPrice, product);
-        updateIfNotNull(productUpdateDto.getStockQuantity(), ProductEntity::setStockQuantity, product);
         updateIfNotNull(productUpdateDto.getCategory(), ProductEntity::setCategory, product);
         updateIfNotNull(productUpdateDto.getImageUrl(), ProductEntity::setImageUrl, product);
+    }
+
+    private ProductEntity findProductById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
     }
 
 }

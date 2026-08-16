@@ -5,8 +5,10 @@ import com.awesome.testing.dto.order.AddressDto;
 import com.awesome.testing.dto.order.OrderDto;
 import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.entity.*;
+import com.awesome.testing.entity.inventory.InventoryState;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
+import com.awesome.testing.repository.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +38,12 @@ class OrderServiceTest {
 
     @Mock
     private CartItemRepository cartItemRepository;
+
+    @Mock
+    private ProductRepository productRepository;
+
+    @Mock
+    private InventoryService inventoryService;
 
     @InjectMocks
     private OrderService orderService;
@@ -73,7 +81,8 @@ class OrderServiceTest {
 
     @Test
     void shouldCreateOrderFromCart() {
-        when(cartItemRepository.findByUsername(USERNAME)).thenReturn(List.of(cartItem));
+        when(cartItemRepository.findByUsernameForUpdate(USERNAME)).thenReturn(List.of(cartItem));
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(cartItem.getProduct()));
         when(orderRepository.save(any(OrderEntity.class))).thenAnswer(invocation -> {
             OrderEntity order = invocation.getArgument(0);
             order.setId(5L);
@@ -90,7 +99,7 @@ class OrderServiceTest {
 
     @Test
     void shouldThrowWhenCartIsEmpty() {
-        when(cartItemRepository.findByUsername(USERNAME)).thenReturn(List.of());
+        when(cartItemRepository.findByUsernameForUpdate(USERNAME)).thenReturn(List.of());
 
         assertThatThrownBy(() -> orderService.createOrder(USERNAME, addressDto))
                 .isInstanceOf(CustomException.class)
@@ -105,7 +114,7 @@ class OrderServiceTest {
                 .shippingAddress(AddressEntity.from(addressDto))
                 .totalAmount(BigDecimal.valueOf(100))
                 .build();
-        when(orderRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(orderRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(entity));
         when(orderRepository.save(entity)).thenReturn(entity);
 
         OrderDto dto = orderService.updateOrderStatus(10L, OrderStatus.SHIPPED);
@@ -120,7 +129,7 @@ class OrderServiceTest {
                 .status(OrderStatus.SHIPPED)
                 .shippingAddress(AddressEntity.from(addressDto))
                 .build();
-        when(orderRepository.findById(11L)).thenReturn(Optional.of(entity));
+        when(orderRepository.findByIdForUpdate(11L)).thenReturn(Optional.of(entity));
 
         assertThatThrownBy(() -> orderService.updateOrderStatus(11L, OrderStatus.CANCELLED))
                 .isInstanceOf(CustomException.class)
@@ -135,12 +144,62 @@ class OrderServiceTest {
                 .status(OrderStatus.PENDING)
                 .shippingAddress(AddressEntity.from(addressDto))
                 .build();
-        when(orderRepository.findById(12L)).thenReturn(Optional.of(entity));
+        when(orderRepository.findByIdForUpdate(12L)).thenReturn(Optional.of(entity));
         when(orderRepository.save(entity)).thenReturn(entity);
 
         OrderDto dto = orderService.cancelOrder(12L, "other", true);
 
         assertThat(dto.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    void shouldRestoreDeductedInventoryExactlyOnceWhenOrderIsCancelled() {
+        ProductEntity product = cartItem.getProduct();
+        OrderEntity entity = OrderEntity.builder()
+                .id(14L)
+                .username(USERNAME)
+                .status(OrderStatus.PENDING)
+                .inventoryState(InventoryState.DEDUCTED)
+                .shippingAddress(AddressEntity.from(addressDto))
+                .items(List.of(OrderItemEntity.builder()
+                        .product(product)
+                        .quantity(2)
+                        .price(product.getPrice())
+                        .build()))
+                .build();
+        when(orderRepository.findByIdForUpdate(14L)).thenReturn(Optional.of(entity));
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.of(product));
+        when(orderRepository.save(entity)).thenReturn(entity);
+
+        OrderDto cancelled = orderService.cancelOrder(14L, USERNAME, false);
+
+        assertThat(cancelled.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(entity.getInventoryState()).isEqualTo(InventoryState.RESTORED);
+        verify(inventoryService).restore(product, 2, entity);
+
+        assertThatThrownBy(() -> orderService.cancelOrder(14L, USERNAME, false))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Order cannot be cancelled in current status");
+        verify(inventoryService).restore(product, 2, entity);
+    }
+
+    @Test
+    void shouldNotChangeStockWhenAdminCancelsALegacyOrder() {
+        OrderEntity entity = OrderEntity.builder()
+                .id(15L)
+                .username(USERNAME)
+                .status(OrderStatus.PAID)
+                .inventoryState(InventoryState.LEGACY_UNTRACKED)
+                .shippingAddress(AddressEntity.from(addressDto))
+                .build();
+        when(orderRepository.findByIdForUpdate(15L)).thenReturn(Optional.of(entity));
+        when(orderRepository.save(entity)).thenReturn(entity);
+
+        OrderDto cancelled = orderService.updateOrderStatus(15L, OrderStatus.CANCELLED);
+
+        assertThat(cancelled.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(entity.getInventoryState()).isEqualTo(InventoryState.LEGACY_UNTRACKED);
+        verifyNoInteractions(productRepository, inventoryService);
     }
 
     @Test
@@ -151,7 +210,7 @@ class OrderServiceTest {
                 .status(OrderStatus.PENDING)
                 .shippingAddress(AddressEntity.from(addressDto))
                 .build();
-        when(orderRepository.findById(13L)).thenReturn(Optional.of(entity));
+        when(orderRepository.findByIdForUpdate(13L)).thenReturn(Optional.of(entity));
 
         assertThatThrownBy(() -> orderService.cancelOrder(13L, "attacker", false))
                 .isInstanceOf(CustomException.class)

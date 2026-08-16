@@ -1,6 +1,7 @@
 package com.awesome.testing.entity;
 
 import com.awesome.testing.dto.order.OrderStatus;
+import com.awesome.testing.entity.inventory.InventoryState;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -39,6 +40,11 @@ public class OrderEntity {
     @Column(nullable = false)
     private OrderStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    @Builder.Default
+    private InventoryState inventoryState = InventoryState.LEGACY_UNTRACKED;
+
     @Embedded
     private AddressEntity shippingAddress;
 
@@ -59,4 +65,4 @@ public class OrderEntity {
         items.remove(item);
         item.setOrder(null);
     }
-} 
+}

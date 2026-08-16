@@ -36,6 +36,9 @@ class CartServiceTest {
     @Mock
     private ProductRepository productRepository;
 
+    @Mock
+    private InventoryService inventoryService;
+
     @InjectMocks
     private CartService cartService;
 
@@ -133,6 +136,8 @@ class CartServiceTest {
 
         assertThatThrownBy(() -> cartService.addToCart(USERNAME, dto))
                 .isInstanceOf(ProductNotFoundException.class);
+
+        verify(cartItemRepository, never()).save(any());
     }
 
     @Test
@@ -173,6 +178,8 @@ class CartServiceTest {
         assertThatThrownBy(() -> cartService.updateCartItem(USERNAME, product.getId(),
                 UpdateCartItemDto.builder().quantity(1).build()))
                 .isInstanceOf(CartItemNotFoundException.class);
+
+        verify(cartItemRepository, never()).save(any());
     }
 
     @Test
