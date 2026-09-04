@@ -4,18 +4,20 @@ import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.qr.CreateQrDto;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.UserRegisterDto;
-import com.awesome.testing.qr.QrGenerator;
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.MultiFormatReader;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import javax.imageio.ImageIO;
+import java.io.ByteArrayInputStream;
 import java.text.MessageFormat;
 import java.util.List;
 
@@ -26,10 +28,6 @@ class CreateQrControllerTest extends DomainHelper {
 
     private final String CREATE_QR_CODE_ENDPOINT = "/api/v1/qr/create";
 
-    @TempDir
-    private File tempDir;
-
-    @SuppressWarnings("ConstantConditions")
     @SneakyThrows
     @Test
     void shouldGenerateQrCodeAsAdmin() {
@@ -45,11 +43,11 @@ class CreateQrControllerTest extends DomainHelper {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        File qrCodeFile = new File(tempDir, "testQrCode.png");
-        try (FileOutputStream fos = new FileOutputStream(qrCodeFile)) {
-            fos.write(response.getBody());
-        }
-        assertThat(QrGenerator.readQRCode(qrCodeFile)).isEqualTo(randomText);
+        assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.IMAGE_PNG);
+        assertThat(response.getBody()).isNotEmpty();
+        var image = ImageIO.read(new ByteArrayInputStream(response.getBody()));
+        BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(new BufferedImageLuminanceSource(image)));
+        assertThat(new MultiFormatReader().decode(bitmap).getText()).isEqualTo(randomText);
     }
 
     @Test

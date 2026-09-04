@@ -26,7 +26,13 @@ public class CartService {
 
     @Transactional(readOnly = true)
     public CartDto getCart(String username) {
-        return getCartDto(username);
+        List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
+        return CartDto.builder()
+                .username(username)
+                .items(cartItems.stream().map(this::convertToCartItemDto).toList())
+                .totalPrice(calculateTotalPrice(cartItems))
+                .totalItems(cartItems.stream().mapToInt(CartItemEntity::getQuantity).sum())
+                .build();
     }
 
     @Transactional
@@ -40,7 +46,7 @@ public class CartService {
 
         inventoryService.checkAvailable(product, cartItem.getQuantity());
         cartItemRepository.save(cartItem);
-        return getCartDto(username);
+        return getCart(username);
     }
 
     @Transactional
@@ -50,7 +56,7 @@ public class CartService {
         int quantity = updateCartItemDto.getQuantity();
         if (quantity == 0) {
             cartItemRepository.delete(cartItem);
-            return getCartDto(username);
+            return getCart(username);
         }
 
         cartItem.setQuantity(quantity);
@@ -58,7 +64,7 @@ public class CartService {
         cartItem.setPrice(cartItem.getProduct().getPrice());
         cartItemRepository.save(cartItem);
 
-        return getCartDto(username);
+        return getCart(username);
     }
 
     @Transactional
@@ -66,7 +72,7 @@ public class CartService {
         getCartItemEntity(username, productId);
 
         cartItemRepository.deleteByUsernameAndProductId(username, productId);
-        return getCartDto(username);
+        return getCart(username);
     }
 
     @Transactional
@@ -74,23 +80,9 @@ public class CartService {
         cartItemRepository.deleteByUsername(username);
     }
 
-    private CartDto getCartDto(String username) {
-        List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
-        return createCartDto(username, cartItems);
-    }
-
     private CartItemEntity getCartItemEntity(String username, Long productId) {
         return cartItemRepository.findByUsernameAndProductId(username, productId)
                 .orElseThrow(() -> new CartItemNotFoundException("Cart item not found"));
-    }
-
-    private CartDto createCartDto(String username, List<CartItemEntity> cartItems) {
-        return CartDto.builder()
-                .username(username)
-                .items(getItems(cartItems))
-                .totalPrice(calculateTotalPrice(cartItems))
-                .totalItems(calculateTotalItems(cartItems))
-                .build();
     }
 
     private CartItemEntity createItem(String username, CartItemDto cartItemDto, ProductEntity product) {
@@ -109,12 +101,6 @@ public class CartService {
         return existingItem;
     }
 
-    private List<CartItemDto> getItems(List<CartItemEntity> cartItems) {
-        return cartItems.stream()
-                .map(this::convertToCartItemDto)
-                .toList();
-    }
-
     private CartItemDto convertToCartItemDto(CartItemEntity item) {
         return CartItemDto.builder()
                 .productId(item.getProduct().getId())
@@ -122,19 +108,10 @@ public class CartService {
                 .build();
     }
 
-    private int calculateTotalItems(List<CartItemEntity> cartItems) {
-        return cartItems.stream()
-                .mapToInt(CartItemEntity::getQuantity)
-                .sum();
-    }
-
     private BigDecimal calculateTotalPrice(List<CartItemEntity> cartItems) {
         return cartItems.stream()
-                .map(this::multiplyByQuantity)
+                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private BigDecimal multiplyByQuantity(CartItemEntity item) {
-        return item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-    }
 } 

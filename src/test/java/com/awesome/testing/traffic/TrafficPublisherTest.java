@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static com.awesome.testing.factory.ollama.TrafficEventFactory.trafficEvent;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class TrafficPublisherTest {
@@ -43,12 +44,9 @@ class TrafficPublisherTest {
     
     @Test
     void shouldHandleEmptyQueue() {
-        // given - empty queue
-        
-        // when
         trafficPublisher.broadcastTraffic();
-        
-        // then - no exception thrown and no method calls on messagingTemplate
+
+        verifyNoInteractions(messagingTemplate);
     }
 
     @Test

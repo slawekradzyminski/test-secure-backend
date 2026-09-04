@@ -11,7 +11,7 @@ import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import com.awesome.testing.repository.pagination.OffsetPageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,11 +43,10 @@ public class ProductService {
     public ProductListDto listProducts(int offset, int limit, String category, Boolean inStockOnly) {
         int safeOffset = Math.max(0, offset);
         int safeLimit = Math.min(Math.max(limit, 1), 100);
-        Pageable pageable = PageRequest.of(0, safeOffset + safeLimit);
+        Pageable pageable = new OffsetPageRequest(safeOffset, safeLimit);
 
         Page<ProductEntity> result = productRepository.findAll(
                 (root, query, cb) -> {
-                    query.distinct(true);
                     List<Predicate> predicates = new ArrayList<>();
                     if (category != null && !category.isBlank()) {
                         predicates.add(cb.equal(cb.lower(root.get("category")), category.toLowerCase(Locale.ROOT)));
@@ -64,11 +63,9 @@ public class ProductService {
         List<ProductSummaryDto> content = result.getContent().stream()
                 .map(ProductSummaryDto::from)
                 .toList();
-        int from = Math.min(safeOffset, content.size());
-        int to = Math.min(safeOffset + safeLimit, content.size());
 
         return ProductListDto.builder()
-                .products(content.subList(from, to))
+                .products(content)
                 .total(result.getTotalElements())
                 .page(safeOffset)
                 .size(safeLimit)

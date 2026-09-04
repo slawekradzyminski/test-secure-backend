@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.zalando.logbook.BodyFilter;
 import org.zalando.logbook.HttpLogFormatter;
 import org.zalando.logbook.autoconfigure.LogbookProperties;
@@ -19,9 +18,6 @@ class ConfigurationBeansTest {
 
     @Autowired
     private OpenAPI openAPI;
-
-    @Autowired
-    private WebClient ollamaWebClient;
 
     @Autowired
     private HttpLogFormatter httpLogFormatter;
@@ -40,11 +36,6 @@ class ConfigurationBeansTest {
         assertThat(openAPI.getInfo().getTitle()).isEqualTo("JWT Authentication API");
         assertThat(openAPI.getInfo().getVersion()).isEqualTo("1.0");
         assertThat(openAPI.getComponents().getSecuritySchemes()).containsKey("bearerAuth");
-    }
-
-    @Test
-    void ollamaConfigShouldCreateWebClientBean() {
-        assertThat(ollamaWebClient).isNotNull();
     }
 
     @Test

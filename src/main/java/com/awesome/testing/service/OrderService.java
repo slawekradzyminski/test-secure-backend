@@ -86,10 +86,6 @@ public class OrderService {
         OrderEntity order = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
 
-        if (newStatus == OrderStatus.CANCELLED && !canBeCancelled(order.getStatus())) {
-            throw new CustomException("Order cannot be cancelled in current status", HttpStatus.BAD_REQUEST);
-        }
-
         if (newStatus == OrderStatus.CANCELLED) {
             return cancelLocked(order);
         }
@@ -104,10 +100,6 @@ public class OrderService {
 
         if (!isAdmin && !order.getUsername().equals(username)) {
             throw new CustomException("You cannot cancel someone else's order", HttpStatus.FORBIDDEN);
-        }
-
-        if (!canBeCancelled(order.getStatus())) {
-            throw new CustomException("Order cannot be cancelled in current status", HttpStatus.BAD_REQUEST);
         }
 
         return cancelLocked(order);

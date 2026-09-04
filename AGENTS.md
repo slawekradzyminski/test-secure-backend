@@ -16,5 +16,6 @@
 # Course API Contract
 
 - Use the tests from the [AI Testers API course repository](https://github.com/AI-Testers-pl/ait2api1-api-ai) as the compatibility feedback loop for `https://awesome.byst.re`.
-- After backend changes, run the suite from the [latest available lesson (`l12` currently)](https://github.com/AI-Testers-pl/ait2api1-api-ai/tree/master/l12) and keep it green (`cd l12 && npm ci && npm test`).
+- Run the latest available lesson suite as part of whole-stack verification in `awesome-localstack`, where the backend and its dependencies are exercised together.
+- Local backend changes that are not being released to production require the Maven checks above, not external course-suite runs against deployed environments. Do not run those external checks solely for a backend audit or cleanup.
 - The lesson tests define the required course contract. Endpoints and behavior not covered by that suite may change; covered behavior must remain compatible.

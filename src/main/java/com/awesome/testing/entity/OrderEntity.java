@@ -61,8 +61,4 @@ public class OrderEntity {
         item.setOrder(this);
     }
 
-    public void removeItem(OrderItemEntity item) {
-        items.remove(item);
-        item.setOrder(null);
-    }
 }

@@ -14,7 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
+import com.awesome.testing.repository.pagination.OffsetPageRequest;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -188,7 +188,7 @@ class ProductServiceTest {
 
     @Test
     void shouldListProductsWithOffsetLimit() {
-        List<ProductEntity> products = java.util.stream.LongStream.rangeClosed(1, 5)
+        List<ProductEntity> products = java.util.stream.LongStream.rangeClosed(3, 5)
                 .mapToObj(id -> ProductEntity.builder()
                         .id(id)
                         .name("Product " + id)
@@ -198,8 +198,8 @@ class ProductServiceTest {
                 .toList();
         when(productRepository.findAll(
                 org.mockito.ArgumentMatchers.<Specification<ProductEntity>>any(),
-                eq(PageRequest.of(0, 5))))
-                .thenReturn(new PageImpl<>(products, PageRequest.of(0, 5), 5));
+                eq(new OffsetPageRequest(2, 3))))
+                .thenReturn(new PageImpl<>(products, new OffsetPageRequest(2, 3), 5));
 
         var result = productService.listProducts(2, 3, null, null);
 
@@ -209,6 +209,6 @@ class ProductServiceTest {
         assertThat(result.getTotal()).isEqualTo(5);
         verify(productRepository).findAll(
                 org.mockito.ArgumentMatchers.<Specification<ProductEntity>>any(),
-                eq(PageRequest.of(0, 5)));
+                eq(new OffsetPageRequest(2, 3)));
     }
 }
