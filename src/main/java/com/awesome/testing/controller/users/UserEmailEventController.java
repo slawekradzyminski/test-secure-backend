@@ -1,5 +1,8 @@
 package com.awesome.testing.controller.users;
 
+import com.awesome.testing.dto.ErrorDto;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Content;
 import com.awesome.testing.dto.email.EmailEventDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.service.UserService;
@@ -32,7 +35,8 @@ public class UserEmailEventController {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponse(responseCode = "200", description = "Recent email events returned successfully")
-    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public List<EmailEventDto> getMyEmailEvents(HttpServletRequest request) {
         UserEntity user = userService.whoAmI(request);
         return emailEventService.getLatestEventsFor(user);

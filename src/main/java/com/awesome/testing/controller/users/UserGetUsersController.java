@@ -3,6 +3,9 @@ package com.awesome.testing.controller.users;
 import com.awesome.testing.dto.user.UserResponseDto;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import com.awesome.testing.dto.ErrorDto;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,7 +27,8 @@ public class UserGetUsersController {
             description = "Returns all user accounts visible to the authenticated caller.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponse(responseCode = "200", description = "List of users")
-    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public List<UserResponseDto> getAll() {
         return userService.getAll().stream()
                 .map(UserResponseDto::from)

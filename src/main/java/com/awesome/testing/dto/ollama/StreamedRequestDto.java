@@ -15,10 +15,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class StreamedRequestDto {
     @NotBlank
-    @Schema(description = "Model to use, needs to be available on the Ollama server.", example = "qwen3.5:2b")
+    @Schema(minLength = 1, pattern = "\\S", description = "Model to use, needs to be available on the Ollama server.", example = "qwen3.5:2b")
     String model;
 
-    @Schema(description = "Prompt", example = "Hello, how are you?")
+    @Schema(minLength = 1, pattern = "\\S", description = "Prompt", example = "Hello, how are you?")
     @NotBlank
     String prompt;
 

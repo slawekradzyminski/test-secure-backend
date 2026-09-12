@@ -20,15 +20,15 @@ public class EmailDto {
     @Email(message = "Invalid email format")
     private String to;
 
-    @Schema(description = "Email subject", example = "Important message")
+    @Schema(minLength = 1, pattern = "\\S", description = "Email subject", example = "Important message")
     @NotBlank(message = "Email subject is required")
     private String subject;
 
-    @Schema(description = "Email content", example = "Please read this message carefully")
+    @Schema(minLength = 1, pattern = "\\S", description = "Email content", example = "Please read this message carefully")
     @NotBlank(message = "Email content is required")
     private String message;
 
-    @Schema(description = "Optional template identifier used by downstream consumers")
+    @Schema(types = {"string", "null"}, description = "Optional template identifier used by downstream consumers; may be null in local outbox payloads")
     private EmailTemplate template;
 
     @Schema(description = "Template properties that help the consumer render the message")

@@ -1,5 +1,9 @@
 package com.awesome.testing.controller;
 
+import com.awesome.testing.dto.ValidationErrorsDto;
+import com.awesome.testing.dto.ErrorDto;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Content;
 import com.awesome.testing.dto.order.AddressDto;
 import com.awesome.testing.dto.order.OrderDto;
 import com.awesome.testing.dto.order.PageDto;
@@ -25,7 +29,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Orders", description = "Order management endpoints")
 @SecurityRequirement(name = "bearerAuth")
-@ApiResponse(responseCode = "401", description = "Unauthorized")
+@ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
 public class OrderController {
 
     private final OrderService orderService;
@@ -34,7 +39,12 @@ public class OrderController {
     @Operation(summary = "Create a new order from cart",
             description = "Creates an order for the authenticated user from the current cart and clears the cart after success.")
     @ApiResponse(responseCode = "201", description = "Order created successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid input or empty cart")
+    @ApiResponse(responseCode = "404", description = "A cart product no longer exists",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "409", description = "Insufficient stock to place the order",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid input or empty cart",
+            content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, ErrorDto.class})))
     public ResponseEntity<OrderDto> createOrder(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Valid @RequestBody AddressDto addressDto) {
@@ -46,10 +56,13 @@ public class OrderController {
     @Operation(summary = "Get user's orders",
             description = "Returns the authenticated user's orders with optional status filtering and pagination.")
     @ApiResponse(responseCode = "200", description = "Orders retrieved successfully")
-    @ApiResponse(responseCode = "400", description = "Bad request")
+    @ApiResponse(responseCode = "400", description = "Bad request",
+            content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, ErrorDto.class})))
     public ResponseEntity<PageDto<OrderDto>> getUserOrders(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
+            @Parameter(description = "Zero-based page index", schema = @Schema(minimum = "0"))
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size, at least one", schema = @Schema(minimum = "1"))
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) OrderStatus status) {
         return ResponseEntity.ok(PageDto.from(
@@ -61,8 +74,10 @@ public class OrderController {
     @Operation(summary = "Get order by ID",
             description = "Returns a single order. Administrators may access any order; clients may access only their own orders.")
     @ApiResponse(responseCode = "200", description = "Order retrieved successfully")
-    @ApiResponse(responseCode = "400", description = "Bad request")
-    @ApiResponse(responseCode = "404", description = "Order not found")
+    @ApiResponse(responseCode = "400", description = "Bad request",
+            content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, ErrorDto.class})))
+    @ApiResponse(responseCode = "404", description = "Order not found",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public ResponseEntity<OrderDto> getOrder(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long id) {
@@ -77,11 +92,14 @@ public class OrderController {
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Update order status (Admin only)",
-            description = "Updates an order status using administrator privileges and validates unsupported transitions.")
+            description = "Sets the supplied status using administrator privileges. CANCELLED is allowed only from PENDING or PAID and restores deducted stock; other status values are assigned directly.")
     @ApiResponse(responseCode = "200", description = "Order status updated successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid status transition")
-    @ApiResponse(responseCode = "403", description = "Forbidden")
-    @ApiResponse(responseCode = "404", description = "Order not found")
+    @ApiResponse(responseCode = "400", description = "Invalid status transition",
+            content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, ErrorDto.class})))
+    @ApiResponse(responseCode = "403", description = "Forbidden",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "404", description = "Order not found",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public ResponseEntity<OrderDto> updateOrderStatus(
             @PathVariable Long id,
             @RequestBody OrderStatus status) {
@@ -90,11 +108,14 @@ public class OrderController {
 
     @PostMapping("/{id}/cancel")
     @Operation(summary = "Cancel order",
-            description = "Cancels an order when its current status allows cancellation. Clients may cancel only their own orders.")
+            description = "Cancels an order when its current status allows cancellation. Clients may cancel only their own orders. Only PENDING and PAID orders can be cancelled.")
     @ApiResponse(responseCode = "200", description = "Order cancelled successfully")
-    @ApiResponse(responseCode = "400", description = "Order cannot be cancelled")
-    @ApiResponse(responseCode = "403", description = "Forbidden")
-    @ApiResponse(responseCode = "404", description = "Order not found")
+    @ApiResponse(responseCode = "400", description = "Order cannot be cancelled",
+            content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, ErrorDto.class})))
+    @ApiResponse(responseCode = "403", description = "Forbidden",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "404", description = "Order not found",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public ResponseEntity<OrderDto> cancelOrder(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long id) {
@@ -108,11 +129,15 @@ public class OrderController {
     @Operation(summary = "Get all orders (Admin only)",
             description = "Returns all orders in the system with optional status filtering and pagination. Requires an administrator role.")
     @ApiResponse(responseCode = "200", description = "Orders retrieved successfully")
-    @ApiResponse(responseCode = "400", description = "Bad request")
-    @ApiResponse(responseCode = "403", description = "Forbidden")
+    @ApiResponse(responseCode = "400", description = "Bad request",
+            content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, ErrorDto.class})))
+    @ApiResponse(responseCode = "403", description = "Forbidden",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public ResponseEntity<PageDto<OrderDto>> getAllOrders(
             @RequestParam(required = false) OrderStatus status,
+            @Parameter(description = "Zero-based page index", schema = @Schema(minimum = "0"))
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size, at least one", schema = @Schema(minimum = "1"))
             @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(PageDto.from(
                 orderService.getAllOrders(status, PageRequest.of(page, size))

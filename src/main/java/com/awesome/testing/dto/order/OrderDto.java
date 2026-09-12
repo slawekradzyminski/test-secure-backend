@@ -41,10 +41,10 @@ public class OrderDto {
     @Schema(description = "Shipping address")
     private AddressDto shippingAddress;
 
-    @Schema(description = "Creation timestamp")
+    @Schema(type = "string", format = "local-date-time", description = "Creation timestamp")
     private LocalDateTime createdAt;
 
-    @Schema(description = "Last update timestamp")
+    @Schema(type = "string", format = "local-date-time", description = "Last update timestamp")
     private LocalDateTime updatedAt;
 
     public static OrderDto from(OrderEntity order) {

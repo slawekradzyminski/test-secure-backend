@@ -19,7 +19,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class ChatRequestDto {
     @NotBlank
-    @Schema(
+    @Schema(minLength = 1, pattern = "\\S",
             description = "Model to use. Must be available on the Ollama server. " +
                     "Clients can override it per request.",
             example = "qwen3.5:2b"

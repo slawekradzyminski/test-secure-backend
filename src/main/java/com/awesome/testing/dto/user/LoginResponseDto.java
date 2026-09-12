@@ -16,10 +16,10 @@ import java.time.Instant;
 @AllArgsConstructor
 public class LoginResponseDto {
 
-    @Schema(description = "JWT token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    @Schema(types = {"string", "null"}, description = "JWT token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
     String token;
 
-    @Schema(description = "Refresh token")
+    @Schema(types = {"string", "null"}, description = "Refresh token")
     String refreshToken;
 
     @Schema(description = "Username", example = "johndoe")
@@ -28,10 +28,10 @@ public class LoginResponseDto {
     @Schema(description = "Email address", example = "john.doe@example.com")
     String email;
 
-    @Schema(description = "First name", example = "John")
+    @Schema(types = {"string", "null"}, description = "First name", example = "John")
     String firstName;
 
-    @Schema(description = "Last name", example = "Doe")
+    @Schema(types = {"string", "null"}, description = "Last name", example = "Doe")
     String lastName;
 
     @Schema(description = "User roles", example = "[\"ROLE_CLIENT\"]")
@@ -40,10 +40,10 @@ public class LoginResponseDto {
     @Schema(description = "Whether a second factor is required before tokens can be issued")
     boolean mfaRequired;
 
-    @Schema(description = "Short-lived, single-use MFA challenge token")
+    @Schema(types = {"string", "null"}, description = "Short-lived, single-use MFA challenge token")
     String challengeToken;
 
-    @Schema(description = "MFA challenge expiration time")
+    @Schema(types = {"string", "null"}, description = "MFA challenge expiration time")
     Instant challengeExpiresAt;
 
     public static LoginResponseDto from(TokenPair tokenPair, UserEntity user) {

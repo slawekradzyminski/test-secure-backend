@@ -190,6 +190,8 @@ ollama:
   base-url: http://localhost:11434
 
 springdoc:
+  # Controller responses are explicit; advice inference adds unreachable statuses and wrong bodies.
+  override-with-generic-response: false
   swagger-ui:
     oauth2-redirect-url: ${SWAGGER_UI_OAUTH2_REDIRECT_URL:http://localhost:8081/swagger-ui/oauth2-redirect.html}
     urls:

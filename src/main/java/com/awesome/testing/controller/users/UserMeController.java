@@ -4,6 +4,9 @@ import com.awesome.testing.dto.user.UserResponseDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import com.awesome.testing.dto.ErrorDto;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,7 +29,8 @@ public class UserMeController {
             description = "Returns account details for the authenticated user resolved from the JWT token.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponse(responseCode = "200", description = "Current user details")
-    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public UserResponseDto whoAmI(HttpServletRequest req) {
         UserEntity user = userService.whoAmI(req);
         return UserResponseDto.from(user);

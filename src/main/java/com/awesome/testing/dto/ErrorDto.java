@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(requiredProperties = {"message"}, additionalProperties = Schema.AdditionalPropertiesValue.FALSE)
 public class ErrorDto {
 
     @Schema(description = "Error message", example = "Error message")

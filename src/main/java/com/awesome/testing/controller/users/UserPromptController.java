@@ -6,6 +6,10 @@ import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import com.awesome.testing.dto.ErrorDto;
+import com.awesome.testing.dto.ValidationErrorsDto;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -20,7 +24,8 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "users", description = "User management endpoints")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
-@ApiResponse(responseCode = "401", description = "Unauthorized")
+@ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
 public class UserPromptController {
 
     private final UserService userService;
@@ -40,9 +45,10 @@ public class UserPromptController {
 
     @PutMapping("/chat-system-prompt")
     @Operation(summary = "Update your chat system prompt",
-            description = "Stores a new chat prompt override for the authenticated user.")
+            description = "Stores a new chat prompt override for the authenticated user. Null, an omitted field, or an empty string resets the override; PUT echoes the stored value and GET returns the effective default.")
     @ApiResponse(responseCode = "200", description = "Chat system prompt was updated")
-    @ApiResponse(responseCode = "400", description = "Bad request")
+    @ApiResponse(responseCode = "400", description = "Bad request",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
     public ChatSystemPromptDto updateChatSystemPrompt(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Parameter(description = "Chat system prompt") @Valid @RequestBody ChatSystemPromptDto systemPromptDto) {
@@ -68,9 +74,10 @@ public class UserPromptController {
 
     @PutMapping("/tool-system-prompt")
     @Operation(summary = "Update your tool system prompt",
-            description = "Stores a new tool-calling prompt override for the authenticated user.")
+            description = "Stores a new tool-calling prompt override for the authenticated user. Null, an omitted field, or an empty string resets the override; PUT echoes the stored value and GET returns the effective default.")
     @ApiResponse(responseCode = "200", description = "Tool system prompt was updated")
-    @ApiResponse(responseCode = "400", description = "Bad request")
+    @ApiResponse(responseCode = "400", description = "Bad request",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
     public ToolSystemPromptDto updateToolSystemPrompt(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Parameter(description = "Tool system prompt") @Valid @RequestBody ToolSystemPromptDto systemPromptDto) {

@@ -1,5 +1,9 @@
 package com.awesome.testing.controller.users;
 
+import com.awesome.testing.dto.ValidationErrorsDto;
+import com.awesome.testing.dto.ErrorDto;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Content;
 import com.awesome.testing.dto.mfa.MfaChallengeRequestDto;
 import com.awesome.testing.dto.mfa.MfaCodeRequestDto;
 import com.awesome.testing.dto.mfa.MfaProtectedActionRequestDto;
@@ -39,9 +43,12 @@ public class UserMfaController {
             description = "Consumes a short-lived password challenge and a TOTP or recovery code, then issues tokens.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Sign-in completed"),
-            @ApiResponse(responseCode = "400", description = "Field validation failed"),
-            @ApiResponse(responseCode = "401", description = "Challenge or second factor is invalid"),
-            @ApiResponse(responseCode = "429", description = "Too many attempts")
+            @ApiResponse(responseCode = "400", description = "Field validation failed",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class))),
+            @ApiResponse(responseCode = "401", description = "Challenge or second factor is invalid",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "429", description = "Too many attempts",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     })
     public LoginResponseDto completeSignIn(HttpServletRequest httpRequest,
                                            @Valid @RequestBody MfaChallengeRequestDto request) {
@@ -55,7 +62,8 @@ public class UserMfaController {
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Status returned"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
+            @ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     })
     public MfaStatusResponseDto status(@AuthenticationPrincipal CustomPrincipal principal) {
         return mfaService.status(principal.getUsername());
@@ -67,9 +75,13 @@ public class UserMfaController {
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Pending setup created"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "409", description = "MFA is already enabled or provider-managed"),
-            @ApiResponse(responseCode = "429", description = "Too many attempts")
+            @ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "404", description = "Account no longer exists", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "409", description = "MFA is already enabled or provider-managed",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "429", description = "Too many attempts",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     })
     public MfaSetupResponseDto setup(@AuthenticationPrincipal CustomPrincipal principal) {
         authRateLimitGuard.checkMfaManagement(principal.getUsername());
@@ -82,11 +94,17 @@ public class UserMfaController {
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "MFA enabled and recovery codes created"),
-            @ApiResponse(responseCode = "400", description = "Field validation failed"),
-            @ApiResponse(responseCode = "401", description = "Authenticator code is invalid"),
-            @ApiResponse(responseCode = "409", description = "Setup is missing or MFA is already enabled"),
-            @ApiResponse(responseCode = "410", description = "Pending setup expired"),
-            @ApiResponse(responseCode = "429", description = "Too many attempts")
+            @ApiResponse(responseCode = "400", description = "Field validation failed",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class))),
+            @ApiResponse(responseCode = "401", description = "Authenticator code is invalid",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "404", description = "Account no longer exists", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "409", description = "Setup is missing, MFA is already enabled, or it is provider-managed",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "410", description = "Pending setup expired",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "429", description = "Too many attempts",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     })
     public MfaRecoveryCodesResponseDto confirm(@AuthenticationPrincipal CustomPrincipal principal,
                                                @Valid @RequestBody MfaCodeRequestDto request) {
@@ -100,10 +118,16 @@ public class UserMfaController {
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Replacement recovery codes created"),
-            @ApiResponse(responseCode = "400", description = "Field validation failed"),
-            @ApiResponse(responseCode = "401", description = "Password or authenticator code is invalid"),
-            @ApiResponse(responseCode = "409", description = "MFA is not enabled or is provider-managed"),
-            @ApiResponse(responseCode = "429", description = "Too many attempts")
+            @ApiResponse(responseCode = "400", description = "Field validation failed",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class))),
+            @ApiResponse(responseCode = "422", description = "Current password is invalid", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "401", description = "Authenticator code or Bearer token is invalid",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "404", description = "Account no longer exists", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "409", description = "MFA is not enabled or is provider-managed",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "429", description = "Too many attempts",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     })
     public MfaRecoveryCodesResponseDto replaceRecoveryCodes(
             @AuthenticationPrincipal CustomPrincipal principal,
@@ -117,11 +141,17 @@ public class UserMfaController {
             description = "Requires the current password and a TOTP or recovery code, then revokes refresh tokens.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "MFA disabled"),
-            @ApiResponse(responseCode = "400", description = "Field validation failed"),
-            @ApiResponse(responseCode = "401", description = "Password or second factor is invalid"),
-            @ApiResponse(responseCode = "409", description = "MFA is not enabled or is provider-managed"),
-            @ApiResponse(responseCode = "429", description = "Too many attempts")
+            @ApiResponse(responseCode = "200", description = "MFA disabled", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Field validation failed",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class))),
+            @ApiResponse(responseCode = "422", description = "Current password is invalid", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "401", description = "Second factor or Bearer token is invalid",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "404", description = "Account no longer exists", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "409", description = "MFA is not enabled or is provider-managed",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class))),
+            @ApiResponse(responseCode = "429", description = "Too many attempts",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     })
     public void disable(@AuthenticationPrincipal CustomPrincipal principal,
                         @Valid @RequestBody MfaProtectedActionRequestDto request) {

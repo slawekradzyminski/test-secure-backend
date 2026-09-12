@@ -1,5 +1,9 @@
 package com.awesome.testing.controller.users;
 
+import com.awesome.testing.dto.ValidationErrorsDto;
+import com.awesome.testing.dto.ErrorDto;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Content;
 import com.awesome.testing.dto.user.UserEditDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.service.UserService;
@@ -28,10 +32,14 @@ public class UserEditController {
             description = "Updates editable profile fields for an existing user. Users may edit themselves; administrators may edit any user.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponse(responseCode = "200", description = "User was updated")
-    @ApiResponse(responseCode = "400", description = "Bad request")
-    @ApiResponse(responseCode = "401", description = "Unauthorized")
-    @ApiResponse(responseCode = "403", description = "Forbidden")
-    @ApiResponse(responseCode = "404", description = "The user doesn't exist")
+    @ApiResponse(responseCode = "400", description = "Bad request",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
+    @ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "403", description = "Forbidden",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "404", description = "The user doesn't exist",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public UserEntity edit(
             @Parameter(description = "Username") @PathVariable String username,
             @Parameter(description = "User details") @Valid @RequestBody UserEditDto userDto) {

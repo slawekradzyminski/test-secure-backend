@@ -11,6 +11,6 @@ public class ForgotPasswordResponseDto {
     @Schema(description = "Human readable status message")
     String message;
 
-    @Schema(description = "Raw password reset token, returned only for local/testing profiles")
+    @Schema(types = {"string", "null"}, description = "Raw password reset token only when password-reset.expose-token-in-response is enabled and a local account matches; otherwise null")
     String token;
 }

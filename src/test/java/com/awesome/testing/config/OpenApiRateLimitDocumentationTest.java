@@ -4,6 +4,7 @@ import com.awesome.testing.HttpHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -22,15 +23,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 })
 class OpenApiRateLimitDocumentationTest extends HttpHelper {
 
-    @Test
-    void generatedOpenApiSpecShouldDocumentRateLimitResponsesWhenRateLimitingIsEnabled() throws Exception {
-        JsonNode spec = readApiSpec();
+    private JsonNode spec;
 
-        for (RateLimitedOperation operation : rateLimitedOperations()) {
-            assertThat(getOperation(spec, operation.path(), operation.method()).path("responses").has("429"))
-                    .as("Expected 429 for %s %s", operation.method().toUpperCase(Locale.ROOT), operation.path())
-                    .isTrue();
-        }
+    @BeforeEach
+    void loadGeneratedContract() throws Exception {
+        spec = readApiSpec();
+    }
+
+    @Test
+    void generatedOpenApiSpecShouldDocumentRateLimitResponsesWhenRateLimitingIsEnabled() {
+        // given
+        var endpoints = rateLimitedOperations();
+
+        // when
+        var responses = endpoints.stream()
+                .map(endpoint -> getOperation(spec, endpoint.path(), endpoint.method()).path("responses").path("429"))
+                .toList();
+
+        // then
+        assertThat(responses).allSatisfy(response -> {
+            assertThat(response.isMissingNode()).isFalse();
+            assertThat(response.path("content").path("application/json").path("schema").path("$ref").asText())
+                    .endsWith("/ErrorDto");
+        });
     }
 
     private JsonNode readApiSpec() throws Exception {

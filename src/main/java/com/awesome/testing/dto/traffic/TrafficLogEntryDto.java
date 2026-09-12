@@ -21,7 +21,7 @@ public class TrafficLogEntryDto {
     @Schema(description = "Request timestamp")
     private Instant timestamp;
 
-    @Schema(description = "Client-provided session identifier")
+    @Schema(types = {"string", "null"}, description = "Client-provided session identifier")
     private String clientSessionId;
 
     @Schema(description = "HTTP method")
@@ -30,7 +30,7 @@ public class TrafficLogEntryDto {
     @Schema(description = "Request path")
     private String path;
 
-    @Schema(description = "Request query string")
+    @Schema(types = {"string", "null"}, description = "Request query string")
     private String queryString;
 
     @Schema(description = "Response status code")
@@ -39,13 +39,13 @@ public class TrafficLogEntryDto {
     @Schema(description = "Request duration in milliseconds")
     private long durationMs;
 
-    @Schema(description = "Request headers")
+    @Schema(implementation = Object.class, type = "object", additionalProperties = Schema.AdditionalPropertiesValue.TRUE, description = "Request headers as a JSON object")
     private JsonNode requestHeaders;
 
-    @Schema(description = "Request content type")
+    @Schema(types = {"string", "null"}, description = "Request content type")
     private String requestContentType;
 
-    @Schema(description = "Sanitized request body")
+    @Schema(implementation = Object.class, types = {"object", "array", "string", "number", "boolean", "null"}, description = "Sanitized request body: parsed JSON of any type, or a text preview for non-JSON/truncated content")
     private JsonNode requestBody;
 
     @Schema(description = "Whether the request body was truncated")
@@ -57,13 +57,13 @@ public class TrafficLogEntryDto {
     @Schema(description = "Stored request body length")
     private int requestBodyStoredLength;
 
-    @Schema(description = "Response headers")
+    @Schema(implementation = Object.class, type = "object", additionalProperties = Schema.AdditionalPropertiesValue.TRUE, description = "Response headers as a JSON object")
     private JsonNode responseHeaders;
 
-    @Schema(description = "Response content type")
+    @Schema(types = {"string", "null"}, description = "Response content type")
     private String responseContentType;
 
-    @Schema(description = "Sanitized response body")
+    @Schema(implementation = Object.class, types = {"object", "array", "string", "number", "boolean", "null"}, description = "Sanitized response body: parsed JSON of any type, or a text preview for non-JSON/truncated content")
     private JsonNode responseBody;
 
     @Schema(description = "Whether the response body was truncated")

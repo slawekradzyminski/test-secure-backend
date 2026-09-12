@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 public class SsoExchangeRequestDto {
 
     @NotBlank
-    @Schema(description = "OIDC ID token returned by the configured identity provider")
+    @Schema(minLength = 1, pattern = "\\S", description = "OIDC ID token returned by the configured identity provider")
     private String idToken;
 
 }

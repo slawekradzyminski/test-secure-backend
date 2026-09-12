@@ -1,5 +1,8 @@
 package com.awesome.testing.controller.cart;
 
+import com.awesome.testing.dto.ErrorDto;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Content;
 import com.awesome.testing.dto.cart.CartDto;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.CartService;
@@ -18,7 +21,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Cart", description = "Shopping cart management endpoints")
 @SecurityRequirement(name = "bearerAuth")
-@ApiResponse(responseCode = "401", description = "Unauthorized")
+@ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
 public class CartController {
 
     private final CartService cartService;
@@ -35,7 +39,7 @@ public class CartController {
     @DeleteMapping
     @Operation(summary = "Clear cart",
             description = "Removes all items from the authenticated user's cart.")
-    @ApiResponse(responseCode = "204", description = "Cart cleared successfully")
+    @ApiResponse(responseCode = "204", description = "Cart cleared successfully", content = @Content)
     public ResponseEntity<Void> clearCart(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal) {
         cartService.clearCart(principal.getUsername());

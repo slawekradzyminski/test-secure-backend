@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ForgotPasswordRequestDto {
 
-    @Schema(description = "Username or email address associated with the account",
+    @Schema(minLength = 1, pattern = "\\S", description = "Username or email address associated with the account",
             example = "client")
     @NotBlank(message = "Identifier is required")
     private String identifier;

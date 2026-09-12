@@ -16,6 +16,6 @@ public class MfaCodeRequestDto {
 
     @NotBlank
     @Pattern(regexp = "\\d{6}", message = "Authenticator code must contain exactly 6 digits")
-    @Schema(description = "Six-digit code from an authenticator app", example = "123456")
+    @Schema(minLength = 1, description = "Six-digit code from an authenticator app", example = "123456")
     private String code;
 }
