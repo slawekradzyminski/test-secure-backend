@@ -27,10 +27,10 @@ public class UserResponseDto {
     @Schema(description = "User roles", example = "[\"ROLE_CLIENT\"]")
     List<Role> roles;
 
-    @Schema(description = "First name", example = "John")
+    @Schema(types = {"string", "null"}, description = "First name", example = "John")
     String firstName;
 
-    @Schema(description = "Last name", example = "Boyd")
+    @Schema(types = {"string", "null"}, description = "Last name", example = "Boyd")
     String lastName;
 
     public static UserResponseDto from(UserEntity user) {

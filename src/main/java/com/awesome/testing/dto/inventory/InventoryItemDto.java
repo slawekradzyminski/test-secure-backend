@@ -1,5 +1,6 @@
 package com.awesome.testing.dto.inventory;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,5 +19,6 @@ public class InventoryItemDto {
     private String category;
     private Integer availableQuantity;
     private StockStatus stockStatus;
+    @Schema(type = "string", format = "local-date-time", description = "Server local date and time without an offset; timezone is deployment-dependent, not an absolute instant")
     private LocalDateTime lastChangedAt;
 }

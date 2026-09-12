@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 public class CreateQrDto {
 
     @NotBlank(message = "Text is required")
-    @Schema(description = "Text to use in QR code", example = "https://awesome-testing.com")
+    @Schema(minLength = 1, pattern = "\\S", description = "Text to use in QR code", example = "https://awesome-testing.com")
     private String text;
 
 }

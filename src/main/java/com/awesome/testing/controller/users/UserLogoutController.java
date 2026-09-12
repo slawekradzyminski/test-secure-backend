@@ -1,5 +1,8 @@
 package com.awesome.testing.controller.users;
 
+import com.awesome.testing.dto.ErrorDto;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Content;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,8 +26,9 @@ public class UserLogoutController {
     @Operation(summary = "Logout user and revoke refresh token",
             description = "Revokes all refresh tokens for the authenticated user.",
             security = @SecurityRequirement(name = "bearerAuth"))
-    @ApiResponse(responseCode = "200", description = "Successfully logged out")
-    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "200", description = "Successfully logged out", content = @Content)
+    @ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public void logout(HttpServletRequest httpRequest) {
         String username = userService.whoAmI(httpRequest).getUsername();
         userService.logout(username);

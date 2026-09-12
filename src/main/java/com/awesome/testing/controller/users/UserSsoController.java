@@ -1,5 +1,6 @@
 package com.awesome.testing.controller.users;
 
+import com.awesome.testing.dto.ValidationErrorsDto;
 import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.user.LoginResponseDto;
 import com.awesome.testing.dto.user.SsoExchangeRequestDto;
@@ -32,7 +33,7 @@ public class UserSsoController {
     @ApiResponse(responseCode = "200", description = "Successfully authenticated with SSO")
     @ApiResponse(responseCode = "400", description = "Field validation failed",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    schema = @Schema(implementation = ErrorDto.class)))
+                    schema = @Schema(implementation = ValidationErrorsDto.class)))
     @ApiResponse(responseCode = "401", description = "Invalid SSO token",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = ErrorDto.class)))

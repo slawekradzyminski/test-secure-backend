@@ -16,11 +16,11 @@ public class MfaProtectedActionRequestDto {
 
     @NotBlank
     @Size(max = 255)
-    @Schema(description = "Current account password")
+    @Schema(minLength = 1, pattern = "\\S", description = "Current account password")
     private String password;
 
     @NotBlank
     @Size(min = 6, max = 32)
-    @Schema(description = "Six-digit authenticator code or one-time recovery code")
+    @Schema(minLength = 1, pattern = "\\S", description = "Six-digit authenticator code or one-time recovery code")
     private String code;
 }

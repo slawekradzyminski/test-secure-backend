@@ -1,5 +1,6 @@
 package com.awesome.testing.entity;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.awesome.testing.dto.user.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
@@ -43,13 +44,16 @@ public class UserEntity {
 
     @Size(max = 100)
     @Column(name = "auth_provider")
+    @Schema(types = {"string", "null"})
     private String authProvider;
 
     @Size(max = 255)
     @Column(name = "provider_subject")
+    @Schema(types = {"string", "null"})
     private String providerSubject;
 
     @Column(name = "email_verified")
+    @Schema(types = {"boolean", "null"})
     private Boolean emailVerified;
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -57,18 +61,22 @@ public class UserEntity {
 
     @Size(max = 255)
     @Column(name = "first_name")
+    @Schema(types = {"string", "null"})
     private String firstName;
 
     @Size(max = 255)
     @Column(name = "last_name")
+    @Schema(types = {"string", "null"})
     private String lastName;
 
     @Size(max = 5000, message = "Chat system prompt must be at most 5000 characters")
     @Column(name = "chat_system_prompt")
+    @Schema(types = {"string", "null"})
     private String chatSystemPrompt;
 
     @Size(max = 5000, message = "Tool system prompt must be at most 5000 characters")
     @Column(name = "tool_system_prompt")
+    @Schema(types = {"string", "null"})
     private String toolSystemPrompt;
 
     @JsonIgnore

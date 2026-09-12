@@ -15,6 +15,6 @@ import jakarta.validation.constraints.Size;
 public class ChatSystemPromptDto {
 
     @Size(max = 5000, message = "Chat system prompt must be at most 5000 characters")
-    @Schema(description = "General chat system prompt", example = "You are a helpful assistant.")
+    @Schema(types = {"string", "null"}, description = "Null, omitted, or empty resets the override. General chat system prompt", example = "You are a helpful assistant.")
     private String chatSystemPrompt;
 }

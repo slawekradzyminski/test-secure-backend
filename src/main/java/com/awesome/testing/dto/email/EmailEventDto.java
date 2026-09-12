@@ -29,7 +29,7 @@ public class EmailEventDto {
     @Schema(description = "When the email event status was last updated")
     Instant updatedAt;
 
-    @Schema(description = "Failure detail when the test mail sink handoff did not succeed")
+    @Schema(types = {"string", "null"}, description = "Failure detail when the test mail sink handoff did not succeed")
     String failureReason;
 
     public static EmailEventDto from(EmailEventEntity entity) {

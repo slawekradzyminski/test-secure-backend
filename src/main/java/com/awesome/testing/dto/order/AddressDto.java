@@ -16,24 +16,24 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Address data transfer object")
 public class AddressDto {
     @NotBlank(message = "Street is required")
-    @Schema(description = "Street address", example = "123 Main St")
+    @Schema(minLength = 1, pattern = "\\S", description = "Street address", example = "123 Main St")
     private String street;
 
     @NotBlank(message = "City is required")
-    @Schema(description = "City", example = "New York")
+    @Schema(minLength = 1, pattern = "\\S", description = "City", example = "New York")
     private String city;
 
     @NotBlank(message = "State is required")
-    @Schema(description = "State", example = "NY")
+    @Schema(minLength = 1, pattern = "\\S", description = "State", example = "NY")
     private String state;
 
     @NotBlank(message = "Zip code is required")
     @Pattern(regexp = "^[0-9]{2}(-[0-9]{3})?|[0-9]{5}(-[0-9]{4})?$", message = "Invalid postal/zip code format")
-    @Schema(description = "Postal/ZIP code", example = "35-119")
+    @Schema(minLength = 1, description = "Postal/ZIP code", example = "35-119")
     private String zipCode;
 
     @NotBlank(message = "Country is required")
-    @Schema(description = "Country", example = "Poland")
+    @Schema(minLength = 1, pattern = "\\S", description = "Country", example = "Poland")
     private String country;
 
     public static AddressDto from(AddressEntity address) {

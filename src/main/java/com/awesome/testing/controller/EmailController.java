@@ -1,5 +1,9 @@
 package com.awesome.testing.controller;
 
+import com.awesome.testing.dto.ValidationErrorsDto;
+import com.awesome.testing.dto.ErrorDto;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Content;
 import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.repository.UserRepository;
@@ -23,7 +27,8 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "email", description = "Email sending endpoints")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
-@ApiResponse(responseCode = "401", description = "Unauthorized")
+@ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
 public class EmailController {
 
     private final AuthRateLimitGuard authRateLimitGuard;
@@ -36,9 +41,11 @@ public class EmailController {
     @PostMapping
     @Operation(summary = "Send email",
             description = "Queues an email message for asynchronous delivery through the configured JMS destination.")
-    @ApiResponse(responseCode = "200", description = "Email sent successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid email data")
-    @ApiResponse(responseCode = "429", description = "Too many requests")
+    @ApiResponse(responseCode = "200", description = "Email queued; delivery is asynchronous", content = @Content)
+    @ApiResponse(responseCode = "400", description = "Invalid email data",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
+    @ApiResponse(responseCode = "429", description = "Too many requests",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public ResponseEntity<Void> sendEmail(HttpServletRequest request,
                                           @AuthenticationPrincipal CustomPrincipal principal,
                                           @RequestBody @Valid EmailDto emailDto) {

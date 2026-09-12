@@ -1,5 +1,6 @@
 package com.awesome.testing.dto.ollama;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -14,6 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ToolCallDto {
 
+    @Schema(types = {"string", "null"})
     private String id;
 
     @JsonProperty("function")

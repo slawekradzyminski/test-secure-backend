@@ -20,7 +20,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class OllamaToolParametersDto {
 
-    @Schema(description = "JSON schema type. Usually 'object'.", example = "object")
+    @Schema(minLength = 1, pattern = "\\S", description = "JSON schema type. Usually 'object'.", example = "object")
     @NotBlank
     private String type;
 
@@ -29,10 +29,10 @@ public class OllamaToolParametersDto {
     @Builder.Default
     private Map<String, @Valid OllamaToolSchemaPropertyDto> properties = Collections.emptyMap();
 
-    @Schema(description = "List of required properties for this schema.")
+    @Schema(types = {"array", "null"}, description = "List of required properties for this schema.")
     private List<String> required;
 
-    @Schema(description = "Optional oneOf blocks to express alternative required sets.")
+    @Schema(types = {"array", "null"}, description = "Optional oneOf blocks to express alternative required sets.")
     @JsonProperty("oneOf")
     private List<OllamaToolParametersRequirementDto> oneOf;
 }

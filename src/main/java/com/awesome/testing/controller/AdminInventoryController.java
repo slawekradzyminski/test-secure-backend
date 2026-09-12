@@ -1,5 +1,9 @@
 package com.awesome.testing.controller;
 
+import com.awesome.testing.dto.ValidationErrorsDto;
+import com.awesome.testing.dto.ErrorDto;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Content;
 import com.awesome.testing.dto.inventory.InventoryAdjustmentDto;
 import com.awesome.testing.dto.inventory.InventoryItemDto;
 import com.awesome.testing.dto.inventory.InventoryMovementDto;
@@ -8,6 +12,7 @@ import com.awesome.testing.dto.order.PageDto;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.InventoryService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,20 +37,25 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/admin/inventory")
 @Tag(name = "Inventory", description = "Administrator inventory management endpoints")
 @SecurityRequirement(name = "bearerAuth")
-@ApiResponse(responseCode = "401", description = "Unauthorized")
-@ApiResponse(responseCode = "403", description = "Forbidden")
+@ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+@ApiResponse(responseCode = "403", description = "Forbidden",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
 public class AdminInventoryController {
     private final InventoryService service;
 
     @GetMapping
-    @Operation(summary = "List inventory", description = "Lists inventory with optional stock and catalog filters.")
+    @Operation(summary = "List inventory", description = "Lists inventory with optional stock and catalog filters. Negative page is clamped to zero; size is clamped to 1–100. lowStockThreshold must be at least 1.")
     @ApiResponse(responseCode = "200", description = "Inventory returned")
+    @ApiResponse(responseCode = "400", description = "Invalid parameter",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public ResponseEntity<PageDto<InventoryItemDto>> list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) StockStatus status,
+            @Parameter(description = "Inclusive upper bound for LOW_STOCK; at least one", schema = @Schema(minimum = "1"))
             @RequestParam(defaultValue = "5") int lowStockThreshold) {
         return ResponseEntity.ok(PageDto.from(service.list(
                 page, size, search, category, status, lowStockThreshold)));
@@ -54,15 +64,26 @@ public class AdminInventoryController {
     @GetMapping("/{productId}")
     @Operation(summary = "Get inventory item", description = "Returns the available quantity for one product.")
     @ApiResponse(responseCode = "200", description = "Inventory item returned")
+    @ApiResponse(responseCode = "404", description = "Product not found",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid parameter",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public InventoryItemDto get(
             @PathVariable Long productId,
+            @Parameter(description = "Inclusive upper bound for LOW_STOCK; at least one", schema = @Schema(minimum = "1"))
             @RequestParam(defaultValue = "5") int lowStockThreshold) {
         return service.get(productId, lowStockThreshold);
     }
 
     @PostMapping("/{productId}/adjustments")
-    @Operation(summary = "Adjust inventory", description = "Applies an idempotent administrator inventory adjustment.")
+    @Operation(summary = "Adjust inventory", description = "Applies a nonzero inventory delta. Repeating requestId with the same product, delta and reason returns the original movement with 201; changing delta or reason returns 409.")
     @ApiResponse(responseCode = "201", description = "Adjustment recorded")
+    @ApiResponse(responseCode = "400", description = "Invalid adjustment or product identifier",
+            content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, ErrorDto.class})))
+    @ApiResponse(responseCode = "404", description = "Product not found",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "409", description = "Insufficient stock, quantity overflow, or requestId reused with different delta/reason",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public ResponseEntity<InventoryMovementDto> adjust(
             @PathVariable Long productId,
             @Valid @RequestBody InventoryAdjustmentDto request,
@@ -72,8 +93,12 @@ public class AdminInventoryController {
     }
 
     @GetMapping("/{productId}/movements")
-    @Operation(summary = "List inventory movements", description = "Lists an inventory item's movement history newest first.")
+    @Operation(summary = "List inventory movements", description = "Lists an inventory item's movement history newest first. Negative page is clamped to zero; size is clamped to 1–100.")
     @ApiResponse(responseCode = "200", description = "Movement history returned")
+    @ApiResponse(responseCode = "404", description = "Product not found",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid parameter",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public PageDto<InventoryMovementDto> movements(
             @PathVariable Long productId,
             @RequestParam(defaultValue = "0") int page,

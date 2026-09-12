@@ -1,5 +1,7 @@
 package com.awesome.testing.controller;
 
+import com.awesome.testing.dto.ValidationErrorsDto;
+import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.ollama.ChatRequestDto;
 import com.awesome.testing.dto.ollama.ChatResponseDto;
 import com.awesome.testing.dto.ollama.GenerateResponseDto;
@@ -40,7 +42,8 @@ import java.util.List;
 @Tag(name = "ollama", description = "Ollama endpoints")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
-@ApiResponse(responseCode = "401", description = "Unauthorized")
+@ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
 public class OllamaController {
 
     private final OllamaService ollamaService;
@@ -50,14 +53,18 @@ public class OllamaController {
     private final AuthRateLimitGuard authRateLimitGuard;
 
     @Operation(summary = "Generate text using Ollama model",
-            description = "Streams generated text chunks from the configured Ollama backend for a single prompt.")
-    @ApiResponse(responseCode = "200", description = "Successful generation")
-    @ApiResponse(responseCode = "400", description = "Invalid request")
+            description = "Streams generated text chunks from the configured Ollama backend for a single prompt. Upstream errors before the stream starts preserve their HTTP status and JSON body; failures after streaming begins may terminate the stream.")
+    @ApiResponse(responseCode = "200", description = "One JSON GenerateResponseDto per SSE data event", content = @Content(mediaType = "text/event-stream", schema = @Schema(implementation = GenerateResponseDto.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid request",
+            content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, com.awesome.testing.controller.exception.OllamaExceptionHandler.ErrorResponse.class, ModelNotFoundDto.class})))
     @ApiResponse(responseCode = "404", description = "Model not found",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = ModelNotFoundDto.class)))
-    @ApiResponse(responseCode = "429", description = "Too many requests")
-    @ApiResponse(responseCode = "500", description = "Ollama server error")
+    @ApiResponse(responseCode = "429", description = "Too many requests",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "500", description = "Upstream server failure; JSON body is passed through before streaming starts", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Object.class, types = {"object", "array", "string", "number", "boolean", "null"})))
+    @ApiResponse(responseCode = "default", description = "Other upstream HTTP failures before streaming starts retain their status and JSON body",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = Object.class, types = {"object", "array", "string", "number", "boolean", "null"})))
     @PostMapping(value = "/generate", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<GenerateResponseDto> generateText(HttpServletRequest servletRequest,
                                                   @AuthenticationPrincipal CustomPrincipal principal,
@@ -69,13 +76,17 @@ public class OllamaController {
 
     @Operation(summary = "Chat with Ollama model (stateless endpoint)",
             description = "Streams responses and expects the caller to manage the entire conversation history client-side.")
-    @ApiResponse(responseCode = "200", description = "Successful chat response")
-    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "200", description = "One JSON ChatResponseDto per SSE data event", content = @Content(mediaType = "text/event-stream", schema = @Schema(implementation = ChatResponseDto.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid request",
+            content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, com.awesome.testing.controller.exception.OllamaExceptionHandler.ErrorResponse.class, ModelNotFoundDto.class})))
     @ApiResponse(responseCode = "404", description = "Model not found",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = ModelNotFoundDto.class)))
-    @ApiResponse(responseCode = "429", description = "Too many requests")
-    @ApiResponse(responseCode = "500", description = "Ollama server error")
+    @ApiResponse(responseCode = "429", description = "Too many requests",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "500", description = "Upstream server failure; JSON body is passed through before streaming starts", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Object.class, types = {"object", "array", "string", "number", "boolean", "null"})))
+    @ApiResponse(responseCode = "default", description = "Other upstream HTTP failures before streaming starts retain their status and JSON body",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = Object.class, types = {"object", "array", "string", "number", "boolean", "null"})))
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ChatResponseDto> chat(HttpServletRequest servletRequest,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
@@ -95,10 +106,16 @@ public class OllamaController {
                     This endpoint requires the caller to resend the full conversation on every request.
                     Small local models stay grounded only when they keep everything in the product lane—always snapshot a SKU first and follow up with list_products if it needs comparisons."""
     )
-    @ApiResponse(responseCode = "200", description = "Successful chat response")
-    @ApiResponse(responseCode = "400", description = "Invalid request")
-    @ApiResponse(responseCode = "429", description = "Too many requests")
-    @ApiResponse(responseCode = "500", description = "Ollama server error")
+    @ApiResponse(responseCode = "200", description = "One JSON ChatResponseDto per SSE data event", content = @Content(mediaType = "text/event-stream", schema = @Schema(implementation = ChatResponseDto.class)))
+    @ApiResponse(responseCode = "404", description = "Upstream model not found",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ModelNotFoundDto.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid request",
+            content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, com.awesome.testing.controller.exception.OllamaExceptionHandler.ErrorResponse.class, ModelNotFoundDto.class})))
+    @ApiResponse(responseCode = "429", description = "Too many requests",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "500", description = "Upstream server failure; JSON body is passed through before streaming starts", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Object.class, types = {"object", "array", "string", "number", "boolean", "null"})))
+    @ApiResponse(responseCode = "default", description = "Other upstream HTTP failures before streaming starts retain their status and JSON body",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = Object.class, types = {"object", "array", "string", "number", "boolean", "null"})))
     @PostMapping(value = "/chat/tools", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ChatResponseDto> chatWithTools(HttpServletRequest servletRequest,
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,

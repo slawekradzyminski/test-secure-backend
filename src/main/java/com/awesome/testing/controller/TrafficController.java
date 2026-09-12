@@ -1,11 +1,16 @@
 package com.awesome.testing.controller;
 
+import com.awesome.testing.dto.ValidationErrorsDto;
+import com.awesome.testing.dto.ErrorDto;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Content;
 import com.awesome.testing.dto.order.PageDto;
 import com.awesome.testing.dto.traffic.TrafficInfoDto;
 import com.awesome.testing.dto.traffic.TrafficLogEntryDto;
 import com.awesome.testing.traffic.TrafficLogService;
 import com.awesome.testing.traffic.TrafficProperties;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
@@ -24,6 +29,10 @@ import com.awesome.testing.traffic.TrafficSession;
 
 @RestController
 @RequestMapping("/api/v1/traffic")
+@ApiResponse(responseCode = "401", description = "Unauthorized or invalid Bearer token; authentication is required unless legacy public access is enabled",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+@ApiResponse(responseCode = "400", description = "Invalid session header, pagination or time filter",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
 @Tag(name = "Traffic Monitoring", description = "Endpoints for HTTP traffic monitoring")
 @RequiredArgsConstructor
 public class TrafficController {
@@ -36,7 +45,7 @@ public class TrafficController {
     @GetMapping("/info")
     @Operation(
             summary = "Get traffic monitoring information",
-            description = "Returns information about WebSocket endpoints for traffic monitoring"
+            description = "Returns WebSocket connection information. X-Client-Session-Id is required unless legacy public access is enabled; after trimming it must contain 16–128 letters, digits, underscores or hyphens."
     )
     @ApiResponse(responseCode = "200", description = "Successfully returned info")
     public TrafficInfoDto getTrafficInfo(
@@ -53,16 +62,21 @@ public class TrafficController {
     @Operation(summary = "Get paginated HTTP traffic logs",
             description = "Returns captured HTTP traffic logs with optional filters for session, method, status, path, text, and time range.")
     @ApiResponse(responseCode = "200", description = "Successfully returned traffic logs")
-    @ApiResponse(responseCode = "400", description = "Bad request")
+    @ApiResponse(responseCode = "400", description = "Bad request",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
     public ResponseEntity<PageDto<TrafficLogEntryDto>> getTrafficLogs(
+            @Parameter(description = "Zero-based page index", schema = @Schema(minimum = "0"))
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size, clamped to 1 through the configured app.traffic.max-page-size")
             @RequestParam(defaultValue = "10") int size,
             @RequestHeader(name = TrafficSession.HEADER, required = false) String clientSessionId,
             @RequestParam(required = false) String method,
             @RequestParam(required = false) Integer status,
             @RequestParam(required = false) String pathContains,
             @RequestParam(required = false) String text,
+            @Parameter(description = "Inclusive lower timestamp bound as an ISO-8601 instant with offset; blank means no lower bound")
             @RequestParam(required = false) String from,
+            @Parameter(description = "Inclusive upper timestamp bound as an ISO-8601 instant with offset; blank means no upper bound")
             @RequestParam(required = false) String to) {
         int resolvedSize = Math.max(1, Math.min(size, trafficProperties.getMaxPageSize()));
         return ResponseEntity.ok(PageDto.from(
@@ -83,7 +97,7 @@ public class TrafficController {
     @Operation(summary = "Get traffic log by correlation identifier",
             description = "Returns one captured HTTP traffic log entry using its correlation identifier.")
     @ApiResponse(responseCode = "200", description = "Successfully returned traffic log")
-    @ApiResponse(responseCode = "404", description = "Traffic log not found")
+    @ApiResponse(responseCode = "404", description = "Traffic log not found; empty response body", content = @Content)
     public ResponseEntity<TrafficLogEntryDto> getTrafficLog(
             @PathVariable String correlationId,
             @RequestHeader(name = TrafficSession.HEADER, required = false) String clientSessionId) {

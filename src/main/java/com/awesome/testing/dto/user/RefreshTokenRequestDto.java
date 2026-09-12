@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 public class RefreshTokenRequestDto {
 
     @NotBlank
-    @Schema(description = "Refresh token obtained during login")
+    @Schema(minLength = 1, pattern = "\\S", description = "Refresh token obtained during login")
     private String refreshToken;
 }

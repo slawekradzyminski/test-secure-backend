@@ -21,7 +21,7 @@ public class OllamaToolSchemaPropertyDto {
     @Schema(description = "Human friendly explanation", example = "Numeric id of the product")
     private String description;
 
-    @Schema(description = "Enum values, when applicable")
+    @Schema(types = {"array", "null"}, description = "Enum values, when applicable")
     @JsonProperty("enum")
     private List<String> enumValues;
 }

@@ -1,5 +1,9 @@
 package com.awesome.testing.controller.cart;
 
+import com.awesome.testing.dto.ValidationErrorsDto;
+import com.awesome.testing.dto.ErrorDto;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Content;
 import com.awesome.testing.dto.cart.CartDto;
 import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.dto.cart.UpdateCartItemDto;
@@ -21,7 +25,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Cart", description = "Shopping cart management endpoints")
 @SecurityRequirement(name = "bearerAuth")
-@ApiResponse(responseCode = "401", description = "Unauthorized")
+@ApiResponse(responseCode = "401", description = "Unauthorized",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
 public class CartItemsController {
 
     private final CartService cartService;
@@ -30,8 +35,12 @@ public class CartItemsController {
     @Operation(summary = "Add item to cart",
             description = "Adds a product to the authenticated user's cart or increases the quantity of an existing cart item.")
     @ApiResponse(responseCode = "200", description = "Item added successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid input")
-    @ApiResponse(responseCode = "404", description = "Product not found")
+    @ApiResponse(responseCode = "409", description = "Requested quantity exceeds available stock",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid input",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
+    @ApiResponse(responseCode = "404", description = "Product not found",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public ResponseEntity<CartDto> addToCart(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Valid @RequestBody CartItemDto cartItemDto) {
@@ -42,8 +51,12 @@ public class CartItemsController {
     @Operation(summary = "Update item quantity",
             description = "Sets the quantity for a product already in the authenticated user's cart. Quantity zero removes the item.")
     @ApiResponse(responseCode = "200", description = "Item quantity updated successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid input")
-    @ApiResponse(responseCode = "404", description = "Cart item not found")
+    @ApiResponse(responseCode = "409", description = "Requested quantity exceeds available stock",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid input",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
+    @ApiResponse(responseCode = "404", description = "Cart item not found",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public ResponseEntity<CartDto> updateCartItem(
             @Parameter(hidden = true)  @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long productId,
@@ -55,8 +68,10 @@ public class CartItemsController {
     @Operation(summary = "Remove item from cart",
             description = "Removes a product from the authenticated user's cart and returns the updated cart.")
     @ApiResponse(responseCode = "200", description = "Item removed successfully")
-    @ApiResponse(responseCode = "400", description = "Bad request")
-    @ApiResponse(responseCode = "404", description = "Cart item not found")
+    @ApiResponse(responseCode = "400", description = "Bad request",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
+    @ApiResponse(responseCode = "404", description = "Cart item not found",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public ResponseEntity<CartDto> removeFromCart(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @PathVariable Long productId) {

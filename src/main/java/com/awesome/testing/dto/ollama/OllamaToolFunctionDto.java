@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class OllamaToolFunctionDto {
 
-    @Schema(description = "Function name exposed to the model", example = "get_product_snapshot")
+    @Schema(minLength = 1, pattern = "\\S", description = "Function name exposed to the model", example = "get_product_snapshot")
     @NotBlank
     private String name;
 
