@@ -1,0 +1,12 @@
+# Optional native listener. Keep it private; REST and GraphQL do not require it.
+spring:
+  grpc:
+    server:
+      enabled: true
+      address: ${GRPC_HOST:127.0.0.1}
+      port: ${GRPC_PORT:9091}
+      inbound:
+        message:
+          max-size: 64KB
+      reflection:
+        enabled: ${GRPC_REFLECTION_ENABLED:false}

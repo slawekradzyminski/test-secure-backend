@@ -4,7 +4,7 @@
 
     <groupId>murraco</groupId>
     <artifactId>jwt-auth-service</artifactId>
-    <version>3.7.17</version>
+    <version>3.8.0</version>
     <packaging>jar</packaging>
 
     <name>spring-boot-jwt</name>
@@ -35,6 +35,18 @@
     </parent>
 
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-grpc-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-services</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-graphql</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
@@ -239,6 +251,10 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>io.github.ascopes</groupId>
+                <artifactId>protobuf-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <version>3.6.3</version>
@@ -271,6 +287,9 @@
                 <version>3.28.0</version>
                 <configuration>
                     <skip>${skip.pmd}</skip>
+                    <excludeRoots>
+                        <excludeRoot>${project.build.directory}/generated-sources/protobuf</excludeRoot>
+                    </excludeRoots>
                     <rulesets>
                         <ruleset>config/pmd/ruleset.xml</ruleset>
                     </rulesets>
@@ -296,6 +315,7 @@
                     <!-- Fake data bootstrap populates demo data outside of tests; exclude it from coverage accounting -->
                     <excludes>
                         <exclude>com/awesome/testing/fakedata/**</exclude>
+                        <exclude>com/awesome/testing/grpc/proto/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -398,6 +418,8 @@
                                 <include>**/PasswordResetTokenConcurrencyIT.class</include>
                                 <include>**/InventoryMigrationIT.class</include>
                                 <include>**/InventoryConcurrencyIT.class</include>
+                                <include>**/GraphQlConcurrencyIT.class</include>
+                                <include>**/InventoryGrpcConcurrencyIT.class</include>
                             </includes>
                             <argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
                         </configuration>
@@ -434,6 +456,14 @@
                         </dependencies>
                         <configuration>
                             <targetClasses>
+                                <param>com.awesome.testing.traffic.protocol.*</param>
+                                <param>com.awesome.testing.grpc.InventoryGrpcAuthentication</param>
+                                <param>com.awesome.testing.grpc.InventoryGrpcService</param>
+                                <param>com.awesome.testing.grpc.InventoryGrpcViews</param>
+                                <param>com.awesome.testing.graphql.CommerceQueryService</param>
+                                <param>com.awesome.testing.graphql.CommerceMutationService</param>
+                                <param>com.awesome.testing.graphql.CommerceAccess</param>
+                                <param>com.awesome.testing.graphql.CommerceViews*</param>
                                 <param>com.awesome.testing.service.ProductService</param>
                                 <param>com.awesome.testing.service.CartService</param>
                                 <param>com.awesome.testing.service.OrderService</param>
@@ -447,6 +477,10 @@
                                 <param>com.awesome.testing.service.ollama.function.ProductSnapshotFunctionHandler</param>
                             </targetClasses>
                             <targetTests>
+                                <param>com.awesome.testing.traffic.protocol.*Test</param>
+                                <param>com.awesome.testing.grpc.GrpcProtocolTrafficTest</param>
+                                <param>com.awesome.testing.grpc.InventoryGrpc*Test</param>
+                                <param>com.awesome.testing.graphql.Commerce*Test</param>
                                 <param>com.awesome.testing.service.ProductServiceTest</param>
                                 <param>com.awesome.testing.service.CartServiceTest</param>
                                 <param>com.awesome.testing.service.OrderServiceTest</param>

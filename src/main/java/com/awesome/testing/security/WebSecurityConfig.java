@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -87,6 +88,7 @@ public class WebSecurityConfig {
             // Then allow public endpoints
             PathPatternRequestMatcher.Builder matcherBuilder = PathPatternRequestMatcher.withDefaults();
             auth.requestMatchers(request -> isApiDocsRequest(request.getRequestURI())).permitAll();
+            auth.requestMatchers(matcherBuilder.matcher(HttpMethod.GET, "/api/v1/graphiql")).permitAll();
             ALLOWED_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(matcherBuilder.matcher(endpoint)).permitAll());
             if (trafficProperties.isLegacyPublicAccess()) {
                 auth.requestMatchers(matcherBuilder.matcher("/api/v1/traffic/**")).permitAll();

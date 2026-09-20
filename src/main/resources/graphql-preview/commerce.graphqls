@@ -1,0 +1,132 @@
+"""Authenticated commerce API. Money is an exact decimal string; dates are server-local ISO date-times."""
+type Query {
+  products(offset: Int! = 0, limit: Int! = 20, category: String, inStockOnly: Boolean): ProductPage
+  product(id: ID!): Product
+  """Defaults to your cart. Only admins may select another username."""
+  cart(username: String): Cart
+  """Admin-only list of nonempty carts, ordered by username."""
+  carts(page: Int! = 0, size: Int! = 20): CartPage
+  """Users see only their orders; admins see all orders unless username is supplied."""
+  orders(username: String, status: OrderStatus, page: Int! = 0, size: Int! = 20): OrderPage
+  order(id: ID!): Order
+  inventory(page: Int! = 0, size: Int! = 20, search: String, category: String,
+            status: StockStatus, lowStockThreshold: Int! = 10): InventoryPage
+  inventoryItem(productId: ID!, lowStockThreshold: Int! = 10): InventoryItem
+  inventoryMovements(productId: ID!, page: Int! = 0, size: Int! = 20): InventoryMovementPage
+}
+
+type Mutation {
+  addCartItem(productId: ID!, quantity: Int!, username: String): Cart
+  updateCartItem(productId: ID!, quantity: Int!, username: String): Cart
+  removeCartItem(productId: ID!, username: String): Cart
+  clearCart(username: String): Cart
+  """Places an order for the authenticated user's cart. Do not retry automatically after an uncertain response."""
+  checkout(address: AddressInput!): Order
+  cancelOrder(id: ID!): Order
+  updateOrderStatus(id: ID!, status: OrderStatus!): Order
+  createProduct(input: ProductCreateInput!): Product
+  updateProduct(id: ID!, input: ProductUpdateInput!): Product
+  deleteProduct(id: ID!): Boolean
+  """Admin-only, idempotent for a product/requestId pair with an identical payload."""
+  adjustInventory(productId: ID!, input: InventoryAdjustmentInput!): InventoryMovement
+}
+
+type ProductPage { items: [Product!]! total: Int! offset: Int! limit: Int! }
+type CartPage { items: [Cart!]! total: Int! page: Int! size: Int! }
+type OrderPage { items: [Order!]! total: Int! page: Int! size: Int! }
+type InventoryPage { items: [InventoryItem!]! total: Int! page: Int! size: Int! }
+type InventoryMovementPage { items: [InventoryMovement!]! total: Int! page: Int! size: Int! }
+
+type Product {
+  id: ID!
+  name: String!
+  description: String
+  price: String!
+  stockQuantity: Int!
+  category: String
+  imageUrl: String
+}
+
+type Cart {
+  username: String!
+  items: [CartItem!]!
+  totalPrice: String!
+  totalItems: Int!
+}
+
+type CartItem {
+  product: Product!
+  quantity: Int!
+  """Price captured in the cart, which can differ from the current product price."""
+  unitPrice: String!
+}
+
+type Order {
+  id: ID!
+  username: String!
+  items: [OrderItem!]!
+  totalAmount: String!
+  status: OrderStatus!
+  shippingAddress: Address!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type OrderItem {
+  id: ID!
+  productId: ID!
+  productName: String!
+  quantity: Int!
+  unitPrice: String!
+  totalPrice: String!
+}
+
+type Address { street: String! city: String! state: String! zipCode: String! country: String! }
+input AddressInput { street: String! city: String! state: String! zipCode: String! country: String! }
+
+enum OrderStatus { PENDING PAID SHIPPED DELIVERED CANCELLED }
+enum StockStatus { OUT_OF_STOCK LOW_STOCK IN_STOCK }
+enum InventoryMovementType { INITIAL_STOCK ADMIN_ADJUSTMENT ORDER_DEDUCTED ORDER_RESTORED }
+
+type InventoryItem {
+  productId: ID!
+  name: String!
+  category: String
+  availableQuantity: Int!
+  stockStatus: StockStatus!
+  lastChangedAt: String!
+}
+
+type InventoryMovement {
+  id: ID!
+  productId: ID!
+  orderId: ID
+  type: InventoryMovementType!
+  delta: Int!
+  quantityAfter: Int!
+  actor: String!
+  reason: String!
+  requestId: String
+  createdAt: String!
+}
+
+input ProductCreateInput {
+  name: String!
+  description: String!
+  price: String!
+  stockQuantity: Int!
+  category: String!
+  imageUrl: String
+}
+
+"""Omitted and null fields both leave existing values unchanged, matching the REST update semantics."""
+input ProductUpdateInput {
+  name: String
+  description: String
+  price: String
+  stockQuantity: Int
+  category: String
+  imageUrl: String
+}
+
+input InventoryAdjustmentInput { delta: Int! reason: String! requestId: String! }

@@ -1,6 +1,10 @@
 spring:
+  grpc:
+    server:
+      enabled: false
   profiles:
     active: docker
+    include: graphql
   main:
     allow-bean-definition-overriding: true
   jpa:

@@ -605,3 +605,18 @@ When working with AI assistants, keep in mind:
    ```bash
    mvn test
    ```
+
+## GraphQL commerce API
+
+The automatically included `graphql` Spring profile exposes `/api/v1/graphql` for products,
+carts, orders, and inventory. Customers can access their own carts and orders;
+administrators can inspect all users' data and manage products and inventory.
+Existing REST routes remain unchanged. See [the GraphQL guide](docs/GRAPHQL.md)
+for permissions, schema examples, limits, and verification.
+
+GraphiQL is enabled at `/api/v1/graphiql`. Add an access token in its Headers tab
+for schema exploration and execution; see [GraphQL usage](docs/GRAPHQL.md#use-graphiql).
+
+An optional `grpc` profile adds native admin inventory operations at
+`127.0.0.1:9091`. See [gRPC usage](docs/GRPC.md) for the versioned schema,
+authentication, statuses, deadlines, and idempotent retry examples.

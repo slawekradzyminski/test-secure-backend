@@ -1,0 +1,16 @@
+# Additive commerce GraphQL API, included by every application profile.
+spring:
+  graphql:
+    schema:
+      locations: classpath:graphql-preview/**/
+    http:
+      path: /api/v1/graphql
+    graphiql:
+      enabled: true
+      path: /api/v1/graphiql
+
+# Operation metrics are provided by GraphQL observations; do not log raw queries.
+logbook:
+  predicate:
+    exclude:
+      - path: /api/v1/graphql
