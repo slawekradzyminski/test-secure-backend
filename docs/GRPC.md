@@ -33,9 +33,9 @@ Generated classes are excluded from PMD and coverage accounting; handwritten
 adapters are included in the targeted PITest scope.
 
 For Docker, use the workspace's optional `docker-compose.grpc.yml` override with
-a rebuilt backend image. It adds the `grpc` profile without replacing the base
-file's active profiles and publishes only `127.0.0.1:9091`. See
-[the workspace guide](../../awesome-localstack/docs/GRPC_INVENTORY.md).
+the pinned backend 3.8.0 image. It adds the `grpc` profile without replacing the
+base file's active profiles and publishes only `127.0.0.1:9091`. See
+[the workspace guide](https://github.com/slawekradzyminski/awesome-localstack/blob/main/docs/GRPC_INVENTORY.md).
 
 ## Authenticate and call
 
@@ -108,4 +108,4 @@ configured by the server. Streaming stock updates are outside this unary API.
 The traffic viewer displays native RPC names, canonical statuses, durations,
 and correlation IDs when `x-client-session-id` metadata is supplied. It never
 stores message bodies, authorization metadata, or raw status descriptions.
-See the [protocol lab](../../awesome-localstack/docs/PROTOCOL_TESTING_LAB.md). This adapter does not log raw messages, authorization metadata, or JWTs.
+See the [protocol lab](https://github.com/slawekradzyminski/awesome-localstack/blob/main/docs/PROTOCOL_TESTING_LAB.md). This adapter does not log raw messages, authorization metadata, or JWTs.
