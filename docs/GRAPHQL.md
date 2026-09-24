@@ -21,8 +21,9 @@ GraphiQL is enabled at `GET /api/v1/graphiql`. The existing nginx `/api/v1/`
 route forwards both the editor and GraphQL requests without a new gateway rule.
 
 For isolated Docker verification, see
-[the workspace compatibility runner](../../awesome-localstack/docs/COURSE_COMPATIBILITY.md).
-Normal deployment image pins have not been changed by this implementation.
+[the workspace compatibility runner](https://github.com/slawekradzyminski/awesome-localstack/blob/main/docs/COURSE_COMPATIBILITY.md).
+Backend 3.8.0 is pinned in the workspace deployment Compose files; see the
+[release record](https://github.com/slawekradzyminski/awesome-localstack/blob/main/docs/GRAPHQL_GRPC_RELEASE.md).
 
 ## Swagger and GraphQL documentation
 
@@ -214,8 +215,8 @@ traffic-monitor UI displays sanitized GraphQL operation summaries, actual HTTP
 status, execution outcome, and correlation IDs. Supply a valid explicit
 `X-Client-Session-Id` to capture an operation; bodies, variables, aliases,
 client operation names, and raw errors are never stored. See the
-[protocol lab](../../awesome-localstack/docs/PROTOCOL_TESTING_LAB.md). The frontend now provides a per-tab
-REST/GraphQL selector; see [the storefront guide](../../vite-react-frontend/docs/GRAPHQL_STOREFRONT.md).
+[protocol lab](https://github.com/slawekradzyminski/awesome-localstack/blob/main/docs/PROTOCOL_TESTING_LAB.md). The frontend now provides a per-tab
+REST/GraphQL selector; see [the storefront guide](https://github.com/slawekradzyminski/vite-react-frontend/blob/main/docs/GRAPHQL_STOREFRONT.md).
 gRPC, subscriptions, and public deployment remain planned.
 
 ## Verification
