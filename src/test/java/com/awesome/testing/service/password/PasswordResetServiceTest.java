@@ -33,6 +33,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -185,9 +187,10 @@ class PasswordResetServiceTest {
                 .isEqualTo("https://shop.example/reset?source=email&token=raw-token");
     }
 
-    @Test
-    void shouldRejectInvalidConfiguredResetBaseUrl() {
-        properties.setFrontendBaseUrl("javascript:alert(1)");
+    @ParameterizedTest
+    @ValueSource(strings = {"javascript:alert(1)", "https://[bad"})
+    void shouldRejectInvalidConfiguredResetBaseUrl(String baseUrl) {
+        properties.setFrontendBaseUrl(baseUrl);
         UserEntity user = sampleUser();
         when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
         when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");

@@ -29,6 +29,57 @@ class AuthRateLimitGuardTest {
     }
 
     @Test
+    void shouldRateLimitSignUpByIp() {
+        when(clientAddressResolver.resolve(request)).thenReturn("203.0.113.10");
+
+        guard.checkSignUp(request);
+
+        verify(rateLimitService).check(
+                "/api/v1/users/signup", "ip", "203.0.113.10", properties.getPolicies().getSignupIp());
+    }
+
+    @Test
+    void shouldRateLimitPasswordRecoveryByIpAndIdentifier() {
+        when(clientAddressResolver.resolve(request)).thenReturn("203.0.113.10");
+
+        guard.checkForgotPassword(request, " User@Example.com ");
+
+        verify(rateLimitService).check(
+                "/api/v1/users/password/forgot", "ip", "203.0.113.10",
+                properties.getPolicies().getPasswordForgotIp());
+        verify(rateLimitService).check(
+                "/api/v1/users/password/forgot", "identifier", "user@example.com",
+                properties.getPolicies().getPasswordForgotIdentifier());
+    }
+
+    @Test
+    void shouldRateLimitResetAndRefreshByIp() {
+        when(clientAddressResolver.resolve(request)).thenReturn("203.0.113.10");
+
+        guard.checkResetPassword(request);
+        guard.checkRefresh(request);
+
+        verify(rateLimitService).check(
+                "/api/v1/users/password/reset", "ip", "203.0.113.10",
+                properties.getPolicies().getPasswordResetIp());
+        verify(rateLimitService).check(
+                "/api/v1/users/refresh", "ip", "203.0.113.10", properties.getPolicies().getRefreshIp());
+    }
+
+    @Test
+    void shouldRateLimitAnonymousEmailAndQrByIp() {
+        when(clientAddressResolver.resolve(request)).thenReturn("203.0.113.10");
+
+        guard.checkEmail(request, null);
+        guard.checkQr(request, null);
+
+        verify(rateLimitService).check(
+                "/api/v1/email", "ip", "203.0.113.10", properties.getPolicies().getEmailUser());
+        verify(rateLimitService).check(
+                "/api/v1/qr/create", "ip", "203.0.113.10", properties.getPolicies().getQrUser());
+    }
+
+    @Test
     void shouldCheckSigninIpUsernameAndCombinedDimensions() {
         when(clientAddressResolver.resolve(request)).thenReturn("203.0.113.10");
 

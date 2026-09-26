@@ -110,6 +110,19 @@ class OrderServiceTest {
     }
 
     @Test
+    void shouldRejectOrderWhenCartProductDisappearsBeforeInventoryLock() {
+        when(cartItemRepository.findByUsernameForUpdate(USERNAME)).thenReturn(List.of(cartItem));
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.createOrder(USERNAME, addressDto))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Product not found");
+
+        verify(orderRepository, never()).save(any());
+        verify(inventoryService, never()).deduct(any(), anyInt(), any());
+    }
+
+    @Test
     void shouldUpdateOrderStatus() {
         OrderEntity entity = OrderEntity.builder()
                 .id(10L)
@@ -137,6 +150,15 @@ class OrderServiceTest {
         assertThatThrownBy(() -> orderService.updateOrderStatus(11L, OrderStatus.CANCELLED))
                 .isInstanceOf(CustomException.class)
                 .hasMessage("Order cannot be cancelled in current status");
+    }
+
+    @Test
+    void shouldRejectStatusUpdateForMissingOrder() {
+        when(orderRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.updateOrderStatus(99L, OrderStatus.SHIPPED))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Order not found");
     }
 
     @Test
@@ -187,6 +209,29 @@ class OrderServiceTest {
     }
 
     @Test
+    void shouldNotCancelWhenDeductedProductCannotBeLockedForRestoration() {
+        ProductEntity product = cartItem.getProduct();
+        OrderEntity entity = OrderEntity.builder()
+                .id(16L)
+                .username(USERNAME)
+                .status(OrderStatus.PENDING)
+                .inventoryState(InventoryState.DEDUCTED)
+                .shippingAddress(AddressEntity.from(addressDto))
+                .items(List.of(OrderItemEntity.builder().product(product).quantity(2).price(product.getPrice()).build()))
+                .build();
+        when(orderRepository.findByIdForUpdate(16L)).thenReturn(Optional.of(entity));
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.cancelOrder(16L, USERNAME, false))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Product not found");
+
+        assertThat(entity.getStatus()).isEqualTo(OrderStatus.PENDING);
+        assertThat(entity.getInventoryState()).isEqualTo(InventoryState.DEDUCTED);
+        verify(inventoryService, never()).restore(any(), anyInt(), any());
+    }
+
+    @Test
     void shouldNotChangeStockWhenAdminCancelsALegacyOrder() {
         OrderEntity entity = OrderEntity.builder()
                 .id(15L)
@@ -218,6 +263,15 @@ class OrderServiceTest {
         assertThatThrownBy(() -> orderService.cancelOrder(13L, "attacker", false))
                 .isInstanceOf(CustomException.class)
                 .hasMessage("You cannot cancel someone else's order");
+    }
+
+    @Test
+    void shouldRejectCancelForMissingOrder() {
+        when(orderRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.cancelOrder(99L, USERNAME, false))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Order not found");
     }
 
     @Test
@@ -263,5 +317,14 @@ class OrderServiceTest {
         OrderDto dto = orderService.getOrderById(21L);
 
         assertThat(dto.getId()).isEqualTo(21L);
+    }
+
+    @Test
+    void shouldRejectAdminLookupForMissingOrder() {
+        when(orderRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.getOrderById(99L))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Order not found");
     }
 }

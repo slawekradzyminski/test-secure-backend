@@ -52,6 +52,14 @@ class InventoryServiceTest {
     }
 
     @Test
+    void listRejectsInvalidLowStockThresholdBeforeQueryingProducts() {
+        assertThatThrownBy(() -> inventoryService.list(0, 10, null, null, StockStatus.LOW_STOCK, 0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("lowStockThreshold must be at least 1");
+
+    }
+
+    @Test
     void adjustLocksProductBeforeCheckingIdempotencyAndPersistsTheNewQuantity() {
         InventoryAdjustmentDto request = request(3, "delivery");
         InventoryMovementEntity movement = InventoryMovementEntity.builder()

@@ -3,7 +3,7 @@ package com.awesome.testing.security.mfa;
 import com.awesome.testing.config.properties.MfaProperties;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class MfaSecurityConfigTest {
@@ -27,7 +27,11 @@ class MfaSecurityConfigTest {
                 "a-strong-deployment-specific-password-with-entropy",
                 "0123456789abcdef0123456789abcdef");
 
-        assertThatCode(() -> config.mfaTextEncryptor(properties)).doesNotThrowAnyException();
+        var encryptor = config.mfaTextEncryptor(properties);
+        String ciphertext = encryptor.encrypt("mfa-secret");
+
+        assertThat(ciphertext).isNotEqualTo("mfa-secret");
+        assertThat(encryptor.decrypt(ciphertext)).isEqualTo("mfa-secret");
     }
 
     private MfaProperties properties(String password, String salt) {

@@ -5,7 +5,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
@@ -14,13 +14,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ChatMessageDtoTest {
 
-    private Validator validator;
+    private static final ValidatorFactory FACTORY = Validation.buildDefaultValidatorFactory();
+    private static final Validator VALIDATOR = FACTORY.getValidator();
 
-    @SuppressWarnings("all")
-    @BeforeEach
-    void setUp() {
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        validator = factory.getValidator();
+    @AfterAll
+    static void tearDown() {
+        FACTORY.close();
     }
 
     @Test
@@ -32,7 +31,7 @@ class ChatMessageDtoTest {
                 .build();
 
         // when
-        Set<ConstraintViolation<ChatMessageDto>> violations = validator.validate(message);
+        Set<ConstraintViolation<ChatMessageDto>> violations = VALIDATOR.validate(message);
 
         // then
         assertThat(violations).isEmpty();
@@ -48,7 +47,7 @@ class ChatMessageDtoTest {
                 .build();
 
         // when
-        Set<ConstraintViolation<ChatMessageDto>> violations = validator.validate(message);
+        Set<ConstraintViolation<ChatMessageDto>> violations = VALIDATOR.validate(message);
 
         // then
         assertThat(violations).isEmpty();
@@ -64,7 +63,7 @@ class ChatMessageDtoTest {
                 .build();
 
         // when
-        Set<ConstraintViolation<ChatMessageDto>> violations = validator.validate(message);
+        Set<ConstraintViolation<ChatMessageDto>> violations = VALIDATOR.validate(message);
 
         // then
         assertThat(violations).isEmpty();
@@ -80,7 +79,7 @@ class ChatMessageDtoTest {
                 .build();
 
         // when
-        Set<ConstraintViolation<ChatMessageDto>> violations = validator.validate(message);
+        Set<ConstraintViolation<ChatMessageDto>> violations = VALIDATOR.validate(message);
 
         // then
         assertThat(violations).hasSize(1);
@@ -96,7 +95,7 @@ class ChatMessageDtoTest {
                 .build();
 
         // when
-        Set<ConstraintViolation<ChatMessageDto>> violations = validator.validate(message);
+        Set<ConstraintViolation<ChatMessageDto>> violations = VALIDATOR.validate(message);
 
         // then
         assertThat(violations).hasSize(1);
@@ -113,7 +112,7 @@ class ChatMessageDtoTest {
                 .build();
 
         // when
-        Set<ConstraintViolation<ChatMessageDto>> violations = validator.validate(message);
+        Set<ConstraintViolation<ChatMessageDto>> violations = VALIDATOR.validate(message);
 
         // then
         assertThat(violations).hasSize(1);
@@ -130,7 +129,7 @@ class ChatMessageDtoTest {
                 .build();
 
         // when
-        Set<ConstraintViolation<ChatMessageDto>> violations = validator.validate(message);
+        Set<ConstraintViolation<ChatMessageDto>> violations = VALIDATOR.validate(message);
 
         // then
         assertThat(violations).hasSize(2); // @NotBlank and @Pattern
@@ -146,7 +145,7 @@ class ChatMessageDtoTest {
                 .build();
 
         // when
-        Set<ConstraintViolation<ChatMessageDto>> violations = validator.validate(message);
+        Set<ConstraintViolation<ChatMessageDto>> violations = VALIDATOR.validate(message);
 
         // then
         assertThat(violations).isEmpty(); // thinking is present, so validation passes
@@ -162,7 +161,7 @@ class ChatMessageDtoTest {
                 .build();
 
         // when
-        Set<ConstraintViolation<ChatMessageDto>> violations = validator.validate(message);
+        Set<ConstraintViolation<ChatMessageDto>> violations = VALIDATOR.validate(message);
 
         // then
         assertThat(violations).hasSize(1);
@@ -178,7 +177,7 @@ class ChatMessageDtoTest {
                 .content("{\"foo\":\"bar\"}")
                 .build();
 
-        Set<ConstraintViolation<ChatMessageDto>> violations = validator.validate(message);
+        Set<ConstraintViolation<ChatMessageDto>> violations = VALIDATOR.validate(message);
 
         assertThat(violations).isEmpty();
     }
@@ -190,7 +189,7 @@ class ChatMessageDtoTest {
                 .content("{}")
                 .build();
 
-        Set<ConstraintViolation<ChatMessageDto>> violations = validator.validate(message);
+        Set<ConstraintViolation<ChatMessageDto>> violations = VALIDATOR.validate(message);
 
         assertThat(violations).hasSize(1);
         assertThat(violations.iterator().next().getMessage())

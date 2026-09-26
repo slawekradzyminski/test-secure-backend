@@ -61,6 +61,15 @@ class ProductSnapshotFunctionHandlerTest {
     }
 
     @Test
+    void shouldAcceptNumericStringProductId() throws Exception {
+        when(productService.getProductById(42L)).thenReturn(sampleProduct);
+
+        ChatMessageDto response = handler.handle(toolCallWithArgs(Map.of("productId", " 42 ")));
+
+        assertThat(objectMapper.readTree(response.getContent()).get("id").asLong()).isEqualTo(42L);
+    }
+
+    @Test
     void shouldReturnSnapshotWhenNameProvided() throws Exception {
         when(productService.getProductByName("Retro Console")).thenReturn(sampleProduct);
 
@@ -78,6 +87,16 @@ class ProductSnapshotFunctionHandlerTest {
 
         assertThat(response.getContent()).contains("error");
         assertThat(response.getContent()).contains("Product not found");
+    }
+
+    @Test
+    void shouldHideUnexpectedProductLookupFailures() {
+        when(productService.getProductById(42L)).thenThrow(new IllegalStateException("private database details"));
+
+        ChatMessageDto response = handler.handle(toolCallWithArgs(Map.of("productId", 42)));
+
+        assertThat(response.getContent()).contains("Internal error while executing function")
+                .doesNotContain("private database details");
     }
 
     @Test

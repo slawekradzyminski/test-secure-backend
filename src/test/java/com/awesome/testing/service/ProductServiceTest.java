@@ -168,6 +168,19 @@ class ProductServiceTest {
     }
 
     @Test
+    void shouldRejectStockUpdateWhenProductCannotBeLocked() {
+        ProductUpdateDto updateDto = ProductUpdateDto.builder().stockQuantity(7).build();
+        when(productRepository.findByIdForUpdate(2L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> productService.updateProduct(2L, updateDto))
+                .isInstanceOf(ProductNotFoundException.class)
+                .hasMessage("Product not found");
+
+        verify(inventoryService, never()).adjust(any(), any(), any());
+        verify(productRepository, never()).saveAndFlush(any(ProductEntity.class));
+    }
+
+    @Test
     void shouldDeleteExistingProduct() {
         when(productRepository.findById(1L)).thenReturn(Optional.of(entity));
 

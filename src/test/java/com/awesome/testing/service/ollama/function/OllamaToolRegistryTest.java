@@ -3,7 +3,9 @@ package com.awesome.testing.service.ollama.function;
 import com.awesome.testing.dto.ollama.ChatMessageDto;
 import com.awesome.testing.dto.ollama.ToolCallDto;
 import com.awesome.testing.dto.ollama.ToolCallFunctionDto;
+import com.awesome.testing.service.ProductService;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -16,6 +18,25 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class OllamaToolRegistryTest {
+
+    @Test
+    void shouldRegisterBothProductToolsUnderTheirPublicNames() {
+        ProductService productService = mock(ProductService.class);
+        ObjectMapper mapper = new ObjectMapper();
+        OllamaToolRegistry registry = new OllamaToolRegistry(List.of(
+                new ProductCatalogFunctionHandler(productService, mapper),
+                new ProductSnapshotFunctionHandler(productService, mapper)));
+
+        ToolCallDto catalogCall = ToolCallDto.builder()
+                .function(ToolCallFunctionDto.builder().name("list_products").arguments(Map.of()).build())
+                .build();
+        ToolCallDto snapshotCall = ToolCallDto.builder()
+                .function(ToolCallFunctionDto.builder().name("get_product_snapshot").arguments(Map.of()).build())
+                .build();
+
+        assertThat(registry.execute(catalogCall).getToolName()).isEqualTo("list_products");
+        assertThat(registry.execute(snapshotCall).getToolName()).isEqualTo("get_product_snapshot");
+    }
 
     @Test
     void shouldRouteToolCallToMatchingHandler() {

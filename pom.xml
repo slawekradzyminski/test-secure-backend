@@ -16,21 +16,21 @@
         <start-class>com.awesome.testing.JwtAuthServiceApp</start-class>
         <skip.pmd>false</skip.pmd>
         <skip.jacoco>false</skip.jacoco>
-        <artemis.version>2.55.0</artemis.version>
-        <caffeine.version>3.2.4</caffeine.version>
-        <lombok.version>1.18.46</lombok.version>
-        <mockito.version>5.23.0</mockito.version>
+        <artemis.version>2.57.0</artemis.version>
+        <caffeine.version>3.3.0</caffeine.version>
+        <lombok.version>1.18.48</lombok.version>
+        <mockito.version>5.24.0</mockito.version>
         <postgresql.version>42.7.13</postgresql.version>
-        <reactor-bom.version>2025.0.6</reactor-bom.version>
+        <reactor-bom.version>2025.0.7</reactor-bom.version>
         <otp-java.version>2.2.0</otp-java.version>
-        <pitest.version>1.25.9</pitest.version>
+        <pitest.version>1.30.0</pitest.version>
         <pitest.junit5.version>1.2.3</pitest.junit5.version>
     </properties>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.1.0</version>
+        <version>4.1.1</version>
         <relativePath/>
     </parent>
 
@@ -102,7 +102,7 @@
         <dependency>
             <groupId>org.zalando</groupId>
             <artifactId>logbook-spring-boot-starter</artifactId>
-            <version>4.1.0</version>
+            <version>4.2.0</version>
         </dependency>
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
@@ -151,7 +151,7 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>3.1.0</version>
+            <version>3.1.1</version>
         </dependency>
 
         <!-- H2 Database -->
@@ -205,11 +205,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-restclient-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>net.datafaker</groupId>
             <artifactId>datafaker</artifactId>
             <version>2.7.0</version>
@@ -236,7 +231,7 @@
         <dependency>
             <groupId>org.wiremock.integrations</groupId>
             <artifactId>wiremock-spring-boot</artifactId>
-            <version>4.2.2</version>
+            <version>4.4.2</version>
             <scope>test</scope>
         </dependency>
 
@@ -358,7 +353,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.15.0</version>
+                <version>3.16.0</version>
                 <configuration>
                     <release>${java.version}</release>
                     <annotationProcessorPaths>
@@ -372,7 +367,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.6</version>
+                <version>3.6.0</version>
                 <configuration>
                     <argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
                     <excludes>
@@ -408,19 +403,20 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>3.5.6</version>
+                        <version>3.6.0</version>
                         <configuration>
                             <includes>
-                                <include>**/OllamaChatControllerTest.class</include>
-                                <include>**/OllamaGenerateControllerTest.class</include>
-                                <include>**/TrafficControllerTest.class</include>
-                                <include>**/RefreshTokenMigrationIT.class</include>
-                                <include>**/PasswordResetTokenConcurrencyIT.class</include>
-                                <include>**/InventoryMigrationIT.class</include>
-                                <include>**/InventoryConcurrencyIT.class</include>
-                                <include>**/GraphQlConcurrencyIT.class</include>
-                                <include>**/InventoryGrpcConcurrencyIT.class</include>
+                                <include>**/OllamaChatControllerTest.java</include>
+                                <include>**/OllamaGenerateControllerTest.java</include>
+                                <include>**/TrafficControllerTest.java</include>
+                                <include>**/RefreshTokenMigrationIT.java</include>
+                                <include>**/PasswordResetTokenConcurrencyIT.java</include>
+                                <include>**/InventoryMigrationIT.java</include>
+                                <include>**/InventoryConcurrencyIT.java</include>
+                                <include>**/GraphQlConcurrencyIT.java</include>
+                                <include>**/InventoryGrpcConcurrencyIT.java</include>
                             </includes>
+                            <failIfNoTests>true</failIfNoTests>
                             <argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
                         </configuration>
                         <executions>
@@ -482,6 +478,7 @@
                                 <param>com.awesome.testing.grpc.InventoryGrpc*Test</param>
                                 <param>com.awesome.testing.graphql.Commerce*Test</param>
                                 <param>com.awesome.testing.service.ProductServiceTest</param>
+                                <param>com.awesome.testing.service.ProductPaginationTest</param>
                                 <param>com.awesome.testing.service.CartServiceTest</param>
                                 <param>com.awesome.testing.service.OrderServiceTest</param>
                                 <param>com.awesome.testing.service.InventoryServiceTest</param>
@@ -492,6 +489,7 @@
                                 <param>com.awesome.testing.traffic.TrafficDataSanitizerTest</param>
                                 <param>com.awesome.testing.service.ollama.function.ProductCatalogFunctionHandlerTest</param>
                                 <param>com.awesome.testing.service.ollama.function.ProductSnapshotFunctionHandlerTest</param>
+                                <param>com.awesome.testing.service.ollama.function.OllamaToolRegistryTest</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>
