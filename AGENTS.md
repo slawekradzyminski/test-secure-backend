@@ -11,7 +11,7 @@
 - Run the normal tests first. Use the mutation profile after changing the selected authentication, cart, order, product, traffic, or LLM-handler code, or after changing their tests.
 - Treat `NO_COVERAGE` as a reachability gap and `SURVIVED` as an assertion gap. For each meaningful survivor, add a test that passes on the original code and fails on that mutant.
 - Do not optimize for the headline score by asserting implementation details or snapshotting entire objects. Classify equivalent and inconsequential mutants explicitly in the handoff.
-- Keep this targeted run advisory while the baseline is being established. In CI, reject new meaningful survivors in security, money, authorization, sanitization, and state-transition logic before introducing a repository-wide percentage gate.
+- Keep this targeted run advisory. Review new meaningful survivors in security, money, authorization, sanitization, and state-transition logic; do not use an aggregate mutation percentage as a quality gate.
 
 # Course API Contract
 

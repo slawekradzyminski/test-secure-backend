@@ -19,10 +19,10 @@
 | Baseline `./mvnw -Pfast-verify verify` | 523 tests passed |
 | Final `./mvnw clean verify` | 537 tests passed; PMD and JaCoCo passed |
 | Final `./mvnw -Pintegration-tests verify` | 537 default tests and 41 integration tests passed |
-| Final `./mvnw -Pmutation-testing test-compile pitest:mutationCoverage` | 498 mutants; 487 killed, 8 timed out, 1 survived, 2 without coverage (99% PIT score) |
+| Final `./mvnw -Pmutation-testing test-compile pitest:mutationCoverage` | 498 mutants; 487 killed, 8 timed out, 1 survived, 2 without coverage |
 | Maven Versions check | No newer directly declared dependencies; remaining compiler updates require Maven 4 beta, while this project requires Maven 3.9 |
 
-The removed tests and strengthened MFA assertion are outside PIT's selected tests, so the 99% mutation result remains applicable. The course API suite was not run because these changes are local and are not being released.
+The removed tests and strengthened MFA assertion are outside PIT's selected tests, so the mutant classifications above remain applicable. The course API suite was not run because these changes are local and are not being released.
 
 ## Remaining PIT results
 
