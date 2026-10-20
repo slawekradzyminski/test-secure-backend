@@ -98,6 +98,7 @@ jobs:
           java-version: '25'
           distribution: temurin
           cache: maven
+          cache-read-only: true
       - run: ./mvnw -q -Pfast-verify,integration-tests verify
 
   verify-local:
@@ -111,6 +112,7 @@ jobs:
           java-version: '25'
           distribution: temurin
           cache: maven
+          cache-read-only: true
       - run: chmod +x scripts/verify-local.sh
       - run: ./scripts/verify-local.sh
       - name: Upload application log
@@ -132,6 +134,7 @@ jobs:
           java-version: '25'
           distribution: temurin
           cache: maven
+          cache-read-only: true
       - run: chmod +x scripts/verify-docker.sh
       - run: ./scripts/verify-docker.sh
       - name: Upload Docker log
