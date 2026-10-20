@@ -195,3 +195,30 @@ removed its disposable containers after each run. These results cover the course
 API flows, including GraphQL, traffic, and MFA, but do not exercise mixed-version
 deployment or replace the existing-data migration integration tests. The
 coordinated-upgrade requirement above still applies.
+
+### Backend 3.9.1: legacy null-byte previews
+
+The first production upgrade exposed three historical traffic previews containing
+NUL bytes. PostgreSQL rejected V6's conversion to text and rolled back that
+migration atomically; the four payload columns remained OIDs. The previous stable
+backend was restored against that compatible schema and both public sites became
+healthy again. V5's additive indexes remained applied.
+
+The repair renders NUL as the visible U+2400 symbol (`␀`) in traffic previews.
+This changes the representation of that control character while preserving preview
+character lengths, normal text, and Unicode. New persistence batches apply the same
+normalization so one null-bearing capture cannot discard unrelated records.
+The guarded `beforeMigrate.sql` callback prepares legacy OID contents before the
+unchanged V6 migration, and does nothing once the columns are text. Existing MFA
+keys and business records are unaffected. The encrypted pre-upgrade backup retains
+the original historical payload bytes.
+
+Regressions first reproduced the failed migration and unsafe queued payload, then
+passed with leading, trailing, and repeated NULs across all four payload columns,
+Unicode preservation, unchanged preview lengths, repeated migration, and actual
+PostgreSQL capture/read-back. The full normal test run passed 592 unit and 46
+integration tests; a parameter-reassignment style violation was repaired and the
+focused persistence tests plus PMD passed. A private disposable copy of the actual
+1116 traffic records, including the three NUL-bearing rows, converted successfully
+to four text columns with zero remaining copied large objects. No payload contents
+left the production host, and the rehearsal container was removed.

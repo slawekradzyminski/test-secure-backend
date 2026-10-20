@@ -44,13 +44,22 @@ public class TrafficLogBuffer {
         entity.setMethod(bounded(entity.getMethod(), 16));
         entity.setRequestContentType(bounded(entity.getRequestContentType(), 255));
         entity.setResponseContentType(bounded(entity.getResponseContentType(), 255));
+        entity.setRequestBody(visibleNulls(entity.getRequestBody()));
+        entity.setResponseBody(visibleNulls(entity.getResponseBody()));
+        entity.setRequestHeaders(visibleNulls(entity.getRequestHeaders()));
+        entity.setResponseHeaders(visibleNulls(entity.getResponseHeaders()));
         if (!pending.offer(entity)) {
             dropped.increment();
         }
     }
 
     private static String bounded(String value, int limit) {
-        return value == null || value.length() <= limit ? value : value.substring(0, limit);
+        String preview = visibleNulls(value);
+        return preview == null || preview.length() <= limit ? preview : preview.substring(0, limit);
+    }
+
+    private static String visibleNulls(String value) {
+        return value == null ? null : value.replace('\0', '\u2400');
     }
 
     @Scheduled(fixedDelayString = "${app.traffic.persistence-flush-interval:100}")

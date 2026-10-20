@@ -11,6 +11,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.sql.DriverManager;
+import java.util.List;
 
 class CommerceIndexMigrationIT {
     private static final PostgreSQLContainer POSTGRES =
@@ -26,6 +27,7 @@ class CommerceIndexMigrationIT {
         POSTGRES.start();
         migrate(MigrationVersion.fromVersion("4"));
         legacyObject = insertLegacyBody();
+        insertLegacyNullBytes();
         migrate(MigrationVersion.LATEST);
         insertOrders();
         insertProducts();
@@ -44,6 +46,20 @@ class CommerceIndexMigrationIT {
         assertThat(scalar("SELECT response_body FROM traffic_log WHERE lower(response_body) LIKE '%retained payload%'"))
                 .isEqualTo("{\"message\":\"retained payload\"}");
         assertThat(scalar("SELECT count(*) FROM pg_largeobject_metadata WHERE oid = " + legacyObject)).isEqualTo("0");
+    }
+
+    @Test
+    void legacyNullBytesBecomeVisibleMarkersWithoutChangingPreviewLengths() throws Exception {
+        for (String column : List.of("request_body", "request_headers", "response_body", "response_headers")) {
+            assertThat(scalar("SELECT " + column + " FROM traffic_log WHERE correlation_id = 'legacy-null'"))
+                    .isEqualTo("\u2400Zażółć\u2400\u2400東京\u2400");
+        }
+        assertThat(scalar("SELECT response_body_stored_length FROM traffic_log WHERE correlation_id = 'legacy-null'"))
+                .isEqualTo("12");
+        assertThat(scalar("SELECT count(*) FROM pg_largeobject_metadata")).isEqualTo("0");
+        migrate(MigrationVersion.LATEST);
+        assertThat(scalar("SELECT response_body FROM traffic_log WHERE correlation_id = 'legacy-null'"))
+                .isEqualTo("\u2400Zażółć\u2400\u2400東京\u2400");
     }
 
     @Test
@@ -77,6 +93,19 @@ class CommerceIndexMigrationIT {
                    lo_from_bytea(0, convert_to('{"message":"retained payload"}', 'UTF8')))
                 """);
         return Long.parseLong(scalar("SELECT response_body FROM traffic_log WHERE correlation_id = 'legacy-body'"));
+    }
+
+    private static void insertLegacyNullBytes() throws Exception {
+        execute(
+                """
+                INSERT INTO traffic_log(correlation_id, client_session_id, "timestamp", duration_ms,
+                   method, path, status, request_body, request_headers, response_body, response_headers,
+                   response_body_original_length, response_body_stored_length)
+                SELECT 'legacy-null', 'legacy-session', CURRENT_TIMESTAMP, 1, 'GET', '/legacy', 200,
+                   lo_from_bytea(0, payload), lo_from_bytea(0, payload),
+                   lo_from_bytea(0, payload), lo_from_bytea(0, payload), 12, 12
+                FROM (SELECT decode('00', 'hex') || convert_to('Zażółć', 'UTF8') || decode('0000', 'hex') || convert_to('東京', 'UTF8') || decode('00', 'hex') AS payload) source
+                """);
     }
 
     private static void insertOrders() throws Exception {
