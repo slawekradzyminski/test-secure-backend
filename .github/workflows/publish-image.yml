@@ -21,6 +21,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  MAVEN_ARGS: -U
   GHCR_IMAGE: ghcr.io/${{ github.repository }}
   DOCKERHUB_IMAGE: docker.io/slawekradzyminski/backend
 
@@ -34,11 +35,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      # The version probe must not reserve the full verification Maven cache key.
       - uses: actions/setup-java@v6.0.1
         with:
           java-version: '25'
           distribution: temurin
-          cache: maven
 
       - name: Validate release source and version
         id: release
@@ -98,6 +99,7 @@ jobs:
           java-version: '25'
           distribution: temurin
           cache: maven
+          cache-read-only: true
       - run: ./mvnw -q -Pfast-verify,integration-tests verify
 
   verify-local:
@@ -111,6 +113,7 @@ jobs:
           java-version: '25'
           distribution: temurin
           cache: maven
+          cache-read-only: true
       - run: chmod +x scripts/verify-local.sh
       - run: ./scripts/verify-local.sh
       - name: Upload application log
@@ -132,6 +135,7 @@ jobs:
           java-version: '25'
           distribution: temurin
           cache: maven
+          cache-read-only: true
       - run: chmod +x scripts/verify-docker.sh
       - run: ./scripts/verify-docker.sh
       - name: Upload Docker log
