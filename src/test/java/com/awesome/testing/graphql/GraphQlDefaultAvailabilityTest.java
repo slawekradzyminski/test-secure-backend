@@ -1,32 +1,35 @@
 package com.awesome.testing.graphql;
 
+import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.awesome.testing.DomainHelper;
-import graphql.introspection.IntrospectionQuery;
 import com.awesome.testing.dto.user.Role;
+
+import graphql.introspection.IntrospectionQuery;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.graphql.execution.GraphQlSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.TestPropertySource;
+
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
-import static org.assertj.core.api.Assertions.assertThat;
-
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:graphqldefault;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
-        "springdoc.api-docs.enabled=true",
-        "springdoc.swagger-ui.enabled=true"
-})
+@TestPropertySource(
+        properties = {
+            "spring.datasource.url=jdbc:h2:mem:graphqldefault;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+            "springdoc.api-docs.enabled=true",
+            "springdoc.swagger-ui.enabled=true"
+        })
 class GraphQlDefaultAvailabilityTest extends DomainHelper {
-    @Autowired
-    private ApplicationContext context;
-    @Autowired
-    private ObjectMapper mapper;
+    @Autowired private ApplicationContext context;
+    @Autowired private ObjectMapper mapper;
 
     @Test
     void graphqlIsAvailableWithoutExplicitProfileAlongsideRestAndSwagger() {
@@ -34,15 +37,17 @@ class GraphQlDefaultAvailabilityTest extends DomainHelper {
         String token = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
 
         // when
-        var graphql = executePost("/api/v1/graphql", Map.of("query", "{cart {totalItems}}"),
-                getHeadersWith(token), String.class);
+        var graphql =
+                executePost(
+                        "/api/v1/graphql", Map.of("query", "{cart {totalItems}}"), getHeadersWith(token), String.class);
         var rest = executeGet("/api/v1/products", getHeadersWith(token), String.class);
         var openApi = executeGet("/v3/api-docs", getJsonOnlyHeaders(), String.class);
         var swagger = executeGet("/v3/api-docs/swagger-config", getJsonOnlyHeaders(), String.class);
 
         // then
         assertThat(context.getBeansOfType(GraphQlSource.class)).hasSize(1);
-        assertThat(context.getBeansOfType(org.springframework.grpc.server.lifecycle.GrpcServerLifecycle.class)).isEmpty();
+        assertThat(context.getBeansOfType(org.springframework.grpc.server.lifecycle.GrpcServerLifecycle.class))
+                .isEmpty();
         assertThat(graphql.getStatusCode()).isEqualTo(HttpStatus.OK);
         var result = mapper.readTree(graphql.getBody());
         assertThat(result.has("errors")).isFalse();
@@ -80,17 +85,20 @@ class GraphQlDefaultAvailabilityTest extends DomainHelper {
         String token = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
 
         // when
-        var response = executePost("/api/v1/graphql", Map.of("query", IntrospectionQuery.INTROSPECTION_QUERY),
-                getHeadersWith(token), String.class);
+        var response =
+                executePost(
+                        "/api/v1/graphql",
+                        Map.of("query", IntrospectionQuery.INTROSPECTION_QUERY),
+                        getHeadersWith(token),
+                        String.class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         var result = mapper.readTree(response.getBody());
         assertThat(result.has("errors")).describedAs(response.getBody()).isFalse();
-        assertThat(result.at("/data/__schema/queryType/name").asText()).isEqualTo("Query");
-        assertThat(result.at("/data/__schema/mutationType/name").asText()).isEqualTo("Mutation");
+        assertThat(result.at("/data/__schema/queryType/name").asString()).isEqualTo("Query");
+        assertThat(result.at("/data/__schema/mutationType/name").asString()).isEqualTo("Mutation");
     }
-
 
     @Test
     void schemaExplorationStillHasABoundedQueryDepth() {
@@ -106,5 +114,4 @@ class GraphQlDefaultAvailabilityTest extends DomainHelper {
         assertThat(response.getBody()).contains("maximum query depth exceeded");
         assertThat(mapper.readTree(response.getBody()).has("data")).isFalse();
     }
-
 }

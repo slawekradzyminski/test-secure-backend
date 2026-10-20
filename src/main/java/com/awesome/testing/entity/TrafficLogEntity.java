@@ -6,9 +6,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
-import java.time.Instant;
+
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -16,14 +15,15 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.time.Instant;
+
 @Entity
 @Table(
         name = "traffic_log",
         indexes = {
-                @Index(name = "idx_traffic_log_timestamp", columnList = "timestamp"),
-                @Index(name = "idx_traffic_log_client_session_id", columnList = "client_session_id")
-        }
-)
+            @Index(name = "idx_traffic_log_timestamp", columnList = "timestamp"),
+            @Index(name = "idx_traffic_log_session_time", columnList = "client_session_id,timestamp DESC,id DESC")
+        })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -73,16 +73,13 @@ public class TrafficLogEntity {
     @Column(name = "request_body_stored_length", nullable = false)
     private int requestBodyStoredLength;
 
-    @Lob
-    @Column(name = "request_headers")
+    @Column(name = "request_headers", columnDefinition = "text")
     private String requestHeaders;
 
-    @Lob
-    @Column(name = "request_body")
+    @Column(name = "request_body", columnDefinition = "text")
     private String requestBody;
 
-    @Lob
-    @Column(name = "response_headers")
+    @Column(name = "response_headers", columnDefinition = "text")
     private String responseHeaders;
 
     @Column(name = "response_content_type", length = 255)
@@ -97,31 +94,31 @@ public class TrafficLogEntity {
     @Column(name = "response_body_stored_length", nullable = false)
     private int responseBodyStoredLength;
 
-    @Lob
-    @Column(name = "response_body")
+    @Column(name = "response_body", columnDefinition = "text")
     private String responseBody;
 
-    private TrafficLogEntity(Long id,
-                             String correlationId,
-                             String clientSessionId,
-                             Instant timestamp,
-                             long durationMs,
-                             String method,
-                             String path,
-                             String queryString,
-                             int status,
-                             String requestContentType,
-                             boolean requestBodyTruncated,
-                             int requestBodyOriginalLength,
-                             int requestBodyStoredLength,
-                             String requestHeaders,
-                             String requestBody,
-                             String responseHeaders,
-                             String responseContentType,
-                             boolean responseBodyTruncated,
-                             int responseBodyOriginalLength,
-                             int responseBodyStoredLength,
-                             String responseBody) {
+    private TrafficLogEntity(
+            Long id,
+            String correlationId,
+            String clientSessionId,
+            Instant timestamp,
+            long durationMs,
+            String method,
+            String path,
+            String queryString,
+            int status,
+            String requestContentType,
+            boolean requestBodyTruncated,
+            int requestBodyOriginalLength,
+            int requestBodyStoredLength,
+            String requestHeaders,
+            String requestBody,
+            String responseHeaders,
+            String responseContentType,
+            boolean responseBodyTruncated,
+            int responseBodyOriginalLength,
+            int responseBodyStoredLength,
+            String responseBody) {
         this.id = id;
         this.correlationId = correlationId;
         this.clientSessionId = clientSessionId;

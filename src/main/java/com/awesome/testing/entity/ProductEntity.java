@@ -1,18 +1,31 @@
 package com.awesome.testing.entity;
 
 import com.awesome.testing.dto.product.ProductCreateDto;
-import jakarta.persistence.*;
-import lombok.*;
+
+import jakarta.persistence.CheckConstraint;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Check;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "products")
-@Check(name = "ck_products_stock_nonnegative", constraints = "stock_quantity >= 0")
+@Table(
+        name = "products",
+        check = @CheckConstraint(name = "ck_products_stock_nonnegative", constraint = "stock_quantity >= 0"))
 @Data
 @Builder
 @NoArgsConstructor
@@ -61,4 +74,4 @@ public class ProductEntity {
                 .imageUrl(productCreateDto.getImageUrl())
                 .build();
     }
-} 
+}

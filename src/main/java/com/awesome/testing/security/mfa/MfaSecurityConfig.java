@@ -1,14 +1,15 @@
 package com.awesome.testing.security.mfa;
 
 import com.awesome.testing.config.properties.MfaProperties;
-import java.security.SecureRandom;
-import java.time.Clock;
+
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.crypto.encrypt.Encryptors;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.util.StringUtils;
+
+import java.security.SecureRandom;
+import java.time.Clock;
 
 @Configuration
 @EnableConfigurationProperties(MfaProperties.class)
@@ -27,16 +28,17 @@ public class MfaSecurityConfig {
         }
         if (properties.isRequireSecureEncryption()
                 && (DEVELOPMENT_PASSWORD.equals(properties.getEncryptionPassword())
-                || DEVELOPMENT_SALT.equalsIgnoreCase(properties.getEncryptionSalt()))) {
+                        || DEVELOPMENT_SALT.equalsIgnoreCase(properties.getEncryptionSalt()))) {
             throw new IllegalStateException("Production MFA encryption must not use the development key");
         }
         if (properties.isRequireSecureEncryption() && properties.getEncryptionPassword().length() < 32) {
             throw new IllegalStateException("Production MFA encryption password must contain at least 32 characters");
         }
         if (properties.isRequireSecureEncryption() && !properties.getEncryptionSalt().matches("[0-9a-fA-F]{32,}")) {
-            throw new IllegalStateException("Production MFA encryption salt must contain at least 16 random bytes in hexadecimal");
+            throw new IllegalStateException(
+                    "Production MFA encryption salt must contain at least 16 random bytes in hexadecimal");
         }
-        return Encryptors.delux(properties.getEncryptionPassword(), properties.getEncryptionSalt());
+        return new VersionedMfaTextEncryptor(properties.getEncryptionPassword(), properties.getEncryptionSalt());
     }
 
     @Bean

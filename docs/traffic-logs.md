@@ -270,3 +270,17 @@ Possible stored response:
 - The `/api/v1/traffic/logs` endpoints are excluded from persistence to avoid recursive noise.
 - Websocket traffic events and persisted traffic logs are related features, but not the same thing.
 - The traffic log API is public in this training app, so avoid enabling it in environments where that is not acceptable.
+
+### Bounded persistence and session isolation
+
+Traffic is persisted in background batches (default 100 records, 100 ms flush
+interval) with a bounded pending queue (default 1,000 records). Log API reads flush
+the pending snapshot before querying, so immediate read-back remains supported.
+WebSocket delivery has a separate bounded queue, also defaulting to 1,000 events.
+On saturation the newest telemetry is dropped instead of blocking requests;
+`traffic.persistence.dropped`, `traffic.persistence.failed`, `traffic.events.dropped`
+and the pending-size gauges expose overload. Failed database batches are discarded;
+graceful shutdown attempts to drain pending records. Abrupt shutdown can lose them.
+These settings use the `app.traffic.persistence-*` and `app.traffic.event-queue-capacity`
+properties documented in application.yml. Session IDs are case-sensitive for both
+list and detail access, as they are for WebSocket topics.

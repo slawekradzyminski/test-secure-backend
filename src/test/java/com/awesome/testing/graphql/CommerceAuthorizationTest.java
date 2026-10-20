@@ -1,11 +1,12 @@
 package com.awesome.testing.graphql;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.awesome.testing.dto.cart.CartItemDto;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class CommerceAuthorizationTest extends AbstractCommerceGraphQlTest {
     @Test
@@ -29,15 +30,16 @@ class CommerceAuthorizationTest extends AbstractCommerceGraphQlTest {
         var customerListing = query(alice.token(), "{carts {total}}", Map.of());
 
         // then
-        assertThat(own.at("/cart/username").asText()).isEqualTo(alice.username());
+        assertThat(own.at("/cart/username").asString()).isEqualTo(alice.username());
         assertThat(own.at("/cart/items").size()).isEqualTo(1);
-        assertThat(own.at("/cart/items/0/product/id").asText()).isEqualTo(first.getId().toString());
+        assertThat(own.at("/cart/items/0/product/id").asString()).isEqualTo(first.getId().toString());
         assertError(forbidden, "FORBIDDEN");
         assertThat(forbidden.at("/data/cart").isNull()).isTrue();
-        assertThat(adminCart.at("/cart/username").asText()).isEqualTo(bob.username());
-        assertThat(adminCart.at("/cart/items/0/product/id").asText()).isEqualTo(second.getId().toString());
+        assertThat(adminCart.at("/cart/username").asString()).isEqualTo(bob.username());
+        assertThat(adminCart.at("/cart/items/0/product/id").asString()).isEqualTo(second.getId().toString());
         assertThat(allCarts.at("/carts/total").asInt()).isEqualTo(2);
-        assertThat(allCarts.at("/carts/items")).extracting(node -> node.path("username").asText())
+        assertThat(allCarts.at("/carts/items"))
+                .extracting(node -> node.path("username").asString())
                 .containsExactlyInAnyOrder(alice.username(), bob.username());
         assertError(customerListing, "FORBIDDEN");
     }
@@ -63,15 +65,15 @@ class CommerceAuthorizationTest extends AbstractCommerceGraphQlTest {
 
         // then
         assertThat(own.at("/orders/total").asInt()).isEqualTo(1);
-        assertThat(own.at("/orders/items/0/id").asText()).isEqualTo(first.getId().toString());
+        assertThat(own.at("/orders/items/0/id").asString()).isEqualTo(first.getId().toString());
         assertError(hidden, "NOT_FOUND");
         assertThat(hidden.at("/data/order").isNull()).isTrue();
         assertError(forbidden, "FORBIDDEN");
         assertThat(all.at("/orders/total").asInt()).isEqualTo(2);
         assertThat(filtered.at("/orders/total").asInt()).isEqualTo(1);
-        assertThat(filtered.at("/orders/items/0/id").asText()).isEqualTo(second.getId().toString());
-        assertThat(adminDetail.at("/order/username").asText()).isEqualTo(bob.username());
-        assertThat(adminDetail.at("/order/shippingAddress/street").asText()).isEqualTo(ADDRESS.getStreet());
+        assertThat(filtered.at("/orders/items/0/id").asString()).isEqualTo(second.getId().toString());
+        assertThat(adminDetail.at("/order/username").asString()).isEqualTo(bob.username());
+        assertThat(adminDetail.at("/order/shippingAddress/street").asString()).isEqualTo(ADDRESS.getStreet());
     }
 
     @Test
@@ -80,7 +82,8 @@ class CommerceAuthorizationTest extends AbstractCommerceGraphQlTest {
         var customer = customer();
         var administrator = admin();
         var product = product("10.25", 7);
-        String document = """
+        String document =
+                """
                 query($id:ID!) {
                   product(id:$id) {id stockQuantity}
                   inventory {total items {productId availableQuantity stockStatus lastChangedAt}}
@@ -96,15 +99,15 @@ class CommerceAuthorizationTest extends AbstractCommerceGraphQlTest {
         // then
         assertThat(denied.at("/data/product/stockQuantity").asInt()).isEqualTo(7);
         assertThat(denied.path("errors").size()).isEqualTo(3);
-        assertThat(denied.path("errors")).allSatisfy(error ->
-                assertThat(error.at("/extensions/code").asText()).isEqualTo("FORBIDDEN"));
+        assertThat(denied.path("errors"))
+                .allSatisfy(error -> assertThat(error.at("/extensions/code").asString()).isEqualTo("FORBIDDEN"));
         assertThat(denied.at("/data/inventory").isNull()).isTrue();
         assertThat(denied.at("/data/inventoryItem").isNull()).isTrue();
         assertThat(denied.at("/data/inventoryMovements").isNull()).isTrue();
-        assertThat(allowed.at("/inventory/items/0/productId").asText()).isEqualTo(product.getId().toString());
+        assertThat(allowed.at("/inventory/items/0/productId").asString()).isEqualTo(product.getId().toString());
         assertThat(allowed.at("/inventory/items/0/availableQuantity").asInt()).isEqualTo(7);
-        assertThat(allowed.at("/inventory/items/0/stockStatus").asText()).isEqualTo("LOW_STOCK");
-        assertThat(allowed.at("/inventory/items/0/lastChangedAt").asText()).isNotBlank();
+        assertThat(allowed.at("/inventory/items/0/stockStatus").asString()).isEqualTo("LOW_STOCK");
+        assertThat(allowed.at("/inventory/items/0/lastChangedAt").asString()).isNotBlank();
     }
 
     @Test
@@ -115,7 +118,8 @@ class CommerceAuthorizationTest extends AbstractCommerceGraphQlTest {
         var product = product("10.25", 10);
         var order = givenOrder(bob, product);
         cartService.addToCart(bob.username(), new CartItemDto(product.getId(), 2));
-        String document = """
+        String document =
+                """
                 mutation($owner:String,$product:ID!,$order:ID!) {
                   addCartItem(username:$owner,productId:$product,quantity:1){totalItems}
                   updateCartItem(username:$owner,productId:$product,quantity:5){totalItems}
@@ -126,13 +130,16 @@ class CommerceAuthorizationTest extends AbstractCommerceGraphQlTest {
                 """;
 
         // when
-        var response = query(alice.token(), document,
-                Map.of("owner", bob.username(), "product", product.getId(), "order", order.getId()));
+        var response =
+                query(
+                        alice.token(),
+                        document,
+                        Map.of("owner", bob.username(), "product", product.getId(), "order", order.getId()));
 
         // then
         assertThat(response.path("errors").size()).isEqualTo(5);
-        assertThat(response.path("errors")).allSatisfy(error ->
-                assertThat(error.at("/extensions/code").asText()).isEqualTo("FORBIDDEN"));
+        assertThat(response.path("errors"))
+                .allSatisfy(error -> assertThat(error.at("/extensions/code").asString()).isEqualTo("FORBIDDEN"));
         assertThat(cartService.getCart(bob.username()).getTotalItems()).isEqualTo(2);
         assertThat(orderService.getOrder(bob.username(), order.getId()).getStatus().name()).isEqualTo("PENDING");
     }
@@ -144,7 +151,8 @@ class CommerceAuthorizationTest extends AbstractCommerceGraphQlTest {
         var owner = customer();
         var product = product("10.25", 10);
         var order = givenOrder(owner, product);
-        String document = """
+        String document =
+                """
                 mutation($product:ID!,$order:ID!) {
                   createProduct(input:{name:"Forbidden product",description:"Must not be created",price:"10.00",stockQuantity:1,category:"Test"}){id}
                   updateProduct(id:$product,input:{price:"1.00"}){id}
@@ -159,8 +167,8 @@ class CommerceAuthorizationTest extends AbstractCommerceGraphQlTest {
 
         // then
         assertThat(response.path("errors").size()).isEqualTo(5);
-        assertThat(response.path("errors")).allSatisfy(error ->
-                assertThat(error.at("/extensions/code").asText()).isEqualTo("FORBIDDEN"));
+        assertThat(response.path("errors"))
+                .allSatisfy(error -> assertThat(error.at("/extensions/code").asString()).isEqualTo("FORBIDDEN"));
         assertThat(productRepository.count()).isEqualTo(1);
         assertThat(productRepository.findById(product.getId()).orElseThrow().getPrice()).isEqualByComparingTo("10.25");
         assertThat(orderService.getOrder(owner.username(), order.getId()).getStatus().name()).isEqualTo("PENDING");

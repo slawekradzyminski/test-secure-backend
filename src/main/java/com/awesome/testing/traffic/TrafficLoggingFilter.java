@@ -1,216 +1,67 @@
 package com.awesome.testing.traffic;
 
-import com.awesome.testing.dto.traffic.TrafficEventDto;
-import com.awesome.testing.entity.TrafficLogEntity;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.UUID;
-import java.util.stream.Stream;
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RequiredArgsConstructor
+@Slf4j
 public class TrafficLoggingFilter implements Filter {
-
-    private static final String CLIENT_SESSION_COOKIE = "clientSessionId";
-    private static final List<String> STREAMING_PATH_PREFIXES = List.of(
-            "/api/v1/ollama/generate",
-            "/api/v1/ollama/chat"
-    );
-    private static final List<String> OMITTED_RESPONSE_MEDIA_TYPES = List.of(
-            MediaType.TEXT_EVENT_STREAM_VALUE,
-            MediaType.IMAGE_PNG_VALUE,
-            MediaType.APPLICATION_OCTET_STREAM_VALUE
-    );
-
-    private final Queue<TrafficEventDto> trafficQueue;
-    private final TrafficLogService trafficLogService;
-    private final TrafficDataSanitizer trafficDataSanitizer;
-    private final TrafficProperties trafficProperties;
-    private final TrafficCapturePolicy trafficCapturePolicy;
-    private final ObjectMapper objectMapper;
+    private final TrafficProperties properties;
+    private final TrafficCapturePolicy policy;
+    private final HttpTrafficRecorder recorder;
+    private final TrafficTimer timer;
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
             throws IOException, ServletException {
-
-        if (req instanceof HttpServletRequest request && "/api/v1/graphql".equals(request.getServletPath())) {
+        if (!(req instanceof HttpServletRequest request)
+                || !(res instanceof HttpServletResponse response)
+                || "/api/v1/graphql".equals(request.getServletPath())) {
             chain.doFilter(req, res);
             return;
         }
-        if (req instanceof HttpServletRequest httpReq && res instanceof HttpServletResponse httpRes) {
-            ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(
-                    httpReq,
-                    trafficProperties.getMaxBodyLength()
-            );
-            boolean captureResponseBody = shouldCaptureResponseBody(httpReq);
-            HttpServletResponse responseToUse = captureResponseBody
-                    ? new ContentCachingResponseWrapper(httpRes)
-                    : httpRes;
-            long start = System.nanoTime();
-            try {
-                chain.doFilter(wrappedRequest, responseToUse);
-            } finally {
-                long duration = (System.nanoTime() - start) / 1_000_000;
-                wrappedRequest.setAttribute(
-                        HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE,
-                        httpReq.getAttribute(HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE)
-                );
-                if (trafficCapturePolicy.shouldCapture(wrappedRequest)) {
-                    Instant timestamp = Instant.now();
-                    String clientSessionId = resolveClientSessionId(wrappedRequest);
-                    String responseBody = captureResponseBody
-                            ? readResponseBody((ContentCachingResponseWrapper) responseToUse)
-                            : omittedBodyPlaceholder(responseToUse.getContentType());
-                    TrafficBodySanitizationResult requestBody = trafficDataSanitizer.sanitizeBody(readRequestBody(wrappedRequest));
-                    TrafficBodySanitizationResult sanitizedResponseBody = trafficDataSanitizer.sanitizeBody(responseBody);
-                    trafficQueue.add(TrafficEventDto.builder()
-                            .clientSessionId(clientSessionId)
-                            .method(wrappedRequest.getMethod())
-                            .path(wrappedRequest.getRequestURI())
-                            .status(responseToUse.getStatus())
-                            .durationMs(duration)
-                            .timestamp(timestamp)
-                            .build());
-                    trafficLogService.save(TrafficLogEntity.builder()
-                            .correlationId(UUID.randomUUID().toString())
-                            .clientSessionId(clientSessionId)
-                            .timestamp(timestamp)
-                            .durationMs(duration)
-                            .method(wrappedRequest.getMethod())
-                            .path(wrappedRequest.getRequestURI())
-                            .queryString(wrappedRequest.getQueryString())
-                            .status(responseToUse.getStatus())
-                            .requestContentType(wrappedRequest.getContentType())
-                            .requestBodyTruncated(requestBody.truncated())
-                            .requestBodyOriginalLength(requestBody.originalLength())
-                            .requestBodyStoredLength(requestBody.storedLength())
-                            .requestHeaders(serializeHeaders(extractHeaders(wrappedRequest)))
-                            .requestBody(requestBody.body())
-                            .responseHeaders(serializeHeaders(extractHeaders(responseToUse)))
-                            .responseContentType(responseToUse.getContentType())
-                            .responseBodyTruncated(sanitizedResponseBody.truncated())
-                            .responseBodyOriginalLength(sanitizedResponseBody.originalLength())
-                            .responseBodyStoredLength(sanitizedResponseBody.storedLength())
-                            .responseBody(sanitizedResponseBody.body())
-                            .build());
-                }
-                if (responseToUse instanceof ContentCachingResponseWrapper wrappedResponse) {
-                    wrappedResponse.copyBodyToResponse();
-                }
+        ContentCachingRequestWrapper wrapped = new ContentCachingRequestWrapper(request, properties.getMaxBodyLength());
+        boolean captureBody = recorder.shouldCaptureResponseBody(request);
+        HttpServletResponse target = captureBody ? new ContentCachingResponseWrapper(response) : response;
+        long start = timer.start();
+        try {
+            chain.doFilter(wrapped, target);
+        } finally {
+            recordSafely(wrapped, target, captureBody, timer.elapsedMillis(start));
+        }
+    }
+
+    private void recordSafely(
+            ContentCachingRequestWrapper request, HttpServletResponse response, boolean captureBody, long duration)
+            throws IOException {
+        try {
+            if (policy.shouldCapture(request)) {
+                recorder.capture(request, response, captureBody, duration);
             }
-        } else {
-            chain.doFilter(req, res);
-        }
-    }
-
-    private Map<String, List<String>> extractHeaders(HttpServletRequest request) {
-        Map<String, List<String>> headers = new LinkedHashMap<>();
-        Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements()) {
-            String name = headerNames.nextElement();
-            headers.put(name, Collections.list(request.getHeaders(name)));
-        }
-        return trafficDataSanitizer.sanitizeHeaders(headers);
-    }
-
-    private Map<String, List<String>> extractHeaders(HttpServletResponse response) {
-        Map<String, List<String>> headers = new LinkedHashMap<>();
-        for (String name : response.getHeaderNames()) {
-            headers.put(name, List.copyOf(response.getHeaders(name)));
-        }
-        return trafficDataSanitizer.sanitizeHeaders(headers);
-    }
-
-    private boolean shouldCaptureResponseBody(HttpServletRequest request) {
-        return STREAMING_PATH_PREFIXES.stream().noneMatch(request.getRequestURI()::startsWith)
-                && !isOmittedMediaType(request.getHeader("Accept"));
-    }
-
-    private boolean isOmittedMediaType(String mediaTypeValue) {
-        if (mediaTypeValue == null || mediaTypeValue.isBlank()) {
-            return false;
-        }
-        return Stream.of(mediaTypeValue.split(","))
-                .map(String::trim)
-                .map(value -> value.split(";")[0].trim())
-                .anyMatch(candidate -> OMITTED_RESPONSE_MEDIA_TYPES.stream()
-                        .anyMatch(omitted -> matchesMediaType(candidate, omitted)));
-    }
-
-    private boolean matchesMediaType(String candidate, String omitted) {
-        if (candidate.equalsIgnoreCase(omitted)) {
-            return true;
-        }
-        return omitted.startsWith("image/") && candidate.startsWith("image/");
-    }
-
-    private String omittedBodyPlaceholder(String contentType) {
-        String mediaType = contentType == null || contentType.isBlank()
-                ? MediaType.APPLICATION_OCTET_STREAM_VALUE
-                : contentType.split(";")[0].trim();
-        return "[omitted for media type " + mediaType + "]";
-    }
-
-    private String resolveClientSessionId(HttpServletRequest request) {
-        String headerValue = TrafficSession.validOrNull(request.getHeader(TrafficSession.HEADER));
-        if (headerValue != null) {
-            return headerValue;
-        }
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) {
-            return null;
-        }
-        for (Cookie cookie : cookies) {
-            if (CLIENT_SESSION_COOKIE.equals(cookie.getName())) {
-                return TrafficSession.validOrNull(cookie.getValue());
+        } catch (RuntimeException | IOException exception) {
+            log.warn("HTTP traffic capture failed");
+        } finally {
+            if (response instanceof ContentCachingResponseWrapper wrapped) {
+                wrapped.copyBodyToResponse();
             }
         }
-        return null;
-    }
-
-    private String serializeHeaders(Map<String, List<String>> headers) throws IOException {
-        return objectMapper.writeValueAsString(headers);
-    }
-
-    private String readRequestBody(ContentCachingRequestWrapper request) {
-        return readBody(request.getContentAsByteArray(), request.getCharacterEncoding());
-    }
-
-    private String readResponseBody(ContentCachingResponseWrapper response) {
-        return readBody(response.getContentAsByteArray(), response.getCharacterEncoding());
-    }
-
-    private String readBody(byte[] body, String encoding) {
-        if (body == null || body.length == 0) {
-            return "";
-        }
-        Charset charset = encoding == null ? Charset.defaultCharset() : Charset.forName(encoding);
-        return new String(body, charset);
     }
 }

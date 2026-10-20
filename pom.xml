@@ -4,7 +4,7 @@
 
     <groupId>murraco</groupId>
     <artifactId>jwt-auth-service</artifactId>
-    <version>3.8.1</version>
+    <version>3.9.0</version>
     <packaging>jar</packaging>
 
     <name>spring-boot-jwt</name>
@@ -412,6 +412,8 @@
                                 <include>**/RefreshTokenMigrationIT.java</include>
                                 <include>**/PasswordResetTokenConcurrencyIT.java</include>
                                 <include>**/InventoryMigrationIT.java</include>
+                                <include>**/CommerceIndexMigrationIT.java</include>
+                                <include>**/TrafficPostgresIT.java</include>
                                 <include>**/InventoryConcurrencyIT.java</include>
                                 <include>**/GraphQlConcurrencyIT.java</include>
                                 <include>**/InventoryGrpcConcurrencyIT.java</include>
@@ -457,10 +459,22 @@
                                 <param>com.awesome.testing.grpc.InventoryGrpcService</param>
                                 <param>com.awesome.testing.grpc.InventoryGrpcViews</param>
                                 <param>com.awesome.testing.graphql.CommerceQueryService</param>
+                                <param>com.awesome.testing.graphql.CommerceOrderQueryService</param>
+                                <param>com.awesome.testing.security.mfa.VersionedMfaTextEncryptor</param>
+                                <param>com.awesome.testing.graphql.PageSelection</param>
                                 <param>com.awesome.testing.graphql.CommerceMutationService</param>
                                 <param>com.awesome.testing.graphql.CommerceAccess</param>
                                 <param>com.awesome.testing.graphql.CommerceViews*</param>
                                 <param>com.awesome.testing.service.ProductService</param>
+                                <param>com.awesome.testing.repository.ProductSpecifications</param>
+                                <param>com.awesome.testing.traffic.TrafficLogService</param>
+                                <param>com.awesome.testing.traffic.TrafficLogBuffer</param>
+                                <param>com.awesome.testing.traffic.TrafficLogSpecifications</param>
+                                <param>com.awesome.testing.traffic.BoundedTrafficQueue</param>
+                                <param>com.awesome.testing.traffic.TrafficLoggingFilter</param>
+                                <param>com.awesome.testing.traffic.TrafficTimer</param>
+                                <param>com.awesome.testing.traffic.HttpTrafficRecorder</param>
+                                <param>com.awesome.testing.traffic.TrafficPublisher</param>
                                 <param>com.awesome.testing.service.CartService</param>
                                 <param>com.awesome.testing.service.OrderService</param>
                                 <param>com.awesome.testing.service.InventoryService</param>
@@ -487,6 +501,13 @@
                                 <param>com.awesome.testing.security.ratelimit.AuthRateLimitGuardTest</param>
                                 <param>com.awesome.testing.traffic.TrafficCapturePolicyTest</param>
                                 <param>com.awesome.testing.traffic.TrafficDataSanitizerTest</param>
+                                <param>com.awesome.testing.traffic.TrafficLogBufferTest</param>
+                                <param>com.awesome.testing.traffic.TrafficReadSecurityTest</param>
+                                <param>com.awesome.testing.traffic.TrafficLoggingFilterTest</param>
+                                <param>com.awesome.testing.traffic.HttpTrafficRecorderTest</param>
+                                <param>com.awesome.testing.traffic.TrafficTimerTest</param>
+                                <param>com.awesome.testing.traffic.TrafficPublisherTest</param>
+                                <param>com.awesome.testing.security.mfa.MfaSecretProtectorTest</param>
                                 <param>com.awesome.testing.service.ollama.function.ProductCatalogFunctionHandlerTest</param>
                                 <param>com.awesome.testing.service.ollama.function.ProductSnapshotFunctionHandlerTest</param>
                                 <param>com.awesome.testing.service.ollama.function.OllamaToolRegistryTest</param>
