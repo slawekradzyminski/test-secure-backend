@@ -2,6 +2,8 @@ package com.awesome.testing.entity.inventory;
 
 import com.awesome.testing.entity.OrderEntity;
 import com.awesome.testing.entity.ProductEntity;
+
+import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,12 +17,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Check;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -31,14 +34,18 @@ import java.util.UUID;
 @Entity
 @Table(
         name = "inventory_movements",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_inventory_product_request",
-                columnNames = {"product_id", "request_id"}),
+        check =
+                @CheckConstraint(
+                        name = "ck_inventory_movement_values",
+                        constraint = "delta <> 0 AND quantity_after >= 0"),
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_inventory_product_request",
+                        columnNames = {"product_id", "request_id"}),
         indexes = {
-                @Index(name = "idx_inventory_product_created", columnList = "product_id,created_at"),
-                @Index(name = "idx_inventory_order", columnList = "order_id")
+            @Index(name = "idx_inventory_product_created", columnList = "product_id,created_at"),
+            @Index(name = "idx_inventory_order", columnList = "order_id")
         })
-@Check(name = "ck_inventory_movement_values", constraints = "delta <> 0 AND quantity_after >= 0")
 @Getter
 @Setter
 @Builder

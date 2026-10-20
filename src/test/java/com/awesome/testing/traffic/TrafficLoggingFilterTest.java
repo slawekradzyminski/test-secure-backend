@@ -1,32 +1,37 @@
 package com.awesome.testing.traffic;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.awesome.testing.dto.traffic.TrafficEventDto;
 import com.awesome.testing.entity.TrafficLogEntity;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerMapping;
+
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 class TrafficLoggingFilterTest {
 
@@ -42,14 +47,16 @@ class TrafficLoggingFilterTest {
         chain = mock(FilterChain.class);
         trafficLogService = mock(TrafficLogService.class);
         trafficCapturePolicy = new TrafficCapturePolicy(new TrafficProperties());
-        filter = new TrafficLoggingFilter(
-                queue,
-                trafficLogService,
-                new TrafficDataSanitizer(new TrafficProperties()),
-                new TrafficProperties(),
-                trafficCapturePolicy,
-                new ObjectMapper()
-        );
+        filter =
+                new TrafficLoggingFilter(
+                        new TrafficProperties(),
+                        trafficCapturePolicy,
+                        new HttpTrafficRecorder(
+                                queue,
+                                trafficLogService,
+                                new TrafficDataSanitizer(new TrafficProperties()),
+                                new ObjectMapper()),
+                        new TrafficTimer());
     }
 
     @Test
@@ -145,7 +152,8 @@ class TrafficLoggingFilterTest {
         when(request.getRequestURI()).thenReturn("/api/v1/ollama/chat");
         when(request.getHeader("Accept")).thenReturn(MediaType.TEXT_EVENT_STREAM_VALUE);
         when(request.getHeaderNames()).thenReturn(Collections.enumeration(List.of("Accept")));
-        when(request.getHeaders("Accept")).thenReturn(Collections.enumeration(List.of(MediaType.TEXT_EVENT_STREAM_VALUE)));
+        when(request.getHeaders("Accept"))
+                .thenReturn(Collections.enumeration(List.of(MediaType.TEXT_EVENT_STREAM_VALUE)));
         when(request.getCharacterEncoding()).thenReturn("UTF-8");
         when(request.getAttribute(HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE))
                 .thenReturn(handlerMethod(TestController.class, "documentedEndpoint"));
@@ -226,9 +234,31 @@ class TrafficLoggingFilterTest {
         verifyNoInteractions(trafficLogService);
     }
 
+    @Test
+    void telemetryFailureDoesNotReplaceOrLoseTheBusinessResponse() throws Exception {
+        var request = new MockHttpServletRequest("GET", "/api/test");
+        request.setAttribute(
+                HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE,
+                handlerMethod(TestController.class, "documentedEndpoint"));
+        var response = new MockHttpServletResponse();
+        doThrow(new IllegalStateException("PRIVATE_DB_DETAILS")).when(trafficLogService).save(any());
+
+        filter.doFilter(
+                request,
+                response,
+                (req, res) -> {
+                    res.setContentType("application/json");
+                    res.getWriter().write("{\"success\":true}");
+                });
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getContentAsString()).isEqualTo("{\"success\":true}");
+    }
+
     private HandlerMethod handlerMethod(Class<?> controllerType, String methodName) {
         try {
-            return new HandlerMethod(controllerType.getDeclaredConstructor().newInstance(),
+            return new HandlerMethod(
+                    controllerType.getDeclaredConstructor().newInstance(),
                     controllerType.getDeclaredMethod(methodName));
         } catch (ReflectiveOperationException ex) {
             throw new IllegalStateException(ex);
@@ -241,8 +271,7 @@ class TrafficLoggingFilterTest {
 
         @io.swagger.v3.oas.annotations.Operation(summary = "Documented")
         @GetMapping
-        void documentedEndpoint() {
-        }
+        void documentedEndpoint() {}
     }
 
     @RestController
@@ -250,7 +279,6 @@ class TrafficLoggingFilterTest {
     static class UndocumentedController {
 
         @GetMapping("/health")
-        void undocumentedEndpoint() {
-        }
+        void undocumentedEndpoint() {}
     }
 }

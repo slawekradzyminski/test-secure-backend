@@ -1,43 +1,53 @@
 package com.awesome.testing.controller;
 
-import com.awesome.testing.dto.ValidationErrorsDto;
 import com.awesome.testing.dto.ErrorDto;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.media.Content;
+import com.awesome.testing.dto.ValidationErrorsDto;
 import com.awesome.testing.dto.order.PageDto;
 import com.awesome.testing.dto.traffic.TrafficInfoDto;
 import com.awesome.testing.dto.traffic.TrafficLogEntryDto;
 import com.awesome.testing.traffic.TrafficLogService;
 import com.awesome.testing.traffic.TrafficProperties;
+import com.awesome.testing.traffic.TrafficSession;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.time.Instant;
-import java.time.format.DateTimeParseException;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.awesome.testing.traffic.TrafficSession;
+
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 
 @RestController
 @RequestMapping("/api/v1/traffic")
-@ApiResponse(responseCode = "401", description = "Unauthorized or invalid Bearer token; authentication is required unless legacy public access is enabled",
-            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
-@ApiResponse(responseCode = "400", description = "Invalid session header, pagination or time filter",
-            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
+@ApiResponse(
+        responseCode = "401",
+        description =
+                "Unauthorized or invalid Bearer token; authentication is required unless legacy public access is enabled",
+        content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+@ApiResponse(
+        responseCode = "400",
+        description = "Invalid session header, pagination or time filter",
+        content =
+                @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
 @Tag(name = "Traffic Monitoring", description = "Endpoints for HTTP traffic monitoring")
 @RequiredArgsConstructor
 public class TrafficController {
 
-    private static final Sort DEFAULT_SORT = Sort.by(Sort.Direction.DESC, "timestamp");
+    private static final Sort DEFAULT_SORT = Sort.by(Sort.Direction.DESC, "timestamp", "id");
 
     private final TrafficLogService trafficLogService;
     private final TrafficProperties trafficProperties;
@@ -45,8 +55,8 @@ public class TrafficController {
     @GetMapping("/info")
     @Operation(
             summary = "Get traffic monitoring information",
-            description = "Returns WebSocket connection information. X-Client-Session-Id is required unless legacy public access is enabled; after trimming it must contain 16–128 letters, digits, underscores or hyphens."
-    )
+            description =
+                    "Returns WebSocket connection information. X-Client-Session-Id is required unless legacy public access is enabled; after trimming it must contain 16–128 letters, digits, underscores or hyphens.")
     @ApiResponse(responseCode = "200", description = "Successfully returned info")
     public TrafficInfoDto getTrafficInfo(
             @RequestHeader(name = TrafficSession.HEADER, required = false) String clientSessionId) {
@@ -54,47 +64,63 @@ public class TrafficController {
         return TrafficInfoDto.builder()
                 .webSocketEndpoint("/api/v1/ws-traffic")
                 .topic(validatedSessionId == null ? "/topic/traffic" : TrafficSession.topic(validatedSessionId))
-                .description("Connect to the WebSocket endpoint and subscribe to the topic to receive real-time HTTP traffic events")
+                .description(
+                        "Connect to the WebSocket endpoint and subscribe to the topic to receive real-time HTTP traffic events")
                 .build();
     }
 
     @GetMapping("/logs")
-    @Operation(summary = "Get paginated HTTP traffic logs",
-            description = "Returns captured HTTP traffic logs with optional filters for session, method, status, path, text, and time range.")
+    @Operation(
+            summary = "Get paginated HTTP traffic logs",
+            description =
+                    "Returns captured HTTP traffic logs with optional filters for session, method, status, path, text, and time range.")
     @ApiResponse(responseCode = "200", description = "Successfully returned traffic logs")
-    @ApiResponse(responseCode = "400", description = "Bad request",
-            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
+    @ApiResponse(
+            responseCode = "400",
+            description = "Bad request",
+            content =
+                    @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ValidationErrorsDto.class)))
     public ResponseEntity<PageDto<TrafficLogEntryDto>> getTrafficLogs(
             @Parameter(description = "Zero-based page index", schema = @Schema(minimum = "0"))
-            @RequestParam(defaultValue = "0") int page,
+                    @RequestParam(defaultValue = "0")
+                    int page,
             @Parameter(description = "Page size, clamped to 1 through the configured app.traffic.max-page-size")
-            @RequestParam(defaultValue = "10") int size,
+                    @RequestParam(defaultValue = "10")
+                    int size,
             @RequestHeader(name = TrafficSession.HEADER, required = false) String clientSessionId,
             @RequestParam(required = false) String method,
             @RequestParam(required = false) Integer status,
             @RequestParam(required = false) String pathContains,
             @RequestParam(required = false) String text,
-            @Parameter(description = "Inclusive lower timestamp bound as an ISO-8601 instant with offset; blank means no lower bound")
-            @RequestParam(required = false) String from,
-            @Parameter(description = "Inclusive upper timestamp bound as an ISO-8601 instant with offset; blank means no upper bound")
-            @RequestParam(required = false) String to) {
+            @Parameter(
+                            description =
+                                    "Inclusive lower timestamp bound as an ISO-8601 instant with offset; blank means no lower bound")
+                    @RequestParam(required = false)
+                    String from,
+            @Parameter(
+                            description =
+                                    "Inclusive upper timestamp bound as an ISO-8601 instant with offset; blank means no upper bound")
+                    @RequestParam(required = false)
+                    String to) {
         int resolvedSize = Math.max(1, Math.min(size, trafficProperties.getMaxPageSize()));
-        return ResponseEntity.ok(PageDto.from(
-                trafficLogService.findLogs(
-                        resolveSession(clientSessionId),
-                        method,
-                        status,
-                        pathContains,
-                        text,
-                        parseInstant(from),
-                        parseInstant(to),
-                        PageRequest.of(page, resolvedSize, DEFAULT_SORT)
-                )
-        ));
+        return ResponseEntity.ok(
+                PageDto.from(
+                        trafficLogService.findLogs(
+                                resolveSession(clientSessionId),
+                                method,
+                                status,
+                                pathContains,
+                                text,
+                                parseInstant(from),
+                                parseInstant(to),
+                                PageRequest.of(page, resolvedSize, DEFAULT_SORT))));
     }
 
     @GetMapping("/logs/{correlationId}")
-    @Operation(summary = "Get traffic log by correlation identifier",
+    @Operation(
+            summary = "Get traffic log by correlation identifier",
             description = "Returns one captured HTTP traffic log entry using its correlation identifier.")
     @ApiResponse(responseCode = "200", description = "Successfully returned traffic log")
     @ApiResponse(responseCode = "404", description = "Traffic log not found; empty response body", content = @Content)
@@ -103,15 +129,14 @@ public class TrafficController {
             @RequestHeader(name = TrafficSession.HEADER, required = false) String clientSessionId) {
         String resolvedSessionId = resolveSession(clientSessionId);
         return (resolvedSessionId == null
-                ? trafficLogService.findByCorrelationId(correlationId)
-                : trafficLogService.findByCorrelationIdAndClientSessionId(correlationId, resolvedSessionId))
+                        ? trafficLogService.findByCorrelationId(correlationId)
+                        : trafficLogService.findByCorrelationIdAndClientSessionId(correlationId, resolvedSessionId))
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     private String resolveSession(String clientSessionId) {
-        if (trafficProperties.isLegacyPublicAccess()
-                && (clientSessionId == null || clientSessionId.isBlank())) {
+        if (trafficProperties.isLegacyPublicAccess() && (clientSessionId == null || clientSessionId.isBlank())) {
             return null;
         }
         return TrafficSession.requireValid(clientSessionId);

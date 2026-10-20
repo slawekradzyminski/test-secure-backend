@@ -168,6 +168,10 @@ app:
   cors:
     allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:8081,http://127.0.0.1:8081,http://host.docker.internal:8081}
   traffic:
+    event-queue-capacity: ${APP_TRAFFIC_EVENT_QUEUE_CAPACITY:1000}
+    persistence-queue-capacity: ${APP_TRAFFIC_PERSISTENCE_QUEUE_CAPACITY:1000}
+    persistence-batch-size: ${APP_TRAFFIC_PERSISTENCE_BATCH_SIZE:100}
+    persistence-flush-interval: ${APP_TRAFFIC_PERSISTENCE_FLUSH_INTERVAL:100}
     max-body-length: ${APP_TRAFFIC_MAX_BODY_LENGTH:4000}
     max-page-size: ${APP_TRAFFIC_MAX_PAGE_SIZE:100}
     retention: ${APP_TRAFFIC_RETENTION:P1D}

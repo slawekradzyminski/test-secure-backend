@@ -1,13 +1,21 @@
 package com.awesome.testing.security;
 
+import static com.awesome.testing.utils.ErrorResponseDefinition.sendErrorResponse;
+
 import com.awesome.testing.traffic.TrafficProperties;
+
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -25,14 +33,9 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.core.annotation.Order;
-import jakarta.servlet.DispatcherType;
 
 import java.io.IOException;
 import java.util.List;
-
-import static com.awesome.testing.utils.ErrorResponseDefinition.sendErrorResponse;
 
 @SuppressWarnings("unused")
 @Configuration
@@ -42,31 +45,33 @@ import static com.awesome.testing.utils.ErrorResponseDefinition.sendErrorRespons
 @Order(2)
 public class WebSecurityConfig {
 
-    private static final List<String> ALLOWED_ENDPOINTS = List.of(
-            "/api/v1/users/signin",
-            "/api/v1/users/signin/2fa",
-            "/api/v1/users/signup",
-            "/api/v1/users/refresh",
-            "/api/v1/users/sso/exchange",
-            "/api/v1/users/password/forgot",
-            "/api/v1/users/password/reset",
-            "/h2-console/**",
-            "/v3/api-docs",
-            "/v3/api-docs.yaml",
-            "/v3/api-docs/**",
-            "/swagger-ui/**",
-            "/swagger-resources/**",
-            "/webjars/**",
-            "/actuator/health",
-            "/actuator/health/**",
-            "/actuator/info",
-            "/actuator/prometheus",
-            "/api/v1/ws-traffic/**"
-    );
+    private static final List<String> ALLOWED_ENDPOINTS =
+            List.of(
+                    "/api/v1/users/signin",
+                    "/api/v1/users/signin/2fa",
+                    "/api/v1/users/signup",
+                    "/api/v1/users/refresh",
+                    "/api/v1/users/sso/exchange",
+                    "/api/v1/users/password/forgot",
+                    "/api/v1/users/password/reset",
+                    "/h2-console/**",
+                    "/v3/api-docs",
+                    "/v3/api-docs.yaml",
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-resources/**",
+                    "/webjars/**",
+                    "/actuator/health",
+                    "/actuator/health/**",
+                    "/actuator/info",
+                    "/actuator/prometheus",
+                    "/api/v1/ws-traffic/**");
 
     private final JwtTokenProvider jwtTokenProvider;
     private final TrafficProperties trafficProperties;
-    @Value("${app.cors.allowed-origin-patterns:http://localhost:8081,http://127.0.0.1:8081,http://host.docker.internal:8081}")
+
+    @Value(
+            "${app.cors.allowed-origin-patterns:http://localhost:8081,http://127.0.0.1:8081,http://host.docker.internal:8081}")
     private List<String> allowedOriginPatterns;
 
     @Bean
@@ -81,28 +86,33 @@ public class WebSecurityConfig {
         http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         // Define authorization rules
-        http.authorizeHttpRequests(auth -> {
-            // Preserve transport errors on container error dispatch; initial requests still require authentication.
-            auth.dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll();
-            
-            // Then allow public endpoints
-            PathPatternRequestMatcher.Builder matcherBuilder = PathPatternRequestMatcher.withDefaults();
-            auth.requestMatchers(request -> isApiDocsRequest(request.getRequestURI())).permitAll();
-            auth.requestMatchers(matcherBuilder.matcher(HttpMethod.GET, "/api/v1/graphiql")).permitAll();
-            ALLOWED_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(matcherBuilder.matcher(endpoint)).permitAll());
-            if (trafficProperties.isLegacyPublicAccess()) {
-                auth.requestMatchers(matcherBuilder.matcher("/api/v1/traffic/**")).permitAll();
-            }
-            
-            // Finally, require authentication for all other endpoints
-            auth.anyRequest().authenticated();
-        });
+        http.authorizeHttpRequests(
+                auth -> {
+                    // Preserve transport errors on container error dispatch; initial requests still require
+                    // authentication.
+                    auth.dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll();
+
+                    // Then allow public endpoints
+                    PathPatternRequestMatcher.Builder matcherBuilder = PathPatternRequestMatcher.withDefaults();
+                    auth.requestMatchers(request -> isApiDocsRequest(request.getRequestURI())).permitAll();
+                    auth.requestMatchers(matcherBuilder.matcher(HttpMethod.GET, "/api/v1/graphiql")).permitAll();
+                    ALLOWED_ENDPOINTS.forEach(
+                            endpoint -> auth.requestMatchers(matcherBuilder.matcher(endpoint)).permitAll());
+                    if (trafficProperties.isLegacyPublicAccess()) {
+                        auth.requestMatchers(matcherBuilder.matcher("/api/v1/traffic/**")).permitAll();
+                    }
+
+                    auth.requestMatchers(matcherBuilder.matcher("/actuator/**")).hasRole("ADMIN");
+
+                    // Finally, require authentication for all other endpoints
+                    auth.anyRequest().authenticated();
+                });
 
         // Handle authentication and authorization errors
-        http.exceptionHandling(ex -> ex
-                .accessDeniedHandler(this::handleAccessDenied)
-                .authenticationEntryPoint(this::handleUnauthorized)
-        );
+        http.exceptionHandling(
+                ex ->
+                        ex.accessDeniedHandler(this::handleAccessDenied)
+                                .authenticationEntryPoint(this::handleUnauthorized));
 
         // Apply JWT security filter
         http.addFilterBefore(new JwtTokenFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
@@ -111,20 +121,16 @@ public class WebSecurityConfig {
     }
 
     private boolean isApiDocsRequest(String path) {
-        return path.equals("/v3/api-docs")
-                || path.equals("/v3/api-docs.yaml")
-                || path.startsWith("/v3/api-docs/");
+        return path.equals("/v3/api-docs") || path.equals("/v3/api-docs.yaml") || path.startsWith("/v3/api-docs/");
     }
 
-    private void handleAccessDenied(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    AccessDeniedException ex) throws IOException {
+    private void handleAccessDenied(HttpServletRequest request, HttpServletResponse response, AccessDeniedException ex)
+            throws IOException {
         sendErrorResponse(response, HttpStatus.FORBIDDEN, "Access denied");
     }
 
-    private void handleUnauthorized(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    AuthenticationException ex) throws IOException {
+    private void handleUnauthorized(
+            HttpServletRequest request, HttpServletResponse response, AuthenticationException ex) throws IOException {
         sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Unauthorized");
     }
 
@@ -143,23 +149,18 @@ public class WebSecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(allowedOriginPatterns);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of(
-            "Authorization", 
-            "Content-Type", 
-            "X-Requested-With", 
-            "X-Client-Session-Id",
-            "Accept", 
-            "Cache-Control",
-            "Last-Event-ID",
-            "x-requested-with"
-        ));
-        configuration.setExposedHeaders(List.of(
-            "Content-Type",
-            "X-Client-Session-Id",
-            "X-Requested-With",
-            "Cache-Control",
-            "Last-Event-ID"
-        ));
+        configuration.setAllowedHeaders(
+                List.of(
+                        "Authorization",
+                        "Content-Type",
+                        "X-Requested-With",
+                        "X-Client-Session-Id",
+                        "Accept",
+                        "Cache-Control",
+                        "Last-Event-ID",
+                        "x-requested-with"));
+        configuration.setExposedHeaders(
+                List.of("Content-Type", "X-Client-Session-Id", "X-Requested-With", "Cache-Control", "Last-Event-ID"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

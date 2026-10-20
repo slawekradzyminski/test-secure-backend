@@ -4,17 +4,20 @@ import com.awesome.testing.dto.inventory.InventoryItemDto;
 import com.awesome.testing.dto.inventory.InventoryMovementDto;
 import com.awesome.testing.dto.inventory.StockStatus;
 import com.awesome.testing.dto.order.OrderStatus;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
-import org.springframework.graphql.data.method.annotation.Argument;
-import org.springframework.graphql.data.method.annotation.QueryMapping;
-import org.springframework.stereotype.Controller;
-
 import com.awesome.testing.graphql.CommerceViews.Cart;
 import com.awesome.testing.graphql.CommerceViews.Order;
 import com.awesome.testing.graphql.CommerceViews.Product;
 import com.awesome.testing.graphql.CommerceViews.ProductPage;
 import com.awesome.testing.graphql.CommerceViews.ResultPage;
+
+import graphql.schema.DataFetchingEnvironment;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.context.annotation.Profile;
+import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.stereotype.Controller;
 
 @Controller
 @Profile("graphql")
@@ -23,9 +26,13 @@ public class CommerceQueryController {
     private final CommerceQueryService service;
 
     @QueryMapping
-    public ProductPage products(@Argument int offset, @Argument int limit,
-                                @Argument String category, @Argument Boolean inStockOnly) {
-        return service.products(offset, limit, category, inStockOnly);
+    public ProductPage products(
+            @Argument int offset,
+            @Argument int limit,
+            @Argument String category,
+            @Argument Boolean inStockOnly,
+            DataFetchingEnvironment environment) {
+        return service.products(offset, limit, category, inStockOnly, PageSelection.from(environment));
     }
 
     @QueryMapping
@@ -49,15 +56,23 @@ public class CommerceQueryController {
     }
 
     @QueryMapping
-    public ResultPage<Order> orders(@Argument String username, @Argument OrderStatus status,
-                                    @Argument int page, @Argument int size) {
-        return service.orders(username, status, page, size);
+    public ResultPage<Order> orders(
+            @Argument String username,
+            @Argument OrderStatus status,
+            @Argument int page,
+            @Argument int size,
+            DataFetchingEnvironment environment) {
+        return service.orders(username, status, page, size, PageSelection.from(environment));
     }
 
     @QueryMapping
-    public ResultPage<InventoryItemDto> inventory(@Argument int page, @Argument int size,
-                                                 @Argument String search, @Argument String category,
-                                                 @Argument StockStatus status, @Argument int lowStockThreshold) {
+    public ResultPage<InventoryItemDto> inventory(
+            @Argument int page,
+            @Argument int size,
+            @Argument String search,
+            @Argument String category,
+            @Argument StockStatus status,
+            @Argument int lowStockThreshold) {
         return service.inventory(page, size, search, category, status, lowStockThreshold);
     }
 
@@ -67,8 +82,8 @@ public class CommerceQueryController {
     }
 
     @QueryMapping
-    public ResultPage<InventoryMovementDto> inventoryMovements(@Argument Long productId,
-                                                              @Argument int page, @Argument int size) {
+    public ResultPage<InventoryMovementDto> inventoryMovements(
+            @Argument Long productId, @Argument int page, @Argument int size) {
         return service.inventoryMovements(productId, page, size);
     }
 }
