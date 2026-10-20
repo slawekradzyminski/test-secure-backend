@@ -86,11 +86,13 @@ public class ProductController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Delete product",
-            description = "Deletes an existing product by identifier. Requires an administrator role.")
+            description = "Deletes an existing product by identifier. Referenced products return 409 without removing existing data. Requires an administrator role.")
     @ApiResponse(responseCode = "204", description = "Product deleted successfully", content = @Content)
     @ApiResponse(responseCode = "400", description = "Bad request",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
     @ApiResponse(responseCode = "403", description = "Forbidden",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "409", description = "Product is referenced by existing data",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "404", description = "Product not found; empty response body", content = @Content)
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {

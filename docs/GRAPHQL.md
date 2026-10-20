@@ -233,3 +233,9 @@ inventory retries for the same request ID. The workspace course runner checks
 unchanged lesson tests against the built image, plus direct and proxied GraphQL
 access. The semantic mutation lab independently checks owner scoping and admin
 inventory policy.
+
+Traffic execution outcomes: `SUCCESS` means no execution errors; `ERROR` means
+no data or every returned root field failed; `PARTIAL_ERROR` means errors coexist
+with at least one successful root field or remaining nested data. A successful
+nullable root returning null still counts as successful. Error paths use response
+keys, so aliases and fragments follow the same policy.

@@ -88,6 +88,21 @@ class ProtocolTrafficTest extends DomainHelper {
                 .satisfies(event -> assertThat(event.getProtocolDetails().outcome()).isEqualTo("PARTIAL_ERROR"));
     }
 
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {
+            "{inventory{total}}",
+            "{first:inventory{total} second:inventory{total}}",
+            "query { ...Denied } fragment Denied on Query { denied:inventory{total} }"
+    })
+    void allFailedRootFieldsProduceError(String document) {
+        var token = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+        var response = executePost("/api/v1/graphql", Map.of("query", document),
+                headers(token, UUID.randomUUID().toString()), String.class);
+        var entry = recorded(response.getHeaders().getFirst("X-Correlation-Id"));
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(mapper.readTree(entry.getResponseBody()).path("outcome").asText()).isEqualTo("ERROR");
+    }
+
     @Test
     void successfulOperationsProduceOneRecordAndRestEventShapeStaysUnchanged() {
         // given

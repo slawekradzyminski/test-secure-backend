@@ -6,12 +6,14 @@ import graphql.language.OperationDefinition;
 import graphql.parser.Parser;
 import org.springframework.context.annotation.Profile;
 import org.springframework.graphql.server.WebGraphQlInterceptor;
+import org.springframework.graphql.ResponseError;
 import org.springframework.graphql.server.WebGraphQlRequest;
 import org.springframework.graphql.server.WebGraphQlResponse;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,7 +39,7 @@ public class GraphQlTrafficInterceptor implements WebGraphQlInterceptor {
         AtomicReference<GraphQlTrafficFilter.Summary> summary = (AtomicReference<GraphQlTrafficFilter.Summary>) attribute;
         String operation = operation(request);
         return chain.next(request).doOnNext(response -> {
-            String outcome = response.getErrors().isEmpty() ? "SUCCESS" : response.getData() == null ? "ERROR" : "PARTIAL_ERROR";
+            String outcome = outcome(response);
             List<String> codes = response.getErrors().stream().map(error -> {
                 Object code = error.getExtensions().getOrDefault("code", error.getErrorType());
                 String value = String.valueOf(code).toUpperCase(Locale.ROOT);
@@ -45,6 +47,25 @@ public class GraphQlTrafficInterceptor implements WebGraphQlInterceptor {
             }).distinct().sorted().limit(8).toList();
             summary.set(new GraphQlTrafficFilter.Summary(operation, outcome, codes));
         });
+    }
+
+    private String outcome(WebGraphQlResponse response) {
+        if (response.getErrors().isEmpty()) {
+            return "SUCCESS";
+        }
+        Map<String, Object> data = response.getData();
+        if (data == null || data.isEmpty()) {
+            return "ERROR";
+        }
+        Set<Object> failedRoots = response.getErrors().stream()
+                .map(ResponseError::getParsedPath)
+                .filter(path -> path != null && !path.isEmpty())
+                .map(List::getFirst)
+                .collect(Collectors.toSet());
+        // A nested field error can leave useful root data. A successful nullable
+        // root is also a success, even when its value is null.
+        return data.entrySet().stream().allMatch(entry -> entry.getValue() == null && failedRoots.contains(entry.getKey()))
+                ? "ERROR" : "PARTIAL_ERROR";
     }
 
     private String operation(WebGraphQlRequest request) {

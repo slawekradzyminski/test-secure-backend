@@ -1,6 +1,9 @@
 package com.awesome.testing.service;
 
 import com.awesome.testing.controller.exception.ProductNotFoundException;
+import com.awesome.testing.controller.exception.CustomException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.product.ProductListDto;
@@ -115,7 +118,12 @@ public class ProductService {
     public boolean deleteProduct(Long id) {
         return productRepository.findById(id)
                 .map(product -> {
-                    productRepository.delete(product);
+                    try {
+                        productRepository.delete(product);
+                        productRepository.flush();
+                    } catch (DataIntegrityViolationException ex) {
+                        throw new CustomException("Product is referenced by existing data", HttpStatus.CONFLICT, ex);
+                    }
                     return true;
                 })
                 .orElse(false);
