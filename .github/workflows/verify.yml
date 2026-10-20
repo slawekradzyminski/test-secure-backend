@@ -70,6 +70,7 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
+          cache-read-only: true
 
       - name: Run integration profile
         run: ./mvnw -q -Pfast-verify,integration-tests verify
@@ -94,6 +95,7 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
+          cache-read-only: true
 
       - name: Make scripts executable
         run: chmod +x scripts/verify-local.sh
@@ -120,6 +122,7 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
+          cache-read-only: true
 
       - name: Make scripts executable
         run: chmod +x scripts/verify-docker.sh
