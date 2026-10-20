@@ -2,6 +2,7 @@ package com.awesome.testing.graphql;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.awesome.testing.dto.cart.CartItemDto;
 import com.awesome.testing.entity.OrderItemEntity;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.traffic.TrafficLogService;
@@ -19,10 +20,36 @@ import java.util.UUID;
 
 class CommercePerformanceTest extends AbstractCommerceGraphQlTest {
     @Autowired private EntityManagerFactory entityManagerFactory;
+    // Asynchronous telemetry writes must not contribute to the SQL measurements.
     @MockitoBean private TrafficLogService traffic;
 
     private Statistics statistics() {
         return entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+    }
+
+    @Test
+    void cartQueryCountDoesNotGrowWithItemCount() {
+        // given
+        var customer = customer();
+        cartService.addToCart(customer.username(), new CartItemDto(product("12.30", 10).getId(), 1));
+        var statistics = statistics();
+        String document = "{cart {items {product {id name price}}}}";
+        statistics.clear();
+        var singleItemCart = successful(customer, document, Map.of());
+        long singleItemQueries = statistics.getPrepareStatementCount();
+        for (int i = 0; i < 4; i++) {
+            cartService.addToCart(customer.username(), new CartItemDto(product("12.30", 10).getId(), 1));
+        }
+        statistics.clear();
+
+        // when
+        var largerCart = successful(customer, document, Map.of());
+        long largerCartQueries = statistics.getPrepareStatementCount();
+
+        // then
+        assertThat(singleItemCart.at("/cart/items").size()).isEqualTo(1);
+        assertThat(largerCart.at("/cart/items").size()).isEqualTo(5);
+        assertThat(largerCartQueries).isEqualTo(singleItemQueries);
     }
 
     @Test

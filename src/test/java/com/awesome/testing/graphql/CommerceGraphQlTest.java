@@ -4,11 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.awesome.testing.dto.cart.CartItemDto;
 
-import jakarta.persistence.EntityManagerFactory;
-
-import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
@@ -18,8 +14,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 class CommerceGraphQlTest extends AbstractCommerceGraphQlTest {
-    @Autowired private EntityManagerFactory entityManagerFactory;
-
     @Test
     void requiresApplicationAccessToken() {
         // given
@@ -106,31 +100,6 @@ class CommerceGraphQlTest extends AbstractCommerceGraphQlTest {
         assertThat(cart.get("totalPrice").asString()).isEqualTo("2999.97");
         assertThat(cart.get("totalItems").asInt()).isEqualTo(3);
         assertThat(rest.get("totalPrice").decimalValue()).isEqualByComparingTo("2999.97");
-    }
-
-    @Test
-    void cartQueryCountDoesNotGrowWithItemCount() {
-        // given
-        var customer = customer();
-        cartService.addToCart(customer.username(), new CartItemDto(product("12.30", 10).getId(), 1));
-        var statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
-        String document = "{cart {items {product {id name price}}}}";
-        statistics.clear();
-        var singleItemCart = successful(customer, document, Map.of());
-        long singleItemQueries = statistics.getPrepareStatementCount();
-        for (int i = 0; i < 4; i++) {
-            cartService.addToCart(customer.username(), new CartItemDto(product("12.30", 10).getId(), 1));
-        }
-        statistics.clear();
-
-        // when
-        var largerCart = successful(customer, document, Map.of());
-        long largerCartQueries = statistics.getPrepareStatementCount();
-
-        // then
-        assertThat(singleItemCart.at("/cart/items").size()).isEqualTo(1);
-        assertThat(largerCart.at("/cart/items").size()).isEqualTo(5);
-        assertThat(largerCartQueries).isEqualTo(singleItemQueries);
     }
 
     @Test
