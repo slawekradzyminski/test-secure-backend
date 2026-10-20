@@ -72,6 +72,31 @@ class TrafficLogBufferTest {
     }
 
     @Test
+    void nullBytesCannotPoisonTextPayloadPersistence() {
+        var service = new TrafficLogBuffer(repository, properties, metrics);
+        var record =
+                TrafficLogEntity.builder()
+                        .requestBody("a\0b")
+                        .responseBody("c\0d")
+                        .requestHeaders("e\0f")
+                        .responseHeaders("g\0h")
+                        .requestBodyOriginalLength(3)
+                        .requestBodyStoredLength(3)
+                        .build();
+
+        service.enqueue(record);
+        service.flush();
+
+        assertThat(record.getRequestBody()).isEqualTo("a\u2400b");
+        assertThat(record.getResponseBody()).isEqualTo("c\u2400d");
+        assertThat(record.getRequestHeaders()).isEqualTo("e\u2400f");
+        assertThat(record.getResponseHeaders()).isEqualTo("g\u2400h");
+        assertThat(record.getRequestBodyOriginalLength()).isEqualTo(3);
+        assertThat(record.getRequestBodyStoredLength()).isEqualTo(3);
+        verify(repository).saveAll(argThat(rows -> ((List<TrafficLogEntity>) rows).getFirst() == record));
+    }
+
+    @Test
     void fullQueueDropsNewRecordsWithoutBlockingAndCountsLoss() {
         properties.setPersistenceQueueCapacity(1);
         var service = new TrafficLogBuffer(repository, properties, metrics);

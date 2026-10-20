@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.dto.user.Role;
+import com.awesome.testing.entity.TrafficLogEntity;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +33,7 @@ class TrafficPostgresIT extends DomainHelper {
                                             + "57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777")
                             .asCompatibleSubstituteFor("postgres"));
     @Autowired private ObjectMapper mapper;
+    @Autowired private TrafficLogService logs;
 
     @DynamicPropertySource
     static void database(DynamicPropertyRegistry properties) {
@@ -44,6 +47,37 @@ class TrafficPostgresIT extends DomainHelper {
     @AfterAll
     static void stopDatabase() {
         POSTGRES.stop();
+    }
+
+    @Test
+    void nullBytePreviewPersistsAndRemainsReadableOnPostgres() {
+        var user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        var headers = getHeadersWith(getToken(user));
+        String session = UUID.randomUUID().toString();
+        String correlation = UUID.randomUUID().toString();
+        headers.set(TrafficSession.HEADER, session);
+        logs.save(
+                TrafficLogEntity.builder()
+                        .correlationId(correlation)
+                        .clientSessionId(session)
+                        .timestamp(Instant.now())
+                        .method("GET")
+                        .path("/null-preview")
+                        .status(200)
+                        .durationMs(1L)
+                        .responseContentType("text/plain")
+                        .responseBody("a\0b")
+                        .responseBodyOriginalLength(3)
+                        .responseBodyStoredLength(3)
+                        .build());
+
+        var response = executeGet("/api/v1/traffic/logs/" + correlation, headers, String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        var body = mapper.readTree(response.getBody());
+        assertThat(body.path("responseBody").asString()).isEqualTo("a\u2400b");
+        assertThat(body.path("responseBodyOriginalLength").asInt()).isEqualTo(3);
+        assertThat(body.path("responseBodyStoredLength").asInt()).isEqualTo(3);
     }
 
     @Test
