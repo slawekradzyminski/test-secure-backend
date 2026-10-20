@@ -1,6 +1,10 @@
 package com.awesome.testing.service;
 
 import com.awesome.testing.controller.exception.ProductNotFoundException;
+import com.awesome.testing.controller.exception.CustomException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import static org.mockito.Mockito.doThrow;
 import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.product.ProductSummaryDto;
@@ -188,6 +192,18 @@ class ProductServiceTest {
 
         assertThat(deleted).isTrue();
         verify(productRepository).delete(entity);
+    }
+
+    @Test
+    void referencedProductFailureIsMappedBeforeTransactionCommit() {
+        when(productRepository.findById(1L)).thenReturn(Optional.of(entity));
+        doThrow(new DataIntegrityViolationException("private constraint"))
+                .when(productRepository).flush();
+        assertThatThrownBy(() -> productService.deleteProduct(1L))
+                .isInstanceOfSatisfying(CustomException.class, error -> {
+                    assertThat(error.getHttpStatus()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(error.getMessage()).isEqualTo("Product is referenced by existing data");
+                });
     }
 
     @Test

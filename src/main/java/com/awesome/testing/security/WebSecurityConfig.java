@@ -82,8 +82,8 @@ public class WebSecurityConfig {
 
         // Define authorization rules
         http.authorizeHttpRequests(auth -> {
-            // First, allow async dispatch
-            auth.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll();
+            // Preserve transport errors on container error dispatch; initial requests still require authentication.
+            auth.dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll();
             
             // Then allow public endpoints
             PathPatternRequestMatcher.Builder matcherBuilder = PathPatternRequestMatcher.withDefaults();

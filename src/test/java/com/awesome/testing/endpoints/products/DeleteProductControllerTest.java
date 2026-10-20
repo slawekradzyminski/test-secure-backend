@@ -1,5 +1,10 @@
 package com.awesome.testing.endpoints.products;
 
+import com.awesome.testing.dto.cart.CartItemDto;
+import com.awesome.testing.dto.order.AddressDto;
+import com.awesome.testing.service.CartService;
+import com.awesome.testing.service.OrderService;
+import org.springframework.beans.factory.annotation.Autowired;
 import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.endpoints.AbstractEcommerceTest;
 import com.awesome.testing.entity.ProductEntity;
@@ -20,6 +25,11 @@ class DeleteProductControllerTest extends AbstractEcommerceTest {
 
     private static final String PRODUCTS_ENDPOINT = "/api/v1/products";
 
+    @Autowired
+    private CartService cartService;
+    @Autowired
+    private OrderService orderService;
+
     @Test
     void shouldDeleteProductAsAdmin() {
         // given
@@ -36,6 +46,57 @@ class DeleteProductControllerTest extends AbstractEcommerceTest {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+    @Test
+    void productReferencedByCartReturnsConflictAndCanBeDeletedAfterClearingCart() {
+        // given
+        var product = setupProduct();
+        var customer = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        getToken(customer);
+        var adminToken = getToken(getRandomUserWithRoles(List.of(Role.ROLE_ADMIN)));
+        cartService.addToCart(customer.getUsername(), new CartItemDto(product.getId(), 1));
+
+        // when
+        var response = executeDelete(PRODUCTS_ENDPOINT + "/" + product.getId(),
+                getHeadersWith(adminToken), String.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).contains("Product is referenced by existing data");
+        assertThat(productRepository.findById(product.getId())).isPresent();
+        assertThat(cartService.getCart(customer.getUsername()).getTotalItems()).isEqualTo(1);
+
+        // when
+        cartService.clearCart(customer.getUsername());
+        var deleted = executeDelete(PRODUCTS_ENDPOINT + "/" + product.getId(),
+                getHeadersWith(adminToken), Void.class);
+
+        // then
+        assertThat(deleted.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+    @Test
+    void productReferencedByOrderReturnsConflictAndPreservesOrderAndStock() {
+        // given
+        var product = setupProduct();
+        var customer = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        getToken(customer);
+        var adminToken = getToken(getRandomUserWithRoles(List.of(Role.ROLE_ADMIN)));
+        cartService.addToCart(customer.getUsername(), new CartItemDto(product.getId(), 1));
+        orderService.createOrder(customer.getUsername(), new AddressDto(
+                "Main 1", "Warsaw", "Mazovia", "00-001", "Poland"));
+
+        // when
+        var response = executeDelete(PRODUCTS_ENDPOINT + "/" + product.getId(),
+                getHeadersWith(adminToken), String.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).contains("Product is referenced by existing data");
+        assertThat(orderRepository.findAll()).hasSize(1);
+        assertThat(productRepository.findById(product.getId())).hasValueSatisfying(saved ->
+                assertThat(saved.getStockQuantity()).isEqualTo(product.getStockQuantity() - 1));
     }
 
     @Test

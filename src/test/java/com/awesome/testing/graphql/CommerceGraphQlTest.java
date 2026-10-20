@@ -34,6 +34,24 @@ class CommerceGraphQlTest extends AbstractCommerceGraphQlTest {
     }
 
     @Test
+    void malformedJsonRetainsBadRequestStatusForBothResponseMediaTypes() {
+        // given
+        for (var actor : List.of(customer(), admin())) {
+            for (String accept : List.of("application/json", "application/graphql-response+json")) {
+                var headers = getHeadersWith(actor.token());
+                headers.set("Accept", accept);
+
+                // when
+                var response = executePost(ENDPOINT, "{\"query\":", headers, String.class);
+
+                // then
+                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                successful(actor, "{cart{totalItems}}", Map.of());
+            }
+        }
+    }
+
+    @Test
     void readsCatalogWithVariablesAndPartialNotFoundError() {
         // given
         var product = product("999.99", 10);
