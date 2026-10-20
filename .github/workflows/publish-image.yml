@@ -34,11 +34,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      # The version probe must not reserve the full verification Maven cache key.
       - uses: actions/setup-java@v6.0.1
         with:
           java-version: '25'
           distribution: temurin
-          cache: maven
 
       - name: Validate release source and version
         id: release
