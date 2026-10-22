@@ -107,7 +107,7 @@ if ! grep -q '"done" : true' <<<"$CHAT_RESPONSE"; then
 fi
 
 # Check if login was successful by looking for token in response
-if echo "$LOGIN_RESPONSE" | grep -q "token"; then
+if grep -q "token" <<<"$LOGIN_RESPONSE"; then
   echo "Verification successful!"
   exit 0
 else
