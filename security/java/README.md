@@ -10,8 +10,8 @@ complete fixture, generator instructions, offline JVM probe and Compose runtime
 verification live in sibling `awesome-localstack/security/java/`. The generated
 file checksum is `2596bb6dda83c66d96c5a252d7b2ae1f24cc1ae3f1890223b4f3591a8d52bf10`.
 
-This Dockerfile change is local source pending a normal source-owned image
-release. Existing published image tags/digests are not rebuilt or overwritten.
-Awesome LocalStack can protect those images with its reviewed read-only mount.
+The artifact is baked into source-owned image releases. Published image
+tags/digests are immutable. Awesome LocalStack also validates its reviewed
+read-only runtime mount, protecting the broker and other JVM services.
 Keep existing custom/vendor blocks when renewing the snapshot; never claim that
 the unchanged Java version fixes unrelated vulnerabilities.
