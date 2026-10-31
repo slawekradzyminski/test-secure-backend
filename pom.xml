@@ -26,7 +26,7 @@
         <postgresql.version>42.7.13</postgresql.version>
         <reactor-bom.version>2025.0.7</reactor-bom.version>
         <otp-java.version>2.2.0</otp-java.version>
-        <pitest.version>1.30.0</pitest.version>
+        <pitest.version>1.30.1</pitest.version>
         <pitest.junit5.version>1.2.3</pitest.junit5.version>
     </properties>
 
@@ -234,7 +234,7 @@
         <dependency>
             <groupId>org.wiremock.integrations</groupId>
             <artifactId>wiremock-spring-boot</artifactId>
-            <version>4.4.2</version>
+            <version>4.4.3</version>
             <scope>test</scope>
         </dependency>
 
@@ -255,7 +255,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.6.3</version>
+                <version>3.7.0</version>
                 <executions>
                     <execution>
                         <id>enforce-build-runtime</id>
@@ -307,7 +307,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.15</version>
+                <version>0.8.16</version>
                 <configuration>
                     <skip>${skip.jacoco}</skip>
                     <!-- Fake data bootstrap populates demo data outside of tests; exclude it from coverage accounting -->
@@ -370,7 +370,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.6.0</version>
+                <version>3.6.1</version>
                 <configuration>
                     <argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
                     <excludes>
@@ -406,7 +406,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>3.6.0</version>
+                        <version>3.6.1</version>
                         <configuration>
                             <includes>
                                 <include>**/OllamaChatControllerTest.java</include>
