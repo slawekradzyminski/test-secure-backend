@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM eclipse-temurin:25-jdk-jammy@sha256:89565961a318534f01c971c7b1d030e60713c66995b887c94010cef938dbc53e AS build
+FROM eclipse-temurin:25-jdk-jammy@sha256:07a4ee373cd86f337e62cb8149f1e0a9f08aaf3a18c27509a493dda119fb480c AS build
 # OpenJDK CVE-2026-91403 mitigation; pinned artifact provenance is in security/java/.
 COPY security/java/blocked.certs ${JAVA_HOME}/lib/security/blocked.certs
 RUN echo "2596bb6dda83c66d96c5a252d7b2ae1f24cc1ae3f1890223b4f3591a8d52bf10  ${JAVA_HOME}/lib/security/blocked.certs" | sha256sum --check -
@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/root/.m2 \
     ./mvnw -B -Dmaven.test.skip=true clean package \
     && cp target/jwt-auth-service-*.jar app.jar
 
-FROM eclipse-temurin:25-jre-jammy@sha256:10c251954d0bfe1a59ba93505f8c628d755919412400aa98685764c9353605d6
+FROM eclipse-temurin:25-jre-jammy@sha256:e0d8c47eccd7ec82d635542dfcd1f2b1293add6bdd7ffbeb650f8ec1b1335425
 # OpenJDK CVE-2026-91403 mitigation; pinned artifact provenance is in security/java/.
 COPY security/java/blocked.certs ${JAVA_HOME}/lib/security/blocked.certs
 RUN echo "2596bb6dda83c66d96c5a252d7b2ae1f24cc1ae3f1890223b4f3591a8d52bf10  ${JAVA_HOME}/lib/security/blocked.certs" | sha256sum --check -
