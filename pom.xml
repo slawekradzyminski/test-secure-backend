@@ -412,14 +412,8 @@
                                 <include>**/OllamaChatControllerTest.java</include>
                                 <include>**/OllamaGenerateControllerTest.java</include>
                                 <include>**/TrafficControllerTest.java</include>
-                                <include>**/RefreshTokenMigrationIT.java</include>
-                                <include>**/PasswordResetTokenConcurrencyIT.java</include>
-                                <include>**/InventoryMigrationIT.java</include>
-                                <include>**/CommerceIndexMigrationIT.java</include>
-                                <include>**/TrafficPostgresIT.java</include>
-                                <include>**/InventoryConcurrencyIT.java</include>
-                                <include>**/GraphQlConcurrencyIT.java</include>
-                                <include>**/InventoryGrpcConcurrencyIT.java</include>
+                                <!-- Any new *IT class runs here without editing this list. -->
+                                <include>**/*IT.java</include>
                             </includes>
                             <failIfNoTests>true</failIfNoTests>
                             <argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
