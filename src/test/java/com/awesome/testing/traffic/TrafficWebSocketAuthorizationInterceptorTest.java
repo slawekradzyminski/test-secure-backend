@@ -2,15 +2,18 @@ package com.awesome.testing.traffic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.security.JwtTokenProvider;
 import java.security.Principal;
 import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -57,6 +60,75 @@ class TrafficWebSocketAuthorizationInterceptorTest {
 
         assertThatThrownBy(() -> interceptor.preSend(message(accessor), mock(MessageChannel.class)))
                 .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void shouldAllowSubscriptionToOwnBrowserSessionTopic() {
+        StompHeaderAccessor accessor = accessor(StompCommand.SUBSCRIBE);
+        accessor.setUser(mock(Principal.class));
+        accessor.getSessionAttributes().put(TrafficSession.STOMP_ATTRIBUTE, "browser-session-1234");
+        accessor.setDestination("/topic/traffic/browser-session-1234");
+
+        assertThat(interceptor.preSend(message(accessor), mock(MessageChannel.class))).isNotNull();
+    }
+
+    @Test
+    void shouldRejectSubscriptionWithoutAuthenticatedUser() {
+        StompHeaderAccessor accessor = accessor(StompCommand.SUBSCRIBE);
+        accessor.getSessionAttributes().put(TrafficSession.STOMP_ATTRIBUTE, "browser-session-1234");
+        accessor.setDestination("/topic/traffic/browser-session-1234");
+
+        assertThatThrownBy(() -> interceptor.preSend(message(accessor), mock(MessageChannel.class)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Authenticated traffic session is required");
+    }
+
+    @Test
+    void shouldRejectSubscriptionWhenConnectDidNotBindBrowserSession() {
+        StompHeaderAccessor accessor = accessor(StompCommand.SUBSCRIBE);
+        accessor.setUser(mock(Principal.class));
+        accessor.setDestination("/topic/traffic/browser-session-1234");
+
+        assertThatThrownBy(() -> interceptor.preSend(message(accessor), mock(MessageChannel.class)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Authenticated traffic session is required");
+    }
+
+    @Test
+    void shouldKeepBrowserSessionTopicsPrivateWhenLegacyPublicAccessIsEnabled() {
+        trafficProperties.setLegacyPublicAccess(true);
+        StompHeaderAccessor accessor = accessor(StompCommand.SUBSCRIBE);
+        accessor.setDestination("/topic/traffic/browser-session-1234");
+
+        assertThatThrownBy(() -> interceptor.preSend(message(accessor), mock(MessageChannel.class)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Authenticated traffic session is required");
+    }
+
+    @Test
+    void shouldRejectConnectWithInvalidTokenWithoutBindingSession() {
+        doThrow(new CustomException("Invalid or expired token", HttpStatus.UNAUTHORIZED))
+                .when(jwtTokenProvider).validateToken("forged-token");
+        StompHeaderAccessor accessor = accessor(StompCommand.CONNECT);
+        accessor.setNativeHeader("Authorization", "Bearer forged-token");
+        accessor.setNativeHeader(TrafficSession.HEADER, "browser-session-1234");
+
+        assertThatThrownBy(() -> interceptor.preSend(message(accessor), mock(MessageChannel.class)))
+                .isInstanceOf(CustomException.class);
+        assertThat(accessor.getUser()).isNull();
+        assertThat(accessor.getSessionAttributes()).doesNotContainKey(TrafficSession.STOMP_ATTRIBUTE);
+    }
+
+    @Test
+    void shouldRejectConnectWithInvalidBrowserSessionId() {
+        when(jwtTokenProvider.getAuthentication("access-token")).thenReturn(mock(Authentication.class));
+        StompHeaderAccessor accessor = accessor(StompCommand.CONNECT);
+        accessor.setNativeHeader("Authorization", "Bearer access-token");
+        accessor.setNativeHeader(TrafficSession.HEADER, "short");
+
+        assertThatThrownBy(() -> interceptor.preSend(message(accessor), mock(MessageChannel.class)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(accessor.getSessionAttributes()).doesNotContainKey(TrafficSession.STOMP_ATTRIBUTE);
     }
 
     @Test

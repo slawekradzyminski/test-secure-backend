@@ -108,8 +108,11 @@ class GrpcProtocolTrafficTest extends AbstractInventoryGrpcTest {
 
         // then
         assertThat(event.getProtocolDetails().codes()).containsExactly("INTERNAL");
-        assertThat(logs.findByCorrelationId(event.getProtocolDetails().correlationId()).orElseThrow().getResponseBody())
-                .doesNotContain("PRIVATE_STATUS_DESCRIPTION");
+        // The protocol event is published before the traffic log row is persisted, so wait for the row too.
+        var logEntry = await().atMost(Duration.ofSeconds(5))
+                .until(() -> logs.findByCorrelationId(event.getProtocolDetails().correlationId()), java.util.Optional::isPresent)
+                .orElseThrow();
+        assertThat(logEntry.getResponseBody()).doesNotContain("PRIVATE_STATUS_DESCRIPTION");
     }
 
     @Test
