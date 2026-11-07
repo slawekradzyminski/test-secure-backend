@@ -22,6 +22,75 @@ class MfaSecurityConfigTest {
     }
 
     @Test
+    void shouldRejectDevelopmentSaltEvenWithStrongPassword() {
+        MfaProperties properties = properties(
+                "a-strong-deployment-specific-password-with-entropy",
+                "8F9C82CF1D4A63B107A82FC60E0C27AB");
+
+        assertThatThrownBy(() -> config.mfaTextEncryptor(properties))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Production MFA encryption must not use the development key");
+    }
+
+    @Test
+    void shouldRejectShortPasswordWhenSecureConfigurationIsRequired() {
+        MfaProperties properties = properties(
+                "short-production-password",
+                "0123456789abcdef0123456789abcdef");
+
+        assertThatThrownBy(() -> config.mfaTextEncryptor(properties))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Production MFA encryption password must contain at least 32 characters");
+    }
+
+    @Test
+    void shouldAcceptPasswordOfExactly32CharactersWhenSecureConfigurationIsRequired() {
+        MfaProperties properties = properties(
+                "deployment-password-32-chars-abc",
+                "0123456789abcdef0123456789abcdef");
+
+        assertThat(properties.getEncryptionPassword()).hasSize(32);
+        assertThat(config.mfaTextEncryptor(properties)).isNotNull();
+    }
+
+    @Test
+    void shouldRejectNonHexSaltWhenSecureConfigurationIsRequired() {
+        MfaProperties properties = properties(
+                "a-strong-deployment-specific-password-with-entropy",
+                "not-a-hex-salt-but-long-enough-0123");
+
+        assertThatThrownBy(() -> config.mfaTextEncryptor(properties))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Production MFA encryption salt must contain at least 16 random bytes in hexadecimal");
+    }
+
+    @Test
+    void shouldRejectTooShortHexSaltWhenSecureConfigurationIsRequired() {
+        MfaProperties properties = properties(
+                "a-strong-deployment-specific-password-with-entropy",
+                "0123456789abcdef");
+
+        assertThatThrownBy(() -> config.mfaTextEncryptor(properties))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Production MFA encryption salt must contain at least 16 random bytes in hexadecimal");
+    }
+
+    @Test
+    void shouldRejectMissingEncryptionMaterialInEveryEnvironment() {
+        MfaProperties missingPassword = properties(" ", "0123456789abcdef0123456789abcdef");
+        missingPassword.setRequireSecureEncryption(false);
+        MfaProperties missingSalt = properties("a-strong-deployment-specific-password-with-entropy", "");
+        missingSalt.setRequireSecureEncryption(false);
+
+        assertThatThrownBy(() -> config.mfaTextEncryptor(missingPassword))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("APP_MFA_ENCRYPTION_PASSWORD must be configured");
+        assertThatThrownBy(() -> config.mfaTextEncryptor(missingSalt))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("APP_MFA_ENCRYPTION_SALT must be configured");
+    }
+
+    @Test
     void shouldAcceptStrongDeploymentSpecificEncryptionMaterial() {
         MfaProperties properties = properties(
                 "a-strong-deployment-specific-password-with-entropy",

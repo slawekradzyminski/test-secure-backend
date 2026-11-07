@@ -344,7 +344,12 @@
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.40</minimum>
+                                            <minimum>0.90</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.75</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
@@ -412,14 +417,8 @@
                                 <include>**/OllamaChatControllerTest.java</include>
                                 <include>**/OllamaGenerateControllerTest.java</include>
                                 <include>**/TrafficControllerTest.java</include>
-                                <include>**/RefreshTokenMigrationIT.java</include>
-                                <include>**/PasswordResetTokenConcurrencyIT.java</include>
-                                <include>**/InventoryMigrationIT.java</include>
-                                <include>**/CommerceIndexMigrationIT.java</include>
-                                <include>**/TrafficPostgresIT.java</include>
-                                <include>**/InventoryConcurrencyIT.java</include>
-                                <include>**/GraphQlConcurrencyIT.java</include>
-                                <include>**/InventoryGrpcConcurrencyIT.java</include>
+                                <!-- Any new *IT class runs here without editing this list. -->
+                                <include>**/*IT.java</include>
                             </includes>
                             <failIfNoTests>true</failIfNoTests>
                             <argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
@@ -484,6 +483,9 @@
                                 <param>com.awesome.testing.service.token.RefreshTokenService</param>
                                 <param>com.awesome.testing.service.password.PasswordResetService</param>
                                 <param>com.awesome.testing.security.ratelimit.AuthRateLimitGuard</param>
+                                <param>com.awesome.testing.security.JwtTokenProvider</param>
+                                <param>com.awesome.testing.security.JwtTokenFilter</param>
+                                <param>com.awesome.testing.security.oidc.OidcTokenVerifier</param>
                                 <param>com.awesome.testing.traffic.TrafficCapturePolicy</param>
                                 <param>com.awesome.testing.traffic.TrafficDataSanitizer</param>
                                 <param>com.awesome.testing.service.ollama.function.ProductCatalogFunctionHandler</param>
@@ -502,6 +504,9 @@
                                 <param>com.awesome.testing.service.token.RefreshTokenServiceTest</param>
                                 <param>com.awesome.testing.service.password.PasswordResetServiceTest</param>
                                 <param>com.awesome.testing.security.ratelimit.AuthRateLimitGuardTest</param>
+                                <param>com.awesome.testing.security.JwtTokenProviderTest</param>
+                                <param>com.awesome.testing.security.JwtTokenFilterTest</param>
+                                <param>com.awesome.testing.security.oidc.OidcTokenVerifier*Test</param>
                                 <param>com.awesome.testing.traffic.TrafficCapturePolicyTest</param>
                                 <param>com.awesome.testing.traffic.TrafficDataSanitizerTest</param>
                                 <param>com.awesome.testing.traffic.TrafficLogBufferTest</param>

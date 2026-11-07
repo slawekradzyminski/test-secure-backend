@@ -11,6 +11,8 @@
 - Run the normal tests first. Use the mutation profile after changing the selected authentication, cart, order, product, traffic, or LLM-handler code, or after changing their tests.
 - Treat `NO_COVERAGE` as a reachability gap and `SURVIVED` as an assertion gap. For each meaningful survivor, add a test that passes on the original code and fails on that mutant.
 - Do not optimize for the headline score by asserting implementation details or snapshotting entire objects. Classify equivalent and inconsequential mutants explicitly in the handoff.
+- For a change that touches only a few classes, narrow the run to them instead of the whole scope, for example `./mvnw -Pmutation-testing test-compile pitest:mutationCoverage -Dfeatures=+auto_threads -DtargetClasses=com.awesome.testing.security.JwtTokenProvider -DtargetTests=com.awesome.testing.security.JwtTokenProviderTest`. Open-source PIT 1.30 has no history support (it moved to Arcmutate), so do not enable `withHistory`.
+- Keep the scope on code where a bug is expensive: authentication (JWT, OIDC, rate limiting), money, authorization, sanitization, and state transitions. Do not add low-risk classes only to raise coverage of the mutation run.
 - Keep this targeted run advisory. Review new meaningful survivors in security, money, authorization, sanitization, and state-transition logic; do not use an aggregate mutation percentage as a quality gate.
 
 # Course API Contract

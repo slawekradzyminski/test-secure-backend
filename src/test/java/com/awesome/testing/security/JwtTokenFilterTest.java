@@ -87,4 +87,52 @@ class JwtTokenFilterTest {
         assertThat(response.getStatus()).isEqualTo(500);
         assertThat(response.getContentAsString()).contains("Internal server error");
     }
+
+    @Test
+    void shouldRejectAndClearStaleAuthenticationWhenTokenIsNotValid() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        givenStaleAuthentication();
+        when(jwtTokenProvider.extractTokenFromRequest(request)).thenReturn("not-valid");
+        when(jwtTokenProvider.validateToken("not-valid")).thenReturn(false);
+
+        jwtTokenFilter.doFilterInternal(request, response, filterChain);
+
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(response.getContentAsString()).contains("Invalid or expired token");
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+    @Test
+    void shouldClearStaleAuthenticationWhenTokenIsRejected() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        givenStaleAuthentication();
+        when(jwtTokenProvider.extractTokenFromRequest(request)).thenReturn("bad");
+        when(jwtTokenProvider.validateToken("bad"))
+                .thenThrow(new CustomException("Invalid", org.springframework.http.HttpStatus.UNAUTHORIZED));
+
+        jwtTokenFilter.doFilterInternal(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void shouldClearStaleAuthenticationOnUnexpectedException() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        givenStaleAuthentication();
+        when(jwtTokenProvider.extractTokenFromRequest(request)).thenReturn("bad");
+        when(jwtTokenProvider.validateToken("bad")).thenThrow(new RuntimeException("Boom"));
+
+        jwtTokenFilter.doFilterInternal(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    private static void givenStaleAuthentication() {
+        SecurityContextHolder.getContext()
+                .setAuthentication(new UsernamePasswordAuthenticationToken("previous-user", "", java.util.List.of()));
+    }
 }

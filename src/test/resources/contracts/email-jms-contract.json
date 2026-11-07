@@ -1,0 +1,17 @@
+{
+  "description": "JMS email event contract between test-secure-backend (producer) and jms-email-consumer (consumer). Keep this file byte-identical in both repositories: src/test/resources/contracts/email-jms-contract.json.",
+  "destination": "email",
+  "typeIdProperty": "_awesome_",
+  "typeId": "com.awesome.testing.dto.email.EmailDto",
+  "payload": {
+    "to": "contract.user@example.com",
+    "subject": "Contract subject",
+    "message": "Contract message",
+    "template": "PASSWORD_RESET_REQUESTED",
+    "properties": {
+      "username": "contract-user",
+      "resetLink": "https://awesome.example/reset?token=contract-token",
+      "expiresInMinutes": "15"
+    }
+  }
+}
