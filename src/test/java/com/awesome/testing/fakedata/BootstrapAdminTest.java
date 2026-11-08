@@ -84,6 +84,18 @@ class BootstrapAdminTest {
     }
 
     @Test
+    void shouldAcceptPasswordOfExactlyMinimumLength() {
+        String sixteenCharacters = "Exactly16Chars!!";
+        BootstrapAdmin bootstrapAdmin = bootstrapAdmin(sixteenCharacters);
+        when(userRepository.findByUsernameOrEmail("admin", "admin@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(sixteenCharacters)).thenReturn("encoded");
+
+        bootstrapAdmin.run();
+
+        verify(userRepository).save(any());
+    }
+
+    @Test
     void shouldDoNothingWhenDisabled() {
         bootstrapAdmin("", false).run();
 

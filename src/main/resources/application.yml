@@ -30,8 +30,10 @@ spring:
       # The CSV import accepts 1 MB; the extra headroom lets the service answer with a precise 413 message.
       max-file-size: 2MB
       max-request-size: 2MB
+  # Every runtime profile migrates with Flyway; the unit-test profile switches it off. Must be true
+  # here because the native image decides whether Flyway exists at build time.
   flyway:
-    enabled: false
+    enabled: true
 
 server:
   # Swagger UI in browsers can include large Cookie/Authorization headers; keep headroom above Tomcat defaults.
@@ -249,6 +251,12 @@ springdoc:
 # The JMS health contributor is fixed at build time in the native image; with the local
 # outbox there is no broker, so broker reachability is not part of application health.
 management:
+  # Endpoint beans are chosen at build time in the native image, so include them all here;
+  # profiles narrow the published set at runtime (aitesters: health, info, prometheus).
+  endpoints:
+    web:
+      exposure:
+        include: "*"
   health:
     jms:
       enabled: false

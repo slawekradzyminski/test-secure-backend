@@ -10,7 +10,10 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.zip.CRC32;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,5 +39,24 @@ class QrServiceTest {
         assertThat(Arrays.copyOf(png, 8)).isEqualTo(PNG_SIGNATURE);
         assertThat(ByteBuffer.wrap(png, 16, 8).getInt()).isEqualTo(400);
         assertThat(ByteBuffer.wrap(png, 20, 4).getInt()).isEqualTo(400);
+    }
+
+    @Test
+    void shouldWriteWellFormedChunksWithValidChecksums() {
+        byte[] png = new QrService().generateQrPng("chunk check");
+
+        List<String> chunkTypes = new ArrayList<>();
+        ByteBuffer buffer = ByteBuffer.wrap(png, 8, png.length - 8);
+        while (buffer.hasRemaining()) {
+            int length = buffer.getInt();
+            byte[] typeAndData = new byte[4 + length];
+            buffer.get(typeAndData);
+            CRC32 crc = new CRC32();
+            crc.update(typeAndData);
+            String type = new String(typeAndData, 0, 4, java.nio.charset.StandardCharsets.US_ASCII);
+            assertThat(buffer.getInt()).as("CRC of " + type).isEqualTo((int) crc.getValue());
+            chunkTypes.add(type);
+        }
+        assertThat(chunkTypes).containsExactly("IHDR", "IDAT", "IEND");
     }
 }

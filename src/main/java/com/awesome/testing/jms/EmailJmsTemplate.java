@@ -26,10 +26,6 @@ public class EmailJmsTemplate extends JmsTemplate {
         this.passwordResetProperties = passwordResetProperties;
     }
 
-    public EmailTransport getTransport() {
-        return transport;
-    }
-
     @Override
     public void convertAndSend(String destinationName, Object message) throws JmsException {
         if (transport == EmailTransport.JMS) {
