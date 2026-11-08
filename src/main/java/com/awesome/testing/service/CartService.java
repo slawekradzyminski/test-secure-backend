@@ -42,8 +42,9 @@ public class CartService {
                 .couponCode(coupon.map(CouponPreview::code).orElse(null))
                 .couponValid(coupon.map(CouponPreview::valid).orElse(null))
                 .couponMessage(coupon.map(CouponPreview::message).orElse(null))
-                .discountAmount(discount)
-                .totalAfterDiscount(subtotal.subtract(discount))
+                // Without a coupon the cart serializes exactly as before coupons existed.
+                .discountAmount(coupon.isPresent() ? discount : null)
+                .totalAfterDiscount(coupon.isPresent() ? subtotal.subtract(discount) : null)
                 .build();
     }
 
