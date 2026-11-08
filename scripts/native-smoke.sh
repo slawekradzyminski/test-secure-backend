@@ -74,13 +74,13 @@ refresh=$(sed -E 's/.*"refreshToken" *: *"([^"]+)".*/\1/' <<< "${signin#* }")
 [[ "$refresh" =~ ^[0-9a-f-]{36}$ ]] || fail "server profile must issue UUID refresh tokens: $refresh"
 echo "bootstrap admin sign-in: ok"
 
-products=$(call -H "Authorization: Bearer $token" "http://backend:4001/api/v1/products?size=1")
-[[ "$products" == 200* && "$products" == *'"content"'* ]] || fail "products: $products"
+products=$(call -H "Authorization: Bearer $token" http://backend:4001/api/v1/products)
+[[ "$products" == 200* && "$products" == *'"name"'* ]] || fail "products: $products"
 echo "bootstrap products: ok"
 
 graphql=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
-  -d '{"query":"{ products(page: 0, size: 1) { totalElements } }"}' http://backend:4001/api/v1/graphql)
-[[ "$graphql" == 200* && "$graphql" == *totalElements* && "$graphql" != *'"errors"'* ]] || fail "graphql: $graphql"
+  -d '{"query":"{ products(limit: 1) { total items { name } } }"}' http://backend:4001/api/v1/graphql)
+[[ "$graphql" == 200* && "$graphql" == *'"total"'* && "$graphql" != *'"errors"'* ]] || fail "graphql: $graphql"
 echo "graphql: ok"
 
 qr=$(docker run --rm --network "$NETWORK" curlimages/curl:8.17.0 -s -o /dev/null -w '%{http_code} %{content_type}' \
