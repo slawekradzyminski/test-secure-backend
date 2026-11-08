@@ -1,6 +1,7 @@
 package com.awesome.testing.dto.order;
 
 import com.awesome.testing.entity.OrderEntity;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -33,12 +34,15 @@ public class OrderDto {
     @Schema(description = "Total amount", example = "1999.98")
     private BigDecimal totalAmount;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(description = "Sum of item prices before discounts", example = "2222.20")
     private BigDecimal subtotalAmount;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(description = "Coupon discount subtracted from the subtotal", example = "222.22")
     private BigDecimal discountAmount;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(types = {"string", "null"}, description = "Coupon code applied at checkout", example = "WELCOME10")
     private String couponCode;
 
@@ -62,13 +66,26 @@ public class OrderDto {
                 .username(order.getUsername())
                 .items(order.getItems().stream().map(OrderItemDto::from).toList())
                 .totalAmount(order.getTotalAmount())
-                .subtotalAmount(order.getSubtotalAmount() == null ? order.getTotalAmount() : order.getSubtotalAmount())
-                .discountAmount(order.getDiscountAmount() == null ? BigDecimal.ZERO : order.getDiscountAmount())
+                .subtotalAmount(hasCoupon(order) ? subtotalOf(order) : null)
+                .discountAmount(hasCoupon(order) ? order.getDiscountAmount() : null)
                 .couponCode(order.getCouponCode())
                 .status(order.getStatus())
                 .shippingAddress(AddressDto.from(order.getShippingAddress()))
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
                 .build();
+    }
+
+    /**
+     * Coupon fields are sent only for discounted orders, so orders without a
+     * coupon serialize exactly as before coupons existed (course contract).
+     */
+    private static boolean hasCoupon(OrderEntity order) {
+        return order.getCouponCode() != null
+                || (order.getDiscountAmount() != null && order.getDiscountAmount().signum() > 0);
+    }
+
+    private static BigDecimal subtotalOf(OrderEntity order) {
+        return order.getSubtotalAmount() == null ? order.getTotalAmount() : order.getSubtotalAmount();
     }
 }

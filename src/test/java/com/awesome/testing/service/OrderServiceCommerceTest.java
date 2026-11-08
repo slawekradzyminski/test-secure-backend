@@ -102,7 +102,8 @@ class OrderServiceCommerceTest {
 
         var created = service.createOrder(USER, address, null);
 
-        assertThat(created.order().getDiscountAmount()).isEqualByComparingTo("0");
+        assertThat(created.order().getDiscountAmount()).as("absent without a coupon (course contract)").isNull();
+        assertThat(created.order().getSubtotalAmount()).isNull();
         assertThat(created.order().getTotalAmount()).isEqualByComparingTo("120.00");
         assertThat(created.order().getCouponCode()).isNull();
         verify(couponService, never()).recordRedemption(any(), any());

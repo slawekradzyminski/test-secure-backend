@@ -1,5 +1,6 @@
 package com.awesome.testing.dto.cart;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,18 +27,23 @@ public class CartDto {
     @Schema(description = "Total number of items", example = "7")
     private int totalItems;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(types = {"string", "null"}, description = "Coupon applied to the cart", example = "WELCOME10")
     private String couponCode;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(types = {"boolean", "null"}, description = "Whether the applied coupon currently qualifies; null when no coupon is applied")
     private Boolean couponValid;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(types = {"string", "null"}, description = "Why the applied coupon does not qualify", example = "Order subtotal must be at least 100.00")
     private String couponMessage;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(description = "Discount that checkout would apply", example = "19.96")
     private BigDecimal discountAmount;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(description = "Total price after the discount", example = "179.60")
     private BigDecimal totalAfterDiscount;
 } 
