@@ -158,9 +158,13 @@ public class WebSecurityConfig {
                         "Accept",
                         "Cache-Control",
                         "Last-Event-ID",
-                        "x-requested-with"));
+                        "x-requested-with",
+                        "Idempotency-Key",
+                        "If-Match",
+                        "If-None-Match"));
         configuration.setExposedHeaders(
-                List.of("Content-Type", "X-Client-Session-Id", "X-Requested-With", "Cache-Control", "Last-Event-ID"));
+                List.of("Content-Type", "X-Client-Session-Id", "X-Requested-With", "Cache-Control", "Last-Event-ID",
+                        "ETag", "Idempotent-Replayed", "Content-Disposition"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

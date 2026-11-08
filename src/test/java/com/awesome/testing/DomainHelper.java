@@ -45,7 +45,8 @@ public abstract class DomainHelper extends HttpHelper {
     }
 
     protected LoginResponseDto registerAndLogin(UserRegisterDto userRegisterDto) {
-        if (userRegisterDto.getRoles() != null && userRegisterDto.getRoles().contains(Role.ROLE_ADMIN)) {
+        if (userRegisterDto.getRoles() != null
+                && userRegisterDto.getRoles().stream().anyMatch(role -> role != Role.ROLE_CLIENT)) {
             createUserDirectly(userRegisterDto);
         } else {
             ResponseEntity<String> signupResponse = executePost(

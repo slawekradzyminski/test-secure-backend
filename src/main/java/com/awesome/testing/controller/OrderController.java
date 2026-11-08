@@ -9,7 +9,9 @@ import com.awesome.testing.dto.order.OrderDto;
 import com.awesome.testing.dto.order.PageDto;
 import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.security.CustomPrincipal;
+import com.awesome.testing.service.OrderCreation;
 import com.awesome.testing.service.OrderService;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -37,19 +39,26 @@ public class OrderController {
 
     @PostMapping
     @Operation(summary = "Create a new order from cart",
-            description = "Creates an order for the authenticated user from the current cart and clears the cart after success.")
-    @ApiResponse(responseCode = "201", description = "Order created successfully")
+            description = "Creates an order for the authenticated user from the current cart and clears the cart after success. A coupon applied to the cart is validated again and redeemed. An optional Idempotency-Key header makes retries safe: repeating the key with the same address within 24 hours returns the original order with Idempotent-Replayed: true, and a different address returns 409.")
+    @ApiResponse(responseCode = "201", description = "Order created successfully, or replayed for a repeated Idempotency-Key",
+            headers = @Header(name = "Idempotent-Replayed", description = "true when the response replays an earlier order", schema = @Schema(type = "string", example = "true")))
     @ApiResponse(responseCode = "404", description = "A cart product no longer exists",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
-    @ApiResponse(responseCode = "409", description = "Insufficient stock to place the order",
+    @ApiResponse(responseCode = "409", description = "Insufficient stock, coupon no longer valid, or Idempotency-Key reused with a different address",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "400", description = "Invalid input or empty cart",
             content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, ErrorDto.class})))
     public ResponseEntity<OrderDto> createOrder(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
-            @Valid @RequestBody AddressDto addressDto) {
-        OrderDto order = orderService.createOrder(principal.getUsername(), addressDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(order);
+            @Valid @RequestBody AddressDto addressDto,
+            @Parameter(description = "Client-generated key, 8-64 letters, digits, hyphens or underscores")
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        OrderCreation creation = orderService.createOrder(principal.getUsername(), addressDto, idempotencyKey);
+        ResponseEntity.BodyBuilder response = ResponseEntity.status(HttpStatus.CREATED);
+        if (creation.replayed()) {
+            response.header("Idempotent-Replayed", "true");
+        }
+        return response.body(creation.order());
     }
 
     @GetMapping

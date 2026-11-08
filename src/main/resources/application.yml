@@ -9,6 +9,11 @@ spring:
     allow-bean-definition-overriding: true
   jpa:
     open-in-view: false
+  servlet:
+    multipart:
+      # The CSV import accepts 1 MB; the extra headroom lets the service answer with a precise 413 message.
+      max-file-size: 2MB
+      max-request-size: 2MB
   flyway:
     enabled: false
 

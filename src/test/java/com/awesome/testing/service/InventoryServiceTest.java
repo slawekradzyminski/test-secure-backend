@@ -1,5 +1,6 @@
 package com.awesome.testing.service;
 
+import org.springframework.context.ApplicationEventPublisher;
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.inventory.InventoryAdjustmentDto;
 import com.awesome.testing.dto.inventory.InventoryItemDto;
@@ -40,6 +41,9 @@ class InventoryServiceTest {
 
     @Mock
     private InventoryMovementRepository movementRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private InventoryService inventoryService;
@@ -241,5 +245,54 @@ class InventoryServiceTest {
                 .reason(reason)
                 .requestId(UUID.randomUUID())
                 .build();
+    }
+
+    @Test
+    void replenishingASoldOutProductPublishesOneEventButTopUpsDoNot() {
+        product.setStockQuantity(0);
+        when(productRepository.findByIdForUpdate(PRODUCT_ID)).thenReturn(java.util.Optional.of(product));
+        when(movementRepository.save(any(InventoryMovementEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        inventoryService.adjust(PRODUCT_ID, com.awesome.testing.dto.inventory.InventoryAdjustmentDto.builder()
+                .delta(1).reason("restock").requestId(java.util.UUID.randomUUID()).build(), "admin");
+        inventoryService.adjust(PRODUCT_ID, com.awesome.testing.dto.inventory.InventoryAdjustmentDto.builder()
+                .delta(4).reason("restock").requestId(java.util.UUID.randomUUID()).build(), "admin");
+
+        verify(eventPublisher, org.mockito.Mockito.times(1))
+                .publishEvent(new com.awesome.testing.service.notification.StockReplenishedEvent(PRODUCT_ID));
+    }
+
+    @Test
+    void sellingOutAndRestoringFromZeroPublishesTheReplenishment() {
+        OrderEntity order = OrderEntity.builder().id(7L).username("buyer").build();
+        when(movementRepository.save(any(InventoryMovementEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        inventoryService.deduct(product, 5, order);
+        org.mockito.Mockito.verifyNoInteractions(eventPublisher);
+        inventoryService.restore(product, 2, order);
+
+        verify(eventPublisher).publishEvent(new com.awesome.testing.service.notification.StockReplenishedEvent(PRODUCT_ID));
+    }
+
+    @Test
+    void receivingGoodsAddsStockAndRejectsUnsupportedOrEmptyReceipts() {
+        product.setStockQuantity(0);
+        when(movementRepository.save(any(InventoryMovementEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        InventoryMovementEntity movement = inventoryService.receive(product, 3,
+                InventoryMovementType.PURCHASE_RECEIVED, null, "admin", "Purchase order #1");
+
+        assertThat(product.getStockQuantity()).isEqualTo(3);
+        assertThat(movement.getDelta()).isEqualTo(3);
+        assertThat(movement.getQuantityAfter()).isEqualTo(3);
+        assertThat(movement.getType()).isEqualTo(InventoryMovementType.PURCHASE_RECEIVED);
+        verify(eventPublisher).publishEvent(new com.awesome.testing.service.notification.StockReplenishedEvent(PRODUCT_ID));
+        assertThatThrownBy(() -> inventoryService.receive(product, 0,
+                InventoryMovementType.PURCHASE_RECEIVED, null, "admin", "x")).hasMessage("Received quantity must be positive");
+        assertThatThrownBy(() -> inventoryService.receive(product, 1,
+                InventoryMovementType.ADMIN_ADJUSTMENT, null, "admin", "x")).isInstanceOf(IllegalArgumentException.class);
+        product.setStockQuantity(Integer.MAX_VALUE);
+        assertThatThrownBy(() -> inventoryService.receive(product, 1,
+                InventoryMovementType.RETURN_RESTOCKED, null, "admin", "x")).hasMessage("Inventory quantity exceeds supported maximum");
     }
 }

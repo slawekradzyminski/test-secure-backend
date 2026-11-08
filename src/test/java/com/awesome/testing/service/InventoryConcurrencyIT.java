@@ -22,6 +22,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import com.awesome.testing.config.CommerceClockConfig;
+import com.awesome.testing.service.coupon.CouponService;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -41,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Import({InventoryService.class, OrderService.class})
+@Import({InventoryService.class, OrderService.class, CouponService.class, CommerceClockConfig.class})
 class InventoryConcurrencyIT {
 
     private static final PostgreSQLContainer POSTGRES =

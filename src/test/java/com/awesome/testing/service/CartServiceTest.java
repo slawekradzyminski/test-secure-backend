@@ -1,5 +1,6 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.service.coupon.CouponService;
 import com.awesome.testing.controller.exception.CartItemNotFoundException;
 import com.awesome.testing.controller.exception.ProductNotFoundException;
 import com.awesome.testing.dto.cart.CartDto;
@@ -38,6 +39,9 @@ class CartServiceTest {
 
     @Mock
     private InventoryService inventoryService;
+
+    @Mock
+    private CouponService couponService;
 
     @InjectMocks
     private CartService cartService;
@@ -201,5 +205,13 @@ class CartServiceTest {
         cartService.clearCart(USERNAME);
 
         verify(cartItemRepository).deleteByUsername(USERNAME);
+    }
+
+    @Test
+    void clearingTheCartAlsoDropsTheAppliedCoupon() {
+        cartService.clearCart(USERNAME);
+
+        verify(cartItemRepository).deleteByUsername(USERNAME);
+        verify(couponService).removeFromCart(USERNAME);
     }
 }

@@ -29,6 +29,19 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long>, JpaSp
 
     void deleteByUsername(String username);
 
+    @Query("select count(i) > 0 from OrderItemEntity i "
+            + "where i.order.username = :username and i.product.id = :productId and i.order.status = :status")
+    boolean existsOrderedProductWithStatus(
+            @Param("username") String username, @Param("productId") Long productId, @Param("status") OrderStatus status);
+
+    @Query("SELECT o.id FROM OrderEntity o WHERE o.status = :status "
+            + "AND NOT EXISTS (SELECT s.id FROM ShipmentEntity s WHERE s.order = o) ORDER BY o.createdAt ASC, o.id ASC")
+    Page<Long> findOrderIdsAwaitingShipment(@Param("status") OrderStatus status, Pageable pageable);
+
+    default Page<OrderEntity> findOrdersAwaitingShipment(Pageable pageable) {
+        return loadPageWithItems(findOrderIdsAwaitingShipment(OrderStatus.PAID, pageable), pageable);
+    }
+
     long countByUsername(String username);
 
     @Query("SELECT o.id FROM OrderEntity o WHERE o.username = :username")

@@ -9,12 +9,15 @@ import com.awesome.testing.entity.CartItemEntity;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.ProductRepository;
+import com.awesome.testing.service.coupon.CouponPreview;
+import com.awesome.testing.service.coupon.CouponService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,15 +26,24 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final InventoryService inventoryService;
+    private final CouponService couponService;
 
     @Transactional(readOnly = true)
     public CartDto getCart(String username) {
         List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
+        BigDecimal subtotal = calculateTotalPrice(cartItems);
+        Optional<CouponPreview> coupon = couponService.preview(username, subtotal);
+        BigDecimal discount = coupon.map(CouponPreview::discount).orElse(BigDecimal.ZERO);
         return CartDto.builder()
                 .username(username)
                 .items(cartItems.stream().map(this::convertToCartItemDto).toList())
-                .totalPrice(calculateTotalPrice(cartItems))
+                .totalPrice(subtotal)
                 .totalItems(cartItems.stream().mapToInt(CartItemEntity::getQuantity).sum())
+                .couponCode(coupon.map(CouponPreview::code).orElse(null))
+                .couponValid(coupon.map(CouponPreview::valid).orElse(null))
+                .couponMessage(coupon.map(CouponPreview::message).orElse(null))
+                .discountAmount(discount)
+                .totalAfterDiscount(subtotal.subtract(discount))
                 .build();
     }
 
@@ -78,6 +90,7 @@ public class CartService {
     @Transactional
     public void clearCart(String username) {
         cartItemRepository.deleteByUsername(username);
+        couponService.removeFromCart(username);
     }
 
     private CartItemEntity getCartItemEntity(String username, Long productId) {

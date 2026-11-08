@@ -86,7 +86,7 @@ input AddressInput { street: String! city: String! state: String! zipCode: Strin
 
 enum OrderStatus { PENDING PAID SHIPPED DELIVERED CANCELLED }
 enum StockStatus { OUT_OF_STOCK LOW_STOCK IN_STOCK }
-enum InventoryMovementType { INITIAL_STOCK ADMIN_ADJUSTMENT ORDER_DEDUCTED ORDER_RESTORED }
+enum InventoryMovementType { INITIAL_STOCK ADMIN_ADJUSTMENT ORDER_DEDUCTED ORDER_RESTORED PURCHASE_RECEIVED RETURN_RESTOCKED }
 
 type InventoryItem {
   productId: ID!
