@@ -9,13 +9,18 @@ The application supports three main profile modes:
 
 ### Local Profile
 
-The local profile uses H2 in-memory database and is suitable for development and testing.
-
-To run with local profile:
+The local profile uses PostgreSQL on `localhost:5432/testdb` (user and password `postgres`) with the same
+Flyway migrations as production, and runs without ActiveMQ (emails go to the local outbox). Start a database and the
+backend with:
 
 ```bash
+docker compose up -d postgres
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
+
+Override the database with `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD`.
+No packaged profile uses H2 any more; it remains a test-scope dependency for the fast unit-test suite, while the
+`*IT` suites and `RuntimeProfilesPostgresIT` run against PostgreSQL in Testcontainers.
 
 This profile enables demo seed data automatically.
 
@@ -230,7 +235,7 @@ npx playwright test tests/ui/sso.live.ui.spec.ts tests/ui/sso.fixture.ui.spec.ts
 
 - Run `./mvnw verify` to execute the entire unit/integration suite. The build fails if line coverage drops below 40%, and JaCoCo reports are emitted to `target/site/jacoco/index.html`.
 - Core scenarios are covered with focused unit tests for business services (users, products, carts, orders, email), security components (token provider, filter, authentication handler, security config), and controller utilities/exception handlers.
-- Repository-specific behavior is validated with `@DataJpaTest` suites for `OrderRepository` and `CartItemRepository`, ensuring the custom JPQL queries behave correctly against H2.
+- Repository-specific behavior is validated with `@DataJpaTest` suites for `OrderRepository` and `CartItemRepository`, ensuring the custom JPQL queries behave correctly against H2 (unit tests); the `*IT` suites cover PostgreSQL.
 
 ## Getting Started
 
