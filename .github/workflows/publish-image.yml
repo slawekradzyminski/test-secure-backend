@@ -238,7 +238,7 @@ jobs:
       - name: Smoke test the native image
         env:
           IMAGE: ${{ env.GHCR_IMAGE }}@${{ steps.build.outputs.digest }}
-        run: scripts/native-smoke.sh "$IMAGE"
+        run: bash scripts/native-smoke.sh "$IMAGE"
 
       - name: Export platform digest
         env:
