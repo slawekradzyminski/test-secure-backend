@@ -11,18 +11,23 @@ import org.springframework.jms.connection.JmsTransactionManager;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
+/**
+ * Artemis connection factory and transaction managers for every runtime profile. Creating the
+ * factory does not connect, so profiles that use the local email outbox never reach a broker.
+ * Unit tests use Spring Boot's embedded broker instead.
+ */
 @SuppressWarnings("unused")
 @Configuration
-@Profile("!local & !aitesters & !test")
-public class DockerisedConfig {
+@Profile("!test")
+public class BrokerConfig {
 
-    @Value("${spring.artemis.broker-url}")
+    @Value("${spring.artemis.broker-url:tcp://localhost:61616}")
     private String brokerUrl;
 
-    @Value("${spring.artemis.user}")
+    @Value("${spring.artemis.user:admin}")
     private String username;
 
-    @Value("${spring.artemis.password}")
+    @Value("${spring.artemis.password:admin}")
     private String password;
 
     @Bean

@@ -6,7 +6,6 @@ import com.awesome.testing.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,7 +17,6 @@ import java.util.List;
 @Component
 @Profile("!test")
 @Order(0)
-@ConditionalOnProperty(name = "app.bootstrap-admin.enabled", havingValue = "true")
 public class BootstrapAdmin implements CommandLineRunner {
 
     private static final int MIN_PASSWORD_LENGTH = 16;
@@ -30,6 +28,7 @@ public class BootstrapAdmin implements CommandLineRunner {
     private final String email;
     private final String firstName;
     private final String lastName;
+    private final boolean enabled;
 
     public BootstrapAdmin(
             UserRepository userRepository,
@@ -38,7 +37,9 @@ public class BootstrapAdmin implements CommandLineRunner {
             @Value("${app.bootstrap-admin.password:}") String password,
             @Value("${app.bootstrap-admin.email:}") String email,
             @Value("${app.bootstrap-admin.first-name:Admin}") String firstName,
-            @Value("${app.bootstrap-admin.last-name:User}") String lastName) {
+            @Value("${app.bootstrap-admin.last-name:User}") String lastName,
+            @Value("${app.bootstrap-admin.enabled:false}") boolean enabled) {
+        this.enabled = enabled;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.username = username;
@@ -50,6 +51,10 @@ public class BootstrapAdmin implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        // Checked at runtime, not with @ConditionalOnProperty: native images fix conditions at build time.
+        if (!enabled) {
+            return;
+        }
         validateConfiguration();
 
         userRepository.findByUsernameOrEmail(username, email)

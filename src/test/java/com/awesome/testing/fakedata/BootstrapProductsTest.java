@@ -82,6 +82,13 @@ class BootstrapProductsTest {
                 new ObjectMapper(),
                 new ByteArrayResource(json.getBytes(StandardCharsets.UTF_8))
         );
-        return new BootstrapProducts(productRepository, loader);
+        return new BootstrapProducts(productRepository, loader, true);
+    }
+
+    @org.junit.jupiter.api.Test
+    void shouldDoNothingWhenDisabled() {
+        new BootstrapProducts(productRepository, org.mockito.Mockito.mock(ProductCatalogLoader.class), false).run();
+
+        org.mockito.Mockito.verifyNoInteractions(productRepository);
     }
 }

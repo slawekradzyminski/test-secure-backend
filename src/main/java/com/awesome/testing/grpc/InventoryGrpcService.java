@@ -22,7 +22,6 @@ import io.grpc.stub.StreamObserver;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.grpc.server.service.GrpcService;
@@ -31,7 +30,6 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 @GrpcService
-@Profile("grpc")
 @RequiredArgsConstructor
 public class InventoryGrpcService extends InventoryServiceGrpc.InventoryServiceImplBase {
     private final InventoryService inventory;

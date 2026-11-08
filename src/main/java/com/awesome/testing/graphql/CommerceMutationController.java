@@ -7,7 +7,6 @@ import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.dto.product.ProductUpdateDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.stereotype.Controller;
@@ -17,7 +16,6 @@ import com.awesome.testing.graphql.CommerceViews.Order;
 import com.awesome.testing.graphql.CommerceViews.Product;
 
 @Controller
-@Profile("graphql")
 @RequiredArgsConstructor
 public class CommerceMutationController {
     private final CommerceMutationService service;

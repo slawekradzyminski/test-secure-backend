@@ -11,7 +11,6 @@ import graphql.schema.DataFetchingEnvironment;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.graphql.execution.DataFetcherExceptionResolverAdapter;
 import org.springframework.graphql.execution.ErrorType;
@@ -22,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 
 @Configuration
-@Profile("graphql")
 public class CommerceGraphQlConfig {
     private static final Set<String> PAGED_FIELDS = Set.of("carts", "orders", "inventory", "inventoryMovements");
 

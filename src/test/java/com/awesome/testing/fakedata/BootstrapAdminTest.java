@@ -83,7 +83,30 @@ class BootstrapAdminTest {
                 .hasMessage("app.bootstrap-admin.password must be at least 16 characters long");
     }
 
+    @Test
+    void shouldAcceptPasswordOfExactlyMinimumLength() {
+        String sixteenCharacters = "Exactly16Chars!!";
+        BootstrapAdmin bootstrapAdmin = bootstrapAdmin(sixteenCharacters);
+        when(userRepository.findByUsernameOrEmail("admin", "admin@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(sixteenCharacters)).thenReturn("encoded");
+
+        bootstrapAdmin.run();
+
+        verify(userRepository).save(any());
+    }
+
+    @Test
+    void shouldDoNothingWhenDisabled() {
+        bootstrapAdmin("", false).run();
+
+        org.mockito.Mockito.verifyNoInteractions(userRepository, passwordEncoder);
+    }
+
     private BootstrapAdmin bootstrapAdmin(String password) {
+        return bootstrapAdmin(password, true);
+    }
+
+    private BootstrapAdmin bootstrapAdmin(String password, boolean enabled) {
         return new BootstrapAdmin(
                 userRepository,
                 passwordEncoder,
@@ -91,7 +114,8 @@ class BootstrapAdminTest {
                 password,
                 "admin@example.com",
                 "Admin",
-                "User"
+                "User",
+                enabled
         );
     }
 }

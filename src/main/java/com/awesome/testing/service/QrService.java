@@ -1,20 +1,83 @@
 package com.awesome.testing.service;
 
 import com.google.zxing.BarcodeFormat;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
-import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 
-import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.CRC32;
+import java.util.zip.DeflaterOutputStream;
 
+/**
+ * Renders QR codes as 400x400 PNG images. The PNG is written directly from ZXing's bit matrix
+ * (1-bit greyscale), so no AWT or ImageIO is involved at runtime, which also keeps the
+ * GraalVM native image free of the AWT native libraries.
+ */
 @Service
 public class QrService {
 
-    @SneakyThrows
-    public BufferedImage generateQrCode(String text) {
-        BitMatrix bitMatrix = new QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, 400, 400);
-        return MatrixToImageWriter.toBufferedImage(bitMatrix);
+    static final int SIZE = 400;
+    private static final byte[] PNG_SIGNATURE = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'};
+
+    public byte[] generateQrPng(String text) {
+        try {
+            BitMatrix matrix = new QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, SIZE, SIZE);
+            return toPng(matrix);
+        } catch (WriterException | IOException ex) {
+            throw new IllegalStateException("Unable to create QR code", ex);
+        }
+    }
+
+    static byte[] toPng(BitMatrix matrix) throws IOException {
+        int width = matrix.getWidth();
+        int height = matrix.getHeight();
+        ByteArrayOutputStream png = new ByteArrayOutputStream();
+        png.write(PNG_SIGNATURE);
+
+        ByteArrayOutputStream header = new ByteArrayOutputStream();
+        DataOutputStream headerData = new DataOutputStream(header);
+        headerData.writeInt(width);
+        headerData.writeInt(height);
+        headerData.writeByte(1); // bit depth
+        headerData.writeByte(0); // colour type: greyscale
+        headerData.writeByte(0); // compression: deflate
+        headerData.writeByte(0); // filter method
+        headerData.writeByte(0); // no interlace
+        writeChunk(png, "IHDR", header.toByteArray());
+
+        int rowBytes = (width + 7) / 8;
+        ByteArrayOutputStream pixels = new ByteArrayOutputStream();
+        try (DeflaterOutputStream deflater = new DeflaterOutputStream(pixels)) {
+            byte[] row = new byte[rowBytes + 1]; // leading filter byte 0 (none)
+            for (int y = 0; y < height; y++) {
+                java.util.Arrays.fill(row, (byte) 0);
+                for (int x = 0; x < width; x++) {
+                    if (!matrix.get(x, y)) { // white pixel = 1, dark module = 0
+                        row[1 + x / 8] |= (byte) (0x80 >>> (x % 8));
+                    }
+                }
+                deflater.write(row);
+            }
+        }
+        writeChunk(png, "IDAT", pixels.toByteArray());
+        writeChunk(png, "IEND", new byte[0]);
+        return png.toByteArray();
+    }
+
+    private static void writeChunk(ByteArrayOutputStream png, String type, byte[] data) throws IOException {
+        DataOutputStream out = new DataOutputStream(png);
+        byte[] typeBytes = type.getBytes(StandardCharsets.US_ASCII);
+        out.writeInt(data.length);
+        out.write(typeBytes);
+        out.write(data);
+        CRC32 crc = new CRC32();
+        crc.update(typeBytes);
+        crc.update(data);
+        out.writeInt((int) crc.getValue());
     }
 }

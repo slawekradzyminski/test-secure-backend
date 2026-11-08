@@ -15,6 +15,7 @@ import java.io.IOException;
 import static com.awesome.testing.utils.ErrorResponseDefinition.sendErrorResponse;
 
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class JwtTokenFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -44,6 +45,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
         } catch (Exception ex) {
             SecurityContextHolder.clearContext();
+            log.error("Unexpected error while processing {} {}", request.getMethod(), request.getRequestURI(), ex);
             sendErrorResponse(response, HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
         }
     }

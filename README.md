@@ -3,6 +3,15 @@
 This is a secure backend application built with Spring Boot, featuring JWT authentication, PostgreSQL database, and
 ActiveMQ messaging.
 
+## Container image
+
+The published image is a GraalVM native executable (`Dockerfile`; the JVM build stays available as
+`Dockerfile.jvm`). Native images fix bean selection at build time, so every profile shares one bean
+graph and profiles only change properties: GraphQL and gRPC are always on, `app.email.transport`
+chooses Artemis (`jms`) or the in-memory local outbox (`local-outbox`), and the bootstrap/seed
+runners check their properties at runtime. Set the heap with a runtime argument, for example
+`docker run backend -Xmx384m`. See `docs/NATIVE_IMAGE_SPIKE.md`.
+
 ## Profiles
 
 The application supports three main profile modes:

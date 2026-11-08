@@ -4,7 +4,6 @@ import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.OperationDefinition;
 import graphql.parser.Parser;
-import org.springframework.context.annotation.Profile;
 import org.springframework.graphql.server.WebGraphQlInterceptor;
 import org.springframework.graphql.ResponseError;
 import org.springframework.graphql.server.WebGraphQlRequest;
@@ -20,7 +19,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Component
-@Profile("graphql")
 public class GraphQlTrafficInterceptor implements WebGraphQlInterceptor {
     private static final Set<String> FIELDS = Set.of("products", "product", "cart", "carts", "orders", "order",
             "inventory", "inventoryItem", "inventoryMovements", "addCartItem", "updateCartItem", "removeCartItem",

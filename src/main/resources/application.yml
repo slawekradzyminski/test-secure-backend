@@ -1,10 +1,26 @@
+# Every packaged profile shares one bean graph: GraphQL, gRPC and both email transports are
+# always wired, and profiles only change properties. GraalVM native images freeze bean
+# selection at build time, so nothing here may depend on the active profile.
 spring:
   grpc:
     server:
-      enabled: false
-  profiles:
-    active: docker
-    include: graphql
+      enabled: true
+      address: ${GRPC_HOST:127.0.0.1}
+      port: ${GRPC_PORT:9091}
+      inbound:
+        message:
+          max-size: 64KB
+      # Fixed at build time in the native image; keep it off in every environment.
+      reflection:
+        enabled: false
+  graphql:
+    schema:
+      locations: classpath:graphql-preview/**/
+    http:
+      path: /api/v1/graphql
+    graphiql:
+      enabled: true
+      path: /api/v1/graphiql
   main:
     allow-bean-definition-overriding: true
   jpa:
@@ -14,8 +30,10 @@ spring:
       # The CSV import accepts 1 MB; the extra headroom lets the service answer with a precise 413 message.
       max-file-size: 2MB
       max-request-size: 2MB
+  # Every runtime profile migrates with Flyway; the unit-test profile switches it off. Must be true
+  # here because the native image decides whether Flyway exists at build time.
   flyway:
-    enabled: false
+    enabled: true
 
 server:
   # Swagger UI in browsers can include large Cookie/Authorization headers; keep headroom above Tomcat defaults.
@@ -40,6 +58,10 @@ logging:
     org.zalando.logbook: INFO
 
 logbook:
+  # GraphQL operation metrics come from observations; do not log raw queries.
+  predicate:
+    exclude:
+      - path: /api/v1/graphql
   include: "/**"
   exclude: 
     - "/swagger-ui/**"
@@ -138,6 +160,9 @@ security:
         window: ${SECURITY_RATE_LIMIT_OLLAMA_IP_WINDOW:5m}
 
 app:
+  email:
+    # jms (Artemis, default) or local-outbox (in-memory outbox, no broker).
+    transport: jms
   mfa:
     issuer: ${APP_MFA_ISSUER:Awesome Testing}
     encryption-password: ${APP_MFA_ENCRYPTION_PASSWORD:local-development-mfa-key-change-me}
@@ -222,3 +247,16 @@ springdoc:
       - name: OpenAPI YAML
         url: /v3/api-docs.yaml
     urls-primary-name: OpenAPI JSON
+
+# The JMS health contributor is fixed at build time in the native image; with the local
+# outbox there is no broker, so broker reachability is not part of application health.
+management:
+  # Endpoint beans are chosen at build time in the native image, so include them all here;
+  # profiles narrow the published set at runtime (aitesters: health, info, prometheus).
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    jms:
+      enabled: false

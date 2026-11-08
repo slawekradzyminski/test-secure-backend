@@ -1,39 +1,39 @@
 # syntax=docker/dockerfile:1.7
-FROM eclipse-temurin:25.0.5_8-jdk-jammy@sha256:e4f029273ed9e4444697df30bb6098dbe51477291598aebc54dd0b48d95d6ae7 AS build
+# GraalVM native image of the backend (the published image). native-image does not cross-compile,
+# so build on a runner (or Docker VM) of the target architecture. The build needs
+# roughly 12 GB of Docker memory.
+#   docker build -t backend:native .   (JVM image: docker build -f Dockerfile.jvm .)
+FROM ghcr.io/graalvm/native-image-community:25@sha256:0d936f32bb8acb5bc60c41b33e05f064d7a6aaf36b726538296c54949bd4a3c0 AS build
 # OpenJDK CVE-2026-91403 mitigation; pinned artifact provenance is in security/java/.
+# The builder JDK's security files are what the native image is built against.
 COPY security/java/blocked.certs ${JAVA_HOME}/lib/security/blocked.certs
 RUN echo "2596bb6dda83c66d96c5a252d7b2ae1f24cc1ae3f1890223b4f3591a8d52bf10  ${JAVA_HOME}/lib/security/blocked.certs" | sha256sum --check -
-WORKDIR /app
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends unzip \
-    && rm -rf /var/lib/apt/lists/*
-
+# The Maven wrapper (only-script distribution) needs unzip to unpack Maven.
+RUN microdnf install -y unzip findutils && microdnf clean all
+WORKDIR /workspace
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
-RUN --mount=type=cache,target=/root/.m2 \
-    ./mvnw -B -Dmaven.test.skip=true dependency:go-offline
+RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q -Pnative -Dmaven.test.skip=true dependency:go-offline || true
+COPY src src
+COPY config config
+ARG NATIVE_XMX=12g
+RUN --mount=type=cache,target=/root/.m2 MAVEN_OPTS="-Xmx768m" \
+    ./mvnw -B -Pnative -Dmaven.test.skip=true -Dnative.xmx=${NATIVE_XMX} native:compile \
+    && mkdir /workspace/dist \
+    && cp target/backend /workspace/dist/ \
+    && (cp target/*.so /workspace/dist/ 2>/dev/null || true)
 
-COPY src ./src
-RUN --mount=type=cache,target=/root/.m2 \
-    ./mvnw -B -Dmaven.test.skip=true clean package \
-    && cp target/jwt-auth-service-*.jar app.jar
-
-FROM eclipse-temurin:25.0.5_8-jre-jammy@sha256:659b528cca74a0edc5c25315ec5819f35bce40bbcec645c4c534987e4c6be7c1
-# OpenJDK CVE-2026-91403 mitigation; pinned artifact provenance is in security/java/.
-COPY security/java/blocked.certs ${JAVA_HOME}/lib/security/blocked.certs
-RUN echo "2596bb6dda83c66d96c5a252d7b2ae1f24cc1ae3f1890223b4f3591a8d52bf10  ${JAVA_HOME}/lib/security/blocked.certs" | sha256sum --check -
+# Small glibc base that keeps bash, so Compose health checks can use /dev/tcp.
+FROM debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
+RUN groupadd --system --gid 10001 app \
+    && useradd --system --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app \
+    && mkdir -p /app/logs && chown app:app /app/logs
 WORKDIR /app
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
-    && groupadd --system app \
-    && useradd --system --gid app --home-dir /app app \
-    && mkdir -p /app/logs \
-    && chown app:app /app/logs \
-    && rm -rf /var/lib/apt/lists/*
-COPY --from=build --chown=app:app /app/app.jar .
-USER app
+# The executable plus any JDK shared libraries native-image emits next to it (for example AWT for QR codes).
+COPY --from=build --chown=app:app /workspace/dist/ /app/
+USER 10001
 EXPOSE 4001
-HEALTHCHECK --interval=30s --timeout=5s --start-period=180s --retries=3 \
-    CMD curl --fail --silent --show-error http://localhost:4001/actuator/health || exit 1
-ENTRYPOINT ["java", "-jar", "app.jar"]
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=6 \
+    CMD ["bash", "-ec", "exec 3<>/dev/tcp/127.0.0.1/4001; printf 'GET /actuator/health HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3; read -r _ status _ <&3; test \"$status\" = 200"]
+ENTRYPOINT ["/app/backend"]
+CMD ["-Xmx384m"]

@@ -7,7 +7,6 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -19,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 
 /** Bound JSON before parsing, including requests without Content-Length. */
 @Component
-@Profile("graphql")
 @Order(Ordered.HIGHEST_PRECEDENCE + 20)
 public class GraphQlRequestLimitFilter extends OncePerRequestFilter {
     private static final int MAX_BYTES = 65536;

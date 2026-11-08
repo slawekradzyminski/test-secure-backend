@@ -14,7 +14,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+import com.awesome.testing.service.password.LocalEmailOutboxAvailability;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -24,7 +26,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Profile({"local", "aitesters"})
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/local/email/outbox")
 @SecurityRequirement(name = "bearerAuth")
@@ -39,6 +40,7 @@ public class LocalEmailOutboxController {
 
     private final LocalEmailOutbox localEmailOutbox;
     private final PasswordResetProperties passwordResetProperties;
+    private final LocalEmailOutboxAvailability localEmailOutboxAvailability;
 
     @PostConstruct
     void validateConfiguration() {
@@ -76,6 +78,9 @@ public class LocalEmailOutboxController {
     }
 
     private void requireAccessKey(String suppliedAccessKey) {
+        if (!localEmailOutboxAvailability.isActive()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
         if (!passwordResetProperties.isRequireOutboxAccessKey()) {
             return;
         }

@@ -1,7 +1,6 @@
 package com.awesome.testing.graphql;
 
 import com.awesome.testing.security.CustomPrincipal;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -9,7 +8,6 @@ import org.springframework.stereotype.Component;
 
 /** One ownership policy for all GraphQL entry points. */
 @Component
-@Profile("graphql")
 public class CommerceAccess {
     public String username() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

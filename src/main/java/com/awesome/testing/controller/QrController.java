@@ -14,15 +14,11 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 
 @RestController
 @RequestMapping("/api/v1/qr")
@@ -33,7 +29,6 @@ public class QrController {
     private final AuthRateLimitGuard authRateLimitGuard;
     private final QrService qrService;
 
-    @SneakyThrows
     @PostMapping(value = "/create", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.IMAGE_PNG_VALUE)
     @Operation(summary = "Generate QR code",
             description = "Generates a PNG QR code for the supplied text payload.",
@@ -49,10 +44,7 @@ public class QrController {
                                @AuthenticationPrincipal CustomPrincipal principal,
                                @Valid @RequestBody CreateQrDto createQrDto) {
         authRateLimitGuard.checkQr(request, principal != null ? principal.getUsername() : null);
-        BufferedImage qrImage = qrService.generateQrCode(createQrDto.getText());
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(qrImage, "png", baos);
-        return baos.toByteArray();
+        return qrService.generateQrPng(createQrDto.getText());
     }
 
 }

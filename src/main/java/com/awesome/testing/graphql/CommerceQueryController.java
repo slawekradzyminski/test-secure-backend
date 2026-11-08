@@ -14,13 +14,11 @@ import graphql.schema.DataFetchingEnvironment;
 
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.context.annotation.Profile;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
 
 @Controller
-@Profile("graphql")
 @RequiredArgsConstructor
 public class CommerceQueryController {
     private final CommerceQueryService service;
