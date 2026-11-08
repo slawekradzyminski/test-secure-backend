@@ -13,13 +13,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import lombok.SneakyThrows;
 
-class DockerisedConfigTest {
+class BrokerConfigTest {
 
-    private DockerisedConfig config;
+    private BrokerConfig config;
 
     @BeforeEach
     void setUp() {
-        config = new DockerisedConfig();
+        config = new BrokerConfig();
         ReflectionTestUtils.setField(config, "brokerUrl", "tcp://localhost:61616");
         ReflectionTestUtils.setField(config, "username", "admin");
         ReflectionTestUtils.setField(config, "password", "secret");

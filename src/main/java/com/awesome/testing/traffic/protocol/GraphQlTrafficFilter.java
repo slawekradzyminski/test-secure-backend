@@ -7,7 +7,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -19,7 +18,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Component
-@Profile("graphql")
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
 @RequiredArgsConstructor
 public class GraphQlTrafficFilter extends OncePerRequestFilter {

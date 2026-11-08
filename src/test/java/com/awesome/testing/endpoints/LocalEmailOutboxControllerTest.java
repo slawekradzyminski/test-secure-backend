@@ -110,7 +110,7 @@ class LocalEmailOutboxControllerTest extends DomainHelper {
         PasswordResetProperties properties = new PasswordResetProperties();
         properties.setRequireOutboxAccessKey(true);
         properties.setOutboxAccessKey(" ");
-        LocalEmailOutboxController controller = new LocalEmailOutboxController(new LocalEmailOutbox(), properties);
+        LocalEmailOutboxController controller = new LocalEmailOutboxController(new LocalEmailOutbox(), properties, new com.awesome.testing.service.password.LocalEmailOutboxAvailability(properties, "local-outbox"));
 
         assertThatThrownBy(() -> ReflectionTestUtils.invokeMethod(controller, "validateConfiguration"))
                 .isInstanceOf(IllegalStateException.class)

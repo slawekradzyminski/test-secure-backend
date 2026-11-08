@@ -1,4 +1,8 @@
 spring:
+  # gRPC is on in application.yml; unit tests opt in through the grpc profile.
+  grpc:
+    server:
+      enabled: false
   # Unit tests run on H2 with create-drop; Flyway migrations are PostgreSQL-only and run in the *IT suites.
   flyway:
     enabled: false

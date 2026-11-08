@@ -22,7 +22,6 @@ import com.awesome.testing.service.ProductService;
 
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -39,7 +38,6 @@ import java.util.stream.Collectors;
 
 /** Secured application queries shared by the GraphQL resolvers. */
 @Service
-@Profile("graphql")
 @RequiredArgsConstructor
 @PreAuthorize("isAuthenticated()")
 @Transactional(readOnly = true, timeout = 5)

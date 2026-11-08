@@ -1,12 +1,6 @@
-# Optional native listener. Keep it private; REST and GraphQL do not require it.
+# Kept for tests and existing SPRING_PROFILES_INCLUDE values: gRPC is always enabled in
+# application.yml now, while the unit-test profile switches it off.
 spring:
   grpc:
     server:
       enabled: true
-      address: ${GRPC_HOST:127.0.0.1}
-      port: ${GRPC_PORT:9091}
-      inbound:
-        message:
-          max-size: 64KB
-      reflection:
-        enabled: ${GRPC_REFLECTION_ENABLED:false}

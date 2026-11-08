@@ -406,7 +406,7 @@
 
     <profiles>
         <profile>
-            <!-- Spike: GraalVM native image. Spring Boot's parent "native" profile adds AOT processing and
+            <!-- GraalVM native image. Spring Boot's parent "native" profile adds AOT processing and
                  the reachability-metadata repository; this adds Hibernate build-time enhancement so lazy
                  associations work without runtime proxy generation. -->
             <id>native</id>
@@ -414,24 +414,12 @@
                 <skip.pmd>true</skip.pmd>
                 <skip.jacoco>true</skip.jacoco>
                 <native.xmx>12g</native.xmx>
-                <!-- Spring AOT freezes @Profile/@Conditional bean choices at build time, so the image is
-                     built for one profile set; runtime properties still apply. -->
-                <native.aot.profiles>local,server</native.aot.profiles>
+                <!-- Spring AOT fixes bean selection at build time. The bean graph is profile-independent
+                     (see application.yml), so no profile is active during AOT; runtime profiles only
+                     contribute properties. -->
             </properties>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>org.springframework.boot</groupId>
-                        <artifactId>spring-boot-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>process-aot</id>
-                                <configuration>
-                                    <profiles>${native.aot.profiles}</profiles>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                     <plugin>
                         <groupId>org.hibernate.orm</groupId>
                         <artifactId>hibernate-maven-plugin</artifactId>

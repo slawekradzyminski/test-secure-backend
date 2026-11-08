@@ -11,7 +11,6 @@ import jakarta.persistence.criteria.Predicate;
 
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -27,7 +26,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
-@Profile("graphql")
 @RequiredArgsConstructor
 @PreAuthorize("isAuthenticated()")
 @Transactional(readOnly = true, timeout = 5)

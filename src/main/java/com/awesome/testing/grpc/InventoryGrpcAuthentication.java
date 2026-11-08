@@ -11,7 +11,6 @@ import io.grpc.ServerInterceptor;
 import io.grpc.Status;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.grpc.server.GlobalServerInterceptor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Component;
 
 /** Native calls use their own scoped identity; servlet authentication does not apply. */
 @Component
-@Profile("grpc")
 @GlobalServerInterceptor
 @RequiredArgsConstructor
 public class InventoryGrpcAuthentication implements ServerInterceptor {

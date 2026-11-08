@@ -10,9 +10,6 @@ spring:
     baseline-on-migrate: true
     baseline-version: 1
     validate-migration-naming: true
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.artemis.autoconfigure.ArtemisAutoConfiguration
   jpa:
     hibernate:
       ddl-auto: validate
@@ -67,5 +64,7 @@ password-reset:
   local-outbox-enabled: true
 
 app:
+  email:
+    transport: local-outbox
   seed-demo-data:
     enabled: true

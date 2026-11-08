@@ -9,7 +9,6 @@ import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.grpc.server.GlobalServerInterceptor;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-@Profile("grpc")
 @GlobalServerInterceptor
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RequiredArgsConstructor
