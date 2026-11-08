@@ -17,8 +17,10 @@ RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q -Pnative -Dmaven.test.skip=
 COPY src src
 COPY config config
 ARG NATIVE_XMX=12g
+# Profile set the bean graph is frozen for (Spring AOT); for example docker,server or aitesters.
+ARG AOT_PROFILES=local,server
 RUN --mount=type=cache,target=/root/.m2 MAVEN_OPTS="-Xmx768m" \
-    ./mvnw -B -Pnative -Dmaven.test.skip=true -Dnative.xmx=${NATIVE_XMX} native:compile \
+    ./mvnw -B -Pnative -Dmaven.test.skip=true -Dnative.xmx=${NATIVE_XMX} -Dnative.aot.profiles=${AOT_PROFILES} native:compile \
     && mkdir /workspace/dist \
     && cp target/backend /workspace/dist/ \
     && (cp target/*.so /workspace/dist/ 2>/dev/null || true)
