@@ -473,5 +473,52 @@
     {
       "type": "org.messaginghub.pooled.jms.JmsPoolConnectionFactory"
     }
+  ],
+  "resources": [
+    {
+      "glob": "META-INF/io.netty.versions.properties"
+    },
+    {
+      "glob": "META-INF/native/libnetty_transport_native_epoll.so"
+    },
+    {
+      "glob": "META-INF/native/libnetty_transport_native_epoll_aarch_64.so"
+    },
+    {
+      "glob": "activemq-version.properties"
+    },
+    {
+      "glob": "org.apache.activemq.artemis.api.jms.ActiveMQJMSClient.properties"
+    },
+    {
+      "glob": "org/springframework/boot/artemis/autoconfigure/ArtemisAutoConfiguration$PropertiesArtemisConnectionDetails.class"
+    },
+    {
+      "glob": "org/springframework/boot/artemis/autoconfigure/ArtemisAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/artemis/autoconfigure/ArtemisConnectionFactoryConfiguration$PooledConnectionFactoryConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/artemis/autoconfigure/ArtemisConnectionFactoryConfiguration$SimpleConnectionFactoryConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/artemis/autoconfigure/ArtemisConnectionFactoryConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/artemis/autoconfigure/ArtemisEmbeddedServerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/artemis/autoconfigure/ArtemisXAConnectionFactoryConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/grpc/server/autoconfigure/NettyGrpcServerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/grpc/server/autoconfigure/ShadedNettyGrpcServerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/client/autoconfigure/reactive/ReactiveHttpClientAutoConfiguration$ReactorNetty.class"
+    }
   ]
 }
