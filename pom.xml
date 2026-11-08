@@ -400,6 +400,51 @@
 
     <profiles>
         <profile>
+            <!-- Spike: GraalVM native image. Spring Boot's parent "native" profile adds AOT processing and
+                 the reachability-metadata repository; this adds Hibernate build-time enhancement so lazy
+                 associations work without runtime proxy generation. -->
+            <id>native</id>
+            <properties>
+                <skip.pmd>true</skip.pmd>
+                <skip.jacoco>true</skip.jacoco>
+                <native.xmx>12g</native.xmx>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.hibernate.orm</groupId>
+                        <artifactId>hibernate-maven-plugin</artifactId>
+                        <version>${hibernate.version}</version>
+                        <executions>
+                            <execution>
+                                <id>enhance</id>
+                                <goals>
+                                    <goal>enhance</goal>
+                                </goals>
+                                <configuration>
+                                    <enableLazyInitialization>true</enableLazyInitialization>
+                                    <enableDirtyTracking>true</enableDirtyTracking>
+                                    <enableAssociationManagement>false</enableAssociationManagement>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <configuration>
+                            <imageName>backend</imageName>
+                            <buildArgs>
+                                <buildArg>-H:+ReportExceptionStackTraces</buildArg>
+                                <buildArg>-march=compatibility</buildArg>
+                                <buildArg>-J-Xmx${native.xmx}</buildArg>
+                            </buildArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>fast-verify</id>
             <properties>
                 <skip.pmd>true</skip.pmd>
