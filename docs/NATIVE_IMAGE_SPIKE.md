@@ -1,10 +1,21 @@
-# GraalVM native image spike — 8 November 2026
+# GraalVM native image — spike and rollout, 8 November 2026
 
 Branch `spike/native-image`. Goal: decide whether the backend can run as a GraalVM
 native image on the single-vCPU, 4 GiB production VPS, using the unchanged AI Testers
 course suite (`ai-testers-api`, lesson `l20`) as the acceptance gate.
 
-## Verdict
+## Status
+
+Implemented on `feature/native-backend`: the bean graph no longer depends on the active
+profile (GraphQL and gRPC always wired, `app.email.transport` selects Artemis or the local
+outbox at runtime, bootstrap and seed runners check their properties at runtime, Flyway and
+every actuator endpoint enabled in the base configuration). One native image now serves
+`docker,server`, `aitesters` and `local`, passes `l20` 311/311 with both compatibility
+backends on the same image, and peaked at 164–184 MiB during that run. `Dockerfile` builds
+the native image (JVM fallback: `Dockerfile.jvm`); releases build it per architecture and run
+`scripts/native-smoke.sh`.
+
+## Spike verdict
 
 **Go, after one targeted refactor.** The native backend passes `l20` (310/311; the one
 failure is the profile limitation below), and the production profile set works end to end
