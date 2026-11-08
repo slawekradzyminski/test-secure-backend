@@ -20,7 +20,8 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  *   <li>The GraphQL schema lives in {@code graphql-preview/}, outside the default {@code graphql/}
  *       location that Spring for GraphQL registers automatically.</li>
  *   <li>{@code bootstrap/products.json} is loaded through a {@code Resource} property.</li>
- *   <li>The Artemis JMS connection factory instantiates {@code Calendar[]} reflectively.</li>
+ *   <li>The Artemis JMS connection factory instantiates {@code Calendar[]} reflectively, and Spring
+ *       Boot configures it (and the pooled-JMS wrapper) through bean-property reflection.</li>
  *   <li>Jackson binds DTOs outside controllers (Ollama client and streaming, JMS email payloads,
  *       the seed catalogue), so every type in the DTO and seed packages is registered for binding.
  *       The scan runs at build time during AOT processing.</li>
@@ -41,6 +42,13 @@ public class NativeRuntimeHints {
             hints.resources().registerPattern("bootstrap/products.json");
             hints.reflection().registerType(TypeReference.of("java.util.Calendar[]"),
                     MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
+            for (String jmsType : new String[] {
+                    "org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory",
+                    "org.apache.activemq.artemis.jms.client.ActiveMQJMSConnectionFactory",
+                    "org.messaginghub.pooled.jms.JmsPoolConnectionFactory"}) {
+                hints.reflection().registerType(TypeReference.of(jmsType),
+                        MemberCategory.INVOKE_PUBLIC_METHODS, MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
+            }
             hints.reflection().registerType(TypeReference.of("com.awesome.testing.service.UserService"),
                     MemberCategory.INVOKE_PUBLIC_METHODS);
             hints.reflection().registerType(TypeReference.of("com.awesome.testing.security.CustomPrincipal"),
