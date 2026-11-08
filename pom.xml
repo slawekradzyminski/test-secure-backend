@@ -157,10 +157,12 @@
             <version>3.2.0</version>
         </dependency>
 
-        <!-- H2 Database -->
+        <!-- H2 Database (tests only) -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
+            <!-- Unit tests only: every runtime profile uses PostgreSQL with Flyway migrations. -->
+            <scope>test</scope>
         </dependency>
 
         <!-- PostgreSQL -->

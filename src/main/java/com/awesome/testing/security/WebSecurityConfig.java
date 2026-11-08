@@ -55,7 +55,6 @@ public class WebSecurityConfig {
                     "/api/v1/users/sso/exchange",
                     "/api/v1/users/password/forgot",
                     "/api/v1/users/password/reset",
-                    "/h2-console/**",
                     "/v3/api-docs",
                     "/v3/api-docs.yaml",
                     "/v3/api-docs/**",

@@ -1,23 +1,26 @@
 spring:
+  # PostgreSQL with the same Flyway migrations as production; override with SPRING_DATASOURCE_*.
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-    password: sa
+    url: jdbc:postgresql://localhost:5432/testdb
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    validate-migration-naming: true
   autoconfigure:
     exclude:
       - org.springframework.boot.artemis.autoconfigure.ArtemisAutoConfiguration
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
         id:
           new_generator_mappings: false
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
   jackson:
     serialization:
       indent-output: true
