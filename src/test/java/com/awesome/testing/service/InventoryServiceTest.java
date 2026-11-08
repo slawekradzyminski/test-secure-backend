@@ -295,4 +295,23 @@ class InventoryServiceTest {
         assertThatThrownBy(() -> inventoryService.receive(product, 1,
                 InventoryMovementType.RETURN_RESTOCKED, null, "admin", "x")).hasMessage("Inventory quantity exceeds supported maximum");
     }
+
+    @Test
+    void receiptsTagTheMovementWithTheCallersRequestId() {
+        product.setStockQuantity(4);
+        when(movementRepository.save(any(InventoryMovementEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        java.util.UUID requestId = java.util.UUID.randomUUID();
+
+        InventoryMovementEntity tagged = inventoryService.receive(product, 2,
+                InventoryMovementType.RETURN_RESTOCKED, null, "warehouse-service", "RMA-3", requestId);
+        InventoryMovementEntity untagged = inventoryService.receive(product, 1,
+                InventoryMovementType.PURCHASE_RECEIVED, null, "admin", "PO-1");
+
+        assertThat(tagged.getRequestId()).isEqualTo(requestId);
+        assertThat(tagged.getActor()).isEqualTo("warehouse-service");
+        assertThat(tagged.getReason()).isEqualTo("RMA-3");
+        assertThat(untagged.getRequestId()).isNull();
+        assertThat(product.getStockQuantity()).isEqualTo(7);
+        org.mockito.Mockito.verifyNoInteractions(eventPublisher);
+    }
 }

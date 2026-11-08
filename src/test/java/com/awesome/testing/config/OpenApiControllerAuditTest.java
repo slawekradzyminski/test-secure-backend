@@ -81,6 +81,24 @@ class OpenApiControllerAuditTest extends HttpHelper {
     }
 
     @Test
+    void shouldKeepTheInternalServiceApiOutOfThePublicDocument() {
+        // given
+        var paths = new java.util.ArrayList<String>();
+        document.root().path("paths").fieldNames().forEachRemaining(paths::add);
+        var schemas = new java.util.ArrayList<String>();
+        document.root().path("components").path("schemas").fieldNames().forEachRemaining(schemas::add);
+
+        // when
+        var internalPaths = paths.stream().filter(path -> path.startsWith("/internal")).toList();
+        var internalSchemas = schemas.stream().filter(name -> name.startsWith("Internal") || name.startsWith("InventoryReceipt")).toList();
+
+        // then
+        assertThat(paths).contains("/api/v1/orders");
+        assertThat(internalPaths).isEmpty();
+        assertThat(internalSchemas).isEmpty();
+    }
+
+    @Test
     void shouldDocumentQrSuccessAsPng() {
         // given
         var endpoint = new Endpoint("/api/v1/qr/create", "post");

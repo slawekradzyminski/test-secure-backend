@@ -20,12 +20,16 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Sends back-in-stock emails only after the business transaction has
- * committed, so a rolled-back stock change never notifies anyone.
+ * committed, so a rolled-back stock change never notifies anyone. Shipment
+ * and return emails are requested by warehouse-service through the internal
+ * notifications endpoint and delivered by
+ * {@link #onCustomerNotificationRequested(CustomerNotificationRequestedEvent)}.
  */
 @Slf4j
 @Component
@@ -65,6 +69,17 @@ public class CommerceNotificationListener {
             watcher.setLastNotifiedAt(now);
         }
         wishlistItemRepository.saveAll(watchers);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onCustomerNotificationRequested(CustomerNotificationRequestedEvent event) {
+        userRepository.findByUsername(event.username()).ifPresent(user -> send(user, EmailDto.builder()
+                .to(user.getEmail())
+                .subject(event.subject())
+                .message(event.message())
+                .template(event.template())
+                .properties(event.properties() == null ? Map.of() : new LinkedHashMap<>(event.properties()))
+                .build()));
     }
 
     private void send(UserEntity user, EmailDto email) {

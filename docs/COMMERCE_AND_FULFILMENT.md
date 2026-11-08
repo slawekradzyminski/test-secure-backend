@@ -125,3 +125,65 @@ The backend keeps what warehouse-service builds on:
 - Email templates `ORDER_SHIPPED`, `ORDER_DELIVERED` and `RETURN_UPDATED`.
   The backend renders them and publishes them as `GENERIC`, so older JMS
   consumers keep working.
+- The order's fulfilment state and the internal API below, which
+  warehouse-service calls to read orders and products, mirror shipment
+  progress, cancel orders, receive stock and email customers.
+
+### Order fulfilment state
+
+The backend does not store shipments. It mirrors warehouse progress on the
+order in `orders.fulfilment_state` (migration V8), exposed additively as
+`fulfilmentState` in `OrderDto` (`NONE` for orders written before the column
+existed):
+
+```
+       release         pick        pack         ship            deliver
+NONE ─────────> AWAITING_PICK ──> PICKED ──> PACKED ──> SHIPPED ─────────> DELIVERED
+                     │              │
+                     └── cancel ────┴──> CANCELLED
+```
+
+| Rule | Result |
+| --- | --- |
+| Customer or admin cancellation while `NONE` or `AWAITING_PICK` | Allowed; stock restored, coupon released, state becomes `CANCELLED` |
+| Customer or admin cancellation from `PICKED` on | 409 `Order is already being packed and cannot be cancelled` |
+| Legacy `PUT /api/v1/orders/{id}/status` while `AWAITING_PICK` through `SHIPPED` | 409 |
+| Cancelling a `SHIPPED` or `DELIVERED` order | 400, as before |
+
+REST and GraphQL order mutations share `OrderService`, so they follow the same rules.
+
+## Internal API for warehouse-service
+
+Base path `/internal/v1`, called only by warehouse-service and not routed by
+the gateway. Every request carries `X-Service-Token`, compared in constant time
+with `warehouse.service-token` (env `WAREHOUSE_SERVICE_TOKEN`; the `local`
+profile defaults to `local-warehouse-token`).
+
+| Situation | Result |
+| --- | --- |
+| No token configured | 404 `{"message": "Not found"}` for every `/internal/**` path |
+| Missing or wrong `X-Service-Token` | 401 `{"message": "Invalid service token"}`, even with a valid JWT |
+
+The internal API needs no JWT, gets no CORS headers, is not captured by the
+traffic monitor or logged by Logbook (`X-Service-Token` is also obfuscated),
+and is absent from `/v3/api-docs`.
+
+| Method and path | Behaviour |
+| --- | --- |
+| `GET /orders/{id}` | `InternalOrderDto`, 404 when unknown |
+| `GET /orders?status=PAID&fulfilment=NONE&page=0&size=20` | `PageDto<InternalOrderDto>`, oldest first; `status` defaults to `PAID`, `fulfilment` to `NONE`, negative pages become 0, size is clamped to 1–100 |
+| `PUT /orders/{id}/fulfilment` `{state}` | Next forward step only. `AWAITING_PICK` requires a `PAID` order in `NONE`. `SHIPPED` and `DELIVERED` also set the order status. Repeating the current state from `PICKED` on returns 200 without changes (safe retry); repeating `AWAITING_PICK` is 409. Skips, backward steps and steps after `CANCELLED` are 409. `NONE` or `CANCELLED` in the body is 400 |
+| `POST /orders/{id}/warehouse-cancel` | Only for `PAID` orders in `AWAITING_PICK` or `PICKED` (otherwise 409); restores stock, releases the coupon, sets status and state to `CANCELLED` |
+| `GET /products[?ids=1,2]` | `List<InternalProductDto>` by id ascending; unknown ids are omitted |
+| `POST /inventory/receipts` | `{movementIds}` in request-line order. `type` must be `PURCHASE_RECEIVED` or `RETURN_RESTOCKED` (400), each product at most once (400), quantities ≥ 1, unknown product or `orderId` 404. Each movement stores the `requestId`, `reference` as its reason and actor `warehouse-service`. Repeating a `requestId` with the same type and lines returns the original ids without changing stock; different lines or type is 409 |
+| `POST /notifications` | 202. `template` must be `ORDER_SHIPPED`, `ORDER_DELIVERED` or `RETURN_UPDATED` (400); unknown username 404. The email is queued through the existing email pipeline and published as `GENERIC` |
+
+```text
+InternalOrderDto   { id, username, status, fulfilmentState, subtotalAmount, discountAmount,
+                     totalAmount, couponCode, shippingAddress {street, city, state, zipCode, country},
+                     items [{productId, productName, category, quantity, unitPrice}],
+                     createdAt, updatedAt }
+InternalProductDto { id, name, category, price, stockQuantity }
+receipt body       { requestId, type, orderId?, reference, lines [{productId, quantity}] }
+notification body  { username, template, subject, message, properties {string: string} }
+```

@@ -37,6 +37,22 @@ class TrafficCapturePolicyTest {
     }
 
     @Test
+    void shouldNeverCaptureTheInternalServiceApiEvenWhenExclusionsAreOverridden() {
+        trafficProperties.setExcludedPaths(java.util.List.of());
+        HttpServletRequest internal = mockRequest(
+                "/internal/v1/orders/1",
+                handlerMethod(DocumentedController.class, "documentedEndpoint")
+        );
+        HttpServletRequest lookalike = mockRequest(
+                "/internalish",
+                handlerMethod(DocumentedController.class, "documentedEndpoint")
+        );
+
+        assertThat(trafficCapturePolicy.shouldCapture(internal)).isFalse();
+        assertThat(trafficCapturePolicy.shouldCapture(lookalike)).isTrue();
+    }
+
+    @Test
     void shouldSkipExcludedPathEvenWhenDocumented() {
         HttpServletRequest request = mockRequest(
                 "/api/v1/traffic/logs",

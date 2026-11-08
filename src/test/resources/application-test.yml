@@ -43,6 +43,9 @@ server:
     include-message: always
     include-binding-errors: always
 
+warehouse:
+  service-token: test-warehouse-token
+
 security:
   jwt:
     token:

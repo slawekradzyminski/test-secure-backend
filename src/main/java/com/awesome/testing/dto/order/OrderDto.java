@@ -49,6 +49,10 @@ public class OrderDto {
     @Schema(description = "Order status", example = "PENDING")
     private OrderStatus status;
 
+    @Schema(description = "Warehouse progress mirrored from warehouse-service; NONE until the order is released to the warehouse",
+            example = "NONE")
+    private FulfilmentState fulfilmentState;
+
     @Valid
     @NotNull(message = "Shipping address is required")
     @Schema(description = "Shipping address")
@@ -70,6 +74,7 @@ public class OrderDto {
                 .discountAmount(hasCoupon(order) ? order.getDiscountAmount() : null)
                 .couponCode(order.getCouponCode())
                 .status(order.getStatus())
+                .fulfilmentState(FulfilmentState.orNone(order.getFulfilmentState()))
                 .shippingAddress(AddressDto.from(order.getShippingAddress()))
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())

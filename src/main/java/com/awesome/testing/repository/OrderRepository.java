@@ -1,5 +1,6 @@
 package com.awesome.testing.repository;
 
+import com.awesome.testing.dto.order.FulfilmentState;
 import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.entity.OrderEntity;
 
@@ -33,6 +34,22 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long>, JpaSp
             + "where i.order.username = :username and i.product.id = :productId and i.order.status = :status")
     boolean existsOrderedProductWithStatus(
             @Param("username") String username, @Param("productId") Long productId, @Param("status") OrderStatus status);
+
+    @Query("SELECT o.id FROM OrderEntity o WHERE o.status = :status AND o.fulfilmentState = :fulfilmentState "
+            + "ORDER BY o.createdAt ASC, o.id ASC")
+    Page<Long> findOrderIdsByStatusAndFulfilmentState(
+            @Param("status") OrderStatus status,
+            @Param("fulfilmentState") FulfilmentState fulfilmentState,
+            Pageable pageable);
+
+    /** Orders in the given status and fulfilment state, oldest first, with items and products loaded. */
+    default Page<OrderEntity> findByStatusAndFulfilmentStateOldestFirst(
+            OrderStatus status, FulfilmentState fulfilmentState, Pageable pageable) {
+        return loadPageWithItems(findOrderIdsByStatusAndFulfilmentState(status, fulfilmentState, pageable), pageable);
+    }
+
+    @Query("SELECT o FROM OrderEntity o LEFT JOIN FETCH o.items i LEFT JOIN FETCH i.product WHERE o.id = :id")
+    Optional<OrderEntity> findWithItemsById(@Param("id") Long id);
 
     long countByUsername(String username);
 

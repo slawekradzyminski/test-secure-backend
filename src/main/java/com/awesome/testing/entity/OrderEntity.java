@@ -1,5 +1,6 @@
 package com.awesome.testing.entity;
 
+import com.awesome.testing.dto.order.FulfilmentState;
 import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.entity.inventory.InventoryState;
 import jakarta.persistence.*;
@@ -55,6 +56,12 @@ public class OrderEntity {
     @Builder.Default
     private InventoryState inventoryState = InventoryState.LEGACY_UNTRACKED;
 
+    /** Warehouse progress mirrored from warehouse-service; see {@link FulfilmentState}. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fulfilment_state", nullable = false, length = 16)
+    @Builder.Default
+    private FulfilmentState fulfilmentState = FulfilmentState.NONE;
+
     @Embedded
     private AddressEntity shippingAddress;
 
@@ -71,6 +78,9 @@ public class OrderEntity {
     void defaultAmounts() {
         if (discountAmount == null) {
             discountAmount = BigDecimal.ZERO;
+        }
+        if (fulfilmentState == null) {
+            fulfilmentState = FulfilmentState.NONE;
         }
         if (subtotalAmount == null && totalAmount != null) {
             subtotalAmount = totalAmount.add(discountAmount);

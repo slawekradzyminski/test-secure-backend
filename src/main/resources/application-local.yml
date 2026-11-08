@@ -53,6 +53,9 @@ logging:
 ollama:
   base-url: http://localhost:11434 
 
+warehouse:
+  service-token: ${WAREHOUSE_SERVICE_TOKEN:local-warehouse-token}
+
 password-reset:
   frontend-base-url: http://localhost:8081/reset
   token-ttl: 30m

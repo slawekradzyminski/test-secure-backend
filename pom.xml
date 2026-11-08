@@ -492,6 +492,10 @@
                                 <param>com.awesome.testing.service.ollama.function.ProductSnapshotFunctionHandler</param>
                                 <param>com.awesome.testing.service.coupon.CouponService</param>
                                 <param>com.awesome.testing.service.coupon.CouponPricing</param>
+                                <param>com.awesome.testing.dto.order.FulfilmentState</param>
+                                <param>com.awesome.testing.internal.security.ServiceTokenGuard</param>
+                                <param>com.awesome.testing.internal.security.ServiceTokenFilter</param>
+                                <param>com.awesome.testing.internal.service.*</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -523,6 +527,10 @@
                                 <param>com.awesome.testing.service.ollama.function.ProductSnapshotFunctionHandlerTest</param>
                                 <param>com.awesome.testing.service.ollama.function.OllamaToolRegistryTest</param>
                                 <param>com.awesome.testing.service.coupon.Coupon*Test</param>
+                                <param>com.awesome.testing.service.OrderServiceFulfilmentTest</param>
+                                <param>com.awesome.testing.dto.order.FulfilmentStateTest</param>
+                                <param>com.awesome.testing.internal.security.ServiceToken*Test</param>
+                                <param>com.awesome.testing.internal.service.*Test</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>

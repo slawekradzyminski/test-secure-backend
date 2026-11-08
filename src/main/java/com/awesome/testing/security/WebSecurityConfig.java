@@ -2,6 +2,7 @@ package com.awesome.testing.security;
 
 import static com.awesome.testing.utils.ErrorResponseDefinition.sendErrorResponse;
 
+import com.awesome.testing.internal.InternalApi;
 import com.awesome.testing.traffic.TrafficProperties;
 
 import jakarta.servlet.DispatcherType;
@@ -98,6 +99,8 @@ public class WebSecurityConfig {
                     auth.requestMatchers(matcherBuilder.matcher(HttpMethod.GET, "/api/v1/graphiql")).permitAll();
                     ALLOWED_ENDPOINTS.forEach(
                             endpoint -> auth.requestMatchers(matcherBuilder.matcher(endpoint)).permitAll());
+                    // warehouse-service calls; ServiceTokenFilter checks X-Service-Token before this chain runs
+                    auth.requestMatchers(request -> InternalApi.isInternalPath(request.getRequestURI())).permitAll();
                     if (trafficProperties.isLegacyPublicAccess()) {
                         auth.requestMatchers(matcherBuilder.matcher("/api/v1/traffic/**")).permitAll();
                     }
@@ -170,6 +173,9 @@ public class WebSecurityConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-        return source;
+        // The internal API is server-to-server only, so browsers never get CORS headers for it.
+        return request -> InternalApi.isInternalPath(request.getRequestURI())
+                ? null
+                : source.getCorsConfiguration(request);
     }
 }

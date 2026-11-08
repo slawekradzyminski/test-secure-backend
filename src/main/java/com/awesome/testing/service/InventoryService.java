@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -215,6 +216,23 @@ public class InventoryService {
             OrderEntity order,
             String actor,
             String reason) {
+        return receive(product, quantity, type, order, actor, reason, null);
+    }
+
+    /**
+     * Same as {@link #receive(ProductEntity, int, InventoryMovementType, OrderEntity, String, String)}
+     * and tags the movement with the caller's request id so a retried receipt
+     * can be recognised and replayed.
+     */
+    @Transactional
+    public InventoryMovementEntity receive(
+            ProductEntity product,
+            int quantity,
+            InventoryMovementType type,
+            OrderEntity order,
+            String actor,
+            String reason,
+            UUID requestId) {
         if (quantity <= 0) {
             throw new CustomException("Received quantity must be positive", HttpStatus.BAD_REQUEST);
         }
@@ -239,6 +257,7 @@ public class InventoryService {
                 .quantityAfter(resultingQuantity)
                 .actor(actor)
                 .reason(reason)
+                .requestId(requestId)
                 .build());
     }
 
