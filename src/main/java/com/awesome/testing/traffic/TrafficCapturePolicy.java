@@ -1,5 +1,6 @@
 package com.awesome.testing.traffic;
 
+import com.awesome.testing.internal.InternalApi;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,7 +19,7 @@ public class TrafficCapturePolicy {
 
     public boolean shouldCapture(HttpServletRequest request) {
         String path = request.getRequestURI();
-        if (isExcludedPath(path)) {
+        if (InternalApi.isInternalPath(path) || isExcludedPath(path)) {
             return false;
         }
 

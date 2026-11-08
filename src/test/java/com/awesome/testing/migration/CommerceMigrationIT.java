@@ -21,6 +21,7 @@ class CommerceMigrationIT {
 
     private static final String UPGRADE_SCHEMA = "commerce_upgrade";
     private static final String FRESH_SCHEMA = "commerce_fresh";
+    private static final String FULFILMENT_SCHEMA = "fulfilment_upgrade";
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
             DockerImageName.parse("postgres:16-alpine@sha256:"
@@ -84,6 +85,57 @@ class CommerceMigrationIT {
                     INSERT INTO orders (created_at, status, total_amount, subtotal_amount, discount_amount, updated_at, username)
                     VALUES (CURRENT_TIMESTAMP, 'PENDING', 0, 10.00, 10.01, CURRENT_TIMESTAMP, 'greedy')
                     """)).isInstanceOf(SQLException.class);
+        }
+    }
+
+    @Test
+    void v8DefaultsExistingOrdersToNoneAndRejectsUnknownFulfilmentStates() throws Exception {
+        flyway(FULFILMENT_SCHEMA, MigrationVersion.fromVersion("7")).migrate();
+        try (Connection connection = connect(FULFILMENT_SCHEMA); Statement statement = connection.createStatement()) {
+            statement.executeUpdate("""
+                    INSERT INTO orders (created_at, status, total_amount, updated_at, username)
+                    VALUES (CURRENT_TIMESTAMP, 'PAID', 10.00, CURRENT_TIMESTAMP, 'paid-before-v8')
+                    """);
+        }
+
+        flyway(FULFILMENT_SCHEMA, null).migrate();
+
+        try (Connection connection = connect(FULFILMENT_SCHEMA); Statement statement = connection.createStatement()) {
+            try (ResultSet result = statement.executeQuery(
+                    "SELECT fulfilment_state FROM orders WHERE username = 'paid-before-v8'")) {
+                assertThat(result.next()).isTrue();
+                assertThat(result.getString(1)).isEqualTo("NONE");
+            }
+            statement.executeUpdate("UPDATE orders SET fulfilment_state = 'AWAITING_PICK' WHERE username = 'paid-before-v8'");
+            statement.executeUpdate("""
+                    INSERT INTO orders (created_at, status, total_amount, updated_at, username)
+                    VALUES (CURRENT_TIMESTAMP, 'PENDING', 5.00, CURRENT_TIMESTAMP, 'legacy-writer')
+                    """);
+            try (ResultSet result = statement.executeQuery(
+                    "SELECT fulfilment_state FROM orders WHERE username = 'legacy-writer'")) {
+                assertThat(result.next()).isTrue();
+                assertThat(result.getString(1)).isEqualTo("NONE");
+            }
+            assertThatThrownBy(() -> statement.executeUpdate(
+                    "UPDATE orders SET fulfilment_state = 'LOST' WHERE username = 'paid-before-v8'"))
+                    .isInstanceOf(SQLException.class);
+            assertThatThrownBy(() -> statement.executeUpdate(
+                    "UPDATE orders SET fulfilment_state = NULL WHERE username = 'paid-before-v8'"))
+                    .isInstanceOf(SQLException.class);
+        }
+    }
+
+    @Test
+    void v7NoLongerCreatesWarehouseTables() throws Exception {
+        flyway(FRESH_SCHEMA, null).migrate();
+        try (Connection connection = connect(FRESH_SCHEMA); Statement statement = connection.createStatement();
+             ResultSet result = statement.executeQuery("""
+                     SELECT count(*) FROM information_schema.tables WHERE table_schema = 'commerce_fresh'
+                     AND table_name IN ('shipments', 'return_requests', 'return_items', 'suppliers',
+                                        'purchase_orders', 'purchase_order_lines', 'purchase_receipts')
+                     """)) {
+            assertThat(result.next()).isTrue();
+            assertThat(result.getInt(1)).isZero();
         }
     }
 

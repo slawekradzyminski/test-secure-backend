@@ -52,6 +52,7 @@ logbook:
     - "/api/v1/ollama/chat/**"
     - "/api/v1/users/2fa/**"
     - "/api/v1/users/signin/2fa"
+    - "/internal/**"
   format:
     style: json
   write:
@@ -61,6 +62,7 @@ logbook:
     headers:
       - authorization
       - x-secret
+      - x-service-token
       - cookie
     json-body-fields:
       - password
@@ -202,7 +204,14 @@ JmsSender:
 ollama:
   base-url: http://localhost:11434
 
+warehouse:
+  # Shared secret for the /internal/v1 API called by warehouse-service; blank disables the API (404).
+  service-token: ${WAREHOUSE_SERVICE_TOKEN:}
+
 springdoc:
+  # The service-to-service API for warehouse-service is not part of the public contract.
+  packages-to-exclude: com.awesome.testing.internal
+  paths-to-exclude: /internal/**
   # Controller responses are explicit; advice inference adds unreachable statuses and wrong bodies.
   override-with-generic-response: false
   swagger-ui:

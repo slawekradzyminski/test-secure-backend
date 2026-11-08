@@ -3,6 +3,7 @@ package com.awesome.testing.service;
 import com.awesome.testing.dto.order.AddressDto;
 import com.awesome.testing.dto.order.OrderDto;
 import com.awesome.testing.controller.exception.CustomException;
+import com.awesome.testing.dto.order.FulfilmentState;
 import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.entity.AddressEntity;
 import com.awesome.testing.entity.CartItemEntity;
@@ -154,6 +155,10 @@ public class OrderService {
         if (newStatus == OrderStatus.CANCELLED) {
             return cancelLocked(order);
         }
+        if (fulfilmentOf(order).blocksManualStatusChange()) {
+            throw new CustomException(
+                    "Order is being fulfilled by the warehouse; use the warehouse endpoints", HttpStatus.CONFLICT);
+        }
         order.setStatus(newStatus);
         return OrderDto.from(orderRepository.save(order));
     }
@@ -221,10 +226,76 @@ public class OrderService {
         return status == OrderStatus.PENDING || status == OrderStatus.PAID;
     }
 
+    /**
+     * Cancels an order whose shipment warehouse-service cancels. Allowed only
+     * for PAID orders that are waiting for or have finished picking.
+     */
+    @Transactional
+    public OrderEntity cancelForWarehouse(Long orderId) {
+        OrderEntity order = lockOrder(orderId);
+        if (order.getStatus() != OrderStatus.PAID || !fulfilmentOf(order).allowsWarehouseCancellation()) {
+            throw new CustomException("Order cannot be cancelled by the warehouse in status " + order.getStatus()
+                    + " with fulfilment state " + fulfilmentOf(order), HttpStatus.CONFLICT);
+        }
+        return releaseAndCancel(order);
+    }
+
+    /**
+     * Mirrors a shipment transition from warehouse-service onto the order.
+     * Only the next forward step is accepted; repeating the current state is a
+     * no-op so a retried call is safe, except for AWAITING_PICK, whose repeat
+     * signals a duplicate shipment and is rejected.
+     */
+    @Transactional
+    public OrderEntity applyFulfilmentState(Long orderId, FulfilmentState target) {
+        if (target == null || target == FulfilmentState.NONE || target == FulfilmentState.CANCELLED) {
+            throw new CustomException(
+                    "Fulfilment state must be one of AWAITING_PICK, PICKED, PACKED, SHIPPED, DELIVERED; "
+                            + "use warehouse-cancel to cancel", HttpStatus.BAD_REQUEST);
+        }
+        OrderEntity order = lockOrder(orderId);
+        FulfilmentState current = fulfilmentOf(order);
+        if (current == target && target != FulfilmentState.AWAITING_PICK) {
+            return order;
+        }
+        if (current.nextStep() != target) {
+            throw new CustomException(
+                    "Cannot change fulfilment state from " + current + " to " + target, HttpStatus.CONFLICT);
+        }
+        if (target == FulfilmentState.AWAITING_PICK && order.getStatus() != OrderStatus.PAID) {
+            throw new CustomException(
+                    "Only PAID orders can be released to the warehouse; order is " + order.getStatus(),
+                    HttpStatus.CONFLICT);
+        }
+        order.setFulfilmentState(target);
+        OrderStatus implied = target.impliedOrderStatus();
+        if (implied != null) {
+            order.setStatus(implied);
+        }
+        return orderRepository.save(order);
+    }
+
+    private OrderEntity lockOrder(Long orderId) {
+        return orderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
+    }
+
+    private static FulfilmentState fulfilmentOf(OrderEntity order) {
+        return FulfilmentState.orNone(order.getFulfilmentState());
+    }
+
     private OrderDto cancelLocked(OrderEntity order) {
         if (!canBeCancelled(order.getStatus())) {
             throw new CustomException("Order cannot be cancelled in current status", HttpStatus.BAD_REQUEST);
         }
+        if (!fulfilmentOf(order).allowsCustomerCancellation()) {
+            throw new CustomException(
+                    "Order is already being packed and cannot be cancelled", HttpStatus.CONFLICT);
+        }
+        return OrderDto.from(releaseAndCancel(order));
+    }
+
+    private OrderEntity releaseAndCancel(OrderEntity order) {
         couponService.releaseRedemption(order);
         if (order.getInventoryState() == InventoryState.DEDUCTED) {
             Map<Long, Integer> quantities = order.getItems().stream()
@@ -240,7 +311,12 @@ public class OrderService {
             order.setInventoryState(InventoryState.RESTORED);
         }
         order.setStatus(OrderStatus.CANCELLED);
-        return OrderDto.from(orderRepository.save(order));
+        // Only orders the warehouse already holds get a CANCELLED fulfilment state;
+        // untouched orders stay NONE so their public body is unchanged.
+        if (fulfilmentOf(order) != FulfilmentState.NONE) {
+            order.setFulfilmentState(FulfilmentState.CANCELLED);
+        }
+        return orderRepository.save(order);
     }
 
 }
