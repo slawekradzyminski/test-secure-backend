@@ -49,8 +49,9 @@ public class OrderDto {
     @Schema(description = "Order status", example = "PENDING")
     private OrderStatus status;
 
-    @Schema(description = "Warehouse progress mirrored from warehouse-service; NONE until the order is released to the warehouse",
-            example = "NONE")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"string", "null"}, description = "Warehouse progress mirrored from warehouse-service; omitted until the order is released to the warehouse",
+            example = "AWAITING_PICK")
     private FulfilmentState fulfilmentState;
 
     @Valid
@@ -74,7 +75,7 @@ public class OrderDto {
                 .discountAmount(hasCoupon(order) ? order.getDiscountAmount() : null)
                 .couponCode(order.getCouponCode())
                 .status(order.getStatus())
-                .fulfilmentState(FulfilmentState.orNone(order.getFulfilmentState()))
+                .fulfilmentState(warehouseState(order))
                 .shippingAddress(AddressDto.from(order.getShippingAddress()))
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
@@ -92,5 +93,11 @@ public class OrderDto {
 
     private static BigDecimal subtotalOf(OrderEntity order) {
         return order.getSubtotalAmount() == null ? order.getTotalAmount() : order.getSubtotalAmount();
+    }
+
+    /** Omitted for orders the warehouse never touched, keeping the course's order bodies unchanged. */
+    private static FulfilmentState warehouseState(OrderEntity order) {
+        FulfilmentState state = FulfilmentState.orNone(order.getFulfilmentState());
+        return state == FulfilmentState.NONE ? null : state;
     }
 }

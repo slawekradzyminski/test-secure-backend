@@ -311,7 +311,11 @@ public class OrderService {
             order.setInventoryState(InventoryState.RESTORED);
         }
         order.setStatus(OrderStatus.CANCELLED);
-        order.setFulfilmentState(FulfilmentState.CANCELLED);
+        // Only orders the warehouse already holds get a CANCELLED fulfilment state;
+        // untouched orders stay NONE so their public body is unchanged.
+        if (fulfilmentOf(order) != FulfilmentState.NONE) {
+            order.setFulfilmentState(FulfilmentState.CANCELLED);
+        }
         return orderRepository.save(order);
     }
 

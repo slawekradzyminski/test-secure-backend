@@ -73,7 +73,9 @@ class OrderServiceFulfilmentTest {
         var cancelled = service.cancelOrder(7L, "buyer", false);
 
         assertThat(cancelled.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-        assertThat(cancelled.getFulfilmentState()).isEqualTo(FulfilmentState.CANCELLED);
+        assertThat(order.getFulfilmentState())
+                .as("only orders the warehouse holds become CANCELLED; untouched ones stay NONE")
+                .isEqualTo(state == FulfilmentState.NONE ? FulfilmentState.NONE : FulfilmentState.CANCELLED);
         assertThat(order.getInventoryState()).isEqualTo(InventoryState.RESTORED);
         verify(inventoryService).restore(product, 2, order);
         verify(couponService).releaseRedemption(order);
@@ -96,7 +98,8 @@ class OrderServiceFulfilmentTest {
     void legacyRowsWithoutAStateBehaveAsNone() {
         order.setFulfilmentState(null);
 
-        assertThat(service.updateOrderStatus(7L, OrderStatus.SHIPPED).getFulfilmentState()).isEqualTo(FulfilmentState.NONE);
+        assertThat(service.updateOrderStatus(7L, OrderStatus.SHIPPED).getFulfilmentState())
+                .as("NONE is omitted from the public order body").isNull();
         order.setStatus(OrderStatus.PAID);
         assertThat(service.cancelOrder(7L, "buyer", false).getStatus()).isEqualTo(OrderStatus.CANCELLED);
     }
@@ -186,7 +189,9 @@ class OrderServiceFulfilmentTest {
         OrderEntity cancelled = service.cancelForWarehouse(7L);
 
         assertThat(cancelled.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-        assertThat(cancelled.getFulfilmentState()).isEqualTo(FulfilmentState.CANCELLED);
+        assertThat(order.getFulfilmentState())
+                .as("only orders the warehouse holds become CANCELLED; untouched ones stay NONE")
+                .isEqualTo(state == FulfilmentState.NONE ? FulfilmentState.NONE : FulfilmentState.CANCELLED);
         verify(inventoryService).restore(product, 2, order);
         verify(couponService).releaseRedemption(order);
     }
