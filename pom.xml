@@ -93,10 +93,14 @@
         <dependency>
             <groupId>org.apache.artemis</groupId>
             <artifactId>artemis-server</artifactId>
+            <!-- Embedded broker for tests only; every runtime profile uses an external broker or the local outbox. -->
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.artemis</groupId>
             <artifactId>artemis-jms-server</artifactId>
+            <!-- Embedded broker for tests only; every runtime profile uses an external broker or the local outbox. -->
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
