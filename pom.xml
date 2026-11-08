@@ -492,8 +492,6 @@
                                 <param>com.awesome.testing.service.ollama.function.ProductSnapshotFunctionHandler</param>
                                 <param>com.awesome.testing.service.coupon.CouponService</param>
                                 <param>com.awesome.testing.service.coupon.CouponPricing</param>
-                                <param>com.awesome.testing.service.fulfilment.ShipmentService</param>
-                                <param>com.awesome.testing.entity.fulfilment.Carrier</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -525,8 +523,6 @@
                                 <param>com.awesome.testing.service.ollama.function.ProductSnapshotFunctionHandlerTest</param>
                                 <param>com.awesome.testing.service.ollama.function.OllamaToolRegistryTest</param>
                                 <param>com.awesome.testing.service.coupon.Coupon*Test</param>
-                                <param>com.awesome.testing.service.fulfilment.ShipmentServiceTest</param>
-                                <param>com.awesome.testing.entity.fulfilment.CarrierTest</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>

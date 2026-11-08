@@ -25,7 +25,7 @@ public class SetupData {
         setupProducts.normalizeProductImageUrls();
         setupProducts.createProducts();
         setupOrders.createOrdersAndCart();
-        setupCommerce.createCouponsAndSuppliers();
+        setupCommerce.createCoupons();
     }
 
 }

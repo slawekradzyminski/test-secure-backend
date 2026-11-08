@@ -1,7 +1,6 @@
 package com.awesome.testing.service;
 
 import com.awesome.testing.repository.OrderIdempotencyKeyRepository;
-import com.awesome.testing.repository.fulfilment.ShipmentRepository;
 import com.awesome.testing.service.coupon.CouponService;
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.order.AddressDto;
@@ -50,9 +49,6 @@ class OrderServiceTest {
 
     @Mock
     private CouponService couponService;
-
-    @Mock
-    private ShipmentRepository shipmentRepository;
 
     @Mock
     private OrderIdempotencyKeyRepository idempotencyKeyRepository;

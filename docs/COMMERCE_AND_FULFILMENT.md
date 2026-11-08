@@ -1,8 +1,9 @@
 # Commerce extensions and warehouse fulfilment
 
 This document describes the training features added on top of the original
-shop. Everything lives inside the existing backend: no additional container or
-service is required, so the production memory budget is unchanged.
+shop. The Tier 1 shop features live in this backend. Warehouse fulfilment
+(Tier 2: shipments, returns, suppliers and purchase orders) lives in the
+separate `warehouse-service`; see the last section.
 
 Compatibility rules followed by every feature:
 
@@ -17,11 +18,13 @@ Compatibility rules followed by every feature:
 
 | Role | Purpose |
 | --- | --- |
-| `ROLE_CLIENT` | Shopper. Coupons, reviews, wishlist, returns, own shipment tracking. |
-| `ROLE_WAREHOUSE` | Warehouse operator. Fulfilment queue and shipment state machine. |
-| `ROLE_ADMIN` | Everything, including warehouse endpoints, coupons, moderation, returns, purchasing, CSV. |
+| `ROLE_CLIENT` | Shopper. Coupons, reviews, wishlist (returns and shipment tracking in warehouse-service). |
+| `ROLE_WAREHOUSE` | Warehouse operator. Used by warehouse-service for the fulfilment queue and shipments. |
+| `ROLE_ADMIN` | Everything, including coupons, moderation and CSV (and the warehouse-service admin endpoints). |
 
 Signup always creates `ROLE_CLIENT`. The demo seed adds `warehouse` / `warehouse`.
+The backend issues the JWTs for all three roles; warehouse-service validates
+them with the shared `JWT_SECRET_KEY`.
 
 ## Tier 1: shop features
 
@@ -106,75 +109,19 @@ per user.
 - `PUT /api/v1/products/{id}` honours `If-Match`; a stale version returns 412.
   Without `If-Match` the update behaves as before.
 
-## Tier 2: warehouse fulfilment
+## Tier 2: warehouse fulfilment (warehouse-service)
 
-### Shipments
+Shipments, returns (RMA), suppliers, purchase orders and reorder suggestions
+are implemented by `warehouse-service`, which keeps the public paths
+(`/api/v1/warehouse/**`, `/api/v1/orders/{id}/shipment`, the returns,
+suppliers, purchase-order and reorder-suggestion endpoints) behind the gateway.
+Its business rules are unchanged; they are documented in that repository.
 
-Endpoints under `/api/v1/warehouse` require `ROLE_WAREHOUSE` or `ROLE_ADMIN`.
+The backend keeps what warehouse-service builds on:
 
-```
-            create          pick           pack            ship              deliver
-PAID order ───────> AWAITING_PICK ───> PICKED ───> PACKED ───────> SHIPPED ───────> DELIVERED
-                        │                │
-                        └──── cancel ────┴──> CANCELLED (order cancelled, stock restored)
-```
-
-- `GET /queue` lists `PAID` orders without a shipment, oldest first.
-- `POST /shipments` with `orderId` creates the shipment (order must be `PAID`, 409
-  otherwise or when one exists).
-- `GET /shipments?status=`, `GET /shipments/{id}`, `GET /shipments/{id}/pick-list`.
-- `POST /shipments/{id}/pick|pack|ship|deliver`. Any other transition is 409.
-  `pack` requires `weightKg` 0.01–30.00; `ship` requires a carrier and a
-  tracking number that matches the carrier:
-
-| Carrier | Tracking number |
-| --- | --- |
-| `INPOST` | 24 digits |
-| `DPD` | 14 digits |
-| `DHL` | 10 digits |
-| `UPS` | `1Z` + 16 upper-case letters or digits |
-
-- `ship` sets the order to `SHIPPED`; `deliver` sets it to `DELIVERED`. Both
-  send an email to the customer.
-- `POST /shipments/{id}/cancel` is allowed in `AWAITING_PICK` and `PICKED`; it
-  cancels the order and restores stock.
-- While a shipment is active, the order cannot be cancelled by the customer
-  once it is `PICKED` or later (409), and the legacy admin status endpoint
-  rejects manual status changes with 409. In `AWAITING_PICK`, cancelling the
-  order also cancels the shipment.
-- `GET /api/v1/orders/{id}/shipment` lets the order owner (or an admin) track it.
-
-### Returns (RMA)
-
-```
-REQUESTED ──approve──> APPROVED ──receive──> RECEIVED ──refund──> REFUNDED
-    └──reject──> REJECTED
-```
-
-- `POST /api/v1/orders/{id}/returns` (owner only): order must be `DELIVERED`,
-  at most 30 days after delivery. Each item quantity must not exceed the
-  ordered quantity minus quantities in other non-rejected returns.
-  Reason is one of `DAMAGED`, `WRONG_ITEM`, `NOT_AS_DESCRIBED`, `NO_LONGER_NEEDED`.
-- `GET /api/v1/returns`, `GET /api/v1/returns/{id}` for the owner.
-- Admin: `GET /api/v1/admin/returns?status=`, `POST .../{id}/approve`,
-  `POST .../{id}/reject` (note required), `POST .../{id}/receive` with a
-  condition (`RESELLABLE` or `DAMAGED`) for every item, `POST .../{id}/refund`.
-- Receiving restocks `RESELLABLE` items (`RETURN_RESTOCKED` movement).
-- Refund = Σ(unit price × quantity) × (order total ÷ order subtotal), rounded
-  half-up, so coupon discounts are returned proportionally.
-
-### Suppliers and purchase orders
-
-- `GET|POST /api/v1/admin/suppliers`.
-- `/api/v1/admin/purchase-orders`: create (`DRAFT`), list, get, update lines
-  (`DRAFT` only), `submit` (needs at least one line; sets
-  `expectedAt = submittedAt + supplier lead time`), `cancel` (`DRAFT` or `SUBMITTED`),
-  and `receipts`.
-- Receipts carry a `requestId` and quantities per product. Receiving more than
-  is outstanding is 409. A repeated `requestId` with the same lines replays the
-  previous result; different lines with the same `requestId` are 409. Status becomes
-  `PARTIALLY_RECEIVED` or `RECEIVED`. Stock rises with `PURCHASE_RECEIVED`
-  movements.
-- `GET /api/v1/admin/inventory/reorder-suggestions?lowStockThreshold=5`:
-  products whose `stock + incoming` is at or below the threshold, with
-  `suggestedQuantity = 4 × threshold − stock − incoming`.
+- `ROLE_WAREHOUSE` and the `warehouse` demo user.
+- Inventory movement types `PURCHASE_RECEIVED` and `RETURN_RESTOCKED`, written
+  by `InventoryService.receive`, which also triggers back-in-stock emails.
+- Email templates `ORDER_SHIPPED`, `ORDER_DELIVERED` and `RETURN_UPDATED`.
+  The backend renders them and publishes them as `GENERIC`, so older JMS
+  consumers keep working.

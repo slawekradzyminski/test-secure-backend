@@ -9,14 +9,11 @@ import com.awesome.testing.entity.OrderEntity;
 import com.awesome.testing.entity.OrderIdempotencyKeyEntity;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.entity.coupon.CouponEntity;
-import com.awesome.testing.entity.fulfilment.ShipmentEntity;
-import com.awesome.testing.entity.fulfilment.ShipmentStatus;
 import com.awesome.testing.entity.inventory.InventoryState;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderIdempotencyKeyRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
-import com.awesome.testing.repository.fulfilment.ShipmentRepository;
 import com.awesome.testing.service.coupon.CouponQuote;
 import com.awesome.testing.service.coupon.CouponService;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +41,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/** Coupon, idempotency and fulfilment rules added to checkout and cancellation. */
+/** Coupon and idempotency rules added to checkout and cancellation. */
 @ExtendWith(MockitoExtension.class)
 class OrderServiceCommerceTest {
 
@@ -56,7 +53,6 @@ class OrderServiceCommerceTest {
     @Mock private ProductRepository productRepository;
     @Mock private InventoryService inventoryService;
     @Mock private CouponService couponService;
-    @Mock private ShipmentRepository shipmentRepository;
     @Mock private OrderIdempotencyKeyRepository idempotencyKeyRepository;
 
     private OrderService service;
@@ -66,7 +62,7 @@ class OrderServiceCommerceTest {
     @BeforeEach
     void setUp() {
         service = new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
-                shipmentRepository, idempotencyKeyRepository, Clock.fixed(NOW.toInstant(ZoneOffset.UTC), ZoneOffset.UTC));
+                idempotencyKeyRepository, Clock.fixed(NOW.toInstant(ZoneOffset.UTC), ZoneOffset.UTC));
         product = ProductEntity.builder().id(1L).name("Phone").price(new BigDecimal("40.00")).stockQuantity(10).build();
         address = AddressDto.builder().street("Main 1").city("Warsaw").state("MZ").zipCode("00-001").country("PL").build();
         lenient().when(cartItemRepository.findByUsernameForUpdate(USER)).thenReturn(List.of(CartItemEntity.builder()
@@ -152,63 +148,25 @@ class OrderServiceCommerceTest {
     }
 
     @Test
-    void cancellingReleasesTheCouponAndCancelsAShipmentStillAwaitingPick() {
+    void cancellingReleasesTheCouponRedemption() {
         OrderEntity order = OrderEntity.builder().id(7L).username(USER).shippingAddress(AddressEntity.from(address)).status(OrderStatus.PAID)
                 .inventoryState(InventoryState.LEGACY_UNTRACKED).items(new ArrayList<>()).build();
-        ShipmentEntity shipment = ShipmentEntity.builder().id(3L).order(order).status(ShipmentStatus.AWAITING_PICK).build();
         when(orderRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(order));
-        when(shipmentRepository.findByOrderId(7L)).thenReturn(Optional.of(shipment));
 
         service.cancelOrder(7L, USER, false);
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-        assertThat(shipment.getStatus()).isEqualTo(ShipmentStatus.CANCELLED);
-        assertThat(shipment.getCancelledAt()).isEqualTo(NOW);
         verify(couponService).releaseRedemption(order);
     }
 
     @Test
-    void customersCannotCancelOncePickingStartedButTheWarehouseCan() {
-        OrderEntity order = OrderEntity.builder().id(7L).username(USER).shippingAddress(AddressEntity.from(address)).status(OrderStatus.PAID)
-                .inventoryState(InventoryState.LEGACY_UNTRACKED).items(new ArrayList<>()).build();
-        ShipmentEntity shipment = ShipmentEntity.builder().id(3L).order(order).status(ShipmentStatus.PICKED).build();
+    void cancellingAShippedOrderIsRejectedWithoutReleasingTheCoupon() {
+        OrderEntity order = OrderEntity.builder().id(7L).username(USER).shippingAddress(AddressEntity.from(address)).status(OrderStatus.SHIPPED)
+                .items(new ArrayList<>()).build();
         when(orderRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(order));
-        when(shipmentRepository.findByOrderId(7L)).thenReturn(Optional.of(shipment));
 
         assertThatThrownBy(() -> service.cancelOrder(7L, USER, false))
-                .isInstanceOfSatisfying(CustomException.class, e -> assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOfSatisfying(CustomException.class, e -> assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
         verify(couponService, never()).releaseRedemption(any());
-
-        service.cancelForWarehouse(order);
-        assertThat(shipment.getStatus()).isEqualTo(ShipmentStatus.CANCELLED);
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-
-        shipment.setStatus(ShipmentStatus.PACKED);
-        order.setStatus(OrderStatus.PAID);
-        assertThatThrownBy(() -> service.cancelForWarehouse(order)).isInstanceOf(CustomException.class);
-    }
-
-    @Test
-    void manualStatusChangesAreBlockedOnlyWhileAShipmentIsActive() {
-        OrderEntity order = OrderEntity.builder().id(7L).username(USER).shippingAddress(AddressEntity.from(address)).status(OrderStatus.PAID).build();
-        ShipmentEntity shipment = ShipmentEntity.builder().id(3L).order(order).status(ShipmentStatus.PACKED).build();
-        when(orderRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(order));
-        when(shipmentRepository.findByOrderId(7L)).thenReturn(Optional.of(shipment));
-
-        assertThatThrownBy(() -> service.updateOrderStatus(7L, OrderStatus.SHIPPED))
-                .isInstanceOfSatisfying(CustomException.class, e -> assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.CONFLICT));
-
-        shipment.setStatus(ShipmentStatus.DELIVERED);
-        assertThat(service.updateOrderStatus(7L, OrderStatus.SHIPPED).getStatus()).isEqualTo(OrderStatus.SHIPPED);
-    }
-
-    @Test
-    void fulfilmentStatusIsWrittenThrough() {
-        OrderEntity order = OrderEntity.builder().id(7L).username(USER).shippingAddress(AddressEntity.from(address)).status(OrderStatus.PAID).build();
-
-        service.applyFulfilmentStatus(order, OrderStatus.DELIVERED);
-
-        assertThat(order.getStatus()).isEqualTo(OrderStatus.DELIVERED);
-        verify(orderRepository).save(order);
     }
 }

@@ -10,10 +10,7 @@ import com.awesome.testing.entity.OrderEntity;
 import com.awesome.testing.entity.OrderItemEntity;
 import com.awesome.testing.entity.OrderIdempotencyKeyEntity;
 import com.awesome.testing.entity.ProductEntity;
-import com.awesome.testing.entity.fulfilment.ShipmentEntity;
-import com.awesome.testing.entity.fulfilment.ShipmentStatus;
 import com.awesome.testing.repository.OrderIdempotencyKeyRepository;
-import com.awesome.testing.repository.fulfilment.ShipmentRepository;
 import com.awesome.testing.service.coupon.CouponQuote;
 import com.awesome.testing.service.coupon.CouponService;
 import com.awesome.testing.entity.inventory.InventoryState;
@@ -55,7 +52,6 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final InventoryService inventoryService;
     private final CouponService couponService;
-    private final ShipmentRepository shipmentRepository;
     private final OrderIdempotencyKeyRepository idempotencyKeyRepository;
     private final Clock commerceClock;
 
@@ -156,11 +152,7 @@ public class OrderService {
                 .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
 
         if (newStatus == OrderStatus.CANCELLED) {
-            return cancelLocked(order, false);
-        }
-        if (activeShipment(order).isPresent()) {
-            throw new CustomException(
-                    "Order is being fulfilled by the warehouse; use the warehouse endpoints", HttpStatus.CONFLICT);
+            return cancelLocked(order);
         }
         order.setStatus(newStatus);
         return OrderDto.from(orderRepository.save(order));
@@ -175,7 +167,7 @@ public class OrderService {
             throw new CustomException("You cannot cancel someone else's order", HttpStatus.FORBIDDEN);
         }
 
-        return cancelLocked(order, false);
+        return cancelLocked(order);
     }
 
     @Transactional(readOnly = true)
@@ -229,39 +221,9 @@ public class OrderService {
         return status == OrderStatus.PENDING || status == OrderStatus.PAID;
     }
 
-    /** Cancels an order on behalf of the warehouse, which may also cancel a picked shipment. */
-    @Transactional
-    public void cancelForWarehouse(OrderEntity order) {
-        cancelLocked(order, true);
-    }
-
-    /** Sets SHIPPED or DELIVERED as a consequence of a shipment transition. */
-    @Transactional
-    public void applyFulfilmentStatus(OrderEntity order, OrderStatus status) {
-        order.setStatus(status);
-        orderRepository.save(order);
-    }
-
-    private Optional<ShipmentEntity> activeShipment(OrderEntity order) {
-        return shipmentRepository.findByOrderId(order.getId()).filter(s -> s.getStatus().isActive());
-    }
-
-    private OrderDto cancelLocked(OrderEntity order, boolean warehouseInitiated) {
+    private OrderDto cancelLocked(OrderEntity order) {
         if (!canBeCancelled(order.getStatus())) {
             throw new CustomException("Order cannot be cancelled in current status", HttpStatus.BAD_REQUEST);
-        }
-        Optional<ShipmentEntity> shipment = activeShipment(order);
-        if (shipment.isPresent()) {
-            ShipmentStatus shipmentStatus = shipment.get().getStatus();
-            boolean cancellable = shipmentStatus == ShipmentStatus.AWAITING_PICK
-                    || (warehouseInitiated && shipmentStatus == ShipmentStatus.PICKED);
-            if (!cancellable) {
-                throw new CustomException(
-                        "Order is already being packed and cannot be cancelled", HttpStatus.CONFLICT);
-            }
-            shipment.get().setStatus(ShipmentStatus.CANCELLED);
-            shipment.get().setCancelledAt(LocalDateTime.now(commerceClock));
-            shipmentRepository.save(shipment.get());
         }
         couponService.releaseRedemption(order);
         if (order.getInventoryState() == InventoryState.DEDUCTED) {

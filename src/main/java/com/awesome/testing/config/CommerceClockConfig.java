@@ -9,8 +9,8 @@ import java.time.Clock;
 public class CommerceClockConfig {
 
     /**
-     * Server-local clock used by coupon validity, return windows, and
-     * fulfilment timestamps, matching the server-local {@code LocalDateTime}
+     * Server-local clock used by coupon validity, idempotency-key expiry and
+     * notification timestamps, matching the server-local {@code LocalDateTime}
      * values exposed by the REST API.
      */
     @Bean
