@@ -24,6 +24,8 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  *   <li>Jackson binds DTOs outside controllers (Ollama client and streaming, JMS email payloads,
  *       the seed catalogue), so every type in the DTO and seed packages is registered for binding.
  *       The scan runs at build time during AOT processing.</li>
+ *   <li>Caffeine selects generated cache and node classes by name and builds them through method
+ *       handles and var handles (the rate-limit cache uses maximum size plus expire-after-access).</li>
  * </ul>
  */
 @Configuration(proxyBeanMethods = false)
@@ -46,6 +48,10 @@ public class NativeRuntimeHints {
                 }
             };
             scanner.addIncludeFilter(new RegexPatternTypeFilter(Pattern.compile(".*")));
+            for (BeanDefinition candidate : scanner.findCandidateComponents("com.github.benmanes.caffeine.cache")) {
+                hints.reflection().registerType(TypeReference.of(candidate.getBeanClassName()),
+                        MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.ACCESS_DECLARED_FIELDS);
+            }
             for (String basePackage : new String[] {"com.awesome.testing.dto", "com.awesome.testing.fakedata"}) {
                 for (BeanDefinition candidate : scanner.findCandidateComponents(basePackage)) {
                     binding.registerReflectionHints(hints.reflection(),
