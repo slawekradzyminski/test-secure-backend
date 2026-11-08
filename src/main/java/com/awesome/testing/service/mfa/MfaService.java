@@ -20,16 +20,12 @@ import com.awesome.testing.security.mfa.MfaSecretProtector;
 import com.awesome.testing.security.mfa.TotpService;
 import com.awesome.testing.service.QrService;
 import com.awesome.testing.service.token.RefreshTokenService;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import java.util.OptionalLong;
-import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -241,12 +237,6 @@ public class MfaService {
     }
 
     private String createQrDataUri(String value) {
-        BufferedImage image = qrService.generateQrCode(value);
-        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            ImageIO.write(image, "png", output);
-            return "data:image/png;base64," + Base64.getEncoder().encodeToString(output.toByteArray());
-        } catch (IOException ex) {
-            throw new IllegalStateException("Unable to create MFA QR code", ex);
-        }
+        return "data:image/png;base64," + Base64.getEncoder().encodeToString(qrService.generateQrPng(value));
     }
 }

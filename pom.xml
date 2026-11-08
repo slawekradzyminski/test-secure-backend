@@ -186,6 +186,8 @@
             <groupId>com.google.zxing</groupId>
             <artifactId>javase</artifactId>
             <version>3.5.4</version>
+            <!-- Tests decode the PNG back to text; runtime renders PNGs without AWT. -->
+            <scope>test</scope>
         </dependency>
 
         <!-- Lombok -->
