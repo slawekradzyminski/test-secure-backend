@@ -21,7 +21,8 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  *       location that Spring for GraphQL registers automatically.</li>
  *   <li>{@code bootstrap/products.json} is loaded through a {@code Resource} property.</li>
  *   <li>The Artemis JMS connection factory instantiates {@code Calendar[]} reflectively, and Spring
- *       Boot configures it (and the pooled-JMS wrapper) through bean-property reflection.</li>
+ *       Boot configures it (and the pooled-JMS wrapper) through bean-property reflection. Artemis
+ *       logger and message-bundle interfaces load their generated {@code *_impl} classes by name.</li>
  *   <li>Jackson binds DTOs outside controllers (Ollama client and streaming, JMS email payloads,
  *       the seed catalogue), so every type in the DTO and seed packages is registered for binding.
  *       The scan runs at build time during AOT processing.</li>
@@ -62,6 +63,13 @@ public class NativeRuntimeHints {
                 }
             };
             scanner.addIncludeFilter(new RegexPatternTypeFilter(Pattern.compile(".*")));
+            for (BeanDefinition candidate : scanner.findCandidateComponents("org.apache.activemq.artemis")) {
+                String name = candidate.getBeanClassName();
+                if (name != null && name.endsWith("_impl")) {
+                    hints.reflection().registerType(TypeReference.of(name),
+                            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_PUBLIC_METHODS);
+                }
+            }
             for (BeanDefinition candidate : scanner.findCandidateComponents("com.github.benmanes.caffeine.cache")) {
                 if (candidate.getBeanClassName() == null || candidate.getBeanClassName().endsWith("package-info")) {
                     continue;
