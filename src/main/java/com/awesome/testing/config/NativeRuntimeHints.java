@@ -24,6 +24,8 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  *   <li>Jackson binds DTOs outside controllers (Ollama client and streaming, JMS email payloads,
  *       the seed catalogue), so every type in the DTO and seed packages is registered for binding.
  *       The scan runs at build time during AOT processing.</li>
+ *   <li>{@code @PreAuthorize} SpEL calls {@code @userService.exists(...)} and reads
+ *       {@code authentication.principal.username} reflectively.</li>
  *   <li>Caffeine selects generated cache and node classes by name and builds them through method
  *       handles and var handles (the rate-limit cache uses maximum size plus expire-after-access).</li>
  * </ul>
@@ -39,6 +41,10 @@ public class NativeRuntimeHints {
             hints.resources().registerPattern("bootstrap/products.json");
             hints.reflection().registerType(TypeReference.of("java.util.Calendar[]"),
                     MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
+            hints.reflection().registerType(TypeReference.of("com.awesome.testing.service.UserService"),
+                    MemberCategory.INVOKE_PUBLIC_METHODS);
+            hints.reflection().registerType(TypeReference.of("com.awesome.testing.security.CustomPrincipal"),
+                    MemberCategory.INVOKE_PUBLIC_METHODS, MemberCategory.ACCESS_DECLARED_FIELDS);
             BindingReflectionHintsRegistrar binding = new BindingReflectionHintsRegistrar();
             ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false) {
                 @Override
