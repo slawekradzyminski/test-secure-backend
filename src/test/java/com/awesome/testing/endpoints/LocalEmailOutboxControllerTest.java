@@ -1,5 +1,6 @@
 package com.awesome.testing.endpoints;
 
+import com.awesome.testing.config.LocalProfileOnH2;
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.config.properties.PasswordResetProperties;
 import com.awesome.testing.controller.email.LocalEmailOutboxController;
@@ -22,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ActiveProfiles({"test", "local"})
+@LocalProfileOnH2
 @TestPropertySource(properties = {
         "password-reset.require-outbox-access-key=true",
         "password-reset.outbox-access-key=" + LocalEmailOutboxControllerTest.ACCESS_KEY

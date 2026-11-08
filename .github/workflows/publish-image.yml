@@ -106,6 +106,21 @@ jobs:
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    # The local profile runs on PostgreSQL with Flyway (localhost:5432/testdb, postgres/postgres).
+    services:
+      postgres:
+        image: postgres:16.14-bookworm@sha256:92620daddcd947f8d5ab5ba66e848702fe443d87fed30c4cea8e389fd78dfc55
+        env:
+          POSTGRES_DB: testdb
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d testdb"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-java@v6.2.0

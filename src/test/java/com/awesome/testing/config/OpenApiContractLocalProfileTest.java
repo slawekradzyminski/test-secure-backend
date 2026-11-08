@@ -12,6 +12,7 @@ import org.springframework.test.context.TestPropertySource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles({"test", "local"})
+@LocalProfileOnH2
 @TestPropertySource(properties = {
         "springdoc.api-docs.enabled=true",
         "springdoc.swagger-ui.enabled=false"
