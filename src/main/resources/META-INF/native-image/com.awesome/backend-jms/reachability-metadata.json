@@ -1,0 +1,477 @@
+{
+  "reflection": [
+    {
+      "type": "io.netty.bootstrap.ServerBootstrap$1"
+    },
+    {
+      "type": "io.netty.bootstrap.ServerBootstrap$ServerBootstrapAcceptor"
+    },
+    {
+      "type": "io.netty.buffer.AbstractByteBufAllocator"
+    },
+    {
+      "type": "io.netty.buffer.AdaptivePoolingAllocator$Magazine"
+    },
+    {
+      "type": "io.netty.buffer.AdaptivePoolingAllocator$SizeClassedChunk"
+    },
+    {
+      "type": "io.netty.buffer.ByteBuf"
+    },
+    {
+      "type": "io.netty.channel.AbstractChannelHandlerContext"
+    },
+    {
+      "type": "io.netty.channel.ChannelOutboundBuffer"
+    },
+    {
+      "type": "io.netty.channel.DefaultChannelConfig"
+    },
+    {
+      "type": "io.netty.channel.DefaultChannelPipeline"
+    },
+    {
+      "type": "io.netty.channel.DefaultChannelPipeline$HeadContext"
+    },
+    {
+      "type": "io.netty.channel.DefaultChannelPipeline$TailContext"
+    },
+    {
+      "type": "io.netty.channel.DefaultFileRegion"
+    },
+    {
+      "type": "io.netty.channel.epoll.Epoll",
+      "methods": [
+        {
+          "name": "isAvailable",
+          "parameterTypes": []
+        },
+        {
+          "name": "unavailabilityCause",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "io.netty.channel.epoll.NativeDatagramPacketArray$NativeDatagramPacket"
+    },
+    {
+      "type": "io.netty.channel.socket.nio.NioSocketChannel",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "io.netty.channel.unix.PeerCredentials"
+    },
+    {
+      "type": "io.netty.util.DefaultAttributeMap"
+    },
+    {
+      "type": "io.netty.util.concurrent.ConcurrentSkipListIntObjMultimap"
+    },
+    {
+      "type": "io.netty.util.concurrent.ConcurrentSkipListIntObjMultimap$Index"
+    },
+    {
+      "type": "io.netty.util.concurrent.ConcurrentSkipListIntObjMultimap$Node"
+    },
+    {
+      "type": "io.netty.util.concurrent.DefaultPromise"
+    },
+    {
+      "type": "io.netty.util.concurrent.MpscIntQueue$MpscAtomicIntegerArrayQueue"
+    },
+    {
+      "type": "io.netty.util.concurrent.SingleThreadEventExecutor"
+    },
+    {
+      "type": "io.netty.util.internal.CleanerJava25$CleanableDirectBufferImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.AutoCloseable",
+            "java.nio.ByteBuffer",
+            "long"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "io.netty.util.internal.NativeLibraryUtil",
+      "methods": [
+        {
+          "name": "loadLibrary",
+          "parameterTypes": [
+            "java.lang.String",
+            "boolean"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.varhandle.BaseMpscLinkedVarHandleArrayQueueColdProducerFields",
+      "fields": [
+        {
+          "name": "producerLimit"
+        }
+      ]
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.varhandle.BaseMpscLinkedVarHandleArrayQueueConsumerFields",
+      "fields": [
+        {
+          "name": "consumerIndex"
+        }
+      ]
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.varhandle.BaseMpscLinkedVarHandleArrayQueueProducerFields",
+      "fields": [
+        {
+          "name": "producerIndex"
+        }
+      ]
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.varhandle.MpmcVarHandleArrayQueueConsumerIndexField",
+      "fields": [
+        {
+          "name": "consumerIndex"
+        }
+      ]
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.varhandle.MpmcVarHandleArrayQueueProducerIndexField",
+      "fields": [
+        {
+          "name": "producerIndex"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.activemq.artemis.api.core.Pair[]"
+    },
+    {
+      "type": "org.apache.activemq.artemis.api.core.client.ServerLocator"
+    },
+    {
+      "type": "org.apache.activemq.artemis.api.core.client.loadbalance.RoundRobinConnectionLoadBalancingPolicy",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.activemq.artemis.core.client.ActiveMQClientMessageBundle_impl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.slf4j.Logger"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apache.activemq.artemis.core.client.impl.ServerLocatorImpl"
+    },
+    {
+      "type": "org.apache.activemq.artemis.core.client.impl.ServerLocatorImplBeanInfo"
+    },
+    {
+      "type": "org.apache.activemq.artemis.core.client.impl.ServerLocatorImplCustomizer"
+    },
+    {
+      "type": "org.apache.activemq.artemis.core.client.impl.ServerLocatorInternal"
+    },
+    {
+      "type": "org.apache.activemq.artemis.core.cluster.DiscoveryListener"
+    },
+    {
+      "type": "org.apache.activemq.artemis.core.remoting.impl.netty.ActiveMQFrameDecoder2"
+    },
+    {
+      "type": "org.apache.activemq.artemis.core.remoting.impl.netty.NettyConnector$1"
+    },
+    {
+      "type": "org.apache.activemq.artemis.core.remoting.impl.netty.NettyConnector$ActiveMQClientChannelHandler"
+    },
+    {
+      "type": "org.apache.activemq.artemis.core.remoting.impl.netty.NettyConnectorFactory",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ"
+    },
+    {
+      "type": "org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory",
+      "methods": [
+        {
+          "name": "getCallFailoverTimeout",
+          "parameterTypes": []
+        },
+        {
+          "name": "getCallTimeout",
+          "parameterTypes": []
+        },
+        {
+          "name": "getClientFailureCheckPeriod",
+          "parameterTypes": []
+        },
+        {
+          "name": "getClientID",
+          "parameterTypes": []
+        },
+        {
+          "name": "getCompressionLevel",
+          "parameterTypes": []
+        },
+        {
+          "name": "getConfirmationWindowSize",
+          "parameterTypes": []
+        },
+        {
+          "name": "getConnectionLoadBalancingPolicyClassName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getConnectionTTL",
+          "parameterTypes": []
+        },
+        {
+          "name": "getConsumerMaxRate",
+          "parameterTypes": []
+        },
+        {
+          "name": "getConsumerWindowSize",
+          "parameterTypes": []
+        },
+        {
+          "name": "getDeserializationAllowList",
+          "parameterTypes": []
+        },
+        {
+          "name": "getDeserializationBlackList",
+          "parameterTypes": []
+        },
+        {
+          "name": "getDeserializationDenyList",
+          "parameterTypes": []
+        },
+        {
+          "name": "getDeserializationWhiteList",
+          "parameterTypes": []
+        },
+        {
+          "name": "getDupsOKBatchSize",
+          "parameterTypes": []
+        },
+        {
+          "name": "getFactoryType",
+          "parameterTypes": []
+        },
+        {
+          "name": "getGroupID",
+          "parameterTypes": []
+        },
+        {
+          "name": "getIncomingInterceptorList",
+          "parameterTypes": []
+        },
+        {
+          "name": "getInitialConnectAttempts",
+          "parameterTypes": []
+        },
+        {
+          "name": "getInitialMessagePacketSize",
+          "parameterTypes": []
+        },
+        {
+          "name": "getMaxRetryInterval",
+          "parameterTypes": []
+        },
+        {
+          "name": "getMinLargeMessageSize",
+          "parameterTypes": []
+        },
+        {
+          "name": "getOutgoingInterceptorList",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPassword",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPasswordCodec",
+          "parameterTypes": []
+        },
+        {
+          "name": "getProducerMaxRate",
+          "parameterTypes": []
+        },
+        {
+          "name": "getProducerWindowSize",
+          "parameterTypes": []
+        },
+        {
+          "name": "getProtocolManagerFactoryStr",
+          "parameterTypes": []
+        },
+        {
+          "name": "getReconnectAttempts",
+          "parameterTypes": []
+        },
+        {
+          "name": "getRetryInterval",
+          "parameterTypes": []
+        },
+        {
+          "name": "getRetryIntervalMultiplier",
+          "parameterTypes": []
+        },
+        {
+          "name": "getScheduledThreadPoolMaxSize",
+          "parameterTypes": []
+        },
+        {
+          "name": "getThreadPoolMaxSize",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTransactionBatchSize",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUser",
+          "parameterTypes": []
+        },
+        {
+          "name": "isAutoGroup",
+          "parameterTypes": []
+        },
+        {
+          "name": "isBlockOnAcknowledge",
+          "parameterTypes": []
+        },
+        {
+          "name": "isBlockOnDurableSend",
+          "parameterTypes": []
+        },
+        {
+          "name": "isBlockOnNonDurableSend",
+          "parameterTypes": []
+        },
+        {
+          "name": "isCacheDestinations",
+          "parameterTypes": []
+        },
+        {
+          "name": "isCacheLargeMessagesClient",
+          "parameterTypes": []
+        },
+        {
+          "name": "isCompressLargeMessage",
+          "parameterTypes": []
+        },
+        {
+          "name": "isEnable1xPrefixes",
+          "parameterTypes": []
+        },
+        {
+          "name": "isEnableSharedClientID",
+          "parameterTypes": []
+        },
+        {
+          "name": "isFailoverOnInitialConnection",
+          "parameterTypes": []
+        },
+        {
+          "name": "isHA",
+          "parameterTypes": []
+        },
+        {
+          "name": "isIgnoreJTA",
+          "parameterTypes": []
+        },
+        {
+          "name": "isPreAcknowledge",
+          "parameterTypes": []
+        },
+        {
+          "name": "isUseGlobalPools",
+          "parameterTypes": []
+        },
+        {
+          "name": "isUseTopologyForLoadBalancing",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactoryBeanInfo"
+    },
+    {
+      "type": "org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactoryCustomizer"
+    },
+    {
+      "type": "org.apache.activemq.artemis.jms.client.ConnectionFactoryOptions"
+    },
+    {
+      "type": "org.apache.activemq.artemis.jndi.JNDIStorable"
+    },
+    {
+      "type": "org.apache.activemq.artemis.jndi.JNDIStorableBeanInfo"
+    },
+    {
+      "type": "org.apache.activemq.artemis.jndi.JNDIStorableCustomizer"
+    },
+    {
+      "type": "org.apache.activemq.artemis.uri.schema.serverLocator.ConnectionOptions",
+      "methods": [
+        {
+          "name": "setHost",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setPort",
+          "parameterTypes": [
+            "int"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apache.activemq.artemis.uri.schema.serverLocator.ConnectionOptionsBeanInfo"
+    },
+    {
+      "type": "org.apache.activemq.artemis.uri.schema.serverLocator.ConnectionOptionsCustomizer"
+    },
+    {
+      "type": "org.apache.activemq.artemis.utils.ActiveMQThreadPoolExecutor$ThreadPoolQueue"
+    },
+    {
+      "type": "org.apache.activemq.artemis.utils.ReferenceCounterUtil"
+    },
+    {
+      "type": "org.apache.activemq.artemis.utils.actors.ProcessorBase"
+    },
+    {
+      "type": "org.messaginghub.pooled.jms.JmsPoolConnectionFactory"
+    }
+  ]
+}
