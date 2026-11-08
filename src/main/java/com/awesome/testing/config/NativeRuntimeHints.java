@@ -49,11 +49,17 @@ public class NativeRuntimeHints {
             };
             scanner.addIncludeFilter(new RegexPatternTypeFilter(Pattern.compile(".*")));
             for (BeanDefinition candidate : scanner.findCandidateComponents("com.github.benmanes.caffeine.cache")) {
+                if (candidate.getBeanClassName() == null || candidate.getBeanClassName().endsWith("package-info")) {
+                    continue;
+                }
                 hints.reflection().registerType(TypeReference.of(candidate.getBeanClassName()),
                         MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.ACCESS_DECLARED_FIELDS);
             }
             for (String basePackage : new String[] {"com.awesome.testing.dto", "com.awesome.testing.fakedata"}) {
                 for (BeanDefinition candidate : scanner.findCandidateComponents(basePackage)) {
+                    if (candidate.getBeanClassName() == null || candidate.getBeanClassName().endsWith("package-info")) {
+                        continue;
+                    }
                     binding.registerReflectionHints(hints.reflection(),
                             ClassUtils.resolveClassName(candidate.getBeanClassName(), classLoader));
                 }
