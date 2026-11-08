@@ -29,9 +29,13 @@ public abstract class AbstractEcommerceTest extends DomainHelper {
     @Autowired
     protected OrderRepository orderRepository;
 
+    @Autowired
+    protected CommerceTestData commerceTestData;
+
     @BeforeEach
     @Transactional
     public void setUp() {
+        commerceTestData.deleteAll();
         cartItemRepository.deleteAll();
         orderRepository.deleteAll();
         productRepository.deleteAll();

@@ -78,14 +78,34 @@ public class ProductService {
         return ProductDto.from(product);
     }
 
+    @Transactional(readOnly = true)
+    public VersionedProduct getVersionedProduct(Long id) {
+        ProductEntity product = findProductById(id);
+        return new VersionedProduct(ProductDto.from(product), product.getVersion());
+    }
+
     @Transactional
     public ProductDto updateProduct(Long id, ProductUpdateDto productUpdateDto) {
+        return updateProduct(id, productUpdateDto, null).product();
+    }
+
+    /**
+     * Updates a product. When {@code expectedVersion} is supplied (from
+     * If-Match), a mismatch with the stored version fails with 412 before any
+     * change is applied.
+     */
+    @Transactional
+    public VersionedProduct updateProduct(Long id, ProductUpdateDto productUpdateDto, Long expectedVersion) {
         ProductEntity product =
-                productUpdateDto.getStockQuantity() == null
+                productUpdateDto.getStockQuantity() == null && expectedVersion == null
                         ? findProductById(id)
                         : productRepository
                                 .findByIdForUpdate(id)
                                 .orElseThrow(() -> new ProductNotFoundException("Product not found"));
+        if (expectedVersion != null && !expectedVersion.equals(product.getVersion())) {
+            throw new CustomException(
+                    "Product was modified by someone else; reload it and try again", HttpStatus.PRECONDITION_FAILED);
+        }
 
         Integer oldStock = product.getStockQuantity();
         applyProductUpdates(productUpdateDto, product);
@@ -100,7 +120,7 @@ public class ProductService {
                     "admin");
         }
         productRepository.saveAndFlush(product);
-        return ProductDto.from(product);
+        return new VersionedProduct(ProductDto.from(product), product.getVersion());
     }
 
     @Transactional

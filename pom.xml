@@ -490,6 +490,8 @@
                                 <param>com.awesome.testing.traffic.TrafficDataSanitizer</param>
                                 <param>com.awesome.testing.service.ollama.function.ProductCatalogFunctionHandler</param>
                                 <param>com.awesome.testing.service.ollama.function.ProductSnapshotFunctionHandler</param>
+                                <param>com.awesome.testing.service.coupon.CouponService</param>
+                                <param>com.awesome.testing.service.coupon.CouponPricing</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -500,6 +502,7 @@
                                 <param>com.awesome.testing.service.ProductPaginationTest</param>
                                 <param>com.awesome.testing.service.CartServiceTest</param>
                                 <param>com.awesome.testing.service.OrderServiceTest</param>
+                                <param>com.awesome.testing.service.OrderServiceCommerceTest</param>
                                 <param>com.awesome.testing.service.InventoryServiceTest</param>
                                 <param>com.awesome.testing.service.token.RefreshTokenServiceTest</param>
                                 <param>com.awesome.testing.service.password.PasswordResetServiceTest</param>
@@ -519,6 +522,7 @@
                                 <param>com.awesome.testing.service.ollama.function.ProductCatalogFunctionHandlerTest</param>
                                 <param>com.awesome.testing.service.ollama.function.ProductSnapshotFunctionHandlerTest</param>
                                 <param>com.awesome.testing.service.ollama.function.OllamaToolRegistryTest</param>
+                                <param>com.awesome.testing.service.coupon.Coupon*Test</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>

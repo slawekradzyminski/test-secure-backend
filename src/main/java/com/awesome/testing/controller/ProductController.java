@@ -4,6 +4,10 @@ import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.dto.product.ProductDto;
 import com.awesome.testing.dto.product.ProductUpdateDto;
 import com.awesome.testing.service.ProductService;
+import com.awesome.testing.service.VersionedProduct;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
+import org.springframework.http.HttpHeaders;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -43,13 +47,22 @@ public class ProductController {
     @GetMapping("/{id}")
     @Operation(summary = "Get product by ID",
             description = "Returns one product by numeric identifier, or 404 when the product does not exist.")
-    @ApiResponse(responseCode = "200", description = "Successfully retrieved product")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved product; the ETag header carries the product version",
+            headers = @Header(name = HttpHeaders.ETAG, description = "Quoted product version", schema = @Schema(type = "string", example = "\"3\"")))
+    @ApiResponse(responseCode = "304", description = "If-None-Match matches the current version; empty response body", content = @Content)
     @ApiResponse(responseCode = "400", description = "Bad request",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
     @ApiResponse(responseCode = "404", description = "Product not found",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
-    public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.getProductById(id));
+    public ResponseEntity<ProductDto> getProductById(
+            @PathVariable Long id,
+            @Parameter(description = "Entity tag from a previous response; a match returns 304")
+            @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
+        VersionedProduct product = productService.getVersionedProduct(id);
+        if (EntityTags.matches(ifNoneMatch, product.version())) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(product.etag()).build();
+        }
+        return ResponseEntity.ok().eTag(product.etag()).body(product.product());
     }
 
     @PostMapping
@@ -69,8 +82,11 @@ public class ProductController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Update existing product",
-            description = "Updates supplied non-null product fields; omitted or null fields are unchanged. Empty description and imageUrl are allowed. Requires an administrator role.")
-    @ApiResponse(responseCode = "200", description = "Product updated successfully")
+            description = "Updates supplied non-null product fields; omitted or null fields are unchanged. Empty description and imageUrl are allowed. An optional If-Match header with the ETag from GET enables optimistic concurrency: a stale tag returns 412 and nothing changes. Requires an administrator role.")
+    @ApiResponse(responseCode = "200", description = "Product updated successfully; the ETag header carries the new version",
+            headers = @Header(name = HttpHeaders.ETAG, description = "Quoted product version", schema = @Schema(type = "string", example = "\"4\"")))
+    @ApiResponse(responseCode = "412", description = "If-Match does not match the current product version",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "400", description = "Invalid input",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
     @ApiResponse(responseCode = "403", description = "Forbidden",
@@ -79,8 +95,11 @@ public class ProductController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public ResponseEntity<ProductDto> updateProduct(
             @PathVariable Long id,
-            @Valid @RequestBody ProductUpdateDto productUpdateDto) {
-        return ResponseEntity.ok(productService.updateProduct(id, productUpdateDto));
+            @Valid @RequestBody ProductUpdateDto productUpdateDto,
+            @Parameter(description = "Entity tag from GET /api/v1/products/{id}, for example \"3\"")
+            @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch) {
+        VersionedProduct product = productService.updateProduct(id, productUpdateDto, EntityTags.parseVersion(ifMatch));
+        return ResponseEntity.ok().eTag(product.etag()).body(product.product());
     }
 
     @DeleteMapping("/{id}")

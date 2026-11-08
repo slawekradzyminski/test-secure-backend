@@ -13,6 +13,9 @@ import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.PasswordResetTokenRepository;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.repository.CartItemRepository;
+import com.awesome.testing.repository.coupon.CartCouponRepository;
+import com.awesome.testing.repository.review.ProductReviewRepository;
+import com.awesome.testing.repository.wishlist.WishlistItemRepository;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.service.token.RefreshTokenService;
 import com.awesome.testing.service.token.IssuedRefreshToken;
@@ -66,6 +69,9 @@ public class UserService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailEventRepository emailEventRepository;
     private final CartItemRepository cartItemRepository;
+    private final CartCouponRepository cartCouponRepository;
+    private final WishlistItemRepository wishlistItemRepository;
+    private final ProductReviewRepository productReviewRepository;
     private final OrderRepository orderRepository;
     private final MfaService mfaService;
 
@@ -106,6 +112,9 @@ public class UserService {
         passwordResetTokenRepository.deleteAllByUser(user);
         emailEventRepository.deleteAllByUser(user);
         cartItemRepository.deleteByUsername(username);
+        cartCouponRepository.deleteByUsername(username);
+        wishlistItemRepository.deleteByUsername(username);
+        productReviewRepository.deleteByUsername(username);
         orderRepository.deleteByUsername(username);
         mfaService.deleteForUser(user);
         userRepository.deleteByUsername(username);

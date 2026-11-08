@@ -33,6 +33,15 @@ public class OrderDto {
     @Schema(description = "Total amount", example = "1999.98")
     private BigDecimal totalAmount;
 
+    @Schema(description = "Sum of item prices before discounts", example = "2222.20")
+    private BigDecimal subtotalAmount;
+
+    @Schema(description = "Coupon discount subtracted from the subtotal", example = "222.22")
+    private BigDecimal discountAmount;
+
+    @Schema(types = {"string", "null"}, description = "Coupon code applied at checkout", example = "WELCOME10")
+    private String couponCode;
+
     @Schema(description = "Order status", example = "PENDING")
     private OrderStatus status;
 
@@ -53,6 +62,9 @@ public class OrderDto {
                 .username(order.getUsername())
                 .items(order.getItems().stream().map(OrderItemDto::from).toList())
                 .totalAmount(order.getTotalAmount())
+                .subtotalAmount(order.getSubtotalAmount() == null ? order.getTotalAmount() : order.getSubtotalAmount())
+                .discountAmount(order.getDiscountAmount() == null ? BigDecimal.ZERO : order.getDiscountAmount())
+                .couponCode(order.getCouponCode())
                 .status(order.getStatus())
                 .shippingAddress(AddressDto.from(order.getShippingAddress()))
                 .createdAt(order.getCreatedAt())

@@ -12,7 +12,9 @@ import com.awesome.testing.entity.inventory.InventoryMovementType;
 import com.awesome.testing.repository.ProductRepository;
 import com.awesome.testing.repository.inventory.InventoryMovementRepository;
 import jakarta.persistence.criteria.Predicate;
+import com.awesome.testing.service.notification.StockReplenishedEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -36,6 +38,7 @@ public class InventoryService {
 
     private final ProductRepository productRepository;
     private final InventoryMovementRepository movementRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public Page<InventoryItemDto> list(
@@ -118,8 +121,10 @@ public class InventoryService {
             throw conflict("Inventory quantity exceeds supported maximum");
         }
 
+        int previousQuantity = product.getStockQuantity();
         product.setStockQuantity((int) resultingQuantity);
         productRepository.save(product);
+        publishIfReplenished(product, previousQuantity);
         return toMovementDto(movementRepository.save(InventoryMovementEntity.builder()
                 .product(product)
                 .type(InventoryMovementType.ADMIN_ADJUSTMENT)
@@ -182,9 +187,11 @@ public class InventoryService {
             ProductEntity product,
             int quantity,
             OrderEntity order) {
-        int resultingQuantity = Math.addExact(product.getStockQuantity(), quantity);
+        int previousQuantity = product.getStockQuantity();
+        int resultingQuantity = Math.addExact(previousQuantity, quantity);
         product.setStockQuantity(resultingQuantity);
         productRepository.save(product);
+        publishIfReplenished(product, previousQuantity);
         return movementRepository.save(InventoryMovementEntity.builder()
                 .product(product)
                 .order(order)
@@ -194,6 +201,51 @@ public class InventoryService {
                 .actor(order.getUsername())
                 .reason("Order cancellation")
                 .build());
+    }
+
+    /**
+     * Adds received goods (purchase receipts and resellable returns) to a
+     * product that the caller has already locked.
+     */
+    @Transactional
+    public InventoryMovementEntity receive(
+            ProductEntity product,
+            int quantity,
+            InventoryMovementType type,
+            OrderEntity order,
+            String actor,
+            String reason) {
+        if (quantity <= 0) {
+            throw new CustomException("Received quantity must be positive", HttpStatus.BAD_REQUEST);
+        }
+        if (type != InventoryMovementType.PURCHASE_RECEIVED && type != InventoryMovementType.RETURN_RESTOCKED) {
+            throw new IllegalArgumentException("Unsupported receipt movement type: " + type);
+        }
+        int previousQuantity = product.getStockQuantity();
+        int resultingQuantity;
+        try {
+            resultingQuantity = Math.addExact(previousQuantity, quantity);
+        } catch (ArithmeticException e) {
+            throw new CustomException("Inventory quantity exceeds supported maximum", HttpStatus.CONFLICT, e);
+        }
+        product.setStockQuantity(resultingQuantity);
+        productRepository.save(product);
+        publishIfReplenished(product, previousQuantity);
+        return movementRepository.save(InventoryMovementEntity.builder()
+                .product(product)
+                .order(order)
+                .type(type)
+                .delta(quantity)
+                .quantityAfter(resultingQuantity)
+                .actor(actor)
+                .reason(reason)
+                .build());
+    }
+
+    private void publishIfReplenished(ProductEntity product, int previousQuantity) {
+        if (previousQuantity == 0 && product.getStockQuantity() > 0) {
+            eventPublisher.publishEvent(new StockReplenishedEvent(product.getId()));
+        }
     }
 
     public void checkAvailable(ProductEntity product, int quantity) {

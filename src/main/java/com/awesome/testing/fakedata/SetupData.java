@@ -17,6 +17,7 @@ public class SetupData {
     private final SetupUsers setupUsers;
     private final SetupProducts setupProducts;
     private final SetupOrders setupOrders;
+    private final SetupCommerce setupCommerce;
 
     @Transactional
     public void setupData() {
@@ -24,6 +25,7 @@ public class SetupData {
         setupProducts.normalizeProductImageUrls();
         setupProducts.createProducts();
         setupOrders.createOrdersAndCart();
+        setupCommerce.createCoupons();
     }
 
 }

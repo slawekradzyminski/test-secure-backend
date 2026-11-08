@@ -25,6 +25,7 @@ public class SetupUsers {
     @Getter private UserEntity clientUser;
     @Getter private UserEntity client2User;
     @Getter private UserEntity client3User;
+    @Getter private UserEntity warehouseUser;
 
     @Transactional
     public void createUsers() {
@@ -63,6 +64,16 @@ public class SetupUsers {
                         "Charlie",
                         "Brown"
                 )));
+
+        warehouseUser = userRepository.findByUsername("warehouse")
+                .orElseGet(() -> userRepository.save(UserEntity.builder()
+                        .username("warehouse")
+                        .password(passwordEncoder.encode("warehouse"))
+                        .email("warehouse@awesome-testing.test")
+                        .firstName("Wanda")
+                        .lastName("Picker")
+                        .roles(List.of(Role.ROLE_WAREHOUSE))
+                        .build()));
     }
 
     private UserEntity createAdminUser(String username, String password, String email, String firstName, String lastName) {

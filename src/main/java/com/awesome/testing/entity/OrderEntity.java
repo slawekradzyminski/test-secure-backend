@@ -36,6 +36,16 @@ public class OrderEntity {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(precision = 10, scale = 2)
+    private BigDecimal subtotalAmount;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    @Column(length = 32)
+    private String couponCode;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;
@@ -55,6 +65,17 @@ public class OrderEntity {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    @PreUpdate
+    void defaultAmounts() {
+        if (discountAmount == null) {
+            discountAmount = BigDecimal.ZERO;
+        }
+        if (subtotalAmount == null && totalAmount != null) {
+            subtotalAmount = totalAmount.add(discountAmount);
+        }
+    }
 
     public void addItem(OrderItemEntity item) {
         items.add(item);

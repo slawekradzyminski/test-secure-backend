@@ -29,6 +29,11 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long>, JpaSp
 
     void deleteByUsername(String username);
 
+    @Query("select count(i) > 0 from OrderItemEntity i "
+            + "where i.order.username = :username and i.product.id = :productId and i.order.status = :status")
+    boolean existsOrderedProductWithStatus(
+            @Param("username") String username, @Param("productId") Long productId, @Param("status") OrderStatus status);
+
     long countByUsername(String username);
 
     @Query("SELECT o.id FROM OrderEntity o WHERE o.username = :username")

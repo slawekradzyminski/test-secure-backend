@@ -1,0 +1,127 @@
+# Commerce extensions and warehouse fulfilment
+
+This document describes the training features added on top of the original
+shop. The Tier 1 shop features live in this backend. Warehouse fulfilment
+(Tier 2: shipments, returns, suppliers and purchase orders) lives in the
+separate `warehouse-service`; see the last section.
+
+Compatibility rules followed by every feature:
+
+- Existing request bodies, paths, status codes, and enum values are unchanged.
+  `OrderStatus`, the GraphQL schema, and the gRPC contract keep their values.
+- New response fields are additive. Clients that ignore unknown JSON fields are
+  unaffected.
+- New behaviour on existing endpoints is opt-in (`Idempotency-Key`,
+  `If-Match`, `If-None-Match`).
+
+## Roles
+
+| Role | Purpose |
+| --- | --- |
+| `ROLE_CLIENT` | Shopper. Coupons, reviews, wishlist (returns and shipment tracking in warehouse-service). |
+| `ROLE_WAREHOUSE` | Warehouse operator. Used by warehouse-service for the fulfilment queue and shipments. |
+| `ROLE_ADMIN` | Everything, including coupons, moderation and CSV (and the warehouse-service admin endpoints). |
+
+Signup always creates `ROLE_CLIENT`. The demo seed adds `warehouse` / `warehouse`.
+The backend issues the JWTs for all three roles; warehouse-service validates
+them with the shared `JWT_SECRET_KEY`.
+
+## Tier 1: shop features
+
+### Coupons
+
+Admin CRUD under `/api/v1/admin/coupons`; the shopper applies one coupon to the
+cart with `PUT /api/v1/cart/coupon` and removes it with `DELETE /api/v1/cart/coupon`.
+
+| Rule | Result |
+| --- | --- |
+| Code format `^[A-Z0-9-]{3,32}$`; input is trimmed and upper-cased | 400 on violation |
+| Unknown code | 404 `Coupon not found` |
+| `active = false` | 400 `Coupon is not active` |
+| now before `validFrom` | 400 `Coupon is not valid yet` |
+| now after `validUntil` | 400 `Coupon has expired` |
+| cart subtotal below `minOrderAmount` | 400 `Order subtotal must be at least <amount>` |
+| global `maxRedemptions` reached | 409 `Coupon usage limit reached` |
+| user's `perUserLimit` reached | 409 `Coupon already used the maximum number of times` |
+| empty cart | 400 `Cart is empty` |
+
+- `PERCENTAGE`: value 1–100, discount = subtotal × value / 100 rounded half-up to cents.
+- `FIXED_AMOUNT`: value > 0, discount = min(value, subtotal).
+- Only one coupon per cart. Applying another replaces the first.
+- Checkout re-validates the coupon. If it is no longer valid, checkout fails
+  with 409 `Applied coupon is no longer valid: <reason>` and the cart is kept.
+- The order stores `subtotalAmount`, `discountAmount`, `couponCode`;
+  `totalAmount = subtotalAmount - discountAmount`.
+- Cancelling an order releases its redemption, so the usage is returned.
+- A coupon with redemptions cannot be deleted (409); deactivate it instead.
+
+### Reviews and ratings
+
+- `POST /api/v1/products/{id}/reviews`: rating 1–5, title 3–120, body 10–2000.
+  Allowed only when the user has a `DELIVERED` order containing the product
+  (otherwise 403). One review per user and product (409). New reviews are `PENDING`.
+- `PUT|DELETE /api/v1/products/{id}/reviews/mine`: editing returns the review to `PENDING`.
+- `GET /api/v1/products/{id}/reviews/mine`: eligibility plus the caller's review.
+- `GET /api/v1/products/{id}/reviews`: approved reviews only, newest first.
+- `GET /api/v1/products/{id}/reviews/summary`: average (one decimal, half-up),
+  count, and the 1–5 distribution over approved reviews only.
+- Moderation: `GET /api/v1/admin/reviews?status=`,
+  `PUT /api/v1/admin/reviews/{id}/moderation` with `APPROVED` or `REJECTED`;
+  rejection requires a note (400).
+
+### Wishlist and back-in-stock notifications
+
+- `GET /api/v1/wishlist`, `PUT /api/v1/wishlist/{productId}` (201 created,
+  200 updated), `DELETE /api/v1/wishlist/{productId}` (204, 404 when absent).
+- At most 50 products per user (409).
+- When stock moves from 0 to a positive quantity (admin adjustment, product
+  edit, cancellation restore, return restock, purchase receipt), every
+  wishlist entry with `notifyWhenAvailable = true` receives one
+  `BACK_IN_STOCK` email after the transaction commits. Entries are not
+  notified again until the product sells out and is replenished again.
+
+### Product CSV export and import
+
+- `GET /api/v1/admin/products/export` returns RFC 4180 `text/csv` with header
+  `id,name,description,price,stockQuantity,category,imageUrl`. Cells that start
+  with `=`, `+`, `-`, `@`, tab, or carriage return are prefixed with `'` to
+  prevent spreadsheet formula injection.
+- `POST /api/v1/admin/products/import` (multipart field `file`, optional
+  `dryRun=true`). At most 1 MB and 1000 data rows. A blank `id` creates a
+  product; an existing `id` updates it; an unknown `id` is a row error.
+- Validation is all-or-nothing. Any row error returns 400 with the full report
+  and persists nothing. A valid dry run returns 200 and persists nothing.
+- Stock changes are recorded as inventory movements (`INITIAL_STOCK` or
+  `ADMIN_ADJUSTMENT` with reason `CSV import`).
+
+### Idempotent checkout
+
+`POST /api/v1/orders` accepts an optional `Idempotency-Key` header
+(`^[A-Za-z0-9_-]{8,64}$`, otherwise 400). Within 24 hours, repeating the key
+with the same address returns the original order with 201 and
+`Idempotent-Replayed: true`; a different address returns 409. Keys are scoped
+per user.
+
+### Conditional product requests
+
+- `GET /api/v1/products/{id}` returns `ETag: "<version>"` and honours
+  `If-None-Match` with 304.
+- `PUT /api/v1/products/{id}` honours `If-Match`; a stale version returns 412.
+  Without `If-Match` the update behaves as before.
+
+## Tier 2: warehouse fulfilment (warehouse-service)
+
+Shipments, returns (RMA), suppliers, purchase orders and reorder suggestions
+are implemented by `warehouse-service`, which keeps the public paths
+(`/api/v1/warehouse/**`, `/api/v1/orders/{id}/shipment`, the returns,
+suppliers, purchase-order and reorder-suggestion endpoints) behind the gateway.
+Its business rules are unchanged; they are documented in that repository.
+
+The backend keeps what warehouse-service builds on:
+
+- `ROLE_WAREHOUSE` and the `warehouse` demo user.
+- Inventory movement types `PURCHASE_RECEIVED` and `RETURN_RESTOCKED`, written
+  by `InventoryService.receive`, which also triggers back-in-stock emails.
+- Email templates `ORDER_SHIPPED`, `ORDER_DELIVERED` and `RETURN_UPDATED`.
+  The backend renders them and publishes them as `GENERIC`, so older JMS
+  consumers keep working.

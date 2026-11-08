@@ -1,5 +1,8 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.repository.review.ProductReviewRepository;
+import com.awesome.testing.repository.wishlist.WishlistItemRepository;
+import com.awesome.testing.repository.coupon.CartCouponRepository;
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.user.Role;
 import com.awesome.testing.dto.user.TokenPair;
@@ -70,6 +73,15 @@ class UserServiceTest {
 
     @Mock
     private MfaService mfaService;
+
+    @Mock
+    private CartCouponRepository cartCouponRepository;
+
+    @Mock
+    private WishlistItemRepository wishlistItemRepository;
+
+    @Mock
+    private ProductReviewRepository productReviewRepository;
 
     @InjectMocks
     private UserService userService;

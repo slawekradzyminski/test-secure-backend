@@ -10,6 +10,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -66,6 +67,14 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
                 .badRequest()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(errors);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorDto> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONTENT_TOO_LARGE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorDto("Uploaded file is too large"));
     }
 
     @ExceptionHandler(AccessDeniedException.class)

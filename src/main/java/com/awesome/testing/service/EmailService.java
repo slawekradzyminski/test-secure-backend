@@ -1,6 +1,7 @@
 package com.awesome.testing.service;
 
 import com.awesome.testing.dto.email.EmailDto;
+import com.awesome.testing.dto.email.EmailTemplate;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.service.delay.DelayGenerator;
 import com.awesome.testing.service.email.EmailEventService;
@@ -36,7 +37,7 @@ public class EmailService {
         try {
             emailTaskScheduler.schedule(() -> {
                 try {
-                    jmsTemplate.convertAndSend(destination, emailDto);
+                    jmsTemplate.convertAndSend(destination, toWirePayload(emailDto));
                     markSent(emailEventId);
                     log.info("Email sent to {}", emailDto.getTo());
                 } catch (RuntimeException e) {
@@ -48,6 +49,19 @@ public class EmailService {
             markFailed(emailEventId, e);
             log.error("Email scheduling failed for {}", emailDto.getTo(), e);
         }
+    }
+
+    static EmailDto toWirePayload(EmailDto emailDto) {
+        if (emailDto.getTemplate() == null || emailDto.getTemplate().isRenderedByConsumer()) {
+            return emailDto;
+        }
+        return EmailDto.builder()
+                .to(emailDto.getTo())
+                .subject(emailDto.getSubject())
+                .message(emailDto.getMessage())
+                .template(EmailTemplate.GENERIC)
+                .properties(emailDto.getProperties())
+                .build();
     }
 
     private void markSent(Integer emailEventId) {

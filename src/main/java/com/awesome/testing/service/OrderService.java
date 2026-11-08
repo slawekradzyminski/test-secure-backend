@@ -8,7 +8,11 @@ import com.awesome.testing.entity.AddressEntity;
 import com.awesome.testing.entity.CartItemEntity;
 import com.awesome.testing.entity.OrderEntity;
 import com.awesome.testing.entity.OrderItemEntity;
+import com.awesome.testing.entity.OrderIdempotencyKeyEntity;
 import com.awesome.testing.entity.ProductEntity;
+import com.awesome.testing.repository.OrderIdempotencyKeyRepository;
+import com.awesome.testing.service.coupon.CouponQuote;
+import com.awesome.testing.service.coupon.CouponService;
 import com.awesome.testing.entity.inventory.InventoryState;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
@@ -21,6 +25,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.HexFormat;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -30,14 +44,49 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderService {
 
+    private static final Pattern IDEMPOTENCY_KEY = Pattern.compile("^[A-Za-z0-9_-]{8,64}$");
+    private static final Duration IDEMPOTENCY_TTL = Duration.ofHours(24);
+
     private final OrderRepository orderRepository;
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final InventoryService inventoryService;
+    private final CouponService couponService;
+    private final OrderIdempotencyKeyRepository idempotencyKeyRepository;
+    private final Clock commerceClock;
 
     @Transactional
     public OrderDto createOrder(String username, AddressDto addressDto) {
+        return createOrder(username, addressDto, null).order();
+    }
+
+    /**
+     * Creates an order from the cart. When an idempotency key is supplied, a
+     * repeat with the same address within 24 hours replays the original order.
+     * The key is looked up after the cart rows are locked so a concurrent
+     * duplicate waits for the first checkout and then replays it.
+     */
+    @Transactional
+    public OrderCreation createOrder(String username, AddressDto addressDto, String idempotencyKey) {
+        if (idempotencyKey != null && !IDEMPOTENCY_KEY.matcher(idempotencyKey).matches()) {
+            throw new CustomException(
+                    "Idempotency-Key must be 8-64 letters, digits, hyphens or underscores", HttpStatus.BAD_REQUEST);
+        }
         List<CartItemEntity> cartItems = cartItemRepository.findByUsernameForUpdate(username);
+        String requestHash = idempotencyKey == null ? null : requestHash(addressDto);
+        if (idempotencyKey != null) {
+            idempotencyKeyRepository.deleteExpired(
+                    username, idempotencyKey, LocalDateTime.now(commerceClock).minus(IDEMPOTENCY_TTL));
+            Optional<OrderIdempotencyKeyEntity> prior =
+                    idempotencyKeyRepository.findByUsernameAndKey(username, idempotencyKey);
+            if (prior.isPresent()) {
+                if (!prior.get().getRequestHash().equals(requestHash)) {
+                    throw new CustomException(
+                            "Idempotency-Key was already used with a different request", HttpStatus.CONFLICT);
+                }
+                return new OrderCreation(OrderDto.from(prior.get().getOrder()), true);
+            }
+        }
         if (cartItems.isEmpty()) {
             throw new CustomException("Cart is empty", HttpStatus.BAD_REQUEST);
         }
@@ -57,13 +106,29 @@ public class OrderService {
         for (ProductEntity product : locked) {
             inventoryService.checkAvailable(product, quantities.get(product.getId()));
         }
+        BigDecimal subtotal = order.getTotalAmount();
+        Optional<CouponQuote> quote = couponService.quoteForCheckout(username, subtotal);
+        BigDecimal discount = quote.map(CouponQuote::discount).orElse(BigDecimal.ZERO);
+        order.setSubtotalAmount(subtotal);
+        order.setDiscountAmount(discount);
+        order.setCouponCode(quote.map(q -> q.coupon().getCode()).orElse(null));
+        order.setTotalAmount(subtotal.subtract(discount));
         OrderEntity savedOrder = orderRepository.save(order);
         for (ProductEntity product : locked) {
             inventoryService.deduct(product, quantities.get(product.getId()), savedOrder);
         }
+        quote.ifPresent(q -> couponService.recordRedemption(q, savedOrder));
         cartItemRepository.deleteByUsername(username);
+        if (idempotencyKey != null) {
+            idempotencyKeyRepository.save(OrderIdempotencyKeyEntity.builder()
+                    .username(username)
+                    .key(idempotencyKey)
+                    .requestHash(requestHash)
+                    .order(savedOrder)
+                    .build());
+        }
 
-        return OrderDto.from(savedOrder);
+        return new OrderCreation(OrderDto.from(savedOrder), false);
     }
 
     @Transactional(readOnly = true)
@@ -137,6 +202,21 @@ public class OrderService {
         ));
     }
 
+    static String requestHash(AddressDto address) {
+        String canonical = String.join("\u001f",
+                Objects.toString(address.getStreet(), ""),
+                Objects.toString(address.getCity(), ""),
+                Objects.toString(address.getState(), ""),
+                Objects.toString(address.getZipCode(), ""),
+                Objects.toString(address.getCountry(), ""));
+        try {
+            return HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256").digest(canonical.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is unavailable", e);
+        }
+    }
+
     private boolean canBeCancelled(OrderStatus status) {
         return status == OrderStatus.PENDING || status == OrderStatus.PAID;
     }
@@ -145,6 +225,7 @@ public class OrderService {
         if (!canBeCancelled(order.getStatus())) {
             throw new CustomException("Order cannot be cancelled in current status", HttpStatus.BAD_REQUEST);
         }
+        couponService.releaseRedemption(order);
         if (order.getInventoryState() == InventoryState.DEDUCTED) {
             Map<Long, Integer> quantities = order.getItems().stream()
                     .collect(Collectors.groupingBy(
