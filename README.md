@@ -144,6 +144,12 @@ The API documentation is available at:
 - OpenAPI JSON: [http://localhost:4001/v3/api-docs](http://localhost:4001/v3/api-docs)
 - OpenAPI YAML: [http://localhost:4001/v3/api-docs.yaml](http://localhost:4001/v3/api-docs.yaml)
 
+The Swagger UI definition dropdown has three entries: the backend document as JSON and as YAML, and
+"Warehouse service", the `warehouse-service` document that the `awesome-localstack` gateway serves at
+`/warehouse/v3/api-docs`. That entry only loads through the gateway (for example
+`http://localhost:8081/swagger-ui/index.html`); on port 4001 it returns 404. Warehouse operations use the
+same bearer token as the backend: sign in, then authorize again after switching to the warehouse definition.
+
 ## Initial Data
 
 Demo seed data is available only in `local` or `docker,demo` runs. Public/server deployments should keep it disabled.
