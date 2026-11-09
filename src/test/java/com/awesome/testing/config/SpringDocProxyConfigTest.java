@@ -29,6 +29,19 @@ class SpringDocProxyConfigTest {
     }
 
     @Test
+    void shouldKeepThePublishedLocalPortWhenTheGatewayForwardsItsContainerPort() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.HOST, "localhost:8081");
+        headers.add("X-Forwarded-Host", "localhost:8081");
+        headers.add("X-Forwarded-Port", "80");
+        headers.add("X-Forwarded-Proto", "http");
+
+        HttpRequest request = new TestHttpRequest(URI.create("http://backend:4001/v3/api-docs"), headers);
+
+        assertThat(customizer.customize("http://localhost", request)).isEqualTo("http://localhost:8081");
+    }
+
+    @Test
     void shouldDropDefaultHttpsPortForProductionProxy() {
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.HOST, "awesome.byst.re");
