@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -54,4 +55,23 @@ public class EmailEventEntity {
 
     @Column(name = "failure_reason", length = 1000)
     private String failureReason;
+
+    /** JMS destination of the last send; null for events recorded before retries existed. */
+    @Column(name = "destination")
+    private String destination;
+
+    /** JSON wire payload, kept so a failed or lost send can be retried. */
+    @Column(name = "payload", columnDefinition = "text")
+    private String payload;
+
+    @Column(name = "attempts", nullable = false)
+    @Builder.Default
+    private int attempts = 0;
+
+    @Column(name = "next_attempt_at")
+    private Instant nextAttemptAt;
+
+    /** Caller-supplied idempotency key (warehouse-service notifications). */
+    @Column(name = "request_id", unique = true)
+    private UUID requestId;
 }

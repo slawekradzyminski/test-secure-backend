@@ -56,7 +56,6 @@ warehouse:
 security:
   jwt:
     token:
-      secret-key: test-key
       expire-length: 3600000
 
 management:
@@ -103,3 +102,8 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+app:
+  email:
+    retry:
+      enabled: false

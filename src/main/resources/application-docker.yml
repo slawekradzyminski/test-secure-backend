@@ -44,7 +44,7 @@ server:
 security:
   jwt:
     token:
-      secret-key: ${JWT_SECRET_KEY:local-development-jwt-key-change-me}
+      signing-key: ${JWT_SIGNING_KEY:}
       expire-length: 3600000
 
 management:

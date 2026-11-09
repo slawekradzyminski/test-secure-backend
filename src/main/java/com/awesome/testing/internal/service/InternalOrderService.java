@@ -8,6 +8,7 @@ import com.awesome.testing.internal.dto.InternalOrderDto;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,17 @@ public class InternalOrderService {
         PageRequest pageable = PageRequest.of(Math.max(page, 0), clampSize(size));
         return PageDto.from(orderRepository.findByStatusAndFulfilmentStateOldestFirst(status, fulfilment, pageable)
                 .map(InternalOrderDto::from));
+    }
+
+    @Transactional(readOnly = true)
+    public List<InternalOrderDto> findByIds(List<Long> ids) {
+        if (ids.size() > MAX_PAGE_SIZE) {
+            throw new CustomException("At most " + MAX_PAGE_SIZE + " ids are allowed", HttpStatus.BAD_REQUEST);
+        }
+        return orderRepository.findWithItemsByIdIn(ids).stream()
+                .sorted(java.util.Comparator.comparing(com.awesome.testing.entity.OrderEntity::getId))
+                .map(InternalOrderDto::from)
+                .toList();
     }
 
     @Transactional
