@@ -243,8 +243,9 @@ public class OrderService {
     /**
      * Mirrors a shipment transition from warehouse-service onto the order.
      * Only the next forward step is accepted; repeating the current state is a
-     * no-op so a retried call is safe, except for AWAITING_PICK, whose repeat
-     * signals a duplicate shipment and is rejected.
+     * no-op so a retried call is safe. That includes AWAITING_PICK: a release
+     * whose response was lost can be retried; warehouse-service prevents
+     * duplicate shipments with its unique order constraint.
      */
     @Transactional
     public OrderEntity applyFulfilmentState(Long orderId, FulfilmentState target) {
@@ -255,7 +256,7 @@ public class OrderService {
         }
         OrderEntity order = lockOrder(orderId);
         FulfilmentState current = fulfilmentOf(order);
-        if (current == target && target != FulfilmentState.AWAITING_PICK) {
+        if (current == target) {
             return order;
         }
         if (current.nextStep() != target) {

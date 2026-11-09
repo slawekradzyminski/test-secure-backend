@@ -54,6 +54,11 @@ public class OrderDto {
             example = "AWAITING_PICK")
     private FulfilmentState fulfilmentState;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"number", "null"}, description = "Amount refunded for returned items; omitted until a refund is booked",
+            example = "49.99")
+    private BigDecimal refundedAmount;
+
     @Valid
     @NotNull(message = "Shipping address is required")
     @Schema(description = "Shipping address")
@@ -76,6 +81,7 @@ public class OrderDto {
                 .couponCode(order.getCouponCode())
                 .status(order.getStatus())
                 .fulfilmentState(warehouseState(order))
+                .refundedAmount(refundedAmountOf(order))
                 .shippingAddress(AddressDto.from(order.getShippingAddress()))
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
@@ -93,6 +99,12 @@ public class OrderDto {
 
     private static BigDecimal subtotalOf(OrderEntity order) {
         return order.getSubtotalAmount() == null ? order.getTotalAmount() : order.getSubtotalAmount();
+    }
+
+    /** Omitted until a refund exists, keeping the course's order bodies unchanged. */
+    private static BigDecimal refundedAmountOf(OrderEntity order) {
+        return order.getRefundedAmount() == null || order.getRefundedAmount().signum() == 0
+                ? null : order.getRefundedAmount();
     }
 
     /** Omitted for orders the warehouse never touched, keeping the course's order bodies unchanged. */

@@ -34,6 +34,13 @@ public class OrderEntity {
     @Builder.Default
     private List<OrderItemEntity> items = new ArrayList<>();
 
+    /** Refunds go with the order when a user is forgotten. */
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @lombok.ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
+    private List<com.awesome.testing.entity.refund.OrderRefundEntity> refunds = new ArrayList<>();
+
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
@@ -46,6 +53,11 @@ public class OrderEntity {
 
     @Column(length = 32)
     private String couponCode;
+
+    /** Sum of the refunds booked for returned items; see {@link com.awesome.testing.entity.refund.OrderRefundEntity}. */
+    @Column(name = "refunded_amount", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal refundedAmount = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -78,6 +90,9 @@ public class OrderEntity {
     void defaultAmounts() {
         if (discountAmount == null) {
             discountAmount = BigDecimal.ZERO;
+        }
+        if (refundedAmount == null) {
+            refundedAmount = BigDecimal.ZERO;
         }
         if (fulfilmentState == null) {
             fulfilmentState = FulfilmentState.NONE;

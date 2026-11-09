@@ -51,8 +51,7 @@ class RuntimeProfilesPostgresIT {
                         "--spring.datasource.password=" + POSTGRES.getPassword(),
                         "--server.port=0",
                         "--spring.grpc.server.enabled=false",
-                        "--password-reset.outbox-access-key=runtime-profile-test-outbox-key",
-                        "--security.jwt.token.secret-key=runtime-profile-test-signing-key-0123456789abcdef")) {
+                        "--password-reset.outbox-access-key=runtime-profile-test-outbox-key")) {
             assertThat(context.getEnvironment().getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
             assertThat(context.getBean(Flyway.class).info().applied()).isNotEmpty();
             assertThat(context.getBean(ProductRepository.class).count()).isPositive();

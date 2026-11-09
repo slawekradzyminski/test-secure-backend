@@ -23,8 +23,8 @@ Compatibility rules followed by every feature:
 | `ROLE_ADMIN` | Everything, including coupons, moderation and CSV (and the warehouse-service admin endpoints). |
 
 Signup always creates `ROLE_CLIENT`. The demo seed adds `warehouse` / `warehouse`.
-The backend issues the JWTs for all three roles; warehouse-service validates
-them with the shared `JWT_SECRET_KEY`.
+The backend issues the RS256 JWTs for all three roles; warehouse-service
+verifies them with the public keys from `GET /internal/v1/jwks.json`.
 
 ## Tier 1: shop features
 
@@ -68,6 +68,17 @@ cart with `PUT /api/v1/cart/coupon` and removes it with `DELETE /api/v1/cart/cou
 - Moderation: `GET /api/v1/admin/reviews?status=`,
   `PUT /api/v1/admin/reviews/{id}/moderation` with `APPROVED` or `REJECTED`;
   rejection requires a note (400).
+
+### Customer emails
+
+The backend renders the subject and body of every customer email; the JMS
+consumer only delivers them, and the local outbox shows the same text. Each
+email sent to a known user is recorded in `email_event` with its payload. A
+send that fails (for example while Artemis is down) is retried by
+`EmailRetryJob` every minute with exponential backoff (1, 2, 4, 8 minutes; five
+attempts in total), and a send lost in a restart during the training delay is
+retried after 20 minutes. `APP_EMAIL_RETRY_ENABLED` and
+`APP_EMAIL_RETRY_INTERVAL` configure the job.
 
 ### Wishlist and back-in-stock notifications
 
@@ -172,18 +183,22 @@ and is absent from `/v3/api-docs`.
 | --- | --- |
 | `GET /orders/{id}` | `InternalOrderDto`, 404 when unknown |
 | `GET /orders?status=PAID&fulfilment=NONE&page=0&size=20` | `PageDto<InternalOrderDto>`, oldest first; `status` defaults to `PAID`, `fulfilment` to `NONE`, negative pages become 0, size is clamped to 1–100 |
-| `PUT /orders/{id}/fulfilment` `{state}` | Next forward step only. `AWAITING_PICK` requires a `PAID` order in `NONE`. `SHIPPED` and `DELIVERED` also set the order status. Repeating the current state from `PICKED` on returns 200 without changes (safe retry); repeating `AWAITING_PICK` is 409. Skips, backward steps and steps after `CANCELLED` are 409. `NONE` or `CANCELLED` in the body is 400 |
+| `GET /orders?ids=1,2` | `List<InternalOrderDto>` of the given orders in any status, by id ascending; unknown ids are omitted; more than 100 ids is 400. warehouse-service uses it to follow customer cancellations |
+| `PUT /orders/{id}/fulfilment` `{state}` | Next forward step only. `AWAITING_PICK` requires a `PAID` order in `NONE`. `SHIPPED` and `DELIVERED` also set the order status. Repeating the current state returns 200 without changes, including `AWAITING_PICK`, so a release whose response was lost can be retried (warehouse-service's unique shipment-per-order constraint prevents duplicates). Skips, backward steps and steps after `CANCELLED` are 409. `NONE` or `CANCELLED` in the body is 400 |
+| `POST /orders/{id}/refunds` `{requestId, amount, reference}` | Books a refund for returned items. Only `DELIVERED` orders (409), amount 0.01 or more with at most 2 decimals (400), and the refunds of an order may not exceed its `totalAmount` (409). Adds the amount to `orders.refunded_amount` (shown as `refundedAmount` in order responses once it is above zero). A refund that brings the order to its full total releases the coupon redemption. Repeating a `requestId` with the same order and amount returns the order unchanged; a different order or amount is 409 |
 | `POST /orders/{id}/warehouse-cancel` | Only for `PAID` orders in `AWAITING_PICK` or `PICKED` (otherwise 409); restores stock, releases the coupon, sets status and state to `CANCELLED` |
 | `GET /products[?ids=1,2]` | `List<InternalProductDto>` by id ascending; unknown ids are omitted |
 | `POST /inventory/receipts` | `{movementIds}` in request-line order. `type` must be `PURCHASE_RECEIVED` or `RETURN_RESTOCKED` (400), each product at most once (400), quantities ≥ 1, unknown product or `orderId` 404. Each movement stores the `requestId`, `reference` as its reason and actor `warehouse-service`. Repeating a `requestId` with the same type and lines returns the original ids without changing stock; different lines or type is 409 |
-| `POST /notifications` | 202. `template` must be `ORDER_SHIPPED`, `ORDER_DELIVERED` or `RETURN_UPDATED` (400); unknown username 404. The email is queued through the existing email pipeline and published as `GENERIC` |
+| `POST /notifications` | 202. `requestId` is required (400); `template` must be `ORDER_SHIPPED`, `ORDER_DELIVERED` or `RETURN_UPDATED` (400) and its properties must be present (400: `orderId`, `carrier`, `trackingNumber` / `orderId` / `returnId`, `orderId`, `status`, optional `refundAmount` and `note`); unknown username 404. The backend renders the subject and body (`CustomerEmailRenderer`) and queues the email through the existing pipeline. A repeated `requestId` is accepted without a second email |
+| `GET /jwks.json` | The RS256 access-token verification key as a JSON Web Key Set (`kty`, `use`, `alg`, `kid`, `n`, `e`) |
 
 ```text
 InternalOrderDto   { id, username, status, fulfilmentState, subtotalAmount, discountAmount,
-                     totalAmount, couponCode, shippingAddress {street, city, state, zipCode, country},
+                     totalAmount, couponCode, refundedAmount, shippingAddress {street, city, state, zipCode, country},
                      items [{productId, productName, category, quantity, unitPrice}],
                      createdAt, updatedAt }
 InternalProductDto { id, name, category, price, stockQuantity }
 receipt body       { requestId, type, orderId?, reference, lines [{productId, quantity}] }
-notification body  { username, template, subject, message, properties {string: string} }
+refund body        { requestId, amount, reference }
+notification body  { requestId, username, template, properties {string: string} }
 ```

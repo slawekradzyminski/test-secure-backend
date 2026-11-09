@@ -20,7 +20,6 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +39,7 @@ public class CommerceNotificationListener {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final CustomerEmailRenderer renderer;
     private final Clock commerceClock;
 
     @Value("${activemq.destination}")
@@ -55,17 +55,10 @@ public class CommerceNotificationListener {
         List<WishlistItemEntity> watchers = wishlistItemRepository.findByProductIdAndNotifyWhenAvailableTrue(product.getId());
         LocalDateTime now = LocalDateTime.now(commerceClock);
         for (WishlistItemEntity watcher : watchers) {
-            userRepository.findByUsername(watcher.getUsername()).ifPresent(user -> send(user, EmailDto.builder()
-                    .to(user.getEmail())
-                    .subject(product.getName() + " is back in stock")
-                    .message("Hi " + user.getUsername() + ",\n\n" + product.getName()
-                            + " from your wishlist is available again. Order soon, stock is limited.")
-                    .template(EmailTemplate.BACK_IN_STOCK)
-                    .properties(Map.of(
-                            "username", user.getUsername(),
+            userRepository.findByUsername(watcher.getUsername()).ifPresent(user -> send(user,
+                    renderer.render(user, EmailTemplate.BACK_IN_STOCK, Map.of(
                             "productId", String.valueOf(product.getId()),
-                            "productName", product.getName()))
-                    .build()));
+                            "productName", product.getName())), null));
             watcher.setLastNotifiedAt(now);
         }
         wishlistItemRepository.saveAll(watchers);
@@ -73,18 +66,14 @@ public class CommerceNotificationListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onCustomerNotificationRequested(CustomerNotificationRequestedEvent event) {
-        userRepository.findByUsername(event.username()).ifPresent(user -> send(user, EmailDto.builder()
-                .to(user.getEmail())
-                .subject(event.subject())
-                .message(event.message())
-                .template(event.template())
-                .properties(event.properties() == null ? Map.of() : new LinkedHashMap<>(event.properties()))
-                .build()));
+        userRepository.findByUsername(event.username()).ifPresent(user -> send(user,
+                renderer.render(user, event.template(), event.properties() == null ? Map.of() : event.properties()),
+                event.requestId()));
     }
 
-    private void send(UserEntity user, EmailDto email) {
+    private void send(UserEntity user, EmailDto email, java.util.UUID requestId) {
         try {
-            emailService.sendEmail(email, destination, user);
+            emailService.sendEmail(email, destination, user, requestId);
         } catch (RuntimeException e) {
             log.error("Could not queue {} email for {}", email.getTemplate(), user.getUsername(), e);
         }

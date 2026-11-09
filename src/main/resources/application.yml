@@ -163,6 +163,10 @@ app:
   email:
     # jms (Artemis, default) or local-outbox (in-memory outbox, no broker).
     transport: jms
+    # Re-sends tracked emails that failed or were lost in a restart (see EmailRetryJob).
+    retry:
+      enabled: ${APP_EMAIL_RETRY_ENABLED:true}
+      interval: ${APP_EMAIL_RETRY_INTERVAL:PT1M}
   mfa:
     issuer: ${APP_MFA_ISSUER:Awesome Testing}
     encryption-password: ${APP_MFA_ENCRYPTION_PASSWORD:local-development-mfa-key-change-me}

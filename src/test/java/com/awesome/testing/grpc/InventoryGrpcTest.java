@@ -18,11 +18,9 @@ import io.grpc.reflection.v1.ServerReflectionResponse;
 import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -37,6 +35,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class InventoryGrpcTest extends AbstractInventoryGrpcTest {
     @Autowired
     private UserRepository users;
+
+    @Autowired
+    private com.awesome.testing.security.JwtTokenProvider jwtTokenProvider;
 
     @Test
     void rejectsMissingInvalidAndCustomerTokensForEveryRpc() {
@@ -211,7 +212,8 @@ class InventoryGrpcTest extends AbstractInventoryGrpcTest {
         saved.setRoles(List.of(Role.ROLE_CLIENT));
         users.saveAndFlush(saved);
         var expired = Jwts.builder().subject(user.getUsername()).expiration(Date.from(Instant.now().minusSeconds(60)))
-                .signWith(Keys.hmacShaKeyFor("test-key".repeat(4).getBytes(StandardCharsets.UTF_8))).compact();
+                .signWith((java.security.PrivateKey) org.springframework.test.util.ReflectionTestUtils.getField(jwtTokenProvider, "privateKey"),
+                        Jwts.SIG.RS256).compact();
 
         // when / then
         assertStatus(Status.Code.PERMISSION_DENIED, () -> stub(token).listInventory(ListInventoryRequest.getDefaultInstance()));

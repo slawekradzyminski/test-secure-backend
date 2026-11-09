@@ -7,14 +7,8 @@ public enum EmailTemplate {
     BACK_IN_STOCK,
     ORDER_SHIPPED,
     ORDER_DELIVERED,
-    RETURN_UPDATED;
+    RETURN_UPDATED
 
-    /**
-     * Templates the JMS email consumer knows how to render. Other templates are
-     * rendered by the backend and published as {@link #GENERIC} so older
-     * consumers never receive an enum value they cannot deserialize.
-     */
-    public boolean isRenderedByConsumer() {
-        return this == GENERIC || this == PASSWORD_RESET_REQUESTED || this == PASSWORD_RESET_CONFIRMED;
-    }
+    // The backend renders every subject and body; the template travels with the email
+    // as metadata, and consumers deliver unknown templates as GENERIC.
 }

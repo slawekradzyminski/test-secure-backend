@@ -130,7 +130,15 @@ class OrderServiceFulfilmentTest {
         assertThat(service.applyFulfilmentState(7L, FulfilmentState.AWAITING_PICK).getFulfilmentState())
                 .isEqualTo(FulfilmentState.AWAITING_PICK);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
-        assertConflict(() -> service.applyFulfilmentState(7L, FulfilmentState.AWAITING_PICK));
+    }
+
+    @Test
+    void repeatingTheReleaseIsANoOpSoATimedOutReleaseCanBeRetried() {
+        order.setFulfilmentState(FulfilmentState.AWAITING_PICK);
+
+        assertThat(service.applyFulfilmentState(7L, FulfilmentState.AWAITING_PICK).getFulfilmentState())
+                .isEqualTo(FulfilmentState.AWAITING_PICK);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
     }
 
     @Test

@@ -1,5 +1,9 @@
 package com.awesome.testing.endpoints.commerce;
 
+import java.math.BigDecimal;
+
+import com.awesome.testing.internal.dto.OrderRefundDto;
+
 import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.email.EmailTemplate;
 import com.awesome.testing.dto.order.FulfilmentState;
@@ -117,7 +121,7 @@ class InternalApiFlowTest extends AbstractCommerceFlowTest {
         markPaid(order.getId());
 
         InternalOrderDto awaiting = fulfilment(order.getId(), FulfilmentState.AWAITING_PICK, InternalOrderDto.class).getBody();
-        ResponseEntity<ErrorDto> duplicateRelease = fulfilment(order.getId(), FulfilmentState.AWAITING_PICK, ErrorDto.class);
+        ResponseEntity<InternalOrderDto> retriedRelease = fulfilment(order.getId(), FulfilmentState.AWAITING_PICK, InternalOrderDto.class);
         ResponseEntity<ErrorDto> skip = fulfilment(order.getId(), FulfilmentState.PACKED, ErrorDto.class);
         ResponseEntity<ErrorDto> cancelThroughPut = fulfilment(order.getId(), FulfilmentState.CANCELLED, ErrorDto.class);
         fulfilment(order.getId(), FulfilmentState.PICKED, InternalOrderDto.class);
@@ -134,7 +138,8 @@ class InternalApiFlowTest extends AbstractCommerceFlowTest {
         assertThat(pendingRelease.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(awaiting.fulfilmentState()).isEqualTo(FulfilmentState.AWAITING_PICK);
         assertThat(awaiting.status()).isEqualTo(OrderStatus.PAID);
-        assertThat(duplicateRelease.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(retriedRelease.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(retriedRelease.getBody().fulfilmentState()).isEqualTo(FulfilmentState.AWAITING_PICK);
         assertThat(skip.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(skip.getBody().getMessage()).isEqualTo("Cannot change fulfilment state from AWAITING_PICK to PACKED");
         assertThat(cancelThroughPut.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -285,27 +290,110 @@ class InternalApiFlowTest extends AbstractCommerceFlowTest {
     }
 
     @Test
-    void notificationsAreQueuedForKnownCustomersOnly() {
-        InternalNotificationDto shipped = new InternalNotificationDto(client.getUsername(), EmailTemplate.ORDER_SHIPPED,
-                "Order #1 has shipped", "Your order is on its way.", Map.of("orderId", "1"));
+    void notificationsAreRenderedByTheBackendAndQueuedOncePerRequestId() {
+        UUID requestId = UUID.randomUUID();
+        Map<String, String> properties = Map.of("orderId", "1", "carrier", "DPD", "trackingNumber", "12345678901234");
+        InternalNotificationDto shipped = new InternalNotificationDto(requestId, client.getUsername(),
+                EmailTemplate.ORDER_SHIPPED, properties);
 
         ResponseEntity<Void> accepted = notification(shipped, Void.class);
-        ResponseEntity<ErrorDto> unknownUser = notification(new InternalNotificationDto("nobody-" + UUID.randomUUID(),
-                EmailTemplate.ORDER_SHIPPED, "s", "m", Map.of()), ErrorDto.class);
-        ResponseEntity<ErrorDto> foreignTemplate = notification(new InternalNotificationDto(client.getUsername(),
-                EmailTemplate.PASSWORD_RESET_REQUESTED, "s", "m", null), ErrorDto.class);
-        ResponseEntity<String> blankSubject = notification(new InternalNotificationDto(client.getUsername(),
-                EmailTemplate.RETURN_UPDATED, " ", "m", null), String.class);
+        ResponseEntity<Void> replayed = notification(shipped, Void.class);
+        ResponseEntity<ErrorDto> unknownUser = notification(new InternalNotificationDto(UUID.randomUUID(),
+                "nobody-" + UUID.randomUUID(), EmailTemplate.ORDER_SHIPPED, properties), ErrorDto.class);
+        ResponseEntity<ErrorDto> foreignTemplate = notification(new InternalNotificationDto(UUID.randomUUID(),
+                client.getUsername(), EmailTemplate.PASSWORD_RESET_REQUESTED, null), ErrorDto.class);
+        ResponseEntity<ErrorDto> missingProperty = notification(new InternalNotificationDto(UUID.randomUUID(),
+                client.getUsername(), EmailTemplate.RETURN_UPDATED, Map.of("orderId", "1")), ErrorDto.class);
+        ResponseEntity<String> missingRequestId = notification(new InternalNotificationDto(null,
+                client.getUsername(), EmailTemplate.ORDER_DELIVERED, Map.of("orderId", "1")), String.class);
 
         assertThat(accepted.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+        assertThat(replayed.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
         assertThat(emailEventRepository.findAll())
-                .anySatisfy(event -> {
+                .filteredOn(event -> requestId.equals(event.getRequestId()))
+                .singleElement()
+                .satisfies(event -> {
                     assertThat(event.getType()).isEqualTo(EmailTemplate.ORDER_SHIPPED);
                     assertThat(event.getRecipientEmail()).isEqualTo(client.getEmail());
+                    assertThat(event.getPayload())
+                            .contains("Order #1 has shipped")
+                            .contains("is on its way with DPD. Tracking number: 12345678901234.");
                 });
         assertThat(unknownUser.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(foreignTemplate.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(blankSubject.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(missingProperty.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(missingProperty.getBody().getMessage()).isEqualTo("properties.returnId is required for RETURN_UPDATED");
+        assertThat(missingRequestId.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void refundsAreBookedOnDeliveredOrdersUpToTheTotalAndReplayIdempotently() {
+        OrderDto order = order(clientToken, product("40.00", 10), 2);
+        OrderDto undelivered = order(clientToken, product("10.00", 10), 1);
+        deliver(order.getId());
+        UUID firstRequest = UUID.randomUUID();
+
+        ResponseEntity<InternalOrderDto> first = refund(order.getId(), new OrderRefundDto(firstRequest, new BigDecimal("30.00"), "Return #1"), InternalOrderDto.class);
+        ResponseEntity<InternalOrderDto> replay = refund(order.getId(), new OrderRefundDto(firstRequest, new BigDecimal("30.00"), "Return #1"), InternalOrderDto.class);
+        ResponseEntity<ErrorDto> conflictingReplay = refund(order.getId(), new OrderRefundDto(firstRequest, new BigDecimal("31.00"), "Return #1"), ErrorDto.class);
+        ResponseEntity<ErrorDto> tooMuch = refund(order.getId(), new OrderRefundDto(UUID.randomUUID(), new BigDecimal("50.01"), "Return #2"), ErrorDto.class);
+        ResponseEntity<InternalOrderDto> rest = refund(order.getId(), new OrderRefundDto(UUID.randomUUID(), new BigDecimal("50.00"), "Return #2"), InternalOrderDto.class);
+        ResponseEntity<ErrorDto> notDelivered = refund(undelivered.getId(), new OrderRefundDto(UUID.randomUUID(), BigDecimal.ONE, "Return #3"), ErrorDto.class);
+        ResponseEntity<ErrorDto> unknownOrder = refund(999999L, new OrderRefundDto(UUID.randomUUID(), BigDecimal.ONE, "Return #4"), ErrorDto.class);
+        ResponseEntity<String> zero = refund(order.getId(), new OrderRefundDto(UUID.randomUUID(), BigDecimal.ZERO, "Return #5"), String.class);
+        OrderDto customerView = executeGet(ORDERS_ENDPOINT + "/" + order.getId(), getHeadersWith(clientToken), OrderDto.class).getBody();
+        OrderDto untouchedView = executeGet(ORDERS_ENDPOINT + "/" + undelivered.getId(), getHeadersWith(clientToken), OrderDto.class).getBody();
+
+        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(first.getBody().refundedAmount()).isEqualByComparingTo("30.00");
+        assertThat(replay.getBody().refundedAmount()).isEqualByComparingTo("30.00");
+        assertThat(conflictingReplay.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(tooMuch.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(tooMuch.getBody().getMessage()).isEqualTo("Refund of 50.01 exceeds the refundable amount of 50.00");
+        assertThat(rest.getBody().refundedAmount()).isEqualByComparingTo("80.00");
+        assertThat(notDelivered.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(unknownOrder.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(zero.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(customerView.getRefundedAmount()).isEqualByComparingTo("80.00");
+        assertThat(customerView.getStatus()).isEqualTo(OrderStatus.DELIVERED);
+        assertThat(untouchedView.getRefundedAmount()).isNull();
+    }
+
+    @Test
+    void ordersCanBeReadInBatchesById() {
+        ProductEntity product = product("5.00", 10);
+        OrderDto first = order(clientToken, product, 1);
+        OrderDto second = order(clientToken, product, 1);
+
+        ResponseEntity<List<InternalOrderDto>> response = executeGet(
+                INTERNAL + "/orders?ids=" + second.getId() + "," + first.getId() + ",999999", serviceHeaders(TOKEN),
+                new ParameterizedTypeReference<List<InternalOrderDto>>() {});
+        ResponseEntity<String> withoutToken = executeGet(INTERNAL + "/orders?ids=" + first.getId(), getJsonOnlyHeaders(), String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).extracting(InternalOrderDto::id).containsExactly(first.getId(), second.getId());
+        assertThat(response.getBody().getFirst().items()).hasSize(1);
+        assertThat(withoutToken.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void jwksPublishesTheKeyThatSignsAccessTokens() throws Exception {
+        ResponseEntity<String> response = executeGet(INTERNAL + "/jwks.json", serviceHeaders(TOKEN), String.class);
+        ResponseEntity<String> withoutToken = executeGet(INTERNAL + "/jwks.json", getJsonOnlyHeaders(), String.class);
+        var jwk = new com.fasterxml.jackson.databind.ObjectMapper().readTree(response.getBody()).get("keys").get(0);
+        var header = new com.fasterxml.jackson.databind.ObjectMapper().readTree(
+                java.util.Base64.getUrlDecoder().decode(clientToken.split("\\.")[0]));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(jwk.get("kty").asText()).isEqualTo("RSA");
+        assertThat(jwk.get("kid").asText()).isEqualTo(header.get("kid").asText());
+        assertThat(jwk.has("d")).isFalse();
+        assertThat(header.get("alg").asText()).isEqualTo("RS256");
+        assertThat(withoutToken.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    private <T> ResponseEntity<T> refund(Long orderId, OrderRefundDto request, Class<T> type) {
+        return executePost(INTERNAL + "/orders/" + orderId + "/refunds", request, serviceHeaders(TOKEN), type);
     }
 
     private HttpHeaders serviceHeaders(String token) {
