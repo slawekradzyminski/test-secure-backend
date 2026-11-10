@@ -64,7 +64,13 @@ public class CommerceNotificationListener {
         wishlistItemRepository.saveAll(watchers);
     }
 
+    /**
+     * REQUIRES_NEW: when the request is published inside a transaction (payment results), the
+     * email event must be written in a fresh one, because the committed transaction is still
+     * bound during AFTER_COMMIT and would silently swallow the insert.
+     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onCustomerNotificationRequested(CustomerNotificationRequestedEvent event) {
         userRepository.findByUsername(event.username()).ifPresent(user -> send(user,
                 renderer.render(user, event.template(), event.properties() == null ? Map.of() : event.properties()),

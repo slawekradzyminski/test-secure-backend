@@ -1,6 +1,8 @@
 package com.awesome.testing.config;
 
 import com.awesome.testing.dto.email.EmailDto;
+import com.awesome.testing.dto.payment.PaymentRefundResponseDto;
+import com.awesome.testing.dto.payment.PaymentResultDto;
 import com.awesome.testing.event.CommerceEvent;
 import com.awesome.testing.fakedata.ProductSeedDefinition;
 import com.awesome.testing.security.CustomPrincipal;
@@ -35,6 +37,8 @@ class NativeRuntimeHintsTest {
         assertThat(RuntimeHintsPredicates.reflection().onType(EmailDto.class)).accepts(HINTS);
         assertThat(RuntimeHintsPredicates.reflection().onType(ProductSeedDefinition.class)).accepts(HINTS);
         assertThat(RuntimeHintsPredicates.reflection().onType(CommerceEvent.class)).accepts(HINTS);
+        assertThat(RuntimeHintsPredicates.reflection().onType(PaymentResultDto.class)).accepts(HINTS);
+        assertThat(RuntimeHintsPredicates.reflection().onType(PaymentRefundResponseDto.class)).accepts(HINTS);
     }
 
     @Test

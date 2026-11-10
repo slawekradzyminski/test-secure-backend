@@ -556,6 +556,8 @@
                                 <param>com.awesome.testing.event.*</param>
                                 <param>com.awesome.testing.service.checkout.*</param>
                                 <param>com.awesome.testing.service.notification.CustomerEmailRenderer</param>
+                                <param>com.awesome.testing.internal.security.PaymentSignatureVerifier</param>
+                                <param>com.awesome.testing.service.payment.*</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -596,6 +598,9 @@
                                 <param>com.awesome.testing.service.checkout.*Test</param>
                                 <param>com.awesome.testing.service.notification.CustomerEmailRendererTest</param>
                                 <param>com.awesome.testing.internal.service.*Test</param>
+                                <param>com.awesome.testing.internal.security.PaymentSignatureVerifierTest</param>
+                                <param>com.awesome.testing.internal.InternalApiRoutesTest</param>
+                                <param>com.awesome.testing.service.payment.*Test</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>

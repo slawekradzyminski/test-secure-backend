@@ -20,6 +20,14 @@ public class RecordedCommerceEvents {
         events.add(event);
     }
 
+    /**
+     * Forgets earlier events. Order ids repeat once another Spring context recreates the shared
+     * H2 schema, so tests that assert per-order event lists start from an empty record.
+     */
+    public void clear() {
+        events.clear();
+    }
+
     public List<CommerceEvent> forOrder(Long orderId) {
         return events.stream().filter(event -> orderId.equals(event.orderId())).toList();
     }
