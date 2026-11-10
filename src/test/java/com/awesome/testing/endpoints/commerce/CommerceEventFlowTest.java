@@ -33,6 +33,11 @@ class CommerceEventFlowTest extends AbstractCommerceFlowTest {
     @Autowired
     private RecordedCommerceEvents recorded;
 
+    @org.junit.jupiter.api.BeforeEach
+    void forgetEarlierEvents() {
+        recorded.clear();
+    }
+
     @Test
     void theWarehouseLifecyclePublishesEachStepOnce() {
         OrderDto order = order(clientToken, product("20.00", 5), 2);

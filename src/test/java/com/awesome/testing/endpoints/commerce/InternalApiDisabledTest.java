@@ -10,8 +10,8 @@ import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Without WAREHOUSE_SERVICE_TOKEN the internal API does not exist, whatever token is sent. */
-@TestPropertySource(properties = "warehouse.service-token=")
+/** Without service tokens the internal API does not exist, whatever token is sent. */
+@TestPropertySource(properties = {"warehouse.service-token=", "internal.service-tokens.payment="})
 class InternalApiDisabledTest extends HttpHelper {
 
     @Test

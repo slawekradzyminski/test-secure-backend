@@ -57,6 +57,13 @@ internal:
   service-tokens:
     payment: test-payment-token
 
+payment:
+  base-url: http://localhost:4004
+  webhook-secret: test-payment-webhook-secret
+  refunds:
+    delivery:
+      enabled: false
+
 security:
   jwt:
     token:

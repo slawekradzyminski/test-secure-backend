@@ -29,13 +29,16 @@ public class InternalApiConfig {
     }
 
     /**
-     * Which caller each internal path accepts. Payment endpoints are added here as
-     * {@code .route("/internal/v1/orders/\\d+/payment", ServiceCaller.PAYMENT)}; everything
-     * else is the warehouse-service API.
+     * Which caller each internal path accepts (first full match wins). payment-service posts
+     * payment results and reads single orders and the JWKS; everything else is the
+     * warehouse-service API.
      */
     @Bean
     InternalRoutes internalRoutes() {
         return InternalRoutes.builder()
+                .route("/internal/v1/orders/\\d+/payment", ServiceCaller.PAYMENT)
+                .route("/internal/v1/orders/\\d+", ServiceCaller.WAREHOUSE, ServiceCaller.PAYMENT)
+                .route("/internal/v1/jwks\\.json", ServiceCaller.WAREHOUSE, ServiceCaller.PAYMENT)
                 .otherwise(ServiceCaller.WAREHOUSE)
                 .build();
     }

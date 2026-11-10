@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SwaggerUiConfigTest extends HttpHelper {
 
     @Test
-    void swaggerUiConfigShouldLinkJsonAndYamlApiDocsAndTheWarehouseDocument() throws Exception {
+    void swaggerUiConfigShouldLinkJsonAndYamlApiDocsAndTheWarehouseAndPaymentDocuments() throws Exception {
         ResponseEntity<String> response = executeGet(
                 "/v3/api-docs/swagger-config",
                 getJsonOnlyHeaders(),
@@ -37,9 +37,10 @@ class SwaggerUiConfigTest extends HttpHelper {
                 .containsExactlyInAnyOrder(
                         "/v3/api-docs",
                         "/v3/api-docs.yaml",
-                        "/warehouse/v3/api-docs"
+                        "/warehouse/v3/api-docs",
+                        "/payment/v3/api-docs"
                 );
-        assertThat(config.path("urls").findValuesAsText("name")).contains("Warehouse service");
+        assertThat(config.path("urls").findValuesAsText("name")).contains("Warehouse service", "Payment service");
     }
 
     private List<String> configuredUrls(JsonNode config) {
