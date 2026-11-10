@@ -133,7 +133,7 @@ the card row and writes a `gift_card_transactions` row: `ISSUED`, `REDEEMED`,
   `SILVER` from 1000 lifetime points, `GOLD` from 5000.
 - `GET /api/v1/loyalty/transactions?page&size` → the caller's ledger newest
   first: `EARNED`, `REDEEMED`, `RESTORED`, `REVOKED` with signed `points`.
-- Earning: 1 point per full 1.00 of `totalAmount` when the order becomes `PAID`
+- Earning: 1 point per full 1.00 of `totalAmount` minus the part paid with points (`pointsAmount`) when the order becomes `PAID`
   (an `ORDER_PAID` listener after commit, idempotent per order; a cancelled
   order earns nothing). The customer receives `LOYALTY_POINTS_EARNED`.
 - Redemption: `PUT /api/v1/cart/loyalty-points {points}` in whole multiples of

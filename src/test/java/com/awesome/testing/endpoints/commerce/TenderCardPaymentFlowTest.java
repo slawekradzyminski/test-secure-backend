@@ -43,7 +43,7 @@ class TenderCardPaymentFlowTest extends AbstractTenderFlowTest {
     @Test
     void cancellingAMixedPaidOrderRefundsTheCardRestoresTendersAndRevokesPointsOnce() {
         OrderDto order = cardPaidOrder();
-        assertThat(loyalty(clientToken).getBalance()).isEqualTo(100);
+        assertThat(loyalty(clientToken).getBalance()).isEqualTo(90);
 
         ResponseEntity<OrderDto> cancelled = cancel(order.getId(), clientToken, OrderDto.class);
         ResponseEntity<ErrorDto> again = cancel(order.getId(), clientToken, ErrorDto.class);
@@ -58,7 +58,7 @@ class TenderCardPaymentFlowTest extends AbstractTenderFlowTest {
         assertThat(balanceOf(card.getCode())).isEqualByComparingTo("20.00");
         assertThat(loyalty(clientToken).getBalance()).isEqualTo(1_000);
         assertThat(ledger()).filteredOn(entry -> entry.getType() == LoyaltyTransactionType.REVOKED)
-                .singleElement().satisfies(entry -> assertThat(entry.getPoints()).isEqualTo(-100));
+                .singleElement().satisfies(entry -> assertThat(entry.getPoints()).isEqualTo(-90));
         assertThat(ledger()).filteredOn(entry -> entry.getType() == LoyaltyTransactionType.RESTORED)
                 .singleElement().satisfies(entry -> assertThat(entry.getPoints()).isEqualTo(1_000));
     }

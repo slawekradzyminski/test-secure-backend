@@ -143,7 +143,7 @@ class TenderCheckoutFlowTest extends AbstractTenderFlowTest {
         assertThat(fetched.getAmountDue()).isEqualByComparingTo("0.00");
         assertThat(fetched.getGiftCardAmount()).isEqualByComparingTo(created.getGiftCardAmount());
         assertThat(recorded.typesForOrder(created.getId())).containsExactlyInAnyOrder(ORDER_CREATED, ORDER_PAID);
-        assertThat(loyalty(clientToken).getBalance()).isEqualTo(5_000 - 1_000 + 60);
+        assertThat(loyalty(clientToken).getBalance()).isEqualTo(5_000 - 1_000 + 50); // points-paid 10.00 earns nothing
     }
 
     @Test
@@ -324,7 +324,7 @@ class TenderCheckoutFlowTest extends AbstractTenderFlowTest {
         applyPoints(clientToken, 2_000, CartDto.class);
         OrderDto order = checkout(clientToken);
         deliver(order.getId());
-        assertThat(loyalty(clientToken).getBalance()).isEqualTo(100);
+        assertThat(loyalty(clientToken).getBalance()).isEqualTo(80);
         OrderRefundDto first = new OrderRefundDto(UUID.randomUUID(), new BigDecimal("25.00"), "Return #1");
         OrderRefundDto second = new OrderRefundDto(UUID.randomUUID(), new BigDecimal("75.00"), "Return #2");
 
@@ -336,15 +336,15 @@ class TenderCheckoutFlowTest extends AbstractTenderFlowTest {
 
         assertThat(order.getAmountDue()).isEqualByComparingTo("50.00");
         assertThat(afterFirst).isEqualByComparingTo("25.00");
-        assertThat(pointsAfterFirst).isEqualTo(75);
+        assertThat(pointsAfterFirst).isEqualTo(60);
         assertThat(balanceOf(card.getCode())).isEqualByComparingTo("30.00");
         assertThat(loyalty(clientToken).getBalance()).isEqualTo(2_000);
         assertThat(ledger(clientToken)).extracting(LoyaltyTransactionDto::getType, LoyaltyTransactionDto::getPoints)
                 .containsExactlyInAnyOrder(
-                        org.assertj.core.groups.Tuple.tuple(LoyaltyTransactionType.REVOKED, -75L),
+                        org.assertj.core.groups.Tuple.tuple(LoyaltyTransactionType.REVOKED, -60L),
                         org.assertj.core.groups.Tuple.tuple(LoyaltyTransactionType.RESTORED, 2_000L),
-                        org.assertj.core.groups.Tuple.tuple(LoyaltyTransactionType.REVOKED, -25L),
-                        org.assertj.core.groups.Tuple.tuple(LoyaltyTransactionType.EARNED, 100L),
+                        org.assertj.core.groups.Tuple.tuple(LoyaltyTransactionType.REVOKED, -20L),
+                        org.assertj.core.groups.Tuple.tuple(LoyaltyTransactionType.EARNED, 80L),
                         org.assertj.core.groups.Tuple.tuple(LoyaltyTransactionType.REDEEMED, -2_000L));
     }
 

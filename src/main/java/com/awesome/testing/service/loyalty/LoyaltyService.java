@@ -81,7 +81,9 @@ public class LoyaltyService {
         if (order == null || order.getStatus() == OrderStatus.CANCELLED || order.getStatus() == OrderStatus.PENDING) {
             return 0;
         }
-        long points = LoyaltyPoints.earnedFor(order.getTotalAmount());
+        // Points pay no points: the part of the order paid with points earns nothing.
+        BigDecimal pointsAmount = order.getPointsAmount() == null ? BigDecimal.ZERO : order.getPointsAmount();
+        long points = LoyaltyPoints.earnedFor(order.getTotalAmount().subtract(pointsAmount));
         if (points == 0) {
             return 0;
         }

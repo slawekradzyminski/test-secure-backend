@@ -35,7 +35,7 @@ public class LoyaltyController {
 
     @GetMapping
     @Operation(summary = "Get loyalty account", description = "Returns the caller's points balance, lifetime points, tier and the value of the balance. "
-            + "Points are earned when an order becomes PAID (1 point per full 1.00 of its total) and redeemed at 100 points = 1.00. "
+            + "Points are earned when an order becomes PAID (1 point per full 1.00 of its total, excluding the part paid with points) and redeemed at 100 points = 1.00. "
             + "Users who never earned points get a zero balance.")
     @ApiResponse(responseCode = "200", description = "Loyalty account returned")
     public LoyaltyAccountDto account(@Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal) {
