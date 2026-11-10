@@ -42,6 +42,11 @@ class NativeRuntimeHintsTest {
     }
 
     @Test
+    void registersUuidArraysForHibernateMultiIdLoading() {
+        assertThat(RuntimeHintsPredicates.reflection().onType(java.util.UUID[].class)).accepts(HINTS);
+    }
+
+    @Test
     void registersSecurityExpressionTargets() {
         assertThat(RuntimeHintsPredicates.reflection().onType(UserService.class)
                 .withMemberCategory(MemberCategory.INVOKE_PUBLIC_METHODS)).accepts(HINTS);

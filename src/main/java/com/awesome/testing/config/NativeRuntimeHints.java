@@ -47,6 +47,10 @@ public class NativeRuntimeHints {
             hints.resources().registerPattern("bootstrap/products.json");
             hints.reflection().registerType(TypeReference.of("java.util.Calendar[]"),
                     MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
+            // Hibernate's multi-id loader instantiates arrays of UUID identifiers
+            // (payments, webhook deliveries, refunds).
+            hints.reflection().registerType(TypeReference.of("java.util.UUID[]"),
+                    MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
             for (String jmsType : new String[] {
                     "org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory",
                     "org.apache.activemq.artemis.jms.client.ActiveMQJMSConnectionFactory",
