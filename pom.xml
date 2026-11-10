@@ -4,7 +4,7 @@
 
     <groupId>murraco</groupId>
     <artifactId>jwt-auth-service</artifactId>
-    <version>3.14.1</version>
+    <version>3.15.0</version>
     <packaging>jar</packaging>
 
     <name>spring-boot-jwt</name>
@@ -552,6 +552,24 @@
                                 <param>com.awesome.testing.internal.security.ServiceTokenGuard</param>
                                 <param>com.awesome.testing.internal.security.ServiceTokenFilter</param>
                                 <param>com.awesome.testing.internal.service.*</param>
+                                <param>com.awesome.testing.internal.security.InternalRoutes*</param>
+                                <param>com.awesome.testing.event.*</param>
+                                <param>com.awesome.testing.service.checkout.*</param>
+                                <param>com.awesome.testing.service.notification.CustomerEmailRenderer</param>
+                                <param>com.awesome.testing.service.search.*</param>
+                                <param>com.awesome.testing.repository.search.*</param>
+                                <param>com.awesome.testing.service.tax.*</param>
+                                <param>com.awesome.testing.service.currency.*</param>
+                                <param>com.awesome.testing.internal.security.PaymentSignatureVerifier</param>
+                                <param>com.awesome.testing.service.payment.*</param>
+                                <param>com.awesome.testing.service.webhook.WebhookSigner</param>
+                                <param>com.awesome.testing.service.webhook.WebhookUrlPolicy*</param>
+                                <param>com.awesome.testing.service.webhook.WebhookAddressRules*</param>
+                                <param>com.awesome.testing.service.webhook.WebhookDispatcher</param>
+                                <param>com.awesome.testing.service.webhook.WebhookDeliveryLog*</param>
+                                <param>com.awesome.testing.service.giftcard.*</param>
+                                <param>com.awesome.testing.service.loyalty.*</param>
+                                <param>com.awesome.testing.service.tender.*</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -584,9 +602,25 @@
                                 <param>com.awesome.testing.service.ollama.function.OllamaToolRegistryTest</param>
                                 <param>com.awesome.testing.service.coupon.Coupon*Test</param>
                                 <param>com.awesome.testing.service.OrderServiceFulfilmentTest</param>
+                                <param>com.awesome.testing.service.OrderServiceEventsTest</param>
                                 <param>com.awesome.testing.dto.order.FulfilmentStateTest</param>
                                 <param>com.awesome.testing.internal.security.ServiceToken*Test</param>
+                                <param>com.awesome.testing.internal.security.InternalRoutesTest</param>
+                                <param>com.awesome.testing.event.*Test</param>
+                                <param>com.awesome.testing.service.checkout.*Test</param>
+                                <param>com.awesome.testing.service.notification.CustomerEmailRendererTest</param>
                                 <param>com.awesome.testing.internal.service.*Test</param>
+                                <param>com.awesome.testing.service.search.*Test</param>
+                                <param>com.awesome.testing.endpoints.products.ProductSearch*Test</param>
+                                <param>com.awesome.testing.service.tax.*Test</param>
+                                <param>com.awesome.testing.service.currency.*Test</param>
+                                <param>com.awesome.testing.internal.security.PaymentSignatureVerifierTest</param>
+                                <param>com.awesome.testing.internal.InternalApiRoutesTest</param>
+                                <param>com.awesome.testing.service.payment.*Test</param>
+                                <param>com.awesome.testing.service.webhook.Webhook*Test</param>
+                                <param>com.awesome.testing.service.giftcard.*Test</param>
+                                <param>com.awesome.testing.service.loyalty.*Test</param>
+                                <param>com.awesome.testing.service.tender.*Test</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>

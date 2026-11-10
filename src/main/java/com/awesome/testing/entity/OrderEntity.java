@@ -59,6 +59,36 @@ public class OrderEntity {
     @Builder.Default
     private BigDecimal refundedAmount = BigDecimal.ZERO;
 
+    /** VAT contained in the gross total, fixed at checkout; all four are null when the country has no rate. */
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.CHAR)
+    @Column(name = "tax_country", length = 2)
+    private String taxCountry;
+
+    @Column(name = "tax_rate", precision = 5, scale = 2)
+    private BigDecimal taxRate;
+
+    @Column(name = "tax_amount", precision = 10, scale = 2)
+    private BigDecimal taxAmount;
+
+    @Column(name = "net_amount", precision = 10, scale = 2)
+    private BigDecimal netAmount;
+
+    /** Gift card used at checkout; null when the order was not paid with one. */
+    @Column(name = "gift_card_code", length = 19)
+    private String giftCardCode;
+
+    /** Part of {@code totalAmount} paid with {@link #giftCardCode}. */
+    @Column(name = "gift_card_amount", precision = 10, scale = 2)
+    private BigDecimal giftCardAmount;
+
+    /** Loyalty points redeemed at checkout; null when none were used. */
+    @Column(name = "points_redeemed")
+    private Long pointsRedeemed;
+
+    /** Part of {@code totalAmount} paid with {@link #pointsRedeemed} (100 points = 1.00). */
+    @Column(name = "points_amount", precision = 10, scale = 2)
+    private BigDecimal pointsAmount;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;

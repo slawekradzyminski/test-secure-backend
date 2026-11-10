@@ -1,6 +1,9 @@
 package com.awesome.testing.config;
 
 import com.awesome.testing.dto.email.EmailDto;
+import com.awesome.testing.dto.payment.PaymentRefundResponseDto;
+import com.awesome.testing.dto.payment.PaymentResultDto;
+import com.awesome.testing.event.CommerceEvent;
 import com.awesome.testing.fakedata.ProductSeedDefinition;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.UserService;
@@ -33,6 +36,14 @@ class NativeRuntimeHintsTest {
     void registersJacksonBindingForDtoAndSeedTypes() {
         assertThat(RuntimeHintsPredicates.reflection().onType(EmailDto.class)).accepts(HINTS);
         assertThat(RuntimeHintsPredicates.reflection().onType(ProductSeedDefinition.class)).accepts(HINTS);
+        assertThat(RuntimeHintsPredicates.reflection().onType(CommerceEvent.class)).accepts(HINTS);
+        assertThat(RuntimeHintsPredicates.reflection().onType(PaymentResultDto.class)).accepts(HINTS);
+        assertThat(RuntimeHintsPredicates.reflection().onType(PaymentRefundResponseDto.class)).accepts(HINTS);
+    }
+
+    @Test
+    void registersUuidArraysForHibernateMultiIdLoading() {
+        assertThat(RuntimeHintsPredicates.reflection().onType(java.util.UUID[].class)).accepts(HINTS);
     }
 
     @Test

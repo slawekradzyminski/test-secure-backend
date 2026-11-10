@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -13,7 +15,13 @@ import static org.mockito.Mockito.verify;
 
 class ServiceTokenFilterTest {
 
-    private final ServiceTokenFilter filter = new ServiceTokenFilter(new ServiceTokenGuard("token-1"));
+    private static final InternalRoutes ROUTES = InternalRoutes.builder()
+            .route("/internal/v1/orders/\\d+/payment", ServiceCaller.PAYMENT)
+            .otherwise(ServiceCaller.WAREHOUSE)
+            .build();
+
+    private final ServiceTokenFilter filter = new ServiceTokenFilter(
+            new ServiceTokenGuard(Map.of(ServiceCaller.WAREHOUSE, "token-1", ServiceCaller.PAYMENT, "pay-1")), ROUTES);
 
     @Test
     void passesAcceptedRequestsDownTheChain() throws Exception {
@@ -47,7 +55,7 @@ class ServiceTokenFilterTest {
 
     @Test
     void respondsNotFoundWhenDisabled() throws Exception {
-        ServiceTokenFilter disabled = new ServiceTokenFilter(new ServiceTokenGuard(""));
+        ServiceTokenFilter disabled = new ServiceTokenFilter(new ServiceTokenGuard(Map.of()), ROUTES);
         MockHttpServletRequest request = request("/internal/v1/products");
         request.addHeader("X-Service-Token", "");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -58,6 +66,40 @@ class ServiceTokenFilterTest {
         verify(chain, never()).doFilter(any(), any());
         assertThat(response.getStatus()).isEqualTo(404);
         assertThat(response.getContentAsString()).contains("Not found");
+    }
+
+    @Test
+    void eachPathAcceptsOnlyItsCallersToken() throws Exception {
+        FilterChain chain = mock(FilterChain.class);
+
+        MockHttpServletResponse paymentOnWarehouse = new MockHttpServletResponse();
+        filter.doFilter(withToken("/internal/v1/orders/1", "pay-1"), paymentOnWarehouse, chain);
+        MockHttpServletResponse warehouseOnPayment = new MockHttpServletResponse();
+        filter.doFilter(withToken("/internal/v1/orders/1/payment", "token-1"), warehouseOnPayment, chain);
+
+        verify(chain, never()).doFilter(any(), any());
+        assertThat(paymentOnWarehouse.getStatus()).isEqualTo(401);
+        assertThat(warehouseOnPayment.getStatus()).isEqualTo(401);
+
+        MockHttpServletRequest payment = withToken("/internal/v1/orders/1/payment", "pay-1");
+        MockHttpServletResponse paymentResponse = new MockHttpServletResponse();
+        filter.doFilter(payment, paymentResponse, chain);
+        verify(chain).doFilter(payment, paymentResponse);
+    }
+
+    @Test
+    void aDisabledCallerHidesOnlyItsOwnPaths() throws Exception {
+        ServiceTokenFilter warehouseOnly = new ServiceTokenFilter(
+                new ServiceTokenGuard(Map.of(ServiceCaller.WAREHOUSE, "token-1")), ROUTES);
+        FilterChain chain = mock(FilterChain.class);
+
+        MockHttpServletResponse payment = new MockHttpServletResponse();
+        warehouseOnly.doFilter(withToken("/internal/v1/orders/1/payment", "token-1"), payment, chain);
+        MockHttpServletResponse warehouse = new MockHttpServletResponse();
+        warehouseOnly.doFilter(withToken("/internal/v1/orders/1", "wrong"), warehouse, chain);
+
+        assertThat(payment.getStatus()).isEqualTo(404);
+        assertThat(warehouse.getStatus()).isEqualTo(401);
     }
 
     @Test
@@ -84,6 +126,18 @@ class ServiceTokenFilterTest {
 
         verify(chain, never()).doFilter(any(), any());
         assertThat(response.getStatus()).isEqualTo(401);
+
+        MockHttpServletRequest payment = withToken("/app/internal/v1/orders/3/payment", "pay-1");
+        payment.setContextPath("/app");
+        MockHttpServletResponse paymentResponse = new MockHttpServletResponse();
+        filter.doFilter(payment, paymentResponse, chain);
+        verify(chain).doFilter(payment, paymentResponse);
+    }
+
+    private static MockHttpServletRequest withToken(String uri, String token) {
+        MockHttpServletRequest request = request(uri);
+        request.addHeader("X-Service-Token", token);
+        return request;
     }
 
     private static MockHttpServletRequest request(String uri) {

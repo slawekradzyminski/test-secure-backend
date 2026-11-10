@@ -144,11 +144,12 @@ The API documentation is available at:
 - OpenAPI JSON: [http://localhost:4001/v3/api-docs](http://localhost:4001/v3/api-docs)
 - OpenAPI YAML: [http://localhost:4001/v3/api-docs.yaml](http://localhost:4001/v3/api-docs.yaml)
 
-The Swagger UI definition dropdown has three entries: the backend document as JSON and as YAML, and
+The Swagger UI definition dropdown has four entries: the backend document as JSON and as YAML,
 "Warehouse service", the `warehouse-service` document that the `awesome-localstack` gateway serves at
-`/warehouse/v3/api-docs`. That entry only loads through the gateway (for example
-`http://localhost:8081/swagger-ui/index.html`); on port 4001 it returns 404. Warehouse operations use the
-same bearer token as the backend: sign in, then authorize again after switching to the warehouse definition.
+`/warehouse/v3/api-docs`, and "Payment service", the `payment-service` document served at
+`/payment/v3/api-docs`. Those two entries only load through the gateway (for example
+`http://localhost:8081/swagger-ui/index.html`); on port 4001 they return 404. Warehouse and payment operations
+use the same bearer token as the backend: sign in, then authorize again after switching definitions.
 
 ## Initial Data
 
@@ -176,7 +177,9 @@ Sign in responses now include both an access token and a refresh token. The refr
 
 Access tokens are signed with RS256. Production deployments must provide `JWT_SIGNING_KEY`, a base64 PKCS#8 RSA private key of at least 2048 bits (for example `openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 | openssl pkcs8 -topk8 -nocrypt -outform DER | base64 | tr -d '\n'`; PEM armour is also accepted, but not the PKCS#1 that `genpkey -outform DER` writes with OpenSSL 3), and set `JWT_REQUIRE_SECURE_KEY=true`. The application then refuses to start without a valid key. Without `JWT_SIGNING_KEY` (local development and tests) the backend generates an ephemeral key at startup, so access tokens stop validating after a restart and clients refresh them with their refresh token. Rotating the key has the same effect. The public key is published as a JSON Web Key Set at `/internal/v1/jwks.json` (service-token protected, like the rest of the internal API), so `warehouse-service` verifies tokens without holding any signing secret.
 
-`warehouse-service` calls the internal API under `/internal/v1` with an `X-Service-Token` header instead of a JWT. Set the shared secret with `WAREHOUSE_SERVICE_TOKEN` on both services. When the variable is unset, the internal API responds with 404. The `local` profile defaults to `local-warehouse-token`. See [docs/COMMERCE_AND_FULFILMENT.md](docs/COMMERCE_AND_FULFILMENT.md#internal-api-for-warehouse-service).
+`warehouse-service` calls the internal API under `/internal/v1` with an `X-Service-Token` header instead of a JWT. Set the shared secret with `WAREHOUSE_SERVICE_TOKEN` on both services. When the variable is unset, the internal API responds with 404. The `local` profile defaults to `local-warehouse-token`. Each caller has its own token (`internal.service-tokens.warehouse` / `WAREHOUSE_SERVICE_TOKEN`, `internal.service-tokens.payment` / `PAYMENT_SERVICE_TOKEN`, local default `local-payment-token`), and each internal endpoint accepts only its own caller's token. See [docs/COMMERCE_AND_FULFILMENT.md](docs/COMMERCE_AND_FULFILMENT.md#internal-api-for-warehouse-service).
+
+Users can subscribe signed webhooks to their order events (`/api/v1/webhooks`, with a built-in `inbox://` receiver and SSRF protection). See [docs/WEBHOOKS.md](docs/WEBHOOKS.md).
 
 The training stack also includes an OIDC-based SSO bridge by default. The frontend authenticates with the configured identity provider and exchanges the returned OIDC ID token through `POST /api/v1/users/sso/exchange`. The backend validates the external token, provisions or reuses a local user, and returns the same app-issued JWT and refresh token shape as password login. Protected APIs continue to accept only the app JWT, not raw identity-provider tokens. Set `APP_SSO_ENABLED=false` only when you intentionally want to disable the exchange endpoint.
 

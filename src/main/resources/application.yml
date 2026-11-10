@@ -152,12 +152,21 @@ security:
       qr-user:
         capacity: ${SECURITY_RATE_LIMIT_QR_USER_CAPACITY:60}
         window: ${SECURITY_RATE_LIMIT_QR_USER_WINDOW:15m}
+      gift-card-user:
+        capacity: ${SECURITY_RATE_LIMIT_GIFT_CARD_USER_CAPACITY:30}
+        window: ${SECURITY_RATE_LIMIT_GIFT_CARD_USER_WINDOW:15m}
       ollama-user:
         capacity: ${SECURITY_RATE_LIMIT_OLLAMA_USER_CAPACITY:20}
         window: ${SECURITY_RATE_LIMIT_OLLAMA_USER_WINDOW:5m}
       ollama-ip:
         capacity: ${SECURITY_RATE_LIMIT_OLLAMA_IP_CAPACITY:20}
         window: ${SECURITY_RATE_LIMIT_OLLAMA_IP_WINDOW:5m}
+      webhook-test-user:
+        capacity: ${SECURITY_RATE_LIMIT_WEBHOOK_TEST_USER_CAPACITY:10}
+        window: ${SECURITY_RATE_LIMIT_WEBHOOK_TEST_USER_WINDOW:15m}
+      webhook-redeliver-user:
+        capacity: ${SECURITY_RATE_LIMIT_WEBHOOK_REDELIVER_USER_CAPACITY:20}
+        window: ${SECURITY_RATE_LIMIT_WEBHOOK_REDELIVER_USER_WINDOW:15m}
 
 app:
   email:
@@ -233,9 +242,46 @@ JmsSender:
 ollama:
   base-url: http://localhost:11434
 
+# User webhook subscriptions (docs/WEBHOOKS.md). Targets always pass the SSRF guard.
+webhooks:
+  allow-http: ${WEBHOOKS_ALLOW_HTTP:true}
+  # Ports allowed in addition to 80 and 443, comma-separated.
+  allowed-ports: ${WEBHOOKS_ALLOWED_PORTS:}
+  timeout: ${WEBHOOKS_TIMEOUT:PT5S}
+  max-attempts: ${WEBHOOKS_MAX_ATTEMPTS:8}
+  initial-backoff: ${WEBHOOKS_INITIAL_BACKOFF:PT1M}
+  auto-disable-after: ${WEBHOOKS_AUTO_DISABLE_AFTER:20}
+  max-subscriptions-per-user: 5
+  max-inboxes-per-user: 3
+  inbox-request-limit: 50
+  async-dispatch: true
+  retry:
+    enabled: ${WEBHOOKS_RETRY_ENABLED:true}
+    interval: ${WEBHOOKS_RETRY_INTERVAL:PT30S}
+    initial-delay: ${WEBHOOKS_RETRY_INITIAL_DELAY:PT30S}
+    batch-size: 20
+
 warehouse:
-  # Shared secret for the /internal/v1 API called by warehouse-service; blank disables the API (404).
+  # Alias of internal.service-tokens.warehouse, kept for existing deployments.
   service-token: ${WAREHOUSE_SERVICE_TOKEN:}
+
+internal:
+  # X-Service-Token secret per caller of the /internal/v1 API; a blank token disables that caller's endpoints (404).
+  service-tokens:
+    warehouse: ${warehouse.service-token:}
+    # Also sent by the backend when it calls payment-service.
+    payment: ${PAYMENT_SERVICE_TOKEN:}
+
+payment:
+  # payment-service: card refunds go to {base-url}/internal/v1/payments/refunds with the payment
+  # service token; its payment results are signed with webhook-secret (X-Payment-Signature).
+  base-url: ${PAYMENT_BASE_URL:http://payment-service:4004}
+  webhook-secret: ${PAYMENT_WEBHOOK_SECRET:}
+  refunds:
+    # Delivers queued card refunds (see PaymentRefundJob).
+    delivery:
+      enabled: ${PAYMENT_REFUNDS_DELIVERY_ENABLED:true}
+      interval: ${PAYMENT_REFUNDS_DELIVERY_INTERVAL:PT15S}
 
 springdoc:
   # The service-to-service API for warehouse-service is not part of the public contract.
@@ -245,8 +291,9 @@ springdoc:
   override-with-generic-response: false
   swagger-ui:
     oauth2-redirect-url: ${SWAGGER_UI_OAUTH2_REDIRECT_URL:http://localhost:8081/swagger-ui/oauth2-redirect.html}
-    # The warehouse entry is warehouse-service's document, served by the gateway at
-    # /warehouse/v3/api-docs (absent when the backend is called directly on 4001).
+    # The warehouse and payment entries are warehouse-service's and payment-service's documents,
+    # served by the gateway at /warehouse/v3/api-docs and /payment/v3/api-docs (absent when the
+    # backend is called directly on 4001).
     urls:
       - name: OpenAPI JSON
         url: /v3/api-docs
@@ -254,6 +301,8 @@ springdoc:
         url: /v3/api-docs.yaml
       - name: Warehouse service
         url: /warehouse/v3/api-docs
+      - name: Payment service
+        url: /payment/v3/api-docs
     urls-primary-name: OpenAPI JSON
 
 # The JMS health contributor is fixed at build time in the native image; with the local

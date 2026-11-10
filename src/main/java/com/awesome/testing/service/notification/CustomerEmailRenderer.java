@@ -19,11 +19,23 @@ import java.util.Map;
 @Component
 public class CustomerEmailRenderer {
 
-    static final Map<EmailTemplate, List<String>> REQUIRED_PROPERTIES = Map.of(
-            EmailTemplate.ORDER_SHIPPED, List.of("orderId", "carrier", "trackingNumber"),
-            EmailTemplate.ORDER_DELIVERED, List.of("orderId"),
-            EmailTemplate.RETURN_UPDATED, List.of("returnId", "orderId", "status"),
-            EmailTemplate.BACK_IN_STOCK, List.of("productId", "productName"));
+    private static final String DEFAULT_CURRENCY = "USD";
+
+    static final Map<EmailTemplate, List<String>> REQUIRED_PROPERTIES = Map.ofEntries(
+            Map.entry(EmailTemplate.ORDER_SHIPPED, List.of("orderId", "carrier", "trackingNumber")),
+            Map.entry(EmailTemplate.ORDER_DELIVERED, List.of("orderId")),
+            Map.entry(EmailTemplate.RETURN_UPDATED, List.of("returnId", "orderId", "status")),
+            Map.entry(EmailTemplate.BACK_IN_STOCK, List.of("productId", "productName")),
+            // optional: currency (USD)
+            Map.entry(EmailTemplate.PAYMENT_RECEIVED, List.of("orderId", "amount")),
+            // optional: failureMessage
+            Map.entry(EmailTemplate.PAYMENT_FAILED, List.of("orderId", "failureCode")),
+            Map.entry(EmailTemplate.SHIPMENT_OUT_FOR_DELIVERY, List.of("orderId", "carrier", "trackingNumber")),
+            Map.entry(EmailTemplate.SHIPMENT_DELIVERY_FAILED, List.of("orderId", "carrier", "trackingNumber")),
+            // optional: orderId
+            Map.entry(EmailTemplate.LOYALTY_POINTS_EARNED, List.of("points", "balance")),
+            // optional: currency (USD)
+            Map.entry(EmailTemplate.GIFT_CARD_ISSUED, List.of("code", "amount")));
 
     /** Rejects missing template properties with 400, before anything is queued. */
     public void validate(EmailTemplate template, Map<String, String> properties) {
@@ -73,6 +85,43 @@ public class CustomerEmailRenderer {
                 message = "Hi " + username + ",\n\n" + productName
                         + " from your wishlist is available again. Order soon, stock is limited.";
             }
+            case PAYMENT_RECEIVED -> {
+                subject = "Payment received for order #" + orderId;
+                message = "Hi " + username + ",\n\nWe received your payment of " + properties.get("amount") + " "
+                        + currency(properties) + " for order #" + orderId + ". We will let you know when it ships.";
+            }
+            case PAYMENT_FAILED -> {
+                String reason = blank(properties.get("failureMessage"))
+                        ? properties.get("failureCode")
+                        : properties.get("failureMessage");
+                subject = "Payment for order #" + orderId + " failed";
+                message = "Hi " + username + ",\n\nThe payment for order #" + orderId + " failed: " + reason
+                        + ". Your order is still waiting for payment, so you can try again with another card.";
+            }
+            case SHIPMENT_OUT_FOR_DELIVERY -> {
+                subject = "Order #" + orderId + " is out for delivery";
+                message = "Hi " + username + ",\n\nYour order #" + orderId + " is out for delivery with "
+                        + properties.get("carrier") + " today. Tracking number: " + properties.get("trackingNumber") + ".";
+            }
+            case SHIPMENT_DELIVERY_FAILED -> {
+                subject = "Delivery of order #" + orderId + " failed";
+                message = "Hi " + username + ",\n\n" + properties.get("carrier") + " could not deliver your order #"
+                        + orderId + ". The courier will try again. Tracking number: "
+                        + properties.get("trackingNumber") + ".";
+            }
+            case LOYALTY_POINTS_EARNED -> {
+                String points = properties.get("points");
+                String forOrder = blank(orderId) ? "" : " for order #" + orderId;
+                subject = "You earned " + points + " loyalty points";
+                message = "Hi " + username + ",\n\nYou earned " + points + " loyalty points" + forOrder
+                        + ". Your balance is now " + properties.get("balance") + " points.";
+            }
+            case GIFT_CARD_ISSUED -> {
+                subject = "Your gift card is ready";
+                message = "Hi " + username + ",\n\nA gift card worth " + properties.get("amount") + " "
+                        + currency(properties) + " was issued to you. Code: " + properties.get("code")
+                        + ". Enter it at checkout to use it.";
+            }
             default -> throw new CustomException("No customer email template " + template, HttpStatus.BAD_REQUEST);
         }
         return EmailDto.builder()
@@ -82,6 +131,11 @@ public class CustomerEmailRenderer {
                 .template(template)
                 .properties(properties)
                 .build();
+    }
+
+    private static String currency(Map<String, String> properties) {
+        String currency = properties.get("currency");
+        return blank(currency) ? DEFAULT_CURRENCY : currency;
     }
 
     private static boolean blank(String value) {

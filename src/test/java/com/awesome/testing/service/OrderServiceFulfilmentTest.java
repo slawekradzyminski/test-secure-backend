@@ -12,6 +12,8 @@ import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderIdempotencyKeyRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
+import com.awesome.testing.event.CommerceEvents;
+import com.awesome.testing.service.checkout.CheckoutContributors;
 import com.awesome.testing.service.coupon.CouponService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +48,7 @@ class OrderServiceFulfilmentTest {
     @Mock private InventoryService inventoryService;
     @Mock private CouponService couponService;
     @Mock private OrderIdempotencyKeyRepository idempotencyKeyRepository;
+    @Mock private CommerceEvents commerceEvents;
 
     private OrderService service;
     private OrderEntity order;
@@ -54,7 +57,7 @@ class OrderServiceFulfilmentTest {
     @BeforeEach
     void setUp() {
         service = new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
-                idempotencyKeyRepository, Clock.systemUTC());
+                idempotencyKeyRepository, Clock.systemUTC(), CheckoutContributors.none(), commerceEvents);
         product = ProductEntity.builder().id(4L).name("Phone").price(BigDecimal.TEN).stockQuantity(0).build();
         order = OrderEntity.builder().id(7L).username("buyer").status(OrderStatus.PAID)
                 .shippingAddress(new AddressEntity()).totalAmount(BigDecimal.TEN)

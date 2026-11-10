@@ -18,6 +18,7 @@ import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.security.AuthenticationHandler;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.service.token.RefreshTokenService;
+import com.awesome.testing.service.tender.TenderDataEraser;
 import com.awesome.testing.service.token.IssuedRefreshToken;
 import com.awesome.testing.service.mfa.MfaChallenge;
 import com.awesome.testing.service.mfa.MfaService;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import com.awesome.testing.service.webhook.WebhookService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -82,6 +84,12 @@ class UserServiceTest {
 
     @Mock
     private ProductReviewRepository productReviewRepository;
+
+    @Mock
+    private WebhookService webhookService;
+
+    @Mock
+    private TenderDataEraser tenderDataEraser;
 
     @InjectMocks
     private UserService userService;
@@ -227,7 +235,9 @@ class UserServiceTest {
         verify(emailEventRepository).deleteAllByUser(userEntity);
         verify(cartItemRepository).deleteByUsername(registerDto.getUsername());
         verify(orderRepository).deleteByUsername(registerDto.getUsername());
+        verify(tenderDataEraser).forget(registerDto.getUsername());
         verify(mfaService).deleteForUser(userEntity);
+        verify(webhookService).deleteForUser(registerDto.getUsername());
         verify(userRepository).deleteByUsername(registerDto.getUsername());
     }
 

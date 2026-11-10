@@ -22,6 +22,7 @@ class CommerceMigrationIT {
     private static final String UPGRADE_SCHEMA = "commerce_upgrade";
     private static final String FRESH_SCHEMA = "commerce_fresh";
     private static final String FULFILMENT_SCHEMA = "fulfilment_upgrade";
+    private static final String FOUNDATION_SCHEMA = "foundation_upgrade";
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
             DockerImageName.parse("postgres:16-alpine@sha256:"
@@ -123,6 +124,40 @@ class CommerceMigrationIT {
                     "UPDATE orders SET fulfilment_state = NULL WHERE username = 'paid-before-v8'"))
                     .isInstanceOf(SQLException.class);
         }
+    }
+
+    @Test
+    void v10AllowsTheCommerceFoundationEmailTemplatesAndKeepsTheOldOnes() throws Exception {
+        flyway(FOUNDATION_SCHEMA, MigrationVersion.fromVersion("9")).migrate();
+        try (Connection connection = connect(FOUNDATION_SCHEMA); Statement statement = connection.createStatement()) {
+            statement.executeUpdate("INSERT INTO app_user (email, username) VALUES ('mail@example.test', 'mail-user')");
+            insertEmail(statement, "ORDER_SHIPPED");
+            assertThatThrownBy(() -> insertEmail(statement, "PAYMENT_RECEIVED")).isInstanceOf(SQLException.class);
+        }
+
+        flyway(FOUNDATION_SCHEMA, null).migrate();
+
+        try (Connection connection = connect(FOUNDATION_SCHEMA); Statement statement = connection.createStatement()) {
+            for (String type : new String[] {"GENERIC", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_CONFIRMED",
+                    "BACK_IN_STOCK", "ORDER_SHIPPED", "ORDER_DELIVERED", "RETURN_UPDATED", "PAYMENT_RECEIVED",
+                    "PAYMENT_FAILED", "SHIPMENT_OUT_FOR_DELIVERY", "SHIPMENT_DELIVERY_FAILED",
+                    "LOYALTY_POINTS_EARNED", "GIFT_CARD_ISSUED"}) {
+                insertEmail(statement, type);
+            }
+            assertThatThrownBy(() -> insertEmail(statement, "UNKNOWN_TEMPLATE")).isInstanceOf(SQLException.class);
+            try (ResultSet result = statement.executeQuery("SELECT count(*) FROM email_event")) {
+                assertThat(result.next()).isTrue();
+                assertThat(result.getInt(1)).isEqualTo(14);
+            }
+        }
+    }
+
+    private static void insertEmail(Statement statement, String type) throws SQLException {
+        statement.executeUpdate("""
+                INSERT INTO email_event (created_at, recipient_email, status, type, updated_at, user_id)
+                SELECT CURRENT_TIMESTAMP, email, 'QUEUED', '%s', CURRENT_TIMESTAMP, id
+                FROM app_user WHERE username = 'mail-user'
+                """.formatted(type));
     }
 
     @Test

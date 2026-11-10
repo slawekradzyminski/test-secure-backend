@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Clock;
+import java.time.Duration;
 
 @Configuration
 public class CommerceClockConfig {
@@ -15,6 +16,7 @@ public class CommerceClockConfig {
      */
     @Bean
     Clock commerceClock() {
-        return Clock.systemDefaultZone();
+        // PostgreSQL keeps microseconds; ticking in micros keeps returned and reloaded timestamps equal on Linux.
+        return Clock.tick(Clock.systemDefaultZone(), Duration.ofNanos(1_000));
     }
 }

@@ -1,5 +1,8 @@
 package com.awesome.testing.config;
 
+import com.awesome.testing.event.CommerceEvent;
+import com.awesome.testing.event.CommerceEventType;
+
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -25,7 +28,8 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  *       logger and message-bundle interfaces load their generated {@code *_impl} classes by name.</li>
  *   <li>Jackson binds DTOs outside controllers (Ollama client and streaming, JMS email payloads,
  *       the seed catalogue), so every type in the DTO and seed packages is registered for binding.
- *       The scan runs at build time during AOT processing.</li>
+ *       The scan runs at build time during AOT processing. Commerce domain events are registered
+ *       too so webhook payloads and listeners can serialize them.</li>
  *   <li>{@code @PreAuthorize} SpEL calls {@code @userService.exists(...)} and reads
  *       {@code authentication.principal.username} reflectively.</li>
  *   <li>Caffeine selects generated cache and node classes by name and builds them through method
@@ -42,6 +46,10 @@ public class NativeRuntimeHints {
             hints.resources().registerPattern("graphql-preview/*.graphqls");
             hints.resources().registerPattern("bootstrap/products.json");
             hints.reflection().registerType(TypeReference.of("java.util.Calendar[]"),
+                    MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
+            // Hibernate's multi-id loader instantiates arrays of UUID identifiers
+            // (payments, webhook deliveries, refunds).
+            hints.reflection().registerType(TypeReference.of("java.util.UUID[]"),
                     MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
             for (String jmsType : new String[] {
                     "org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory",
@@ -77,6 +85,7 @@ public class NativeRuntimeHints {
                 hints.reflection().registerType(TypeReference.of(candidate.getBeanClassName()),
                         MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.ACCESS_DECLARED_FIELDS);
             }
+            binding.registerReflectionHints(hints.reflection(), CommerceEvent.class, CommerceEventType.class);
             for (String basePackage : new String[] {"com.awesome.testing.dto", "com.awesome.testing.fakedata"}) {
                 for (BeanDefinition candidate : scanner.findCandidateComponents(basePackage)) {
                     if (candidate.getBeanClassName() == null || candidate.getBeanClassName().endsWith("package-info")) {
