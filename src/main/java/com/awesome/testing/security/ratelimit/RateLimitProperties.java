@@ -38,6 +38,7 @@ public class RateLimitProperties {
         private Policy refreshIp = new Policy(60, Duration.ofMinutes(15));
         private Policy emailUser = new Policy(30, Duration.ofMinutes(15));
         private Policy qrUser = new Policy(60, Duration.ofMinutes(15));
+        private Policy giftCardUser = new Policy(30, Duration.ofMinutes(15));
         private Policy ollamaUser = new Policy(20, Duration.ofMinutes(5));
         private Policy ollamaIp = new Policy(20, Duration.ofMinutes(5));
         private Policy webhookTestUser = new Policy(10, Duration.ofMinutes(15));

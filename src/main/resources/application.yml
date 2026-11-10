@@ -152,6 +152,9 @@ security:
       qr-user:
         capacity: ${SECURITY_RATE_LIMIT_QR_USER_CAPACITY:60}
         window: ${SECURITY_RATE_LIMIT_QR_USER_WINDOW:15m}
+      gift-card-user:
+        capacity: ${SECURITY_RATE_LIMIT_GIFT_CARD_USER_CAPACITY:30}
+        window: ${SECURITY_RATE_LIMIT_GIFT_CARD_USER_WINDOW:15m}
       ollama-user:
         capacity: ${SECURITY_RATE_LIMIT_OLLAMA_USER_CAPACITY:20}
         window: ${SECURITY_RATE_LIMIT_OLLAMA_USER_WINDOW:5m}

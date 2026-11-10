@@ -567,6 +567,9 @@
                                 <param>com.awesome.testing.service.webhook.WebhookAddressRules*</param>
                                 <param>com.awesome.testing.service.webhook.WebhookDispatcher</param>
                                 <param>com.awesome.testing.service.webhook.WebhookDeliveryLog*</param>
+                                <param>com.awesome.testing.service.giftcard.*</param>
+                                <param>com.awesome.testing.service.loyalty.*</param>
+                                <param>com.awesome.testing.service.tender.*</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -615,6 +618,9 @@
                                 <param>com.awesome.testing.internal.InternalApiRoutesTest</param>
                                 <param>com.awesome.testing.service.payment.*Test</param>
                                 <param>com.awesome.testing.service.webhook.Webhook*Test</param>
+                                <param>com.awesome.testing.service.giftcard.*Test</param>
+                                <param>com.awesome.testing.service.loyalty.*Test</param>
+                                <param>com.awesome.testing.service.tender.*Test</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>

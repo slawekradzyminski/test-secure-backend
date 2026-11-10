@@ -4,6 +4,7 @@ import com.awesome.testing.service.checkout.CartSummaryContext;
 import com.awesome.testing.service.checkout.CartSummaryContributors;
 import com.awesome.testing.service.coupon.CouponPreview;
 import com.awesome.testing.service.coupon.CouponService;
+import com.awesome.testing.service.tender.CartTenderService;
 import com.awesome.testing.controller.exception.CartItemNotFoundException;
 import com.awesome.testing.controller.exception.ProductNotFoundException;
 import com.awesome.testing.dto.cart.CartDto;
@@ -49,6 +50,9 @@ class CartServiceTest {
 
     @Mock
     private CartSummaryContributors cartSummaryContributors;
+
+    @Mock
+    private CartTenderService cartTenderService;
 
     @InjectMocks
     private CartService cartService;
@@ -101,7 +105,7 @@ class CartServiceTest {
                 couponService, new CartSummaryContributors(List.of(context -> {
                     seen.add(context);
                     context.cart().setCouponMessage("contributed");
-                })));
+                })), cartTenderService);
 
         CartDto cart = withContributor.getCart(USERNAME);
 
@@ -122,7 +126,7 @@ class CartServiceTest {
         when(cartItemRepository.findByUsername(USERNAME)).thenReturn(List.of());
         List<CartSummaryContext> seen = new ArrayList<>();
         CartService withContributor = new CartService(cartItemRepository, productRepository, inventoryService,
-                couponService, new CartSummaryContributors(List.of(seen::add)));
+                couponService, new CartSummaryContributors(List.of(seen::add)), cartTenderService);
 
         CartDto cart = withContributor.getCart(USERNAME);
 
@@ -263,5 +267,12 @@ class CartServiceTest {
 
         verify(cartItemRepository).deleteByUsername(USERNAME);
         verify(couponService).removeFromCart(USERNAME);
+    }
+
+    @Test
+    void clearingTheCartAlsoDropsTheAppliedGiftCardAndPoints() {
+        cartService.clearCart(USERNAME);
+
+        verify(cartTenderService).clear(USERNAME);
     }
 }

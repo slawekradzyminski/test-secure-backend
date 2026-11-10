@@ -23,6 +23,7 @@ import com.awesome.testing.dto.user.LoginResponseDto;
 import com.awesome.testing.service.mfa.MfaChallenge;
 import com.awesome.testing.service.mfa.MfaService;
 import com.awesome.testing.service.webhook.WebhookService;
+import com.awesome.testing.service.tender.TenderDataEraser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -76,6 +77,7 @@ public class UserService {
     private final OrderRepository orderRepository;
     private final MfaService mfaService;
     private final WebhookService webhookService;
+    private final TenderDataEraser tenderDataEraser;
 
     public LoginResponseDto signIn(String username, String password) {
         authenticationHandler.authUser(username, password);
@@ -118,6 +120,7 @@ public class UserService {
         wishlistItemRepository.deleteByUsername(username);
         productReviewRepository.deleteByUsername(username);
         orderRepository.deleteByUsername(username);
+        tenderDataEraser.forget(username);
         mfaService.deleteForUser(user);
         webhookService.deleteForUser(username);
         userRepository.deleteByUsername(username);

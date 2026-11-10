@@ -18,9 +18,9 @@ Compatibility rules followed by every feature:
 
 | Role | Purpose |
 | --- | --- |
-| `ROLE_CLIENT` | Shopper. Coupons, reviews, wishlist (returns and shipment tracking in warehouse-service). |
+| `ROLE_CLIENT` | Shopper. Coupons, gift cards, loyalty points, reviews, wishlist (returns and shipment tracking in warehouse-service). |
 | `ROLE_WAREHOUSE` | Warehouse operator. Used by warehouse-service for the fulfilment queue and shipments. |
-| `ROLE_ADMIN` | Everything, including coupons, moderation and CSV (and the warehouse-service admin endpoints). |
+| `ROLE_ADMIN` | Everything, including coupons, gift cards, moderation and CSV (and the warehouse-service admin endpoints). |
 
 Signup always creates `ROLE_CLIENT`. The demo seed adds `warehouse` / `warehouse`.
 The backend issues the RS256 JWTs for all three roles; warehouse-service
@@ -104,6 +104,72 @@ retried after 20 minutes. `APP_EMAIL_RETRY_ENABLED` and
   and persists nothing. A valid dry run returns 200 and persists nothing.
 - Stock changes are recorded as inventory movements (`INITIAL_STOCK` or
   `ADMIN_ADJUSTMENT` with reason `CSV import`).
+
+### Gift cards
+
+Admin endpoints under `/api/v1/admin/gift-cards` (`ROLE_ADMIN`); customers check
+a card with `GET /api/v1/gift-cards/{code}` and apply it with
+`PUT /api/v1/cart/gift-card {code}` / `DELETE /api/v1/cart/gift-card`.
+
+| Method and path | Behaviour |
+| --- | --- |
+| `POST /api/v1/admin/gift-cards` `{amount, expiresAt?, recipientUsername?, note?}` | 201 `GiftCardDto` with a generated code `GC-XXXX-XXXX-XXXX` (alphabet without 0/O, 1/I/L). `amount` 1.00–1000.00 with at most 2 decimals (400); `expiresAt` must be in the future (400); unknown recipient 404. A recipient receives a `GIFT_CARD_ISSUED` email |
+| `GET /api/v1/admin/gift-cards?status&page&size` | `PageDto<GiftCardDto>` newest first, optional effective-status filter |
+| `GET /api/v1/admin/gift-cards/{code}` | `GiftCardDto` with `transactions` (ledger, oldest first) |
+| `POST /api/v1/admin/gift-cards/{code}/disable` | 200; the balance is kept but cannot be spent. Already disabled 409 |
+| `GET /api/v1/gift-cards/{code}` | `{code, balance, status, expiresAt}` only, never the recipient or note. Shares the per-user `gift-card-user` rate limit (30 per 15 minutes when rate limiting is enabled) with `PUT /api/v1/cart/gift-card` |
+
+Codes are case-insensitive; a malformed code is 400, an unknown one 404. The
+effective status is `DISABLED`, else `EXPIRED` (now ≥ `expiresAt`), else
+`REDEEMED` (balance 0), else `ACTIVE`. Applying a disabled or expired card is
+400, a card without balance 409, an empty cart 400. Every balance change locks
+the card row and writes a `gift_card_transactions` row: `ISSUED`, `REDEEMED`,
+`RESTORED` or `DISABLED`.
+
+### Loyalty points
+
+- `GET /api/v1/loyalty` → `{balance, lifetimeEarned, tier, valueOfBalance}` of the
+  caller (zero for users who never earned). `tier` is informational: `BRONZE`,
+  `SILVER` from 1000 lifetime points, `GOLD` from 5000.
+- `GET /api/v1/loyalty/transactions?page&size` → the caller's ledger newest
+  first: `EARNED`, `REDEEMED`, `RESTORED`, `REVOKED` with signed `points`.
+- Earning: 1 point per full 1.00 of `totalAmount` when the order becomes `PAID`
+  (an `ORDER_PAID` listener after commit, idempotent per order; a cancelled
+  order earns nothing). The customer receives `LOYALTY_POINTS_EARNED`.
+- Redemption: `PUT /api/v1/cart/loyalty-points {points}` in whole multiples of
+  100 (400), at most the balance (409); `DELETE` removes them. 100 points = 1.00.
+
+### Gift cards and points at checkout
+
+- Tender order: the coupon discount (already in `totalAmount`), then the gift
+  card, then points. Each part is capped so `amountDue` never drops below zero;
+  points are capped to the cent, so `pointsRedeemed` can be below the applied
+  multiple of 100 when the rest of the total needs less.
+- The cart shows `giftCardCode`, `giftCardAmount`, `pointsRedeemed`,
+  `pointsAmount` and `amountDue` only while a gift card or points are applied;
+  otherwise its JSON is unchanged. A card that can no longer pay previews as 0.00.
+  Clearing the cart drops both.
+- Checkout locks and re-validates the card and the account. A disabled,
+  expired, empty or deleted card, or too few points, is 409
+  (`Applied gift card is no longer valid: <reason>`,
+  `Applied loyalty points are no longer available: Insufficient loyalty points`),
+  the checkout rolls back and the cart is kept. Otherwise the order stores
+  `giftCardCode`, `giftCardAmount`, `pointsRedeemed`, `pointsAmount` (migration
+  V12) and the cart selection is cleared. `OrderDto` shows them plus
+  `amountDue = totalAmount − giftCardAmount − pointsAmount` only for such
+  orders; they never change after checkout.
+- Checkout still answers `PENDING`. When the tenders cover the whole total
+  (`amountDue` 0), a listener marks the order `PAID` right after the checkout
+  commits, which publishes `ORDER_PAID` and earns points as usual.
+- Cancellation (customer, admin or warehouse) gives back the gift card amount
+  and the points, and revokes the points the order earned (never below zero).
+- Refunds (`REFUND_BOOKED`) are split by the payments `CardFirstRefundSplitter`
+  (see "Card refunds"): the captured card payment first, then the gift card,
+  then points, through `GiftCardRefundLegHandler` and
+  `LoyaltyPointsRefundLegHandler`, which delegate to `TenderRefundService` and
+  are idempotent per refund `requestId`. Independently, `TenderOrderEvents`
+  revokes earned points in proportion to the refunded share of the total
+  (rounded down, never below zero).
 
 ### Idempotent checkout
 
@@ -298,11 +364,13 @@ User webhook subscriptions deliver these events to customer URLs; see
   and see `CartSummaryContext(username, cartItems, subtotal, discount, cart)`.
   Fields they set must be `@JsonInclude(NON_NULL)` on `CartDto` and set only
   when they apply, so other carts keep their exact legacy body.
-- `OrderAmounts.amountDue(order)` is the amount a card payment must cover;
-  today it equals `totalAmount`. It is exposed as `amountDue` in `InternalOrderDto`.
+- `OrderAmounts.amountDue(order)` is the amount a card payment must cover:
+  `totalAmount − giftCardAmount − pointsAmount`. It is exposed as `amountDue`
+  in `InternalOrderDto`.
 
-`VatCheckoutContributor` (`@Order(100)`) is the registered checkout
-contributor; no cart summary contributors are registered.
+Registered contributors: `VatCheckoutContributor` (`@Order(100)`), then
+`TenderCheckoutContributor` and `TenderCartSummaryContributor` (`@Order(1000)`,
+gift cards and loyalty points), which therefore see the final total.
 
 ## Card payments
 
@@ -343,9 +411,12 @@ When warehouse-service books a refund (`POST /internal/v1/orders/{id}/refunds`),
 the `REFUND_BOOKED` event is split by `RefundSplitter` inside the same
 transaction. `CardFirstRefundSplitter` sends the refund to the card up to the
 captured amount minus card refunds already sent or queued, then offers the rest
-to `RefundLegHandler` beans in `@Order` (gift card, then loyalty points); without
-handlers the rest is not sent anywhere. Orders without a captured payment (paid
-by an admin) get no card leg.
+to `RefundLegHandler` beans in `@Order`: `GiftCardRefundLegHandler` (`GIFT_CARD`)
+gives back up to what the order paid with its gift card, then
+`LoyaltyPointsRefundLegHandler` (`LOYALTY_POINTS`) up to the redeemed points'
+value; anything beyond that is not sent anywhere. Orders without a captured
+payment (paid by an admin) get no card leg, so the whole refund goes to the gift
+card, then points.
 
 The card part is written to `payment_refund_outbox` and delivered by
 `PaymentRefundJob` to `POST {payment.base-url}/internal/v1/payments/refunds`
@@ -357,8 +428,9 @@ warehouse cancel, `ORDER_CANCELLED`) queues a card refund in the same outbox,
 inside the cancelling transaction: the captured amount minus card refunds
 already sent or queued, requestId `UUID.nameUUIDFromBytes("cancel:" + orderId)`
 (queued at most once) and reason `Order cancelled`. Orders without a captured
-payment (paid by an admin, or never paid) get none; gift-card and points
-tenders are restored by the loyalty track.
+payment (paid by an admin, or never paid) get none. In the same transaction the
+gift card and points are restored in full and the points the order earned are
+revoked (see "Gift cards and points at checkout").
 
 | payment-service answer | Outbox row |
 | --- | --- |
