@@ -125,6 +125,7 @@ per user.
 `GET /api/v1/products/search` filters, sorts and pages the catalog and returns
 facets; `GET /api/v1/products` stays a bare array. See
 [PRODUCT_SEARCH.md](PRODUCT_SEARCH.md).
+
 ### VAT and display currencies
 
 Prices are VAT-inclusive (gross), so no total changes. Orders show the VAT
