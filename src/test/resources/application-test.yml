@@ -118,3 +118,10 @@ app:
   email:
     retry:
       enabled: false
+
+webhooks:
+  # Deliver in the committing thread so tests can assert right after the request; the
+  # retry job is driven explicitly.
+  async-dispatch: false
+  retry:
+    enabled: false

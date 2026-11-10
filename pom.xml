@@ -562,6 +562,11 @@
                                 <param>com.awesome.testing.service.currency.*</param>
                                 <param>com.awesome.testing.internal.security.PaymentSignatureVerifier</param>
                                 <param>com.awesome.testing.service.payment.*</param>
+                                <param>com.awesome.testing.service.webhook.WebhookSigner</param>
+                                <param>com.awesome.testing.service.webhook.WebhookUrlPolicy*</param>
+                                <param>com.awesome.testing.service.webhook.WebhookAddressRules*</param>
+                                <param>com.awesome.testing.service.webhook.WebhookDispatcher</param>
+                                <param>com.awesome.testing.service.webhook.WebhookDeliveryLog*</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -609,6 +614,7 @@
                                 <param>com.awesome.testing.internal.security.PaymentSignatureVerifierTest</param>
                                 <param>com.awesome.testing.internal.InternalApiRoutesTest</param>
                                 <param>com.awesome.testing.service.payment.*Test</param>
+                                <param>com.awesome.testing.service.webhook.Webhook*Test</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>

@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import com.awesome.testing.service.webhook.WebhookService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -82,6 +83,9 @@ class UserServiceTest {
 
     @Mock
     private ProductReviewRepository productReviewRepository;
+
+    @Mock
+    private WebhookService webhookService;
 
     @InjectMocks
     private UserService userService;
@@ -228,6 +232,7 @@ class UserServiceTest {
         verify(cartItemRepository).deleteByUsername(registerDto.getUsername());
         verify(orderRepository).deleteByUsername(registerDto.getUsername());
         verify(mfaService).deleteForUser(userEntity);
+        verify(webhookService).deleteForUser(registerDto.getUsername());
         verify(userRepository).deleteByUsername(registerDto.getUsername());
     }
 

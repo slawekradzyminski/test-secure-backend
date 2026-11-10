@@ -3,6 +3,9 @@ package com.awesome.testing.config;
 import com.awesome.testing.event.RecordedCommerceEvents;
 import com.awesome.testing.jms.JsonTextMessageConverter;
 import com.awesome.testing.service.delay.DelayGenerator;
+import com.awesome.testing.service.webhook.StubWebhookHostResolver;
+import com.awesome.testing.service.webhook.WebhookProperties;
+import com.awesome.testing.service.webhook.WebhookUrlPolicy;
 import jakarta.persistence.EntityManagerFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ;
@@ -78,6 +81,20 @@ public class TestConfig {
     @Bean
     public RecordedCommerceEvents recordedCommerceEvents() {
         return new RecordedCommerceEvents();
+    }
+
+    /** Webhook DNS is stubbed so tests never depend on real resolution and can simulate rebinding. */
+    @Bean
+    @Primary
+    public StubWebhookHostResolver stubWebhookHostResolver() {
+        return new StubWebhookHostResolver();
+    }
+
+    /** Lets webhook tests use a local WireMock server as the receiver; every other SSRF rule still applies. */
+    @Bean
+    @Primary
+    public WebhookUrlPolicy testWebhookUrlPolicy(WebhookProperties properties, StubWebhookHostResolver resolver) {
+        return WebhookUrlPolicy.allowingLoopbackForTests(properties, resolver);
     }
 
     @Bean
