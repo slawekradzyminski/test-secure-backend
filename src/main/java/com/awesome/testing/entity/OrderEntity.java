@@ -59,6 +59,20 @@ public class OrderEntity {
     @Builder.Default
     private BigDecimal refundedAmount = BigDecimal.ZERO;
 
+    /** VAT contained in the gross total, fixed at checkout; all four are null when the country has no rate. */
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.CHAR)
+    @Column(name = "tax_country", length = 2)
+    private String taxCountry;
+
+    @Column(name = "tax_rate", precision = 5, scale = 2)
+    private BigDecimal taxRate;
+
+    @Column(name = "tax_amount", precision = 10, scale = 2)
+    private BigDecimal taxAmount;
+
+    @Column(name = "net_amount", precision = 10, scale = 2)
+    private BigDecimal netAmount;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;

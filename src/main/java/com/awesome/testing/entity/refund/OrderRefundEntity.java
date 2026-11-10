@@ -50,6 +50,10 @@ public class OrderRefundEntity {
     @Column(nullable = false)
     private String reference;
 
+    /** VAT contained in the refund at the order's rate; null when the order carries no VAT. */
+    @Column(name = "tax_amount", precision = 10, scale = 2)
+    private BigDecimal taxAmount;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -558,6 +558,8 @@
                                 <param>com.awesome.testing.service.notification.CustomerEmailRenderer</param>
                                 <param>com.awesome.testing.service.search.*</param>
                                 <param>com.awesome.testing.repository.search.*</param>
+                                <param>com.awesome.testing.service.tax.*</param>
+                                <param>com.awesome.testing.service.currency.*</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -600,6 +602,8 @@
                                 <param>com.awesome.testing.internal.service.*Test</param>
                                 <param>com.awesome.testing.service.search.*Test</param>
                                 <param>com.awesome.testing.endpoints.products.ProductSearch*Test</param>
+                                <param>com.awesome.testing.service.tax.*Test</param>
+                                <param>com.awesome.testing.service.currency.*Test</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>

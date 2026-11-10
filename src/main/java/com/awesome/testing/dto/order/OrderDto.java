@@ -59,6 +59,22 @@ public class OrderDto {
             example = "49.99")
     private BigDecimal refundedAmount;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"string", "null"}, description = "ISO country code whose VAT is contained in the total; omitted when no VAT rate applies", example = "PL")
+    private String taxCountry;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"number", "null"}, description = "VAT rate in percent at checkout; 0 means VAT is not applicable", example = "23.00")
+    private BigDecimal taxRate;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"number", "null"}, description = "VAT contained in the VAT-inclusive total", example = "373.98")
+    private BigDecimal taxAmount;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"number", "null"}, description = "Total without VAT (totalAmount - taxAmount)", example = "1626.00")
+    private BigDecimal netAmount;
+
     @Valid
     @NotNull(message = "Shipping address is required")
     @Schema(description = "Shipping address")
@@ -82,6 +98,10 @@ public class OrderDto {
                 .status(order.getStatus())
                 .fulfilmentState(warehouseState(order))
                 .refundedAmount(refundedAmountOf(order))
+                .taxCountry(order.getTaxCountry())
+                .taxRate(order.getTaxRate())
+                .taxAmount(order.getTaxAmount())
+                .netAmount(order.getNetAmount())
                 .shippingAddress(AddressDto.from(order.getShippingAddress()))
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
