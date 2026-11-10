@@ -120,6 +120,43 @@ per user.
 - `PUT /api/v1/products/{id}` honours `If-Match`; a stale version returns 412.
   Without `If-Match` the update behaves as before.
 
+### VAT and display currencies
+
+Prices are VAT-inclusive (gross), so no total changes. Orders show the VAT
+their total contains; currencies are for display only, and prices and orders
+stay in USD.
+
+- Rates live in `vat_rates` (migration V13): the EU-27 standard rates plus
+  GB 20, CH 8.1, NO 25, US 0 and CA 0. A rate of 0 means VAT is not applicable.
+- Checkout resolves the free-text shipping `country` to an ISO 3166-1 alpha-2
+  code (`CountryResolver`: alpha-2 and alpha-3 codes, English names and
+  variants such as `UK`, `Great Britain`, `USA`, `Polska`, `Deutschland`;
+  case, dots and extra whitespace are ignored; any other two letters are taken
+  as a code). When a rate exists, `VatCheckoutContributor` stores it on the
+  order after coupon pricing:
+  `taxAmount = totalAmount - totalAmount / (1 + rate / 100)`, computed exactly
+  and rounded half-up to cents; `netAmount = totalAmount - taxAmount`.
+- `OrderDto` adds `taxCountry`, `taxRate`, `taxAmount` and `netAmount`, fixed
+  at checkout, so POST, GET and list return the same values and a later rate
+  change affects only new orders. Unknown countries (and orders created before
+  V13) omit all four, so their JSON is unchanged. Order items and the cart JSON
+  never change.
+- A refund booked for an order with VAT records the VAT it contains at the
+  order's rate in `order_refunds.tax_amount` (not exposed in responses).
+
+| Method and path | Access | Behaviour |
+| --- | --- | --- |
+| `GET /api/v1/vat-rates` | authenticated | `[{countryCode, countryName, rate, updatedAt}]` by code |
+| `GET /api/v1/vat-rates/{country}` | authenticated | Code or name; 404 when not recognised or without a rate |
+| `PUT /api/v1/admin/vat-rates/{countryCode}` | `ROLE_ADMIN` | `{countryName, rate}`; rate 0-50 with at most 2 decimals; code must be 2 letters (`UK` is stored as `GB`); 201 created, 200 updated, 400 validation |
+| `GET /api/v1/cart/tax-preview?country=PL` | authenticated | `{country, rate, taxAmount, netAmount, totalAmount}` for the cart total after any coupon; 400 without `country`, 404 unknown country |
+| `GET /api/v1/currencies` | authenticated | `[{code, name, symbol, rateToUsd, updatedAt}]` by code; `rateToUsd` is the USD value of one unit |
+| `GET /api/v1/currencies/convert?amount=&from=USD&to=EUR` | authenticated | `{amount, from, to, converted, rate}`; `from` defaults to USD; `converted` uses the exact ratio rounded half-up to 2 decimals, `rate` is rounded half-up to 6 decimals; 400 for a missing, negative or non-numeric amount, more than 2 decimals, or a malformed code; 404 unknown currency |
+| `PUT /api/v1/admin/currencies/{code}` | `ROLE_ADMIN` | `{name, symbol, rateToUsd}`; rate greater than 0 with at most 6 decimals; USD must stay 1; 201 created, 200 updated, 400 validation |
+
+Seeded currencies (fixed demo rates): USD 1, EUR 1.08, PLN 0.25, GBP 1.27,
+CHF 1.13.
+
 ## Tier 2: warehouse fulfilment (warehouse-service)
 
 Shipments, returns (RMA), suppliers, purchase orders and reorder suggestions
@@ -252,4 +289,5 @@ changes publish nothing.
 - `OrderAmounts.amountDue(order)` is the amount a card payment must cover;
   today it equals `totalAmount`.
 
-No contributors are registered by default.
+`VatCheckoutContributor` (`@Order(100)`) is the registered checkout
+contributor; no cart summary contributors are registered.

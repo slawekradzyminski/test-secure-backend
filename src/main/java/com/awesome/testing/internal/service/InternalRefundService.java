@@ -11,6 +11,7 @@ import com.awesome.testing.internal.dto.OrderRefundDto;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.refund.OrderRefundRepository;
 import com.awesome.testing.service.coupon.CouponService;
+import com.awesome.testing.service.tax.VatCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -62,6 +63,7 @@ public class InternalRefundService {
                 .requestId(request.requestId())
                 .amount(request.amount())
                 .reference(request.reference().trim())
+                .taxAmount(order.getTaxRate() == null ? null : VatCalculator.taxIn(request.amount(), order.getTaxRate()))
                 .build());
         order.setRefundedAmount(alreadyRefunded.add(request.amount()));
         if (order.getRefundedAmount().compareTo(order.getTotalAmount()) == 0) {
