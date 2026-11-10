@@ -71,6 +71,16 @@ class PaymentRefundOutboxTest {
     }
 
     @Test
+    void isQueuedLooksUpTheRequestId() {
+        UUID other = UUID.randomUUID();
+        when(repository.findByRequestId(REQUEST)).thenReturn(Optional.of(row));
+        when(repository.findByRequestId(other)).thenReturn(Optional.empty());
+
+        assertThat(outbox.isQueued(REQUEST)).isTrue();
+        assertThat(outbox.isQueued(other)).isFalse();
+    }
+
+    @Test
     void cardRefundedCountsPendingAndSentRows() {
         when(repository.sumAmountByOrderIdAndStatusIn(4L, EnumSet.of(PaymentRefundStatus.PENDING, PaymentRefundStatus.SENT)))
                 .thenReturn(new BigDecimal("3.00"));

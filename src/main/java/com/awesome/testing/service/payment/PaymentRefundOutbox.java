@@ -51,6 +51,12 @@ public class PaymentRefundOutbox {
         return repository.sumAmountByOrderIdAndStatusIn(orderId, COUNTED);
     }
 
+    /** True when a card refund with this requestId was already queued (in any state). */
+    @Transactional(readOnly = true)
+    public boolean isQueued(UUID requestId) {
+        return repository.findByRequestId(requestId).isPresent();
+    }
+
     /** Queues a card refund; due immediately. Call inside the transaction that booked the refund. */
     @Transactional
     public void enqueue(Long orderId, UUID paymentId, UUID requestId, BigDecimal amount, String reason) {

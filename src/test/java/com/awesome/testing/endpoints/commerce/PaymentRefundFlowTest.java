@@ -9,6 +9,9 @@ import com.awesome.testing.internal.dto.InternalOrderDto;
 import com.awesome.testing.internal.dto.OrderRefundDto;
 import com.awesome.testing.repository.payment.PaymentRefundOutboxRepository;
 import com.awesome.testing.service.payment.PaymentRefundJob;
+import com.awesome.testing.service.payment.OrderCancelledListener;
+import com.awesome.testing.dto.order.FulfilmentState;
+import com.awesome.testing.internal.dto.FulfilmentUpdateDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -184,6 +187,96 @@ class PaymentRefundFlowTest extends AbstractPaymentFlowTest {
                 .containsExactly(new BigDecimal("15.00"), new BigDecimal("5.00"));
         assertThat(manualRefund.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(outboxRepository.findByOrderIdOrderByIdAsc(adminPaid.getId())).isEmpty();
+    }
+
+    @Test
+    void customerCancelOfACardPaidOrderRefundsTheCardOnce() {
+        // given
+        Long orderId = paidCardOrder("18.00");
+        PAYMENT_SERVICE.stubFor(post(urlEqualTo(REFUNDS)).willReturn(aResponse().withStatus(200)
+                .withHeader("Content-Type", "application/json").withBody("{\"refundId\":\"" + UUID.randomUUID() + "\"}")));
+
+        // when
+        ResponseEntity<OrderDto> cancelled = cancel(orderId, clientToken);
+        ResponseEntity<String> again = executePost(ORDERS_ENDPOINT + "/" + orderId + "/cancel", null,
+                getHeadersWith(clientToken), String.class);
+        refundJob.deliverDue();
+
+        // then
+        assertThat(cancelled.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(again.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(outboxRepository.findByOrderIdOrderByIdAsc(orderId)).singleElement().satisfies(row -> {
+            assertThat(row.getRequestId()).isEqualTo(OrderCancelledListener.requestId(orderId));
+            assertThat(row.getAmount()).isEqualByComparingTo("18.00");
+            assertThat(row.getReason()).isEqualTo("Order cancelled");
+            assertThat(row.getStatus()).isEqualTo(PaymentRefundStatus.SENT);
+        });
+        PAYMENT_SERVICE.verify(exactly(1), postRequestedFor(urlEqualTo(REFUNDS))
+                .withRequestBody(equalToJson("""
+                        {"requestId":"%s","orderId":%d,"amount":18.00,"reason":"Order cancelled"}"""
+                        .formatted(OrderCancelledListener.requestId(orderId), orderId))));
+    }
+
+    @Test
+    void adminCancelOfACardPaidOrderRefundsTheCard() {
+        // given
+        Long orderId = paidCardOrder("9.99");
+
+        // when
+        ResponseEntity<OrderDto> cancelled = executePut(ORDERS_ENDPOINT + "/" + orderId + "/status",
+                OrderStatus.CANCELLED, getHeadersWith(adminToken), OrderDto.class);
+
+        // then
+        assertThat(cancelled.getBody().getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(outbox(OrderCancelledListener.requestId(orderId)).getAmount()).isEqualByComparingTo("9.99");
+    }
+
+    @Test
+    void warehouseCancelOfACardPaidOrderRefundsTheCard() {
+        // given
+        Long orderId = paidCardOrder("12.00");
+        assertThat(executePut("/internal/v1/orders/" + orderId + "/fulfilment",
+                new FulfilmentUpdateDto(FulfilmentState.AWAITING_PICK), serviceHeaders(WAREHOUSE_TOKEN),
+                InternalOrderDto.class).getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // when
+        ResponseEntity<InternalOrderDto> cancelled = executePost("/internal/v1/orders/" + orderId + "/warehouse-cancel",
+                null, serviceHeaders(WAREHOUSE_TOKEN), InternalOrderDto.class);
+
+        // then
+        assertThat(cancelled.getBody().status()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(outbox(OrderCancelledListener.requestId(orderId)).getAmount()).isEqualByComparingTo("12.00");
+    }
+
+    @Test
+    void cancellingAdminPaidOrUnpaidOrdersRefundsNothing() {
+        // given
+        OrderDto adminPaid = order(clientToken, product("5.00", 5), 1);
+        OrderDto unpaid = order(clientToken, product("5.00", 5), 1);
+        OrderDto failedOnly = order(clientToken, product("5.00", 5), 1);
+        markPaid(adminPaid.getId());
+        postResult(failedOnly.getId(), failed(UUID.randomUUID(), UUID.randomUUID(), "5.00", "CARD_DECLINED"),
+                PaymentResultResponseDto.class);
+
+        // when
+        cancel(adminPaid.getId(), adminToken);
+        cancel(unpaid.getId(), clientToken);
+        cancel(failedOnly.getId(), clientToken);
+
+        // then
+        assertThat(outboxRepository.findAll()).isEmpty();
+    }
+
+    private Long paidCardOrder(String price) {
+        OrderDto order = order(clientToken, product(price, 5), 1);
+        ResponseEntity<PaymentResultResponseDto> paid = postResult(order.getId(),
+                captured(UUID.randomUUID(), UUID.randomUUID(), price), PaymentResultResponseDto.class);
+        assertThat(paid.getBody().orderStatus()).isEqualTo(OrderStatus.PAID);
+        return order.getId();
+    }
+
+    private ResponseEntity<OrderDto> cancel(Long orderId, String token) {
+        return executePost(ORDERS_ENDPOINT + "/" + orderId + "/cancel", null, getHeadersWith(token), OrderDto.class);
     }
 
     private Long deliveredCardOrder(String price) {

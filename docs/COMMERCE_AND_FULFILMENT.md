@@ -305,6 +305,14 @@ The card part is written to `payment_refund_outbox` and delivered by
 with the payment token and `{requestId, orderId, amount, reason}` (the booked
 refund's requestId and reference).
 
+Cancelling an order that has a captured card payment (customer, admin or
+warehouse cancel, `ORDER_CANCELLED`) queues a card refund in the same outbox,
+inside the cancelling transaction: the captured amount minus card refunds
+already sent or queued, requestId `UUID.nameUUIDFromBytes("cancel:" + orderId)`
+(queued at most once) and reason `Order cancelled`. Orders without a captured
+payment (paid by an admin, or never paid) get none; gift-card and points
+tenders are restored by the loyalty track.
+
 | payment-service answer | Outbox row |
 | --- | --- |
 | 2xx `{refundId, ...}` | `SENT` with the refund id |
