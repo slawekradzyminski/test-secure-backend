@@ -13,6 +13,7 @@ import com.awesome.testing.service.checkout.CartSummaryContext;
 import com.awesome.testing.service.checkout.CartSummaryContributors;
 import com.awesome.testing.service.coupon.CouponPreview;
 import com.awesome.testing.service.coupon.CouponService;
+import com.awesome.testing.service.tender.CartTenderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ public class CartService {
     private final InventoryService inventoryService;
     private final CouponService couponService;
     private final CartSummaryContributors cartSummaryContributors;
+    private final CartTenderService cartTenderService;
 
     @Transactional(readOnly = true)
     public CartDto getCart(String username) {
@@ -97,6 +99,7 @@ public class CartService {
     public void clearCart(String username) {
         cartItemRepository.deleteByUsername(username);
         couponService.removeFromCart(username);
+        cartTenderService.clear(username);
     }
 
     private CartItemEntity getCartItemEntity(String username, Long productId) {

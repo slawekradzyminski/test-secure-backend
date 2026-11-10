@@ -23,6 +23,7 @@ public class AuthRateLimitGuard {
     private static final String REFRESH_ENDPOINT = "/api/v1/users/refresh";
     private static final String EMAIL_ENDPOINT = "/api/v1/email";
     private static final String QR_ENDPOINT = "/api/v1/qr/create";
+    private static final String GIFT_CARD_ENDPOINT = "/api/v1/gift-cards";
     private static final String OLLAMA_ENDPOINT = "/api/v1/ollama";
 
     private final ClientAddressResolver clientAddressResolver;
@@ -93,6 +94,11 @@ public class AuthRateLimitGuard {
 
     public void checkQr(HttpServletRequest request, String username) {
         checkAuthenticatedOrIp(request, username, QR_ENDPOINT, properties.getPolicies().getQrUser());
+    }
+
+    /** Gift card lookups and cart applications share one budget, so codes cannot be guessed quickly. */
+    public void checkGiftCard(HttpServletRequest request, String username) {
+        checkAuthenticatedOrIp(request, username, GIFT_CARD_ENDPOINT, properties.getPolicies().getGiftCardUser());
     }
 
     public void checkOllama(HttpServletRequest request, String username) {

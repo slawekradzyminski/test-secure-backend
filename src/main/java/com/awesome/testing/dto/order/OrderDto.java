@@ -1,6 +1,7 @@
 package com.awesome.testing.dto.order;
 
 import com.awesome.testing.entity.OrderEntity;
+import com.awesome.testing.service.checkout.OrderAmounts;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -59,6 +60,27 @@ public class OrderDto {
             example = "49.99")
     private BigDecimal refundedAmount;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"string", "null"}, description = "Gift card used at checkout; omitted when none was used", example = "GC-7KQ2-M9XD-4HPA")
+    private String giftCardCode;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"number", "null"}, description = "Part of the total paid with the gift card", example = "25.00")
+    private BigDecimal giftCardAmount;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"integer", "null"}, description = "Loyalty points redeemed at checkout", example = "500")
+    private Long pointsRedeemed;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"number", "null"}, description = "Part of the total paid with loyalty points (100 points = 1.00)", example = "5.00")
+    private BigDecimal pointsAmount;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"number", "null"}, description = "Total minus the gift card and points parts, which a card payment must cover; only present when a gift card or points were used",
+            example = "1969.98")
+    private BigDecimal amountDue;
+
     @Valid
     @NotNull(message = "Shipping address is required")
     @Schema(description = "Shipping address")
@@ -82,6 +104,11 @@ public class OrderDto {
                 .status(order.getStatus())
                 .fulfilmentState(warehouseState(order))
                 .refundedAmount(refundedAmountOf(order))
+                .giftCardCode(order.getGiftCardCode())
+                .giftCardAmount(order.getGiftCardAmount())
+                .pointsRedeemed(order.getPointsRedeemed())
+                .pointsAmount(order.getPointsAmount())
+                .amountDue(OrderAmounts.hasTenders(order) ? OrderAmounts.amountDue(order) : null)
                 .shippingAddress(AddressDto.from(order.getShippingAddress()))
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())

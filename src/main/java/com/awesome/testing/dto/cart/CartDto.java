@@ -46,4 +46,24 @@ public class CartDto {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(description = "Total price after the discount", example = "179.60")
     private BigDecimal totalAfterDiscount;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"string", "null"}, description = "Gift card applied to the cart; omitted when none is applied", example = "GC-7KQ2-M9XD-4HPA")
+    private String giftCardCode;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"number", "null"}, description = "Part of the total checkout would pay with the gift card (zero when the card cannot be used)", example = "25.00")
+    private BigDecimal giftCardAmount;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"integer", "null"}, description = "Loyalty points checkout would redeem, capped at what the remaining total needs", example = "500")
+    private Long pointsRedeemed;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"number", "null"}, description = "Value of the redeemed points (100 points = 1.00)", example = "5.00")
+    private BigDecimal pointsAmount;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"number", "null"}, description = "What remains to pay after the coupon, gift card and points; only present when a gift card or points are applied", example = "149.60")
+    private BigDecimal amountDue;
 } 

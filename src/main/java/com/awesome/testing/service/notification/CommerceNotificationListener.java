@@ -64,7 +64,10 @@ public class CommerceNotificationListener {
         wishlistItemRepository.saveAll(watchers);
     }
 
+    // REQUIRES_NEW: after a commit the publisher's transaction is finished, so the email event
+    // must be written in a transaction of its own (events published inside a transaction).
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onCustomerNotificationRequested(CustomerNotificationRequestedEvent event) {
         userRepository.findByUsername(event.username()).ifPresent(user -> send(user,
                 renderer.render(user, event.template(), event.properties() == null ? Map.of() : event.properties()),
