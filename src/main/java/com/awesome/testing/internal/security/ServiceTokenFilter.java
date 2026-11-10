@@ -14,14 +14,17 @@ import java.io.IOException;
 import static com.awesome.testing.utils.ErrorResponseDefinition.sendErrorResponse;
 
 /**
- * Guards {@code /internal/**}: 404 when no service token is configured, 401
- * for a missing or wrong {@code X-Service-Token}. It runs before Spring
- * Security, which permits these paths without a JWT.
+ * Guards {@code /internal/**}: each path accepts the callers that
+ * {@link InternalRoutes} assigns to it. 404 when none of those callers has a
+ * token configured, 401 for a missing {@code X-Service-Token} or one that
+ * belongs to no accepted caller. It runs before Spring Security, which permits
+ * these paths without a JWT.
  */
 @RequiredArgsConstructor
 public class ServiceTokenFilter extends OncePerRequestFilter {
 
     private final ServiceTokenGuard guard;
+    private final InternalRoutes routes;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -31,7 +34,8 @@ public class ServiceTokenFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        switch (guard.check(request.getHeader(InternalApi.TOKEN_HEADER))) {
+        String path = pathWithinApplication(request);
+        switch (guard.check(routes.callersFor(path), request.getHeader(InternalApi.TOKEN_HEADER))) {
             case DISABLED -> sendErrorResponse(response, HttpStatus.NOT_FOUND, "Not found");
             case REJECTED -> sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Invalid service token");
             case ACCEPTED -> filterChain.doFilter(request, response);

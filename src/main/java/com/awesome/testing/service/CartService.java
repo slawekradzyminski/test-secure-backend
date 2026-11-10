@@ -9,6 +9,8 @@ import com.awesome.testing.entity.CartItemEntity;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.ProductRepository;
+import com.awesome.testing.service.checkout.CartSummaryContext;
+import com.awesome.testing.service.checkout.CartSummaryContributors;
 import com.awesome.testing.service.coupon.CouponPreview;
 import com.awesome.testing.service.coupon.CouponService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class CartService {
     private final ProductRepository productRepository;
     private final InventoryService inventoryService;
     private final CouponService couponService;
+    private final CartSummaryContributors cartSummaryContributors;
 
     @Transactional(readOnly = true)
     public CartDto getCart(String username) {
@@ -34,7 +37,7 @@ public class CartService {
         BigDecimal subtotal = calculateTotalPrice(cartItems);
         Optional<CouponPreview> coupon = couponService.preview(username, subtotal);
         BigDecimal discount = coupon.map(CouponPreview::discount).orElse(BigDecimal.ZERO);
-        return CartDto.builder()
+        CartDto cart = CartDto.builder()
                 .username(username)
                 .items(cartItems.stream().map(this::convertToCartItemDto).toList())
                 .totalPrice(subtotal)
@@ -46,6 +49,8 @@ public class CartService {
                 .discountAmount(coupon.isPresent() ? discount : null)
                 .totalAfterDiscount(coupon.isPresent() ? subtotal.subtract(discount) : null)
                 .build();
+        cartSummaryContributors.contribute(new CartSummaryContext(username, cartItems, subtotal, discount, cart));
+        return cart;
     }
 
     @Transactional

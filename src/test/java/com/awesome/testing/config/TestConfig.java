@@ -1,5 +1,6 @@
 package com.awesome.testing.config;
 
+import com.awesome.testing.event.RecordedCommerceEvents;
 import com.awesome.testing.jms.JsonTextMessageConverter;
 import com.awesome.testing.service.delay.DelayGenerator;
 import jakarta.persistence.EntityManagerFactory;
@@ -72,6 +73,11 @@ public class TestConfig {
     @Bean(name = "transactionManager")
     public PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
         return jpaTransactionManager(entityManagerFactory);
+    }
+
+    @Bean
+    public RecordedCommerceEvents recordedCommerceEvents() {
+        return new RecordedCommerceEvents();
     }
 
     @Bean

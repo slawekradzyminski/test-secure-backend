@@ -4,6 +4,8 @@ import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.entity.OrderEntity;
 import com.awesome.testing.entity.refund.OrderRefundEntity;
+import com.awesome.testing.event.CommerceEventType;
+import com.awesome.testing.event.CommerceEvents;
 import com.awesome.testing.internal.dto.InternalOrderDto;
 import com.awesome.testing.internal.dto.OrderRefundDto;
 import com.awesome.testing.repository.OrderRepository;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -30,6 +33,7 @@ public class InternalRefundService {
     private final OrderRepository orderRepository;
     private final OrderRefundRepository refundRepository;
     private final CouponService couponService;
+    private final CommerceEvents commerceEvents;
 
     @Transactional
     public InternalOrderDto refund(Long orderId, OrderRefundDto request) {
@@ -63,6 +67,10 @@ public class InternalRefundService {
         if (order.getRefundedAmount().compareTo(order.getTotalAmount()) == 0) {
             couponService.releaseRedemption(order);
         }
-        return InternalOrderDto.from(orderRepository.save(order));
+        OrderEntity saved = orderRepository.save(order);
+        commerceEvents.publish(CommerceEventType.REFUND_BOOKED, saved, Map.of(
+                "amount", request.amount(),
+                "requestId", request.requestId()));
+        return InternalOrderDto.from(saved);
     }
 }

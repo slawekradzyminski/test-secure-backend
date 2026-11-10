@@ -1,5 +1,8 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.service.checkout.CartSummaryContext;
+import com.awesome.testing.service.checkout.CartSummaryContributors;
+import com.awesome.testing.service.coupon.CouponPreview;
 import com.awesome.testing.service.coupon.CouponService;
 import com.awesome.testing.controller.exception.CartItemNotFoundException;
 import com.awesome.testing.controller.exception.ProductNotFoundException;
@@ -18,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,6 +46,9 @@ class CartServiceTest {
 
     @Mock
     private CouponService couponService;
+
+    @Mock
+    private CartSummaryContributors cartSummaryContributors;
 
     @InjectMocks
     private CartService cartService;
@@ -81,6 +88,49 @@ class CartServiceTest {
         assertThat(cart.getItems()).singleElement().satisfies(item -> {
             assertThat(item.getProductId()).isEqualTo(product.getId());
             assertThat(item.getQuantity()).isEqualTo(1);
+        });
+    }
+
+    @Test
+    void cartSummaryContributorsSeeTheCartAndMayAddFields() {
+        when(cartItemRepository.findByUsername(USERNAME)).thenReturn(List.of(cartItem));
+        when(couponService.preview(USERNAME, product.getPrice())).thenReturn(Optional.of(
+                new CouponPreview("SAVE10", true, null, new BigDecimal("100.00"))));
+        List<CartSummaryContext> seen = new ArrayList<>();
+        CartService withContributor = new CartService(cartItemRepository, productRepository, inventoryService,
+                couponService, new CartSummaryContributors(List.of(context -> {
+                    seen.add(context);
+                    context.cart().setCouponMessage("contributed");
+                })));
+
+        CartDto cart = withContributor.getCart(USERNAME);
+
+        assertThat(seen).singleElement().satisfies(context -> {
+            assertThat(context.username()).isEqualTo(USERNAME);
+            assertThat(context.cartItems()).containsExactly(cartItem);
+            assertThat(context.subtotal()).isEqualByComparingTo("1000");
+            assertThat(context.discount()).isEqualByComparingTo("100.00");
+            assertThat(context.cart()).isSameAs(cart);
+        });
+        assertThat(cart.getCouponMessage()).isEqualTo("contributed");
+        assertThat(cart.getDiscountAmount()).isEqualByComparingTo("100.00");
+        assertThat(cart.getTotalAfterDiscount()).isEqualByComparingTo("900.00");
+    }
+
+    @Test
+    void cartSummaryContributorsGetAZeroDiscountWithoutACoupon() {
+        when(cartItemRepository.findByUsername(USERNAME)).thenReturn(List.of());
+        List<CartSummaryContext> seen = new ArrayList<>();
+        CartService withContributor = new CartService(cartItemRepository, productRepository, inventoryService,
+                couponService, new CartSummaryContributors(List.of(seen::add)));
+
+        CartDto cart = withContributor.getCart(USERNAME);
+
+        assertThat(cart.getDiscountAmount()).isNull();
+        assertThat(cart.getTotalAfterDiscount()).isNull();
+        assertThat(seen).singleElement().satisfies(context -> {
+            assertThat(context.discount()).isEqualByComparingTo("0");
+            assertThat(context.subtotal()).isEqualByComparingTo("0");
         });
     }
 

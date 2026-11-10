@@ -234,8 +234,15 @@ ollama:
   base-url: http://localhost:11434
 
 warehouse:
-  # Shared secret for the /internal/v1 API called by warehouse-service; blank disables the API (404).
+  # Alias of internal.service-tokens.warehouse, kept for existing deployments.
   service-token: ${WAREHOUSE_SERVICE_TOKEN:}
+
+internal:
+  # X-Service-Token secret per caller of the /internal/v1 API; a blank token disables that caller's endpoints (404).
+  service-tokens:
+    warehouse: ${warehouse.service-token:}
+    # Also sent by the backend when it calls payment-service.
+    payment: ${PAYMENT_SERVICE_TOKEN:}
 
 springdoc:
   # The service-to-service API for warehouse-service is not part of the public contract.

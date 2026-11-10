@@ -47,7 +47,8 @@ class InternalNotificationServiceTest {
     @InjectMocks private InternalNotificationService service;
 
     @ParameterizedTest
-    @EnumSource(value = EmailTemplate.class, names = {"ORDER_SHIPPED", "ORDER_DELIVERED", "RETURN_UPDATED"})
+    @EnumSource(value = EmailTemplate.class, names = {"ORDER_SHIPPED", "ORDER_DELIVERED", "RETURN_UPDATED",
+            "SHIPMENT_OUT_FOR_DELIVERY", "SHIPMENT_DELIVERY_FAILED"})
     void publishesTheRequestForAKnownCustomer(EmailTemplate template) {
         when(userRepository.findByUsername("buyer")).thenReturn(Optional.of(new UserEntity()));
         Map<String, String> properties = complete();
@@ -88,10 +89,15 @@ class InternalNotificationServiceTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = EmailTemplate.class, names = {"GENERIC", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_CONFIRMED", "BACK_IN_STOCK"})
+    @EnumSource(value = EmailTemplate.class, names = {"GENERIC", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_CONFIRMED",
+            "BACK_IN_STOCK", "PAYMENT_RECEIVED", "PAYMENT_FAILED", "LOYALTY_POINTS_EARNED", "GIFT_CARD_ISSUED"})
     void templatesOutsideTheWarehouseSetAreRejectedBeforeTheLookup(EmailTemplate template) {
         assertThatThrownBy(() -> service.notify(new InternalNotificationDto(REQUEST, "buyer", template, null)))
-                .isInstanceOfSatisfying(CustomException.class, e -> assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+                .isInstanceOfSatisfying(CustomException.class, e -> {
+                    assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(e.getMessage()).isEqualTo("template must be ORDER_SHIPPED, ORDER_DELIVERED, "
+                            + "RETURN_UPDATED, SHIPMENT_OUT_FOR_DELIVERY or SHIPMENT_DELIVERY_FAILED");
+                });
         verify(userRepository, never()).findByUsername(any());
         verify(eventPublisher, never()).publishEvent(any(Object.class));
     }

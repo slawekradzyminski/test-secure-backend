@@ -165,15 +165,24 @@ REST and GraphQL order mutations share `OrderService`, so they follow the same r
 
 ## Internal API for warehouse-service
 
-Base path `/internal/v1`, called only by warehouse-service and not routed by
-the gateway. Every request carries `X-Service-Token`, compared in constant time
-with `warehouse.service-token` (env `WAREHOUSE_SERVICE_TOKEN`; the `local`
-profile defaults to `local-warehouse-token`).
+Base path `/internal/v1`, called by warehouse-service (and, for payment
+endpoints, payment-service) and not routed by the gateway. Every request
+carries `X-Service-Token`, compared in constant time with the token of each
+caller the endpoint accepts:
+
+| Caller | Property | Environment variable | `local` default |
+| --- | --- | --- | --- |
+| warehouse | `internal.service-tokens.warehouse` (alias `warehouse.service-token`) | `WAREHOUSE_SERVICE_TOKEN` | `local-warehouse-token` |
+| payment | `internal.service-tokens.payment` | `PAYMENT_SERVICE_TOKEN` | `local-payment-token` |
+
+All endpoints below accept only the warehouse token. `InternalApiConfig.internalRoutes()`
+maps path patterns to callers, so a payment endpoint is declared there with
+`.route("/internal/v1/orders/\\d+/payment", ServiceCaller.PAYMENT)`.
 
 | Situation | Result |
 | --- | --- |
-| No token configured | 404 `{"message": "Not found"}` for every `/internal/**` path |
-| Missing or wrong `X-Service-Token` | 401 `{"message": "Invalid service token"}`, even with a valid JWT |
+| No token configured for any caller the path accepts | 404 `{"message": "Not found"}` |
+| Missing `X-Service-Token`, a wrong one, or another caller's token | 401 `{"message": "Invalid service token"}`, even with a valid JWT |
 
 The internal API needs no JWT, gets no CORS headers, is not captured by the
 traffic monitor or logged by Logbook (`X-Service-Token` is also obfuscated),
@@ -189,7 +198,7 @@ and is absent from `/v3/api-docs`.
 | `POST /orders/{id}/warehouse-cancel` | Only for `PAID` orders in `AWAITING_PICK` or `PICKED` (otherwise 409); restores stock, releases the coupon, sets status and state to `CANCELLED` |
 | `GET /products[?ids=1,2]` | `List<InternalProductDto>` by id ascending; unknown ids are omitted |
 | `POST /inventory/receipts` | `{movementIds}` in request-line order. `type` must be `PURCHASE_RECEIVED` or `RETURN_RESTOCKED` (400), each product at most once (400), quantities ≥ 1, unknown product or `orderId` 404. Each movement stores the `requestId`, `reference` as its reason and actor `warehouse-service`. Repeating a `requestId` with the same type and lines returns the original ids without changing stock; different lines or type is 409 |
-| `POST /notifications` | 202. `requestId` is required (400); `template` must be `ORDER_SHIPPED`, `ORDER_DELIVERED` or `RETURN_UPDATED` (400) and its properties must be present (400: `orderId`, `carrier`, `trackingNumber` / `orderId` / `returnId`, `orderId`, `status`, optional `refundAmount` and `note`); unknown username 404. The backend renders the subject and body (`CustomerEmailRenderer`) and queues the email through the existing pipeline. A repeated `requestId` is accepted without a second email |
+| `POST /notifications` | 202. `requestId` is required (400); `template` must be `ORDER_SHIPPED`, `ORDER_DELIVERED`, `RETURN_UPDATED`, `SHIPMENT_OUT_FOR_DELIVERY` or `SHIPMENT_DELIVERY_FAILED` (400) and its properties must be present (400: `orderId`, `carrier`, `trackingNumber` / `orderId` / `returnId`, `orderId`, `status`, optional `refundAmount` and `note` / `orderId`, `carrier`, `trackingNumber` for both carrier templates); unknown username 404. The backend renders the subject and body (`CustomerEmailRenderer`) and queues the email through the existing pipeline. A repeated `requestId` is accepted without a second email |
 | `GET /jwks.json` | The RS256 access-token verification key as a JSON Web Key Set (`kty`, `use`, `alg`, `kid`, `n`, `e`) |
 
 ```text
@@ -202,3 +211,45 @@ receipt body       { requestId, type, orderId?, reference, lines [{productId, qu
 refund body        { requestId, amount, reference }
 notification body  { requestId, username, template, properties {string: string} }
 ```
+
+## Commerce extension points
+
+These seams let payments, loyalty and gift cards, VAT and currency, and
+webhooks build on the shop without changing existing behaviour.
+
+### Domain events
+
+`com.awesome.testing.event.CommerceEvent(id, type, username, orderId,
+occurredAt, data)` is published with `ApplicationEventPublisher` inside the
+transaction that changed the order; consumers use
+`@TransactionalEventListener(phase = AFTER_COMMIT)`. Publish new events through
+`CommerceEvents.publish(type, order[, extraData])`, which fills `data` with
+`orderId`, `status` and `totalAmount`.
+
+| Type | Wire name | Published when |
+| --- | --- | --- |
+| `ORDER_CREATED` | `order.created` | Checkout creates an order (not on an idempotent replay) |
+| `ORDER_PAID` | `order.paid` | Admin status change to `PAID` (payment results later) |
+| `ORDER_CANCELLED` | `order.cancelled` | Any cancellation: customer, admin, or warehouse |
+| `ORDER_SHIPPED` | `shipment.shipped` | Admin status change to `SHIPPED` or fulfilment reaching `SHIPPED` |
+| `ORDER_DELIVERED` | `shipment.delivered` | Admin status change to `DELIVERED` or fulfilment reaching `DELIVERED` |
+| `REFUND_BOOKED` | `refund.booked` | A new refund is booked (`data` adds `amount` and `requestId`) |
+| `PAYMENT_FAILED` | `payment.failed` | Reserved for payment results |
+
+Repeating the current status or fulfilment state, replays, and rejected
+changes publish nothing.
+
+### Checkout and cart contributors
+
+- `CheckoutContributor` beans run in `@Order` inside `OrderService.createOrder`
+  after the items and coupon are priced and before the order is saved. They see
+  `CheckoutContext(username, address, cartItems, order)` and may set their own
+  order fields or reject checkout with a `CustomException`.
+- `CartSummaryContributor` beans run in `@Order` when a cart summary is built
+  and see `CartSummaryContext(username, cartItems, subtotal, discount, cart)`.
+  Fields they set must be `@JsonInclude(NON_NULL)` on `CartDto` and set only
+  when they apply, so other carts keep their exact legacy body.
+- `OrderAmounts.amountDue(order)` is the amount a card payment must cover;
+  today it equals `totalAmount`.
+
+No contributors are registered by default.

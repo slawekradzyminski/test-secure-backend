@@ -23,8 +23,12 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class InternalNotificationService {
 
-    static final Set<EmailTemplate> WAREHOUSE_TEMPLATES =
-            Set.of(EmailTemplate.ORDER_SHIPPED, EmailTemplate.ORDER_DELIVERED, EmailTemplate.RETURN_UPDATED);
+    static final Set<EmailTemplate> WAREHOUSE_TEMPLATES = Set.of(
+            EmailTemplate.ORDER_SHIPPED,
+            EmailTemplate.ORDER_DELIVERED,
+            EmailTemplate.RETURN_UPDATED,
+            EmailTemplate.SHIPMENT_OUT_FOR_DELIVERY,
+            EmailTemplate.SHIPMENT_DELIVERY_FAILED);
 
     private final UserRepository userRepository;
     private final EmailEventService emailEventService;
@@ -34,7 +38,8 @@ public class InternalNotificationService {
     public void notify(InternalNotificationDto notification) {
         if (!WAREHOUSE_TEMPLATES.contains(notification.template())) {
             throw new CustomException(
-                    "template must be ORDER_SHIPPED, ORDER_DELIVERED or RETURN_UPDATED", HttpStatus.BAD_REQUEST);
+                    "template must be ORDER_SHIPPED, ORDER_DELIVERED, RETURN_UPDATED, "
+                            + "SHIPMENT_OUT_FOR_DELIVERY or SHIPMENT_DELIVERY_FAILED", HttpStatus.BAD_REQUEST);
         }
         Map<String, String> properties = notification.properties() == null ? Map.of() : notification.properties();
         renderer.validate(notification.template(), properties);

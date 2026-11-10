@@ -15,6 +15,8 @@ import com.awesome.testing.repository.OrderIdempotencyKeyRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
 import com.awesome.testing.service.coupon.CouponQuote;
+import com.awesome.testing.event.CommerceEvents;
+import com.awesome.testing.service.checkout.CheckoutContributors;
 import com.awesome.testing.service.coupon.CouponService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +56,7 @@ class OrderServiceCommerceTest {
     @Mock private InventoryService inventoryService;
     @Mock private CouponService couponService;
     @Mock private OrderIdempotencyKeyRepository idempotencyKeyRepository;
+    @Mock private CommerceEvents commerceEvents;
 
     private OrderService service;
     private ProductEntity product;
@@ -62,7 +65,8 @@ class OrderServiceCommerceTest {
     @BeforeEach
     void setUp() {
         service = new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
-                idempotencyKeyRepository, Clock.fixed(NOW.toInstant(ZoneOffset.UTC), ZoneOffset.UTC));
+                idempotencyKeyRepository, Clock.fixed(NOW.toInstant(ZoneOffset.UTC), ZoneOffset.UTC),
+                CheckoutContributors.none(), commerceEvents);
         product = ProductEntity.builder().id(1L).name("Phone").price(new BigDecimal("40.00")).stockQuantity(10).build();
         address = AddressDto.builder().street("Main 1").city("Warsaw").state("MZ").zipCode("00-001").country("PL").build();
         lenient().when(cartItemRepository.findByUsernameForUpdate(USER)).thenReturn(List.of(CartItemEntity.builder()

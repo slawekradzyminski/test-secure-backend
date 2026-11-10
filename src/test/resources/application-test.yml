@@ -53,6 +53,10 @@ server:
 warehouse:
   service-token: test-warehouse-token
 
+internal:
+  service-tokens:
+    payment: test-payment-token
+
 security:
   jwt:
     token:

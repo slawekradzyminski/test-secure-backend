@@ -62,6 +62,18 @@ class InternalApiFlowTest extends AbstractCommerceFlowTest {
     }
 
     @Test
+    void thePaymentServiceTokenIsRejectedByTheWarehouseEndpoints() {
+        ResponseEntity<ErrorDto> products = executeGet(INTERNAL + "/products", serviceHeaders("test-payment-token"), ErrorDto.class);
+        ResponseEntity<ErrorDto> notification = executePost(INTERNAL + "/notifications", "{}",
+                serviceHeaders("test-payment-token"), ErrorDto.class);
+
+        assertThat(List.of(products, notification)).allSatisfy(response -> {
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+            assertThat(response.getBody().getMessage()).isEqualTo("Invalid service token");
+        });
+    }
+
+    @Test
     void validTokenWorksWithoutAJwtAndGetsNoCorsHeaders() {
         HttpHeaders headers = serviceHeaders(TOKEN);
         headers.add(HttpHeaders.ORIGIN, "http://localhost:8081");
@@ -324,6 +336,34 @@ class InternalApiFlowTest extends AbstractCommerceFlowTest {
         assertThat(missingProperty.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(missingProperty.getBody().getMessage()).isEqualTo("properties.returnId is required for RETURN_UPDATED");
         assertThat(missingRequestId.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void carrierTrackingNotificationsAreQueued() {
+        UUID outRequest = UUID.randomUUID();
+        UUID failedRequest = UUID.randomUUID();
+        Map<String, String> tracking = Map.of("orderId", "5", "carrier", "InPost", "trackingNumber", "620000000000000000000001");
+
+        ResponseEntity<Void> out = notification(new InternalNotificationDto(outRequest, client.getUsername(),
+                EmailTemplate.SHIPMENT_OUT_FOR_DELIVERY, tracking), Void.class);
+        ResponseEntity<Void> failed = notification(new InternalNotificationDto(failedRequest, client.getUsername(),
+                EmailTemplate.SHIPMENT_DELIVERY_FAILED, tracking), Void.class);
+        ResponseEntity<ErrorDto> missingCarrier = notification(new InternalNotificationDto(UUID.randomUUID(),
+                client.getUsername(), EmailTemplate.SHIPMENT_DELIVERY_FAILED, Map.of("orderId", "5", "trackingNumber", "1")),
+                ErrorDto.class);
+        ResponseEntity<ErrorDto> paymentTemplate = notification(new InternalNotificationDto(UUID.randomUUID(),
+                client.getUsername(), EmailTemplate.PAYMENT_RECEIVED, Map.of("orderId", "5", "amount", "1.00")),
+                ErrorDto.class);
+
+        assertThat(out.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+        assertThat(failed.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+        assertThat(emailEventRepository.findAll())
+                .filteredOn(event -> outRequest.equals(event.getRequestId()) || failedRequest.equals(event.getRequestId()))
+                .extracting(event -> event.getType())
+                .containsExactlyInAnyOrder(EmailTemplate.SHIPMENT_OUT_FOR_DELIVERY, EmailTemplate.SHIPMENT_DELIVERY_FAILED);
+        assertThat(missingCarrier.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(missingCarrier.getBody().getMessage()).isEqualTo("properties.carrier is required for SHIPMENT_DELIVERY_FAILED");
+        assertThat(paymentTemplate.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test

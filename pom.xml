@@ -552,6 +552,10 @@
                                 <param>com.awesome.testing.internal.security.ServiceTokenGuard</param>
                                 <param>com.awesome.testing.internal.security.ServiceTokenFilter</param>
                                 <param>com.awesome.testing.internal.service.*</param>
+                                <param>com.awesome.testing.internal.security.InternalRoutes*</param>
+                                <param>com.awesome.testing.event.*</param>
+                                <param>com.awesome.testing.service.checkout.*</param>
+                                <param>com.awesome.testing.service.notification.CustomerEmailRenderer</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -584,8 +588,13 @@
                                 <param>com.awesome.testing.service.ollama.function.OllamaToolRegistryTest</param>
                                 <param>com.awesome.testing.service.coupon.Coupon*Test</param>
                                 <param>com.awesome.testing.service.OrderServiceFulfilmentTest</param>
+                                <param>com.awesome.testing.service.OrderServiceEventsTest</param>
                                 <param>com.awesome.testing.dto.order.FulfilmentStateTest</param>
                                 <param>com.awesome.testing.internal.security.ServiceToken*Test</param>
+                                <param>com.awesome.testing.internal.security.InternalRoutesTest</param>
+                                <param>com.awesome.testing.event.*Test</param>
+                                <param>com.awesome.testing.service.checkout.*Test</param>
+                                <param>com.awesome.testing.service.notification.CustomerEmailRendererTest</param>
                                 <param>com.awesome.testing.internal.service.*Test</param>
                             </targetTests>
                             <threads>4</threads>

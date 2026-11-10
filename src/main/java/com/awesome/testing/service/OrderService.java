@@ -11,6 +11,10 @@ import com.awesome.testing.entity.OrderEntity;
 import com.awesome.testing.entity.OrderItemEntity;
 import com.awesome.testing.entity.OrderIdempotencyKeyEntity;
 import com.awesome.testing.entity.ProductEntity;
+import com.awesome.testing.event.CommerceEventType;
+import com.awesome.testing.event.CommerceEvents;
+import com.awesome.testing.service.checkout.CheckoutContext;
+import com.awesome.testing.service.checkout.CheckoutContributors;
 import com.awesome.testing.repository.OrderIdempotencyKeyRepository;
 import com.awesome.testing.service.coupon.CouponQuote;
 import com.awesome.testing.service.coupon.CouponService;
@@ -55,6 +59,8 @@ public class OrderService {
     private final CouponService couponService;
     private final OrderIdempotencyKeyRepository idempotencyKeyRepository;
     private final Clock commerceClock;
+    private final CheckoutContributors checkoutContributors;
+    private final CommerceEvents commerceEvents;
 
     @Transactional
     public OrderDto createOrder(String username, AddressDto addressDto) {
@@ -114,6 +120,7 @@ public class OrderService {
         order.setDiscountAmount(discount);
         order.setCouponCode(quote.map(q -> q.coupon().getCode()).orElse(null));
         order.setTotalAmount(subtotal.subtract(discount));
+        checkoutContributors.contribute(new CheckoutContext(username, addressDto, cartItems, order));
         OrderEntity savedOrder = orderRepository.save(order);
         for (ProductEntity product : locked) {
             inventoryService.deduct(product, quantities.get(product.getId()), savedOrder);
@@ -128,6 +135,7 @@ public class OrderService {
                     .order(savedOrder)
                     .build());
         }
+        commerceEvents.publish(CommerceEventType.ORDER_CREATED, savedOrder);
 
         return new OrderCreation(OrderDto.from(savedOrder), false);
     }
@@ -159,8 +167,13 @@ public class OrderService {
             throw new CustomException(
                     "Order is being fulfilled by the warehouse; use the warehouse endpoints", HttpStatus.CONFLICT);
         }
+        OrderStatus previous = order.getStatus();
         order.setStatus(newStatus);
-        return OrderDto.from(orderRepository.save(order));
+        OrderEntity saved = orderRepository.save(order);
+        if (previous != newStatus) {
+            CommerceEventType.reaching(newStatus).ifPresent(type -> commerceEvents.publish(type, saved));
+        }
+        return OrderDto.from(saved);
     }
 
     @Transactional
@@ -273,7 +286,11 @@ public class OrderService {
         if (implied != null) {
             order.setStatus(implied);
         }
-        return orderRepository.save(order);
+        OrderEntity saved = orderRepository.save(order);
+        if (implied != null) {
+            CommerceEventType.reaching(implied).ifPresent(type -> commerceEvents.publish(type, saved));
+        }
+        return saved;
     }
 
     private OrderEntity lockOrder(Long orderId) {
@@ -317,7 +334,9 @@ public class OrderService {
         if (fulfilmentOf(order) != FulfilmentState.NONE) {
             order.setFulfilmentState(FulfilmentState.CANCELLED);
         }
-        return orderRepository.save(order);
+        OrderEntity saved = orderRepository.save(order);
+        commerceEvents.publish(CommerceEventType.ORDER_CANCELLED, saved);
+        return saved;
     }
 
 }
