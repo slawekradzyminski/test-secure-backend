@@ -120,6 +120,12 @@ per user.
 - `PUT /api/v1/products/{id}` honours `If-Match`; a stale version returns 412.
   Without `If-Match` the update behaves as before.
 
+### Product search
+
+`GET /api/v1/products/search` filters, sorts and pages the catalog and returns
+facets; `GET /api/v1/products` stays a bare array. See
+[PRODUCT_SEARCH.md](PRODUCT_SEARCH.md).
+
 ## Tier 2: warehouse fulfilment (warehouse-service)
 
 Shipments, returns (RMA), suppliers, purchase orders and reorder suggestions

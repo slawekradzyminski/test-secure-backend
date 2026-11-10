@@ -552,6 +552,8 @@
                                 <param>com.awesome.testing.internal.security.ServiceTokenGuard</param>
                                 <param>com.awesome.testing.internal.security.ServiceTokenFilter</param>
                                 <param>com.awesome.testing.internal.service.*</param>
+                                <param>com.awesome.testing.service.search.*</param>
+                                <param>com.awesome.testing.repository.search.*</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -587,6 +589,8 @@
                                 <param>com.awesome.testing.dto.order.FulfilmentStateTest</param>
                                 <param>com.awesome.testing.internal.security.ServiceToken*Test</param>
                                 <param>com.awesome.testing.internal.service.*Test</param>
+                                <param>com.awesome.testing.service.search.*Test</param>
+                                <param>com.awesome.testing.endpoints.products.ProductSearch*Test</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>
