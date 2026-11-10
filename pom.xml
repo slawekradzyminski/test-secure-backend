@@ -556,6 +556,11 @@
                                 <param>com.awesome.testing.event.*</param>
                                 <param>com.awesome.testing.service.checkout.*</param>
                                 <param>com.awesome.testing.service.notification.CustomerEmailRenderer</param>
+                                <param>com.awesome.testing.service.webhook.WebhookSigner</param>
+                                <param>com.awesome.testing.service.webhook.WebhookUrlPolicy*</param>
+                                <param>com.awesome.testing.service.webhook.WebhookAddressRules*</param>
+                                <param>com.awesome.testing.service.webhook.WebhookDispatcher</param>
+                                <param>com.awesome.testing.service.webhook.WebhookDeliveryLog*</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -596,6 +601,7 @@
                                 <param>com.awesome.testing.service.checkout.*Test</param>
                                 <param>com.awesome.testing.service.notification.CustomerEmailRendererTest</param>
                                 <param>com.awesome.testing.internal.service.*Test</param>
+                                <param>com.awesome.testing.service.webhook.Webhook*Test</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>

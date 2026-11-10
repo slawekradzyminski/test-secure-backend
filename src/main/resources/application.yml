@@ -158,6 +158,12 @@ security:
       ollama-ip:
         capacity: ${SECURITY_RATE_LIMIT_OLLAMA_IP_CAPACITY:20}
         window: ${SECURITY_RATE_LIMIT_OLLAMA_IP_WINDOW:5m}
+      webhook-test-user:
+        capacity: ${SECURITY_RATE_LIMIT_WEBHOOK_TEST_USER_CAPACITY:10}
+        window: ${SECURITY_RATE_LIMIT_WEBHOOK_TEST_USER_WINDOW:15m}
+      webhook-redeliver-user:
+        capacity: ${SECURITY_RATE_LIMIT_WEBHOOK_REDELIVER_USER_CAPACITY:20}
+        window: ${SECURITY_RATE_LIMIT_WEBHOOK_REDELIVER_USER_WINDOW:15m}
 
 app:
   email:
@@ -232,6 +238,25 @@ JmsSender:
 
 ollama:
   base-url: http://localhost:11434
+
+# User webhook subscriptions (docs/WEBHOOKS.md). Targets always pass the SSRF guard.
+webhooks:
+  allow-http: ${WEBHOOKS_ALLOW_HTTP:true}
+  # Ports allowed in addition to 80 and 443, comma-separated.
+  allowed-ports: ${WEBHOOKS_ALLOWED_PORTS:}
+  timeout: ${WEBHOOKS_TIMEOUT:PT5S}
+  max-attempts: ${WEBHOOKS_MAX_ATTEMPTS:8}
+  initial-backoff: ${WEBHOOKS_INITIAL_BACKOFF:PT1M}
+  auto-disable-after: ${WEBHOOKS_AUTO_DISABLE_AFTER:20}
+  max-subscriptions-per-user: 5
+  max-inboxes-per-user: 3
+  inbox-request-limit: 50
+  async-dispatch: true
+  retry:
+    enabled: ${WEBHOOKS_RETRY_ENABLED:true}
+    interval: ${WEBHOOKS_RETRY_INTERVAL:PT30S}
+    initial-delay: ${WEBHOOKS_RETRY_INITIAL_DELAY:PT30S}
+    batch-size: 20
 
 warehouse:
   # Alias of internal.service-tokens.warehouse, kept for existing deployments.

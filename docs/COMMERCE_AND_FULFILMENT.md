@@ -239,6 +239,9 @@ transaction that changed the order; consumers use
 Repeating the current status or fulfilment state, replays, and rejected
 changes publish nothing.
 
+User webhook subscriptions deliver these events to customer URLs; see
+[WEBHOOKS.md](WEBHOOKS.md).
+
 ### Checkout and cart contributors
 
 - `CheckoutContributor` beans run in `@Order` inside `OrderService.createOrder`

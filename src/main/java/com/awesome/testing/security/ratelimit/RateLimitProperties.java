@@ -40,6 +40,8 @@ public class RateLimitProperties {
         private Policy qrUser = new Policy(60, Duration.ofMinutes(15));
         private Policy ollamaUser = new Policy(20, Duration.ofMinutes(5));
         private Policy ollamaIp = new Policy(20, Duration.ofMinutes(5));
+        private Policy webhookTestUser = new Policy(10, Duration.ofMinutes(15));
+        private Policy webhookRedeliverUser = new Policy(20, Duration.ofMinutes(15));
     }
 
     @Getter

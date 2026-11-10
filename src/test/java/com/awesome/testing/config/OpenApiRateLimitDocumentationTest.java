@@ -71,7 +71,9 @@ class OpenApiRateLimitDocumentationTest extends HttpHelper {
                 new RateLimitedOperation("/api/v1/qr/create", "post"),
                 new RateLimitedOperation("/api/v1/ollama/generate", "post"),
                 new RateLimitedOperation("/api/v1/ollama/chat", "post"),
-                new RateLimitedOperation("/api/v1/ollama/chat/tools", "post")
+                new RateLimitedOperation("/api/v1/ollama/chat/tools", "post"),
+                new RateLimitedOperation("/api/v1/webhooks/{id}/test", "post"),
+                new RateLimitedOperation("/api/v1/webhooks/{id}/deliveries/{deliveryId}/redeliver", "post")
         );
     }
 
