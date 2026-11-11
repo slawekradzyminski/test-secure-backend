@@ -49,6 +49,24 @@ class DomainEventRecorderTest {
     }
 
     @Test
+    void recordsTheRequestIdAndTraceIdOfTheWritingRequest() {
+        CommerceEvent event = new CommerceEvent(UUID.randomUUID(), CommerceEventType.ORDER_PAID, "buyer", 3L, NOW, Map.of());
+
+        try (var ignored = new com.awesome.testing.correlation.CorrelationIds("pay-req-1",
+                "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7").open()) {
+            recorder.record(event);
+        }
+        recorder.record(event);
+
+        ArgumentCaptor<DomainEventEntity> saved = ArgumentCaptor.forClass(DomainEventEntity.class);
+        verify(repository, org.mockito.Mockito.times(2)).save(saved.capture());
+        assertThat(saved.getAllValues().get(0).getRequestId()).isEqualTo("pay-req-1");
+        assertThat(saved.getAllValues().get(0).getTraceId()).isEqualTo("4bf92f3577b34da6a3ce929d0e0e4736");
+        assertThat(saved.getAllValues().get(1).getRequestId()).as("scheduled work without a request").isNull();
+        assertThat(saved.getAllValues().get(1).getTraceId()).isNull();
+    }
+
+    @Test
     void eventsWithoutOrderOrUserAreRecordedToo() {
         CommerceEvent event = new CommerceEvent(UUID.randomUUID(), CommerceEventType.ORDER_CREATED, null, null,
                 NOW, Map.of());

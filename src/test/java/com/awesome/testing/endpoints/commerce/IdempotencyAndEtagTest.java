@@ -115,6 +115,27 @@ class IdempotencyAndEtagTest extends AbstractCommerceFlowTest {
                 .contains("ETag", "Idempotent-Replayed", "Content-Disposition");
     }
 
+    @Test
+    void browsersOnAnotherOriginMaySendAndReadTheCorrelationHeaders() {
+        HttpHeaders preflight = new HttpHeaders();
+        preflight.setOrigin("http://localhost:8081");
+        preflight.setAccessControlRequestMethod(org.springframework.http.HttpMethod.GET);
+        preflight.setAccessControlRequestHeaders(java.util.List.of("x-request-id", "traceparent"));
+
+        ResponseEntity<String> response = execute(org.springframework.http.HttpMethod.OPTIONS, PRODUCTS_ENDPOINT, null, preflight, String.class);
+        HttpHeaders read = getHeadersWith(clientToken);
+        read.setOrigin("http://localhost:8081");
+        read.add("X-Request-Id", "browser-req-1");
+        ResponseEntity<String> products = executeGet(PRODUCTS_ENDPOINT, read, String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getAccessControlAllowHeaders())
+                .map(String::toLowerCase)
+                .contains("x-request-id", "traceparent");
+        assertThat(products.getHeaders().getAccessControlExposeHeaders()).contains("X-Request-Id");
+        assertThat(products.getHeaders().getFirst("X-Request-Id")).isEqualTo("browser-req-1");
+    }
+
     private <T> ResponseEntity<T> update(ProductEntity product, String ifMatch, String price, Class<T> type) {
         HttpHeaders headers = getHeadersWith(adminToken);
         if (ifMatch != null) {

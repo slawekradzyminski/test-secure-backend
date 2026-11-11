@@ -1,5 +1,6 @@
 package com.awesome.testing.config;
 
+import com.awesome.testing.correlation.CorrelationExchangeFilter;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
@@ -33,6 +34,7 @@ public class OllamaConfig {
         return WebClient.builder()
             .clientConnector(new ReactorClientHttpConnector(httpClient))
             .baseUrl(properties.getBaseUrl())
+            .filter(new CorrelationExchangeFilter())
             .build();
     }
 } 

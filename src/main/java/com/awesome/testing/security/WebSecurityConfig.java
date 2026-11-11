@@ -2,6 +2,8 @@ package com.awesome.testing.security;
 
 import static com.awesome.testing.utils.ErrorResponseDefinition.sendErrorResponse;
 
+import com.awesome.testing.correlation.CorrelationIds;
+
 import com.awesome.testing.internal.InternalApi;
 import com.awesome.testing.traffic.TrafficProperties;
 
@@ -163,10 +165,12 @@ public class WebSecurityConfig {
                         "x-requested-with",
                         "Idempotency-Key",
                         "If-Match",
-                        "If-None-Match"));
+                        "If-None-Match",
+                        CorrelationIds.REQUEST_ID_HEADER,
+                        CorrelationIds.TRACEPARENT_HEADER));
         configuration.setExposedHeaders(
                 List.of("Content-Type", "X-Client-Session-Id", "X-Requested-With", "Cache-Control", "Last-Event-ID",
-                        "ETag", "Idempotent-Replayed", "Content-Disposition"));
+                        "ETag", "Idempotent-Replayed", "Content-Disposition", CorrelationIds.REQUEST_ID_HEADER));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

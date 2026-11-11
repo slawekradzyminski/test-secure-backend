@@ -19,8 +19,9 @@ import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
 
+/** Runs right after {@link com.awesome.testing.correlation.CorrelationFilter}. */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(Ordered.HIGHEST_PRECEDENCE + 1)
 @RequiredArgsConstructor
 @Slf4j
 public class TrafficLoggingFilter implements Filter {

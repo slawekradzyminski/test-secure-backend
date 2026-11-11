@@ -1,5 +1,6 @@
 package com.awesome.testing.service.email;
 
+import com.awesome.testing.correlation.CorrelationIds;
 import com.awesome.testing.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,14 @@ public class EmailRetryJob {
         if (!due.isEmpty()) {
             log.info("Retrying {} email(s)", due.size());
         }
-        due.forEach(redelivery -> emailService.redeliver(redelivery.eventId(), redelivery.email(), redelivery.destination()));
+        due.forEach(this::redeliver);
+    }
+
+    /** Sends one email again under the request id and trace of the request that queued it. */
+    private void redeliver(EmailEventService.Redelivery redelivery) {
+        CorrelationIds ids = CorrelationIds.resume(redelivery.correlationRequestId(), redelivery.traceparent());
+        try (CorrelationIds.Scope ignored = ids.open()) {
+            emailService.redeliver(redelivery.eventId(), redelivery.email(), redelivery.destination());
+        }
     }
 }

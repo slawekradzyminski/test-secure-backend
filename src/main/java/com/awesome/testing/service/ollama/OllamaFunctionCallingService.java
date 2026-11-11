@@ -9,6 +9,7 @@ import com.awesome.testing.service.ollama.function.OllamaToolRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import com.awesome.testing.correlation.CorrelationExchangeFilter;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -37,7 +38,7 @@ public class OllamaFunctionCallingService {
         List<ChatMessageDto> history = new ArrayList<>(request.getMessages());
         OllamaRequestHandler ctx = new OllamaRequestHandler("chat-tools", request.getModel());
 
-        return runIteration(request, history, 0, ctx);
+        return CorrelationExchangeFilter.withCurrentIds(runIteration(request, history, 0, ctx));
     }
 
     private Flux<ChatResponseDto> runIteration(ChatRequestDto baseRequest,

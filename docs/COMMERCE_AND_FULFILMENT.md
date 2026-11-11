@@ -474,14 +474,19 @@ the warehouse and the payment service token.
 | `types` | Optional comma-separated wire names (`order.created`, `card-refund.requested`, ...); an unknown name is 400 |
 
 ```text
-200 { events: [ { sequence, id, type, occurredAt, orderId, username, data } ],
+200 { events: [ { sequence, id, type, occurredAt, orderId, username, data, requestId, traceId } ],
       nextCursor, hasMore }
 ```
 
 - Events are ordered by `sequence` ascending. Every event has exactly these
-  seven fields (nulls included); `occurredAt` is ISO-8601 UTC with millisecond
+  nine fields (nulls included); `occurredAt` is ISO-8601 UTC with millisecond
   precision and `data` is the event's data with sorted keys and plain decimals,
   stored once, so a redelivered event has identical bytes.
+- `requestId` and `traceId` (3.17.0, additive) are the `X-Request-Id` and W3C
+  trace id of the request whose transaction wrote the event (`domain_events.request_id`
+  / `trace_id`, V17). Both are null for events written outside a request
+  (scheduled jobs) and for events recorded before 3.17.0. Consumers put them in
+  their MDC while handling the event and send them on calls made for it.
 - `nextCursor` is the last returned sequence (or `after` for an empty page);
   pass it as the next `after`. `hasMore` is true when more matching settled
   events exist.

@@ -73,4 +73,12 @@ public class WebhookDeliveryEntity {
 
     @Column(name = "delivered_at")
     private Instant deliveredAt;
+
+    /** X-Request-Id of the request that queued the delivery; sent as X-Request-Id on every attempt. */
+    @Column(name = "request_id", length = 128)
+    private String requestId;
+
+    /** traceparent of the queuing request; attempts send a child of it. */
+    @Column(length = 55)
+    private String traceparent;
 }

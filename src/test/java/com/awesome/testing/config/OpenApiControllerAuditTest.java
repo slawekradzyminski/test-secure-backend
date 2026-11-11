@@ -99,6 +99,23 @@ class OpenApiControllerAuditTest extends HttpHelper {
     }
 
     @Test
+    void shouldDocumentTheRequestIdHeaderOnEveryResponse() {
+        // given
+        var component = document.root().path("components").path("headers").path("X-Request-Id");
+
+        // when
+        var responses = document.operations().flatMap(DocumentedOperation::responses).toList();
+
+        // then
+        assertThat(component.path("schema").path("maxLength").asInt()).isEqualTo(128);
+        assertThat(component.path("schema").path("pattern").asText()).isEqualTo("^[A-Za-z0-9._-]{1,128}$");
+        assertThat(component.path("description").asText()).contains("traceparent");
+        assertThat(responses).hasSizeGreaterThan(100).allSatisfy(response ->
+                assertThat(response.node().path("headers").path("X-Request-Id").path("$ref").asText())
+                        .as("%s X-Request-Id", response).isEqualTo("#/components/headers/X-Request-Id"));
+    }
+
+    @Test
     void shouldDocumentQrSuccessAsPng() {
         // given
         var endpoint = new Endpoint("/api/v1/qr/create", "post");

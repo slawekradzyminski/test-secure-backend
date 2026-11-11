@@ -7,12 +7,14 @@ import com.fasterxml.jackson.annotation.JsonRawValue;
 import java.util.UUID;
 
 /**
- * One event of the internal feed. Always exactly these seven fields in this order (nulls
+ * One event of the internal feed. Always exactly these nine fields in this order (nulls
  * included); {@code occurredAt} is ISO-8601 UTC with millisecond precision and {@code data}
  * is the stored JSON object written verbatim, so the same event always has the same bytes.
+ * {@code requestId} and {@code traceId} (3.17.0, additive) identify the request that wrote the
+ * event so consumers can continue its trace; both are null for events written without one.
  */
 @JsonInclude(JsonInclude.Include.ALWAYS)
-@JsonPropertyOrder({"sequence", "id", "type", "occurredAt", "orderId", "username", "data"})
+@JsonPropertyOrder({"sequence", "id", "type", "occurredAt", "orderId", "username", "data", "requestId", "traceId"})
 public record FeedEventDto(
         long sequence,
         UUID id,
@@ -20,5 +22,7 @@ public record FeedEventDto(
         String occurredAt,
         Long orderId,
         String username,
-        @JsonRawValue String data) {
+        @JsonRawValue String data,
+        String requestId,
+        String traceId) {
 }

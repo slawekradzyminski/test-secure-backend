@@ -1,5 +1,6 @@
 package com.awesome.testing.service.webhook;
 
+import com.awesome.testing.correlation.CorrelationIds;
 import com.awesome.testing.dto.webhook.WebhookDeliveryStatus;
 import com.awesome.testing.entity.webhook.WebhookDeliveryEntity;
 import com.awesome.testing.entity.webhook.WebhookSubscriptionEntity;
@@ -25,7 +26,8 @@ import java.util.UUID;
  * automatic disabling). Every method is its own transaction; sending happens outside. The
  * methods used while dispatching require a new transaction because event deliveries are
  * dispatched from an AFTER_COMMIT listener, where the finished business transaction is
- * still bound to the thread.
+ * still bound to the thread. A new delivery stores the request id and traceparent of the
+ * request that queued it (from the MDC).
  */
 @Service
 public class WebhookDeliveryLog {
@@ -41,7 +43,7 @@ public class WebhookDeliveryLog {
 
     /** Everything one attempt needs, read in the claiming transaction. */
     public record Attempt(UUID deliveryId, Long subscriptionId, String username, String url, String secret,
-                          String eventType, String payload) {
+                          String eventType, String payload, String requestId, String traceparent) {
     }
 
     public WebhookDeliveryLog(WebhookDeliveryRepository deliveries, WebhookSubscriptionRepository subscriptions,
@@ -99,6 +101,8 @@ public class WebhookDeliveryLog {
                 .attempts(0)
                 .nextAttemptAt(now)
                 .createdAt(now)
+                .requestId(CorrelationIds.currentRequestId())
+                .traceparent(CorrelationIds.currentTraceparent())
                 .build());
     }
 
@@ -122,7 +126,8 @@ public class WebhookDeliveryLog {
         }
         WebhookSubscriptionEntity owner = subscription.get();
         return Optional.of(new Attempt(delivery.getId(), owner.getId(), owner.getUsername(), owner.getUrl(),
-                secrets.reveal(owner.getSecret()), delivery.getEventType(), delivery.getPayload()));
+                secrets.reveal(owner.getSecret()), delivery.getEventType(), delivery.getPayload(),
+                delivery.getRequestId(), delivery.getTraceparent()));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

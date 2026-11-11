@@ -65,7 +65,7 @@ public class EventFeedService {
     static FeedEventDto toDto(DomainEventEntity row) {
         return new FeedEventDto(row.getSequence(), row.getEventId(), row.getType(),
                 DateTimeFormatter.ISO_INSTANT.format(row.getOccurredAt()), row.getOrderId(), row.getUsername(),
-                row.getPayload());
+                row.getPayload(), row.getRequestId(), row.getTraceId());
     }
 
     static long parseAfter(String after) {

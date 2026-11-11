@@ -15,6 +15,7 @@ import org.springframework.scheduling.TaskScheduler;
 
 import java.time.Instant;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -121,6 +122,31 @@ class EmailServiceTest {
 
         verify(emailEventService).markFailed(7, "broker down");
         verify(emailEventService, never()).markSentToSink(any());
+    }
+
+    @Test
+    void theDelayedSendRunsUnderTheIdsOfTheQueuingRequest() {
+        EmailDto dto = EmailDto.builder().to("test@example.com").subject("Subject").message("Body").build();
+        java.util.concurrent.atomic.AtomicReference<Runnable> scheduled = new java.util.concurrent.atomic.AtomicReference<>();
+        when(emailTaskScheduler.schedule(any(Runnable.class), any(Instant.class))).thenAnswer(invocation -> {
+            scheduled.set(invocation.getArgument(0));
+            return null;
+        });
+        java.util.Map<String, String> mdcWhileSending = new java.util.HashMap<>();
+        org.mockito.Mockito.doAnswer(invocation -> {
+            mdcWhileSending.putAll(org.slf4j.MDC.getCopyOfContextMap());
+            return null;
+        }).when(jmsTemplate).convertAndSend("queue", dto);
+        String trace = "4bf92f3577b34da6a3ce929d0e0e4736";
+
+        try (var ignored = new com.awesome.testing.correlation.CorrelationIds("email-req", trace, "00f067aa0ba902b7").open()) {
+            emailService.sendEmail(dto, "queue");
+        }
+        scheduled.get().run();
+
+        assertThat(mdcWhileSending).containsEntry("requestId", "email-req").containsEntry("traceId", trace);
+        assertThat(mdcWhileSending.get("spanId")).isNotEqualTo("00f067aa0ba902b7");
+        assertThat(org.slf4j.MDC.getCopyOfContextMap()).isNullOrEmpty();
     }
 
     @Test

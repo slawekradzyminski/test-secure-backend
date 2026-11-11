@@ -11,6 +11,7 @@ import com.awesome.testing.dto.ollama.ToolCallFunctionDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import com.awesome.testing.correlation.CorrelationExchangeFilter;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
@@ -27,7 +28,7 @@ public class OllamaService {
     public Flux<GenerateResponseDto> generateText(StreamedRequestDto req) {
         OllamaRequestHandler ctx = new OllamaRequestHandler("generate-text", req.getModel());
 
-        return ollamaWebClient.post()
+        return CorrelationExchangeFilter.withCurrentIds(ollamaWebClient.post()
                 .uri("/api/generate")
                 .bodyValue(toGenerateRequest(req))
                 .retrieve()
@@ -38,13 +39,13 @@ public class OllamaService {
                         resp::isDone,
                         resp.getTotalDuration()))
                 .doOnError(ctx::logError)
-                .doOnComplete(ctx::logComplete);
+                .doOnComplete(ctx::logComplete));
     }
 
     public Flux<ChatResponseDto> chat(ChatRequestDto req) {
         OllamaRequestHandler ctx = new OllamaRequestHandler("chat", req.getModel());
 
-        return ollamaWebClient.post()
+        return CorrelationExchangeFilter.withCurrentIds(ollamaWebClient.post()
                 .uri("/api/chat")
                 .bodyValue(req)
                 .retrieve()
@@ -61,7 +62,7 @@ public class OllamaService {
                             null);
                 })
                 .doOnError(ctx::logError)
-                .doOnComplete(ctx::logComplete);
+                .doOnComplete(ctx::logComplete));
     }
 
     private void logToolCalls(OllamaRequestHandler ctx, List<ToolCallDto> toolCalls) {

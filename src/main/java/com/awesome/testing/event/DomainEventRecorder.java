@@ -1,8 +1,10 @@
 package com.awesome.testing.event;
 
+import com.awesome.testing.correlation.CorrelationIds;
 import com.awesome.testing.entity.event.DomainEventEntity;
 import com.awesome.testing.repository.event.DomainEventRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -15,7 +17,8 @@ import java.time.temporal.ChronoUnit;
  * Appends every {@link CommerceEvent} to the {@code domain_events} feed. A plain, synchronous
  * {@link EventListener} on purpose: the row joins the transaction that published the event, so
  * it commits or rolls back with the state change. Runs first so an event is recorded before the
- * events other listeners publish in reaction to it.
+ * events other listeners publish in reaction to it. The request id and trace id of the writing
+ * request are taken from the MDC (both null for scheduled work without a request).
  */
 @Component
 @RequiredArgsConstructor
@@ -35,6 +38,8 @@ public class DomainEventRecorder {
                 .occurredAt(event.occurredAt().truncatedTo(ChronoUnit.MILLIS))
                 .recordedAt(commerceClock.instant())
                 .payload(DomainEventPayloads.data(event.data()))
+                .requestId(MDC.get(CorrelationIds.MDC_REQUEST_ID))
+                .traceId(MDC.get(CorrelationIds.MDC_TRACE_ID))
                 .build());
     }
 }

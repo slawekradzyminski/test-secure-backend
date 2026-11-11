@@ -195,6 +195,51 @@ class WebhookDispatcherTest {
     }
 
     @Test
+    void dispatchSendsUnderTheStoredIdsOfTheQueuingRequest() throws IOException {
+        // given
+        String trace = "4bf92f3577b34da6a3ce929d0e0e4736";
+        String stored = "00-" + trace + "-00f067aa0ba902b7-01";
+        when(deliveryLog.claim(DELIVERY_ID)).thenReturn(Optional.of(new WebhookDeliveryLog.Attempt(DELIVERY_ID, 1L,
+                "alice", "https://hooks.example.com/hook", SECRET, "order.created", BODY, "order-req-1", stored)));
+        java.util.Map<String, String> mdcWhileSending = new java.util.HashMap<>();
+        when(sender.post(any(), anyMap(), any(), any())).thenAnswer(invocation -> {
+            mdcWhileSending.putAll(org.slf4j.MDC.getCopyOfContextMap());
+            return new WebhookHttpSender.Response(200, "ok");
+        });
+
+        // when
+        dispatcher.dispatch(DELIVERY_ID);
+
+        // then
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> headers = ArgumentCaptor.forClass(Map.class);
+        verify(sender).post(any(), headers.capture(), eq(BODY), any());
+        assertThat(headers.getValue()).containsEntry("X-Request-Id", "order-req-1")
+                .containsEntry("X-Webhook-Id", DELIVERY_ID.toString());
+        assertThat(headers.getValue().get("traceparent")).matches("00-" + trace + "-[0-9a-f]{16}-01").isNotEqualTo(stored);
+        assertThat(mdcWhileSending).containsEntry("requestId", "order-req-1").containsEntry("traceId", trace);
+        assertThat(mdcWhileSending.get("spanId")).isNotEqualTo("00f067aa0ba902b7");
+        assertThat(org.slf4j.MDC.getCopyOfContextMap()).isNullOrEmpty();
+    }
+
+    @Test
+    void dispatchOfADeliveryWithoutStoredIdsSendsFreshOnes() throws IOException {
+        // given
+        when(deliveryLog.claim(DELIVERY_ID)).thenReturn(Optional.of(attempt("https://hooks.example.com/hook")));
+        when(sender.post(any(), anyMap(), any(), any())).thenReturn(new WebhookHttpSender.Response(200, "ok"));
+
+        // when
+        dispatcher.dispatch(DELIVERY_ID);
+
+        // then
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> headers = ArgumentCaptor.forClass(Map.class);
+        verify(sender).post(any(), headers.capture(), eq(BODY), any());
+        assertThat(headers.getValue().get("X-Request-Id")).hasSize(36);
+        assertThat(headers.getValue().get("traceparent")).matches("00-[0-9a-f]{32}-[0-9a-f]{16}-01");
+    }
+
+    @Test
     void dispatchRecordsTheOutcomeOfAClaimedDelivery() throws IOException {
         // given
         WebhookDeliveryEntity recorded = new WebhookDeliveryEntity();
@@ -253,6 +298,6 @@ class WebhookDispatcherTest {
     }
 
     private static WebhookDeliveryLog.Attempt attempt(String url) {
-        return new WebhookDeliveryLog.Attempt(DELIVERY_ID, 1L, "alice", url, SECRET, "order.created", BODY);
+        return new WebhookDeliveryLog.Attempt(DELIVERY_ID, 1L, "alice", url, SECRET, "order.created", BODY, null, null);
     }
 }
