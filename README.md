@@ -12,6 +12,31 @@ chooses Artemis (`jms`) or the in-memory local outbox (`local-outbox`), and the 
 runners check their properties at runtime. Set the heap with a runtime argument, for example
 `docker run backend -Xmx384m`. See `docs/NATIVE_IMAGE_SPIKE.md`.
 
+## Release pipeline
+
+Pushing a `vX.Y.Z` tag runs `.github/workflows/publish-image.yml`:
+
+1. `validate` checks that the commit is on `master` and that the tag matches the project version.
+2. `check-prior-verification` reads the git tree of the tagged commit and compares it with
+   the trees of the commits behind the last 100 successful `verify.yml` runs (GitHub API,
+   `actions: read`). PRs are squash-merged, so the tag commit is new but its tree is the
+   tree of the PR head that passed CI (when the branch was up to date with `master`), or
+   of the `master` push whose run has already finished.
+3. When a matching run exists, `unit-tests`, `integration-tests`, `verify-local` and
+   `verify-docker` are skipped and the run summary links the CI run that verified the tree.
+   Otherwise they run as before. Manual (`workflow_dispatch`) prereleases always run them,
+   and any API error falls back to the full verification. A failed or cancelled
+   verification job still blocks the release.
+4. `build` compiles the native image on an amd64 and an arm64 runner, pushes each by
+   digest and runs `scripts/native-smoke.sh` against that pushed image on both paths;
+   `publish` merges the digests into the tagged manifest lists.
+
+A tag whose tree already passed `verify.yml` publishes in about 14–16 minutes instead of 27.
+
+The release does not reuse an image from the PR: `verify.yml` never builds the native
+image, and the published image must carry the release commit in its labels and be built
+on both architectures, so promoting a PR image would need PR runs with `packages: write`.
+
 ## Profiles
 
 The application supports three main profile modes:

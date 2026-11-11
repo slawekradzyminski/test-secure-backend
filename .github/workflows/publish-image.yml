@@ -76,8 +76,53 @@ jobs:
           esac
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+  # A tag push releases a squash-merge commit whose git tree is identical to a PR head that already
+  # passed the CI workflow. When any successful CI run tested that exact tree, re-running the same
+  # tests here only delays the release. Manual prereleases and unmatched trees stay fully verified.
+  check-prior-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      verified: ${{ steps.lookup.outputs.verified }}
+    steps:
+      - name: Look for a successful CI run on the same git tree
+        id: lookup
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI_WORKFLOW: verify.yml
+          EVENT_NAME: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          verified=false
+          if [ "$EVENT_NAME" != "push" ]; then
+            echo "Manual prerelease: running the full verification."
+          elif ! tree=$(gh api "repos/$REPO/git/commits/$GITHUB_SHA" --jq .tree.sha) || [ -z "$tree" ]; then
+            echo "::warning::Could not read the tree of $GITHUB_SHA; running the full verification."
+          elif ! runs=$(gh api "repos/$REPO/actions/workflows/$CI_WORKFLOW/runs?status=success&per_page=100" \
+              --jq '.workflow_runs[] | "\(.head_sha) \(.html_url)"'); then
+            echo "::warning::Could not list successful $CI_WORKFLOW runs; running the full verification."
+          else
+            echo "Release commit $GITHUB_SHA has tree $tree."
+            while read -r sha url; do
+              [ -n "$sha" ] || continue
+              if [ "$(gh api "repos/$REPO/git/commits/$sha" --jq .tree.sha 2>/dev/null)" = "$tree" ]; then
+                echo "Tree $tree already passed $CI_WORKFLOW on $sha: $url"
+                echo "Verification skipped: tree \`$tree\` already passed $CI_WORKFLOW in $url" >> "$GITHUB_STEP_SUMMARY"
+                verified=true
+                break
+              fi
+            done < <(awk '!seen[$1]++' <<< "$runs")
+            [ "$verified" = true ] || echo "No successful $CI_WORKFLOW run tested tree $tree; running the full verification."
+          fi
+          echo "verified=$verified" >> "$GITHUB_OUTPUT"
+
   unit-tests:
-    needs: validate
+    needs: [validate, check-prior-verification]
+    if: needs.check-prior-verification.outputs.verified != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -90,7 +135,8 @@ jobs:
       - run: ./mvnw clean verify
 
   integration-tests:
-    needs: validate
+    needs: [validate, check-prior-verification]
+    if: needs.check-prior-verification.outputs.verified != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -104,7 +150,8 @@ jobs:
       - run: ./mvnw -q -Pfast-verify,integration-tests verify
 
   verify-local:
-    needs: validate
+    needs: [validate, check-prior-verification]
+    if: needs.check-prior-verification.outputs.verified != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     # The local profile runs on PostgreSQL with Flyway (localhost:5432/testdb, postgres/postgres).
@@ -141,7 +188,8 @@ jobs:
           retention-days: 7
 
   verify-docker:
-    needs: validate
+    needs: [validate, check-prior-verification]
+    if: needs.check-prior-verification.outputs.verified != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -165,7 +213,19 @@ jobs:
   # native-image cannot cross-compile and is impractically slow under QEMU, so each platform is
   # built on a runner of its own architecture, pushed by digest, and merged into one manifest list.
   build:
-    needs: [validate, unit-tests, integration-tests, verify-local, verify-docker]
+    needs: [validate, check-prior-verification, unit-tests, integration-tests, verify-local, verify-docker]
+    # The verification jobs are skipped when the same tree already passed verify.yml. !cancelled()
+    # lets this job start despite those skips; every other outcome (failure, cancellation, or a
+    # skip without a prior verified run) still blocks the release.
+    if: >-
+      !cancelled() &&
+      needs.validate.result == 'success' &&
+      needs.check-prior-verification.result == 'success' &&
+      (needs.check-prior-verification.outputs.verified == 'true' || (
+        needs.unit-tests.result == 'success' &&
+        needs.integration-tests.result == 'success' &&
+        needs.verify-local.result == 'success' &&
+        needs.verify-docker.result == 'success'))
     strategy:
       fail-fast: true
       matrix:
@@ -257,6 +317,8 @@ jobs:
 
   publish:
     needs: [validate, build]
+    # A skipped upstream verification job would otherwise skip this job implicitly.
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
