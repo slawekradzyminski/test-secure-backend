@@ -12,9 +12,20 @@ import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.slf4j.MDC;
+import org.slf4j.LoggerFactory;
+import org.junit.jupiter.api.BeforeEach;
+import com.awesome.testing.correlation.CorrelationIds;
+import ch.qos.logback.core.read.ListAppender;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.Level;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
 class DomainEventRecorderTest {
@@ -23,6 +34,42 @@ class DomainEventRecorderTest {
 
     private final DomainEventRepository repository = mock(DomainEventRepository.class);
     private final DomainEventRecorder recorder = new DomainEventRecorder(repository, Clock.fixed(NOW, ZoneOffset.UTC));
+
+    @BeforeEach
+    void saveReturnsTheRow() {
+        when(repository.save(any(DomainEventEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    @Test
+    void logsEachRecordedEventInTheWritingRequestsContext() {
+        Logger logger =
+                (Logger) LoggerFactory.getLogger(DomainEventRecorder.class);
+        ListAppender<ILoggingEvent> appender =
+                new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        Level previous = logger.getLevel();
+        logger.setLevel(Level.INFO);
+        when(repository.save(any(DomainEventEntity.class))).thenAnswer(invocation -> {
+            DomainEventEntity row = invocation.getArgument(0);
+            ReflectionTestUtils.setField(row, "sequence", 41L);
+            return row;
+        });
+        MDC.put(CorrelationIds.MDC_REQUEST_ID, "log-me-1");
+        try {
+            recorder.record(new CommerceEvent(UUID.randomUUID(), CommerceEventType.ORDER_CANCELLED, "buyer", 9L,
+                    Instant.parse("2026-11-10T12:00:00Z"), Map.of("orderId", 9L)));
+        } finally {
+            MDC.clear();
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+
+        assertThat(appender.list).singleElement().satisfies(line -> {
+            assertThat(line.getFormattedMessage()).isEqualTo("Recorded order.cancelled #41 for order 9");
+            assertThat(line.getMDCPropertyMap()).containsEntry("requestId", "log-me-1");
+        });
+    }
 
     @Test
     void recordsTheEventWithItsWireNameAndSortedData() {
@@ -52,7 +99,7 @@ class DomainEventRecorderTest {
     void recordsTheRequestIdAndTraceIdOfTheWritingRequest() {
         CommerceEvent event = new CommerceEvent(UUID.randomUUID(), CommerceEventType.ORDER_PAID, "buyer", 3L, NOW, Map.of());
 
-        try (var ignored = new com.awesome.testing.correlation.CorrelationIds("pay-req-1",
+        try (var ignored = new CorrelationIds("pay-req-1",
                 "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7").open()) {
             recorder.record(event);
         }
