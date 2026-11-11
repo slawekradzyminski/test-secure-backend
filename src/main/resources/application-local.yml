@@ -61,7 +61,6 @@ internal:
     payment: ${PAYMENT_SERVICE_TOKEN:local-payment-token}
 
 payment:
-  base-url: ${PAYMENT_BASE_URL:http://localhost:4004}
   webhook-secret: ${PAYMENT_WEBHOOK_SECRET:local-payment-webhook-secret}
 
 password-reset:

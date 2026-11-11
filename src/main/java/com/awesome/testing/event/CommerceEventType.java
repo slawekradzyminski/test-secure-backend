@@ -4,24 +4,49 @@ import com.awesome.testing.dto.order.OrderStatus;
 
 import java.util.Optional;
 
-/** Commerce domain events and their wire names (used by webhooks and other external consumers). */
+/**
+ * Commerce domain events and their wire names (used by the internal event feed, webhooks and
+ * other external consumers). Internal types reach only the service event feed, never user webhooks.
+ */
 public enum CommerceEventType {
-    ORDER_CREATED("order.created"),
-    ORDER_PAID("order.paid"),
-    ORDER_CANCELLED("order.cancelled"),
-    ORDER_SHIPPED("shipment.shipped"),
-    ORDER_DELIVERED("shipment.delivered"),
-    REFUND_BOOKED("refund.booked"),
-    PAYMENT_FAILED("payment.failed");
+    ORDER_CREATED("order.created", true),
+    ORDER_PAID("order.paid", true),
+    ORDER_CANCELLED("order.cancelled", true),
+    ORDER_SHIPPED("shipment.shipped", true),
+    ORDER_DELIVERED("shipment.delivered", true),
+    REFUND_BOOKED("refund.booked", true),
+    PAYMENT_FAILED("payment.failed", true),
+    /**
+     * Internal: payment-service should refund {@code amount} on the order's captured card payment.
+     * {@code data} is exactly {@code requestId}, {@code orderId}, {@code amount}, {@code reason}.
+     */
+    CARD_REFUND_REQUESTED("card-refund.requested", false);
 
     private final String wire;
+    private final boolean webhookVisible;
 
-    CommerceEventType(String wire) {
+    CommerceEventType(String wire, boolean offeredToWebhooks) {
         this.wire = wire;
+        this.webhookVisible = offeredToWebhooks;
     }
 
     public String wireName() {
         return wire;
+    }
+
+    /** False for service-to-service events that user webhook subscriptions may not name or receive. */
+    public boolean offeredToWebhooks() {
+        return webhookVisible;
+    }
+
+    /** The type with this wire name, if any. */
+    public static Optional<CommerceEventType> fromWireName(String wireName) {
+        for (CommerceEventType type : values()) {
+            if (type.wire.equals(wireName)) {
+                return Optional.of(type);
+            }
+        }
+        return Optional.empty();
     }
 
     /** The event announcing that an order reached {@code status}, if that status has one. */

@@ -1,171 +1,72 @@
 package com.awesome.testing.endpoints.commerce;
 
+import com.awesome.testing.dto.order.FulfilmentState;
 import com.awesome.testing.dto.order.OrderDto;
 import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.dto.payment.PaymentResultResponseDto;
-import com.awesome.testing.entity.payment.PaymentRefundOutboxEntity;
-import com.awesome.testing.entity.payment.PaymentRefundStatus;
+import com.awesome.testing.entity.event.DomainEventEntity;
+import com.awesome.testing.entity.payment.CardRefundRequestEntity;
+import com.awesome.testing.internal.dto.FulfilmentUpdateDto;
 import com.awesome.testing.internal.dto.InternalOrderDto;
 import com.awesome.testing.internal.dto.OrderRefundDto;
-import com.awesome.testing.repository.payment.PaymentRefundOutboxRepository;
-import com.awesome.testing.service.payment.PaymentRefundJob;
+import com.awesome.testing.repository.event.DomainEventRepository;
+import com.awesome.testing.repository.payment.CardRefundRequestRepository;
 import com.awesome.testing.service.payment.OrderCancelledListener;
-import com.awesome.testing.dto.order.FulfilmentState;
-import com.awesome.testing.internal.dto.FulfilmentUpdateDto;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import com.awesome.testing.service.payment.PaymentRefundOutbox;
-import com.awesome.testing.service.payment.PaymentServiceClient;
-import com.github.tomakehurst.wiremock.WireMockServer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 
 import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
-import static com.github.tomakehurst.wiremock.client.WireMock.exactly;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Booked refunds of card-paid orders are queued and delivered to payment-service. */
+/**
+ * Booked refunds and cancellations of card-paid orders request the card refund through a
+ * {@code card-refund.requested} feed event; the backend never calls payment-service.
+ */
 class PaymentRefundFlowTest extends AbstractPaymentFlowTest {
 
-    private static final String REFUNDS = "/internal/v1/payments/refunds";
+    private static final String CARD_REFUND = "card-refund.requested";
 
     @Autowired
-    private PaymentRefundOutboxRepository outboxRepository;
+    private CardRefundRequestRepository cardRefundRepository;
 
     @Autowired
-    private PaymentRefundOutbox outbox;
-
-    /**
-     * A standalone server instead of {@code @EnableWireMock}: a second Spring context would
-     * recreate the shared H2 schema and reset order ids under the other commerce tests.
-     */
-    private static final WireMockServer PAYMENT_SERVICE = new WireMockServer(options().dynamicPort());
-
-    private PaymentRefundJob refundJob;
-
-    @BeforeAll
-    static void startPaymentService() {
-        PAYMENT_SERVICE.start();
-    }
-
-    @AfterAll
-    static void stopPaymentService() {
-        PAYMENT_SERVICE.stop();
-    }
-
-    @BeforeEach
-    void clearOutbox() {
-        outboxRepository.deleteAll();
-        PAYMENT_SERVICE.resetAll();
-        refundJob = new PaymentRefundJob(outbox,
-                new PaymentServiceClient(PAYMENT_SERVICE.baseUrl(), PAYMENT_TOKEN, Duration.ofSeconds(2)));
-    }
+    private DomainEventRepository eventRepository;
 
     @Test
-    void cardPaidRefundIsDeliveredWithThePaymentToken() {
+    void aCardPaidRefundIsRequestedThroughTheFeed() {
         // given
         Long orderId = deliveredCardOrder("30.00");
-        UUID refundId = UUID.randomUUID();
+        long before = eventRepository.maxSequence();
         OrderRefundDto refund = new OrderRefundDto(UUID.randomUUID(), new BigDecimal("12.50"), "Return #7");
-        PAYMENT_SERVICE.stubFor(post(urlEqualTo(REFUNDS)).willReturn(aResponse().withStatus(200)
-                .withHeader("Content-Type", "application/json")
-                .withBody("""
-                        {"refundId":"%s","paymentId":"%s","amount":12.50,"status":"PARTIALLY_REFUNDED"}"""
-                        .formatted(refundId, UUID.randomUUID()))));
 
         // when
-        assertThat(bookRefund(orderId, refund).getStatusCode()).isEqualTo(HttpStatus.OK);
-        int delivered = refundJob.deliverDue();
+        ResponseEntity<InternalOrderDto> booked = bookRefund(orderId, refund);
+        ResponseEntity<String> feed = executeGet("/internal/v1/events?after=" + before + "&types=" + CARD_REFUND,
+                serviceHeaders(PAYMENT_TOKEN), String.class);
 
         // then
-        assertThat(delivered).isEqualTo(1);
-        PAYMENT_SERVICE.verify(exactly(1), postRequestedFor(urlEqualTo(REFUNDS))
-                .withHeader("X-Service-Token", equalTo(PAYMENT_TOKEN))
-                .withRequestBody(equalToJson("""
-                        {"requestId":"%s","orderId":%d,"amount":12.50,"reason":"Return #7"}"""
-                        .formatted(refund.requestId(), orderId))));
-        assertThat(outbox(refund.requestId())).satisfies(row -> {
-            assertThat(row.getStatus()).isEqualTo(PaymentRefundStatus.SENT);
-            assertThat(row.getRefundId()).isEqualTo(refundId);
-            assertThat(row.getAttempts()).isEqualTo(1);
-            assertThat(row.getNextAttemptAt()).isNull();
+        assertThat(booked.getStatusCode()).isEqualTo(HttpStatus.OK);
+        DomainEventEntity event = cardRefundEvents(orderId).getFirst();
+        assertThat(feed.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(feed.getBody()).contains("\"type\":\"card-refund.requested\"")
+                .contains("\"data\":{\"amount\":12.50,\"orderId\":" + orderId + ",\"reason\":\"Return #7\",\"requestId\":\""
+                        + refund.requestId() + "\"}")
+                .contains("\"id\":\"" + event.getEventId() + "\"");
+        assertThat(cardRefundEvents(orderId)).singleElement();
+        assertThat(ledger(orderId)).singleElement().satisfies(row -> {
+            assertThat(row.getRequestId()).isEqualTo(refund.requestId());
+            assertThat(row.getAmount()).isEqualByComparingTo("12.50");
+            assertThat(row.getReason()).isEqualTo("Return #7");
         });
-        assertThat(refundJob.deliverDue()).isZero();
     }
 
     @Test
-    void notFoundMeansNothingToRefundOnTheCard() {
-        // given
-        Long orderId = deliveredCardOrder("10.00");
-        OrderRefundDto refund = new OrderRefundDto(UUID.randomUUID(), new BigDecimal("10.00"), "Return #8");
-        PAYMENT_SERVICE.stubFor(post(urlEqualTo(REFUNDS)).willReturn(aResponse().withStatus(404)
-                .withHeader("Content-Type", "application/json").withBody("{\"message\":\"No captured payment\"}")));
-
-        // when
-        bookRefund(orderId, refund);
-        refundJob.deliverDue();
-
-        // then
-        assertThat(outbox(refund.requestId()).getStatus()).isEqualTo(PaymentRefundStatus.SKIPPED);
-        assertThat(refundJob.deliverDue()).isZero();
-    }
-
-    @Test
-    void conflictMarksTheRefundFailedWithoutRetrying() {
-        // given
-        Long orderId = deliveredCardOrder("10.00");
-        OrderRefundDto refund = new OrderRefundDto(UUID.randomUUID(), new BigDecimal("4.00"), "Return #9");
-        PAYMENT_SERVICE.stubFor(post(urlEqualTo(REFUNDS)).willReturn(aResponse().withStatus(409)
-                .withHeader("Content-Type", "application/json").withBody("{\"message\":\"Refund exceeds refundable\"}")));
-
-        // when
-        bookRefund(orderId, refund);
-        refundJob.deliverDue();
-
-        // then
-        PaymentRefundOutboxEntity row = outbox(refund.requestId());
-        assertThat(row.getStatus()).isEqualTo(PaymentRefundStatus.FAILED);
-        assertThat(row.getLastError()).contains("409").contains("Refund exceeds refundable");
-        assertThat(row.getNextAttemptAt()).isNull();
-    }
-
-    @Test
-    void serverErrorsAreRetriedWithBackoff() {
-        // given
-        Long orderId = deliveredCardOrder("10.00");
-        OrderRefundDto refund = new OrderRefundDto(UUID.randomUUID(), new BigDecimal("4.00"), "Return #10");
-        PAYMENT_SERVICE.stubFor(post(urlEqualTo(REFUNDS)).willReturn(aResponse().withStatus(503)));
-        Instant before = Instant.now();
-
-        // when
-        bookRefund(orderId, refund);
-        refundJob.deliverDue();
-
-        // then
-        PaymentRefundOutboxEntity row = outbox(refund.requestId());
-        assertThat(row.getStatus()).isEqualTo(PaymentRefundStatus.PENDING);
-        assertThat(row.getAttempts()).isEqualTo(1);
-        assertThat(row.getLastError()).startsWith("HTTP 503");
-        assertThat(row.getNextAttemptAt()).isBetween(before.plus(Duration.ofSeconds(29)), Instant.now().plus(Duration.ofSeconds(31)));
-        assertThat(refundJob.deliverDue()).isZero();
-    }
-
-    @Test
-    void eachNewRefundQueuesOneCardRefundAndAdminPaidOrdersSkipTheCard() {
+    void eachNewRefundRequestsOneCardRefundAndAdminPaidOrdersSkipTheCard() {
         // given
         Long cardOrder = deliveredCardOrder("20.00");
         OrderDto adminPaid = order(clientToken, product("20.00", 5), 1);
@@ -181,44 +82,46 @@ class PaymentRefundFlowTest extends AbstractPaymentFlowTest {
         ResponseEntity<InternalOrderDto> manualRefund = bookRefund(adminPaid.getId(), manual);
 
         // then
-        assertThat(outboxRepository.findByOrderIdOrderByIdAsc(cardOrder))
-                .extracting(PaymentRefundOutboxEntity::getAmount)
+        assertThat(ledger(cardOrder)).extracting(CardRefundRequestEntity::getAmount)
                 .usingElementComparator(BigDecimal::compareTo)
                 .containsExactly(new BigDecimal("15.00"), new BigDecimal("5.00"));
+        assertThat(cardRefundEvents(cardOrder)).extracting(DomainEventEntity::getPayload).containsExactly(
+                cardRefundPayload("15.00", cardOrder, "Return #11", first.requestId()),
+                cardRefundPayload("5.00", cardOrder, "Return #12", second.requestId()));
         assertThat(manualRefund.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(outboxRepository.findByOrderIdOrderByIdAsc(adminPaid.getId())).isEmpty();
+        assertThat(ledger(adminPaid.getId())).isEmpty();
+        assertThat(cardRefundEvents(adminPaid.getId())).isEmpty();
     }
 
     @Test
-    void customerCancelOfACardPaidOrderRefundsTheCardOnce() {
+    void customerCancelOfACardPaidOrderRequestsTheCardRefundOnce() {
         // given
         Long orderId = paidCardOrder("18.00");
-        PAYMENT_SERVICE.stubFor(post(urlEqualTo(REFUNDS)).willReturn(aResponse().withStatus(200)
-                .withHeader("Content-Type", "application/json").withBody("{\"refundId\":\"" + UUID.randomUUID() + "\"}")));
+        UUID requestId = OrderCancelledListener.requestId(orderId);
 
         // when
         ResponseEntity<OrderDto> cancelled = cancel(orderId, clientToken);
         ResponseEntity<String> again = executePost(ORDERS_ENDPOINT + "/" + orderId + "/cancel", null,
                 getHeadersWith(clientToken), String.class);
-        refundJob.deliverDue();
 
         // then
         assertThat(cancelled.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(again.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(outboxRepository.findByOrderIdOrderByIdAsc(orderId)).singleElement().satisfies(row -> {
-            assertThat(row.getRequestId()).isEqualTo(OrderCancelledListener.requestId(orderId));
+        assertThat(ledger(orderId)).singleElement().satisfies(row -> {
+            assertThat(row.getRequestId()).isEqualTo(requestId);
             assertThat(row.getAmount()).isEqualByComparingTo("18.00");
             assertThat(row.getReason()).isEqualTo("Order cancelled");
-            assertThat(row.getStatus()).isEqualTo(PaymentRefundStatus.SENT);
         });
-        PAYMENT_SERVICE.verify(exactly(1), postRequestedFor(urlEqualTo(REFUNDS))
-                .withRequestBody(equalToJson("""
-                        {"requestId":"%s","orderId":%d,"amount":18.00,"reason":"Order cancelled"}"""
-                        .formatted(OrderCancelledListener.requestId(orderId), orderId))));
+        assertThat(cardRefundEvents(orderId)).singleElement().satisfies(event -> {
+            assertThat(event.getPayload()).isEqualTo(cardRefundPayload("18.00", orderId, "Order cancelled", requestId));
+            assertThat(event.getUsername()).isEqualTo(client.getUsername());
+        });
+        assertThat(eventRepository.findByOrderIdOrderBySequenceAsc(orderId)).extracting(DomainEventEntity::getType)
+                .containsExactly("order.created", "order.paid", "order.cancelled", CARD_REFUND);
     }
 
     @Test
-    void adminCancelOfACardPaidOrderRefundsTheCard() {
+    void adminCancelOfACardPaidOrderRequestsTheCardRefund() {
         // given
         Long orderId = paidCardOrder("9.99");
 
@@ -228,11 +131,12 @@ class PaymentRefundFlowTest extends AbstractPaymentFlowTest {
 
         // then
         assertThat(cancelled.getBody().getStatus()).isEqualTo(OrderStatus.CANCELLED);
-        assertThat(outbox(OrderCancelledListener.requestId(orderId)).getAmount()).isEqualByComparingTo("9.99");
+        assertThat(cardRefundEvents(orderId)).singleElement().extracting(DomainEventEntity::getPayload)
+                .isEqualTo(cardRefundPayload("9.99", orderId, "Order cancelled", OrderCancelledListener.requestId(orderId)));
     }
 
     @Test
-    void warehouseCancelOfACardPaidOrderRefundsTheCard() {
+    void warehouseCancelOfACardPaidOrderRequestsTheCardRefund() {
         // given
         Long orderId = paidCardOrder("12.00");
         assertThat(executePut("/internal/v1/orders/" + orderId + "/fulfilment",
@@ -245,11 +149,13 @@ class PaymentRefundFlowTest extends AbstractPaymentFlowTest {
 
         // then
         assertThat(cancelled.getBody().status()).isEqualTo(OrderStatus.CANCELLED);
-        assertThat(outbox(OrderCancelledListener.requestId(orderId)).getAmount()).isEqualByComparingTo("12.00");
+        assertThat(ledger(orderId)).singleElement().extracting(CardRefundRequestEntity::getAmount)
+                .satisfies(amount -> assertThat(amount).isEqualByComparingTo("12.00"));
+        assertThat(cardRefundEvents(orderId)).singleElement();
     }
 
     @Test
-    void cancellingAdminPaidOrUnpaidOrdersRefundsNothing() {
+    void cancellingAdminPaidOrUnpaidOrdersRequestsNothing() {
         // given
         OrderDto adminPaid = order(clientToken, product("5.00", 5), 1);
         OrderDto unpaid = order(clientToken, product("5.00", 5), 1);
@@ -264,7 +170,27 @@ class PaymentRefundFlowTest extends AbstractPaymentFlowTest {
         cancel(failedOnly.getId(), clientToken);
 
         // then
-        assertThat(outboxRepository.findAll()).isEmpty();
+        for (Long orderId : List.of(adminPaid.getId(), unpaid.getId(), failedOnly.getId())) {
+            assertThat(ledger(orderId)).isEmpty();
+            assertThat(cardRefundEvents(orderId)).isEmpty();
+            assertThat(eventRepository.findByOrderIdOrderBySequenceAsc(orderId)).extracting(DomainEventEntity::getType)
+                    .contains("order.cancelled");
+        }
+    }
+
+    private static String cardRefundPayload(String amount, Long orderId, String reason, UUID requestId) {
+        return "{\"amount\":" + amount + ",\"orderId\":" + orderId + ",\"reason\":\"" + reason
+                + "\",\"requestId\":\"" + requestId + "\"}";
+    }
+
+    private List<CardRefundRequestEntity> ledger(Long orderId) {
+        return cardRefundRepository.findByOrderIdOrderByCreatedAtAsc(orderId);
+    }
+
+    private List<DomainEventEntity> cardRefundEvents(Long orderId) {
+        return eventRepository.findByOrderIdOrderBySequenceAsc(orderId).stream()
+                .filter(event -> CARD_REFUND.equals(event.getType()))
+                .toList();
     }
 
     private Long paidCardOrder(String price) {
@@ -280,22 +206,15 @@ class PaymentRefundFlowTest extends AbstractPaymentFlowTest {
     }
 
     private Long deliveredCardOrder(String price) {
-        OrderDto order = order(clientToken, product(price, 5), 1);
-        ResponseEntity<PaymentResultResponseDto> paid = postResult(order.getId(),
-                captured(UUID.randomUUID(), UUID.randomUUID(), price), PaymentResultResponseDto.class);
-        assertThat(paid.getBody().orderStatus()).isEqualTo(OrderStatus.PAID);
-        ResponseEntity<OrderDto> delivered = executePut(ORDERS_ENDPOINT + "/" + order.getId() + "/status",
+        Long orderId = paidCardOrder(price);
+        ResponseEntity<OrderDto> delivered = executePut(ORDERS_ENDPOINT + "/" + orderId + "/status",
                 OrderStatus.DELIVERED, getHeadersWith(adminToken), OrderDto.class);
         assertThat(delivered.getStatusCode()).isEqualTo(HttpStatus.OK);
-        return order.getId();
+        return orderId;
     }
 
     private ResponseEntity<InternalOrderDto> bookRefund(Long orderId, OrderRefundDto refund) {
         return executePost("/internal/v1/orders/" + orderId + "/refunds", refund, serviceHeaders(WAREHOUSE_TOKEN),
                 InternalOrderDto.class);
-    }
-
-    private PaymentRefundOutboxEntity outbox(UUID requestId) {
-        return outboxRepository.findByRequestId(requestId).orElseThrow();
     }
 }

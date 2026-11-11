@@ -29,6 +29,17 @@ class InternalApiDisabledTest extends HttpHelper {
         assertThat(withHeader.getBody().getMessage()).isEqualTo("Not found");
     }
 
+    @Test
+    void eventFeedRespondsNotFoundWhenThePaymentAndWarehouseTokensAreBlank() {
+        HttpHeaders paymentToken = getJsonOnlyHeaders();
+        paymentToken.add("X-Service-Token", "test-payment-token");
+
+        ResponseEntity<ErrorDto> feed = executeGet("/internal/v1/events?after=0", paymentToken, ErrorDto.class);
+
+        assertThat(feed.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(feed.getBody().getMessage()).isEqualTo("Not found");
+    }
+
     private HttpHeaders blank() {
         HttpHeaders headers = getJsonOnlyHeaders();
         headers.add("X-Service-Token", "");

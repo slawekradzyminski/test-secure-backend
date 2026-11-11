@@ -17,7 +17,7 @@ import java.sql.Statement;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** V11: payment results, per-order payments and the card refund outbox. */
+/** V11: payment results, per-order payments and the card refund outbox (replaced by V16). */
 class PaymentsMigrationIT {
 
     private static final String SCHEMA = "payments_upgrade";
@@ -47,7 +47,7 @@ class PaymentsMigrationIT {
                     """);
         }
 
-        flyway(null).migrate();
+        flyway(MigrationVersion.fromVersion("15")).migrate();
 
         try (Connection connection = connect(); Statement statement = connection.createStatement()) {
             long orderId = orderId(statement);

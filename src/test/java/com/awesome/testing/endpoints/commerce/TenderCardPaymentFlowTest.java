@@ -8,11 +8,12 @@ import com.awesome.testing.dto.order.OrderDto;
 import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.dto.order.PageDto;
 import com.awesome.testing.entity.loyalty.LoyaltyTransactionType;
-import com.awesome.testing.entity.payment.PaymentRefundOutboxEntity;
+import com.awesome.testing.entity.event.DomainEventEntity;
+import com.awesome.testing.entity.payment.CardRefundRequestEntity;
+import com.awesome.testing.repository.event.DomainEventRepository;
 import com.awesome.testing.internal.dto.OrderRefundDto;
-import com.awesome.testing.repository.payment.PaymentRefundOutboxRepository;
+import com.awesome.testing.repository.payment.CardRefundRequestRepository;
 import com.awesome.testing.service.payment.OrderCancelledListener;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
@@ -31,14 +32,12 @@ class TenderCardPaymentFlowTest extends AbstractTenderFlowTest {
     private static final ParameterizedTypeReference<PageDto<LoyaltyTransactionDto>> LEDGER = new ParameterizedTypeReference<>() {};
 
     @Autowired
-    private PaymentRefundOutboxRepository outboxRepository;
+    private CardRefundRequestRepository cardRefundRepository;
+
+    @Autowired
+    private DomainEventRepository eventRepository;
 
     private GiftCardDto card;
-
-    @BeforeEach
-    void clearOutbox() {
-        outboxRepository.deleteAll();
-    }
 
     @Test
     void cancellingAMixedPaidOrderRefundsTheCardRestoresTendersAndRevokesPointsOnce() {
@@ -51,10 +50,12 @@ class TenderCardPaymentFlowTest extends AbstractTenderFlowTest {
         assertThat(cancelled.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(cancelled.getBody().getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(again.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(outboxRepository.findByOrderIdOrderByIdAsc(order.getId())).singleElement().satisfies(row -> {
+        assertThat(cardRefundRepository.findByOrderIdOrderByCreatedAtAsc(order.getId())).singleElement().satisfies(row -> {
             assertThat(row.getAmount()).isEqualByComparingTo("70.00");
             assertThat(row.getRequestId()).isEqualTo(OrderCancelledListener.requestId(order.getId()));
         });
+        assertThat(cardRefundPayloads(order.getId())).containsExactly("{\"amount\":70.00,\"orderId\":" + order.getId()
+                + ",\"reason\":\"Order cancelled\",\"requestId\":\"" + OrderCancelledListener.requestId(order.getId()) + "\"}");
         assertThat(balanceOf(card.getCode())).isEqualByComparingTo("20.00");
         assertThat(loyalty(clientToken).getBalance()).isEqualTo(1_000);
         assertThat(ledger()).filteredOn(entry -> entry.getType() == LoyaltyTransactionType.REVOKED)
@@ -75,11 +76,13 @@ class TenderCardPaymentFlowTest extends AbstractTenderFlowTest {
         BigDecimal giftCardAfterFirst = balanceOf(card.getCode());
         refund(order.getId(), second, String.class);
 
-        List<PaymentRefundOutboxEntity> cardRefunds = outboxRepository.findByOrderIdOrderByIdAsc(order.getId());
+        List<CardRefundRequestEntity> cardRefunds = cardRefundRepository.findByOrderIdOrderByCreatedAtAsc(order.getId());
         assertThat(cardRefunds).singleElement().satisfies(row -> {
             assertThat(row.getAmount()).isEqualByComparingTo("70.00");
             assertThat(row.getRequestId()).isEqualTo(first.requestId());
         });
+        assertThat(cardRefundPayloads(order.getId())).containsExactly("{\"amount\":70.00,\"orderId\":" + order.getId()
+                + ",\"reason\":\"Return #1\",\"requestId\":\"" + first.requestId() + "\"}");
         assertThat(giftCardAfterFirst).isEqualByComparingTo("10.00");
         assertThat(balanceOf(card.getCode())).isEqualByComparingTo("20.00");
         assertThat(loyalty(clientToken).getBalance()).isEqualTo(1_000);
@@ -97,6 +100,13 @@ class TenderCardPaymentFlowTest extends AbstractTenderFlowTest {
         ResponseEntity<String> paid = postResult(order.getId(), captured(UUID.randomUUID(), UUID.randomUUID(), "70.00"), String.class);
         assertThat(paid.getStatusCode()).as(paid.getBody()).isEqualTo(HttpStatus.OK);
         return order;
+    }
+
+    private List<String> cardRefundPayloads(Long orderId) {
+        return eventRepository.findByOrderIdOrderBySequenceAsc(orderId).stream()
+                .filter(event -> "card-refund.requested".equals(event.getType()))
+                .map(DomainEventEntity::getPayload)
+                .toList();
     }
 
     private List<LoyaltyTransactionDto> ledger() {

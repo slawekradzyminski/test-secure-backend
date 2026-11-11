@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * How a booked refund is divided.
  *
- * @param card           the part sent back to the card through payment-service (zero for none)
+ * @param card           the part requested back to the card from payment-service (zero for none)
  * @param additionalLegs the other parts in booking order (gift card, loyalty points)
  */
 public record RefundSplit(BigDecimal card, List<RefundLeg> additionalLegs) {
