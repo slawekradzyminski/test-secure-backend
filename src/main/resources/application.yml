@@ -44,12 +44,15 @@ server:
       enabled: true
       force: true
 
+# [traceId,requestId] come from the MDC (CorrelationFilter, outbox senders); empty outside requests.
+# LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs (server compose) switches the console to ECS JSON, where the
+# MDC entries requestId, traceId and spanId become top-level fields.
 logging:
   file:
     name: logs/application.log
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{traceId:-},%X{requestId:-}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{traceId:-},%X{requestId:-}] %logger{36} - %msg%n"
   level:
     root: INFO
     com.awesome.testing: DEBUG

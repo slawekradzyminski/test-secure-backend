@@ -65,6 +65,31 @@ class EmailEventServiceTest {
     }
 
     @Test
+    void storesTheCorrelationIdsOfTheQueuingRequestForRetries() {
+        String trace = "4bf92f3577b34da6a3ce929d0e0e4736";
+        Integer id;
+        try (var ignored = new com.awesome.testing.correlation.CorrelationIds("queued-req", trace, "00f067aa0ba902b7").open()) {
+            id = service.recordQueued(user, email, "email", null);
+        }
+        Integer withoutRequest = service.recordQueued(user, email, "email", null);
+        repository.findAllById(java.util.List.of(id, withoutRequest)).forEach(event -> {
+            event.setStatus(EmailDeliveryStatus.FAILED);
+            event.setNextAttemptAt(java.time.Instant.now().minusSeconds(1));
+            repository.save(event);
+        });
+
+        EmailEventEntity stored = repository.findById(id).orElseThrow();
+        assertThat(stored.getCorrelationRequestId()).isEqualTo("queued-req");
+        assertThat(stored.getTraceparent()).isEqualTo("00-" + trace + "-00f067aa0ba902b7-01");
+        assertThat(repository.findById(withoutRequest).orElseThrow().getCorrelationRequestId()).isNull();
+        assertThat(service.claimDue(10)).filteredOn(redelivery -> redelivery.eventId().equals(id)).singleElement()
+                .satisfies(redelivery -> {
+                    assertThat(redelivery.correlationRequestId()).isEqualTo("queued-req");
+                    assertThat(redelivery.traceparent()).isEqualTo("00-" + trace + "-00f067aa0ba902b7-01");
+                });
+    }
+
+    @Test
     void failuresBackOffExponentiallyAndStopAfterTheLastAttempt() {
         Integer id = service.recordQueued(user, email, "email", null);
 

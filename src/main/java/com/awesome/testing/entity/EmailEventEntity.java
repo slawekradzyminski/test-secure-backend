@@ -74,4 +74,12 @@ public class EmailEventEntity {
     /** Caller-supplied idempotency key (warehouse-service notifications). */
     @Column(name = "request_id", unique = true)
     private UUID requestId;
+
+    /** X-Request-Id of the request that queued the email; retries log under it. */
+    @Column(name = "correlation_request_id", length = 128)
+    private String correlationRequestId;
+
+    /** traceparent of the request that queued the email; retries continue its trace. */
+    @Column(name = "traceparent", length = 55)
+    private String traceparent;
 }

@@ -1,5 +1,6 @@
 package com.awesome.testing.service.webhook;
 
+import com.awesome.testing.correlation.CorrelationIds;
 import com.awesome.testing.entity.webhook.WebhookDeliveryEntity;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Sends claimed deliveries: signs the stored body, checks the target with the SSRF guard
  * again, posts it to the vetted address (or stores it in a built-in inbox) and records the
- * outcome. Event deliveries run on a small background pool when
+ * outcome. Each attempt runs under the request id and trace of the request that queued the
+ * delivery (MDC) and sends them as {@code X-Request-Id} and a child {@code traceparent}; the
+ * delivery id stays in {@code X-Webhook-Id}. Event deliveries run on a small background pool when
  * {@code webhooks.async-dispatch} is on; a full pool leaves them PENDING for
  * {@link WebhookRetryJob}.
  */
@@ -78,7 +81,10 @@ public class WebhookDispatcher {
             if (attempt.isEmpty()) {
                 return Optional.empty();
             }
-            return Optional.of(deliveryLog.record(deliveryId, send(attempt.get())));
+            CorrelationIds ids = CorrelationIds.resume(attempt.get().requestId(), attempt.get().traceparent());
+            try (CorrelationIds.Scope ignored = ids.open()) {
+                return Optional.of(deliveryLog.record(deliveryId, send(attempt.get())));
+            }
         } catch (RuntimeException e) {
             log.error("Webhook delivery {} failed unexpectedly", deliveryId, e);
             return Optional.empty();
@@ -128,6 +134,10 @@ public class WebhookDispatcher {
         headers.put("X-Webhook-Id", attempt.deliveryId().toString());
         headers.put("X-Webhook-Event", attempt.eventType());
         headers.put("X-Webhook-Signature", WebhookSigner.signatureHeader(attempt.secret(), timestamp, attempt.payload()));
+        CorrelationIds.current().ifPresent(ids -> {
+            headers.put(CorrelationIds.REQUEST_ID_HEADER, ids.requestId());
+            headers.put(CorrelationIds.TRACEPARENT_HEADER, ids.childTraceparent());
+        });
         return headers;
     }
 

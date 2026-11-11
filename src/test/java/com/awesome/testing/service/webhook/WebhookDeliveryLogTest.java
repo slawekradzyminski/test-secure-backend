@@ -214,7 +214,7 @@ class WebhookDeliveryLogTest {
         verify(deliveries).claim(eq(delivery.getId()), eq(WebhookDeliveryStatus.PENDING), eq(NOW), lease.capture());
         assertThat(lease.getValue()).isEqualTo(NOW.plusSeconds(40));
         assertThat(attempt).contains(new WebhookDeliveryLog.Attempt(delivery.getId(), 7L, "alice",
-                "https://hooks.example.com/", "whsec_plain", "order.created", "{}"));
+                "https://hooks.example.com/", "whsec_plain", "order.created", "{}", null, null));
     }
 
     @Test

@@ -274,6 +274,23 @@ npx playwright test tests/ui/sso.live.ui.spec.ts tests/ui/sso.fixture.ui.spec.ts
 - Swagger/OpenAPI documentation
 - Comprehensive test coverage
 
+## Correlation IDs and logging
+
+- `CorrelationFilter` runs first on every request: a valid incoming `X-Request-Id`
+  (1-128 characters of `[A-Za-z0-9._-]`) and the trace id of a valid W3C `traceparent`
+  are kept, anything missing or invalid is generated (UUID request id, random trace id),
+  and every hop gets a new span id. The MDC holds `requestId`, `traceId` and `spanId`
+  for the request; the response always carries `X-Request-Id` (exposed to browsers by CORS).
+- Outbound calls send the same `X-Request-Id` and a child `traceparent` (same trace id,
+  new parent id): the Ollama `WebClient` and webhook deliveries.
+- Persisted hand-offs keep the ids (V17): feed events (`domain_events.request_id` /
+  `trace_id`, served as `requestId` / `traceId`), email events and webhook deliveries
+  (request id + traceparent). Delayed email sends and the email and webhook retry jobs
+  log under the ids of the request that queued the work.
+- Console and file logs show `[traceId,requestId]`. Set
+  `LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs` for ECS JSON console logs, where the MDC entries
+  are top-level `requestId`, `traceId` and `spanId` fields (works in the native image).
+
 ## Testing & Coverage
 
 - Run `./mvnw verify` to execute the entire unit/integration suite. The build fails if line coverage drops below 40%, and JaCoCo reports are emitted to `target/site/jacoco/index.html`.

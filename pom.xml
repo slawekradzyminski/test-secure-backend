@@ -4,7 +4,7 @@
 
     <groupId>murraco</groupId>
     <artifactId>jwt-auth-service</artifactId>
-    <version>3.16.0</version>
+    <version>3.17.0</version>
     <packaging>jar</packaging>
 
     <name>spring-boot-jwt</name>
@@ -570,6 +570,8 @@
                                 <param>com.awesome.testing.service.giftcard.*</param>
                                 <param>com.awesome.testing.service.loyalty.*</param>
                                 <param>com.awesome.testing.service.tender.*</param>
+                                <param>com.awesome.testing.correlation.*</param>
+                                <param>com.awesome.testing.config.CorrelationOpenApiCustomizer</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -621,6 +623,8 @@
                                 <param>com.awesome.testing.service.giftcard.*Test</param>
                                 <param>com.awesome.testing.service.loyalty.*Test</param>
                                 <param>com.awesome.testing.service.tender.*Test</param>
+                                <param>com.awesome.testing.correlation.*Test</param>
+                                <param>com.awesome.testing.config.CorrelationOpenApiCustomizerTest</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>

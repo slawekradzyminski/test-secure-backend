@@ -425,6 +425,31 @@ class WebhookDeliveryFlowTest extends AbstractEcommerceTest {
         return response.getBody();
     }
 
+    @Test
+    void deliveriesSendTheRequestIdAndAChildTraceparentOfTheQueuingRequest() {
+        // given
+        WebhookSubscriptionDto hook = subscribe(receiverUrl(), "order.created");
+        org.springframework.http.HttpHeaders headers = getHeadersWith(clientToken);
+        headers.add("X-Request-Id", "ping-" + path.substring(6));
+        headers.add("traceparent", "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01");
+
+        // when
+        ResponseEntity<WebhookDeliveryDto> ping = executePost(subscriptionPath(hook.getId()) + "/test", null, headers,
+                WebhookDeliveryDto.class);
+
+        // then
+        assertThat(ping.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        LoggedRequest request = onlyRequest();
+        assertThat(request.getHeader("X-Request-Id")).isEqualTo("ping-" + path.substring(6));
+        assertThat(request.getHeader("X-Webhook-Id")).isEqualTo(ping.getBody().getId().toString());
+        assertThat(request.getHeader("traceparent"))
+                .matches("00-0af7651916cd43dd8448eb211c80319c-[0-9a-f]{16}-01")
+                .doesNotContain("b7ad6b7169203331");
+        WebhookDeliveryEntity stored = deliveries.findById(ping.getBody().getId()).orElseThrow();
+        assertThat(stored.getRequestId()).isEqualTo("ping-" + path.substring(6));
+        assertThat(stored.getTraceparent()).startsWith("00-0af7651916cd43dd8448eb211c80319c-");
+    }
+
     private ResponseEntity<WebhookDeliveryDto> ping(Long id) {
         return executePost(subscriptionPath(id) + "/test", null, getHeadersWith(clientToken), WebhookDeliveryDto.class);
     }

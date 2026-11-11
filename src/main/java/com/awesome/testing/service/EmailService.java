@@ -1,5 +1,6 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.correlation.CorrelationIds;
 import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.service.delay.DelayGenerator;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -44,10 +46,12 @@ public class EmailService {
      */
     public void sendEmail(EmailDto emailDto, String destination, UserEntity user, UUID requestId) {
         Integer emailEventId = user == null ? null : emailEventService.recordQueued(user, emailDto, destination, requestId);
+        Optional<CorrelationIds> correlation = CorrelationIds.current();
         long delay = delayGenerator.getDelayMillis();
         logDelay(delay);
         try {
-            emailTaskScheduler.schedule(() -> deliver(emailEventId, emailDto, destination), Instant.now().plusMillis(delay));
+            emailTaskScheduler.schedule(() -> deliverLater(correlation, emailEventId, emailDto, destination),
+                    Instant.now().plusMillis(delay));
         } catch (RuntimeException e) {
             markFailed(emailEventId, e);
             log.error("Email scheduling failed for {}", emailDto.getTo(), e);
@@ -57,6 +61,19 @@ public class EmailService {
     /** Sends a tracked email again, immediately; used by the retry job. */
     public void redeliver(Integer emailEventId, EmailDto emailDto, String destination) {
         deliver(emailEventId, emailDto, destination);
+    }
+
+    /** The delayed send runs on the scheduler thread under the ids of the request that queued it. */
+    private void deliverLater(Optional<CorrelationIds> correlation, Integer emailEventId, EmailDto emailDto,
+                              String destination) {
+        if (correlation.isEmpty()) {
+            deliver(emailEventId, emailDto, destination);
+            return;
+        }
+        CorrelationIds ids = CorrelationIds.resume(correlation.get().requestId(), correlation.get().traceparent());
+        try (CorrelationIds.Scope ignored = ids.open()) {
+            deliver(emailEventId, emailDto, destination);
+        }
     }
 
     private void deliver(Integer emailEventId, EmailDto emailDto, String destination) {

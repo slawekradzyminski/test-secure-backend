@@ -48,6 +48,9 @@ class InternalPaymentFlowTest extends AbstractPaymentFlowTest {
     @Autowired
     private OrderPaymentRepository paymentRepository;
 
+    @Autowired
+    private com.awesome.testing.repository.event.DomainEventRepository domainEvents;
+
     @Test
     void capturedPaymentMarksThePendingOrderPaidOnceAndReplaysReturnTheSameAnswer() {
         // given
@@ -86,6 +89,35 @@ class InternalPaymentFlowTest extends AbstractPaymentFlowTest {
                     assertThat(payment.getAmount()).isEqualByComparingTo("25.00");
                     assertThat(payment.getCurrency()).isEqualTo("USD");
                 });
+    }
+
+    @Test
+    void aPaymentResultKeepsTheRequestIdAndTraceOfPaymentServiceOnItsEventAndEmail() {
+        // given
+        OrderDto order = order(clientToken, product("8.00", 5), 1);
+        UUID requestId = UUID.randomUUID();
+        String body = captured(requestId, UUID.randomUUID(), "8.00");
+        String traceId = "4bf92f3577b34da6a3ce929d0e0e4736";
+        HttpHeaders headers = signedHeaders(body, Instant.now().getEpochSecond());
+        headers.add("X-Request-Id", "pay-result-" + requestId);
+        headers.add("traceparent", "00-" + traceId + "-00f067aa0ba902b7-01");
+
+        // when
+        ResponseEntity<PaymentResultResponseDto> response = postResult(order.getId(), body, headers,
+                PaymentResultResponseDto.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getFirst("X-Request-Id")).isEqualTo("pay-result-" + requestId);
+        assertThat(domainEvents.findByOrderIdOrderBySequenceAsc(order.getId())).last().satisfies(event -> {
+            assertThat(event.getType()).isEqualTo("order.paid");
+            assertThat(event.getRequestId()).isEqualTo("pay-result-" + requestId);
+            assertThat(event.getTraceId()).isEqualTo(traceId);
+        });
+        assertThat(emailsFor(requestId)).singleElement().satisfies(email -> {
+            assertThat(email.getCorrelationRequestId()).isEqualTo("pay-result-" + requestId);
+            assertThat(email.getTraceparent()).matches("00-" + traceId + "-[0-9a-f]{16}-01");
+        });
     }
 
     @Test

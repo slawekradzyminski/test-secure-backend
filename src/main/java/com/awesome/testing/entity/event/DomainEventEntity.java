@@ -53,4 +53,12 @@ public class DomainEventEntity {
 
     @Column(nullable = false, columnDefinition = "text")
     private String payload;
+
+    /** X-Request-Id of the request that wrote the event; null for work without one (scheduled jobs). */
+    @Column(name = "request_id", length = 128)
+    private String requestId;
+
+    /** W3C trace id of the writing request; null like {@link #requestId}. */
+    @Column(name = "trace_id", length = 32)
+    private String traceId;
 }

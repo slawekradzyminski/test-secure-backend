@@ -1,5 +1,6 @@
 package com.awesome.testing.service.email;
 
+import com.awesome.testing.correlation.CorrelationIds;
 import com.awesome.testing.dto.email.EmailDeliveryStatus;
 import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.dto.email.EmailEventDto;
@@ -37,8 +38,9 @@ public class EmailEventService {
     private final ObjectMapper objectMapper;
     private final Clock emailClock = Clock.systemUTC();
 
-    /** A claimed event to send again. */
-    public record Redelivery(Integer eventId, EmailDto email, String destination) {
+    /** A claimed event to send again, with the correlation ids of the request that queued it. */
+    public record Redelivery(Integer eventId, EmailDto email, String destination, String correlationRequestId,
+                             String traceparent) {
     }
 
     @Transactional
@@ -52,6 +54,8 @@ public class EmailEventService {
                 .destination(destination)
                 .payload(objectMapper.writeValueAsString(emailDto))
                 .requestId(requestId)
+                .correlationRequestId(CorrelationIds.currentRequestId())
+                .traceparent(CorrelationIds.currentTraceparent())
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -107,7 +111,7 @@ public class EmailEventService {
             event.setUpdatedAt(now);
             emailEventRepository.save(event);
             return new Redelivery(event.getId(), objectMapper.readValue(event.getPayload(), EmailDto.class),
-                    event.getDestination());
+                    event.getDestination(), event.getCorrelationRequestId(), event.getTraceparent());
         }).toList();
     }
 

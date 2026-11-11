@@ -71,7 +71,14 @@ User-Agent: AwesomeTesting-Webhooks/1.0
 X-Webhook-Id: <delivery id>
 X-Webhook-Event: order.created
 X-Webhook-Signature: t=1794346833,v1=5f2b...
+X-Request-Id: <request id of the request that caused the event>
+traceparent: 00-<trace id of that request>-<new parent id>-01
 ```
+
+`X-Request-Id` and `traceparent` (3.17.0) correlate the delivery with the request that
+caused it: the ids are stored with the delivery when it is queued, so retries and
+redeliveries send the same request id and trace id (with a new parent id per attempt).
+They are not signed; deduplicate on `X-Webhook-Id` / the event `id`, not on them.
 
 `v1` is the lowercase hex HMAC-SHA256 of `t + "." + rawBody`, keyed with the whole secret
 string as UTF-8 (including the `whsec_` prefix). Verify it against the raw body and

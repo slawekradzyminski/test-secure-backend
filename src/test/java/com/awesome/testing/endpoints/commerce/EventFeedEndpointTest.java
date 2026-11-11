@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.awesome.testing.factory.AddressFactory.getRandomAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** {@code GET /internal/v1/events}: the durable feed polled by warehouse-service and payment-service. */
@@ -69,7 +70,10 @@ class EventFeedEndpointTest extends AbstractPaymentFlowTest {
         assertThat(events).extracting(event -> event.get("type").asString()).containsExactly("order.created", "order.paid");
         JsonNode created = events.getFirst();
         assertThat(fieldNames(created))
-                .containsExactly("sequence", "id", "type", "occurredAt", "orderId", "username", "data");
+                .containsExactly("sequence", "id", "type", "occurredAt", "orderId", "username", "data", "requestId",
+                        "traceId");
+        assertThat(created.get("requestId").asString()).matches("[0-9a-f-]{36}");
+        assertThat(created.get("traceId").asString()).matches("[0-9a-f]{32}");
         DomainEventEntity row = eventRepository.findByOrderIdOrderBySequenceAsc(order.getId()).getFirst();
         assertThat(created.get("sequence").asLong()).isEqualTo(row.getSequence()).isGreaterThan(before);
         assertThat(created.get("id").asString()).isEqualTo(row.getEventId().toString());
@@ -80,6 +84,49 @@ class EventFeedEndpointTest extends AbstractPaymentFlowTest {
         assertThat(body.get("hasMore").asBoolean()).isFalse();
         JsonNode all = body.get("events");
         assertThat(body.get("nextCursor").asLong()).isEqualTo(all.get(all.size() - 1).get("sequence").asLong());
+    }
+
+    @Test
+    void feedEventsCarryTheRequestIdAndTraceIdOfTheRequestThatWroteThem() throws Exception {
+        // given
+        long before = eventRepository.maxSequence();
+        addToCart(clientToken, product("9.00", 5), 1);
+        HttpHeaders headers = getHeadersWith(clientToken);
+        headers.add("X-Request-Id", "checkout-" + before);
+        headers.add("traceparent", "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01");
+
+        // when
+        ResponseEntity<OrderDto> checkout = executePost("/api/v1/orders", getRandomAddress(), headers, OrderDto.class);
+        JsonNode body = JSON.readTree(feed("?after=" + before, WAREHOUSE_TOKEN).getBody());
+
+        // then
+        assertThat(checkout.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(checkout.getHeaders().getFirst("X-Request-Id")).isEqualTo("checkout-" + before);
+        assertThat(forOrder(body, checkout.getBody().getId())).singleElement().satisfies(event -> {
+            assertThat(event.get("type").asString()).isEqualTo("order.created");
+            assertThat(event.get("requestId").asString()).isEqualTo("checkout-" + before);
+            assertThat(event.get("traceId").asString()).isEqualTo("0af7651916cd43dd8448eb211c80319c");
+        });
+    }
+
+    @Test
+    void eventsWrittenWithoutARequestHaveNoIds() throws Exception {
+        // given
+        long before = eventRepository.maxSequence();
+        OrderDto order = order(clientToken, product("6.00", 5), 1);
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+
+        // when: published outside any request, like a scheduled job
+        transaction.executeWithoutResult(status -> commerceEvents.publishData(CommerceEventType.ORDER_PAID, "job",
+                order.getId(), Map.of("orderId", order.getId())));
+        JsonNode body = JSON.readTree(feed("?after=" + before, WAREHOUSE_TOKEN).getBody());
+
+        // then
+        assertThat(forOrder(body, order.getId())).last().satisfies(event -> {
+            assertThat(event.get("username").asString()).isEqualTo("job");
+            assertThat(event.get("requestId").isNull()).isTrue();
+            assertThat(event.get("traceId").isNull()).isTrue();
+        });
     }
 
     @Test
