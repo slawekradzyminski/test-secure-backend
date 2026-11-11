@@ -14,6 +14,8 @@ import java.util.UUID;
  * Fans committed commerce events out to the owner's webhook subscriptions: the delivery
  * rows are written in their own transaction first, so a crash before sending leaves them
  * PENDING for the retry job. Errors never reach the business request that committed.
+ * Internal service events (not {@link com.awesome.testing.event.CommerceEventType#offeredToWebhooks()})
+ * are ignored.
  */
 @Slf4j
 @Component
@@ -25,6 +27,9 @@ public class WebhookEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onCommerceEvent(CommerceEvent event) {
+        if (!event.type().offeredToWebhooks()) {
+            return;
+        }
         try {
             List<UUID> deliveries = deliveryLog.recordEvent(event);
             dispatcher.dispatchAll(deliveries);

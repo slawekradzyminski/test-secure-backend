@@ -109,4 +109,24 @@ outbox=$(call -H "Authorization: Bearer $token" http://backend:4001/api/v1/local
 [[ "$outbox" == 200* ]] || fail "local outbox: $outbox"
 echo "local outbox available: ok"
 
+# Event feed: checkout records order.created in domain_events; the feed serves it (after the
+# settle delay) with the raw data JSON to the payment service token.
+product_id=$(call -H "Authorization: Bearer $token" http://backend:4001/api/v1/products | grep -oE '"id" *: *[0-9]+' | head -1 | grep -oE '[0-9]+$' || true)
+[[ "$product_id" =~ ^[0-9]+$ ]] || fail "product id for the event feed check: $product_id"
+cart=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d "{\"productId\":$product_id,\"quantity\":1}" http://backend:4001/api/v1/cart/items)
+[[ "$cart" == 200* ]] || fail "add to cart: $cart"
+order=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d '{"street":"1 Smoke Street","city":"Smoke City","state":"SC","zipCode":"12345","country":"USA"}' \
+  http://backend:4001/api/v1/orders)
+[[ "$order" == 201* ]] || fail "checkout: $order"
+sleep 4
+# The local profile indents JSON, so compare without spaces.
+feed=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?types=order.created&limit=5' | tr -d ' ')
+[[ "$feed" == 200* && "$feed" == *'"type":"order.created"'* && "$feed" == *'"data":{"orderId":'* \
+  && "$feed" == *'"nextCursor":'* ]] || fail "event feed: $feed"
+bad=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?limit=0')
+[[ "$bad" == 400* ]] || fail "event feed must reject limit=0: $bad"
+echo "event feed: ok"
+
 echo "native smoke test passed"

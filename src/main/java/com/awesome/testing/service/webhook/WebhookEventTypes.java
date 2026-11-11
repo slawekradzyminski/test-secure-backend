@@ -10,7 +10,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Event types a subscription may name: every commerce event wire name plus {@value #PING}. */
+/**
+ * Event types a subscription may name: the wire name of every commerce event offered to webhooks
+ * (internal service events such as {@code card-refund.requested} are not) plus {@value #PING}.
+ */
 public final class WebhookEventTypes {
 
     public static final String PING = "webhook.ping";
@@ -21,6 +24,9 @@ public final class WebhookEventTypes {
     public static List<WebhookEventTypeDto> all() {
         List<WebhookEventTypeDto> types = new ArrayList<>();
         for (CommerceEventType type : CommerceEventType.values()) {
+            if (!type.offeredToWebhooks()) {
+                continue;
+            }
             types.add(new WebhookEventTypeDto(type.wireName(), describe(type)));
         }
         types.add(new WebhookEventTypeDto(PING, "Sent by POST /api/v1/webhooks/{id}/test"));
@@ -55,10 +61,14 @@ public final class WebhookEventTypes {
             case ORDER_DELIVERED -> "An order was delivered";
             case REFUND_BOOKED -> "A refund was booked for an order";
             case PAYMENT_FAILED -> "A payment attempt failed";
+            case CARD_REFUND_REQUESTED -> throw new IllegalArgumentException(type + " is not offered to webhooks");
         };
     }
 
     static List<String> wireNames() {
-        return Arrays.stream(CommerceEventType.values()).map(CommerceEventType::wireName).toList();
+        return Arrays.stream(CommerceEventType.values())
+                .filter(CommerceEventType::offeredToWebhooks)
+                .map(CommerceEventType::wireName)
+                .toList();
     }
 }

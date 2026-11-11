@@ -32,7 +32,7 @@ class OrderCancelledListenerTest {
     private static final UUID REQUEST = OrderCancelledListener.requestId(6L);
 
     @Mock private OrderPaymentRepository paymentRepository;
-    @Mock private PaymentRefundOutbox outbox;
+    @Mock private CardRefunds cardRefunds;
     @InjectMocks private OrderCancelledListener listener;
 
     @Test
@@ -44,32 +44,32 @@ class OrderCancelledListenerTest {
     @Test
     void refundsTheCapturedAmountMinusEarlierCardRefunds() {
         captured("40.00");
-        when(outbox.cardRefunded(6L)).thenReturn(new BigDecimal("15.00"));
+        when(cardRefunds.cardRefunded(6L)).thenReturn(new BigDecimal("15.00"));
 
         listener.onOrderCancelled(event(CommerceEventType.ORDER_CANCELLED));
 
-        verify(outbox).enqueue(6L, PAYMENT, REQUEST, new BigDecimal("25.00"), "Order cancelled");
+        verify(cardRefunds).request(6L, "buyer", PAYMENT, REQUEST, new BigDecimal("25.00"), "Order cancelled");
     }
 
     @Test
-    void nothingLeftOnTheCardQueuesNothing() {
+    void nothingLeftOnTheCardRequestsNothing() {
         captured("40.00");
-        when(outbox.cardRefunded(6L)).thenReturn(new BigDecimal("40.00"));
+        when(cardRefunds.cardRefunded(6L)).thenReturn(new BigDecimal("40.00"));
 
         listener.onOrderCancelled(event(CommerceEventType.ORDER_CANCELLED));
 
-        verify(outbox, never()).enqueue(any(), any(), any(), any(), any());
+        verify(cardRefunds, never()).request(any(), any(), any(), any(), any(), any());
     }
 
     @Test
-    void anAlreadyQueuedCancelRefundIsNotQueuedAgain() {
+    void anAlreadyRequestedCancelRefundIsNotRequestedAgain() {
         captured("40.00");
-        when(outbox.isQueued(REQUEST)).thenReturn(true);
+        when(cardRefunds.isRequested(REQUEST)).thenReturn(true);
 
         listener.onOrderCancelled(event(CommerceEventType.ORDER_CANCELLED));
 
-        verify(outbox, never()).cardRefunded(any());
-        verify(outbox, never()).enqueue(any(), any(), any(), any(), any());
+        verify(cardRefunds, never()).cardRefunded(any());
+        verify(cardRefunds, never()).request(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -78,14 +78,14 @@ class OrderCancelledListenerTest {
 
         listener.onOrderCancelled(event(CommerceEventType.ORDER_CANCELLED));
 
-        verifyNoInteractions(outbox);
+        verifyNoInteractions(cardRefunds);
     }
 
     @Test
     void otherEventsAreIgnored() {
         listener.onOrderCancelled(event(CommerceEventType.REFUND_BOOKED));
 
-        verifyNoInteractions(paymentRepository, outbox);
+        verifyNoInteractions(paymentRepository, cardRefunds);
     }
 
     private void captured(String amount) {

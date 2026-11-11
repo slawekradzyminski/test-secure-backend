@@ -269,19 +269,22 @@ internal:
   # X-Service-Token secret per caller of the /internal/v1 API; a blank token disables that caller's endpoints (404).
   service-tokens:
     warehouse: ${warehouse.service-token:}
-    # Also sent by the backend when it calls payment-service.
     payment: ${PAYMENT_SERVICE_TOKEN:}
 
 payment:
-  # payment-service: card refunds go to {base-url}/internal/v1/payments/refunds with the payment
-  # service token; its payment results are signed with webhook-secret (X-Payment-Signature).
-  base-url: ${PAYMENT_BASE_URL:http://payment-service:4004}
+  # payment-service signs its payment results with webhook-secret (X-Payment-Signature). The backend
+  # never calls payment-service: card refunds reach it through the event feed below.
   webhook-secret: ${PAYMENT_WEBHOOK_SECRET:}
-  refunds:
-    # Delivers queued card refunds (see PaymentRefundJob).
-    delivery:
-      enabled: ${PAYMENT_REFUNDS_DELIVERY_ENABLED:true}
-      interval: ${PAYMENT_REFUNDS_DELIVERY_INTERVAL:PT15S}
+
+# Durable commerce event feed (GET /internal/v1/events) polled by warehouse-service and payment-service.
+events:
+  # Events recorded less than this long ago are not served yet, so a transaction that committed
+  # late with a lower sequence is not skipped.
+  settle-delay: ${EVENTS_SETTLE_DELAY:PT3S}
+  retention: ${EVENTS_RETENTION:P30D}
+  retention-job:
+    enabled: ${EVENTS_RETENTION_JOB_ENABLED:true}
+    interval: ${EVENTS_RETENTION_JOB_INTERVAL:PT1H}
 
 springdoc:
   # The service-to-service API for warehouse-service is not part of the public contract.

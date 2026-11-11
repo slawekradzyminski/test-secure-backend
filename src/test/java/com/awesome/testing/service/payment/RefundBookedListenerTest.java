@@ -43,7 +43,7 @@ class RefundBookedListenerTest {
     @Mock private OrderRepository orderRepository;
     @Mock private OrderRefundRepository refundRepository;
     @Mock private OrderPaymentRepository paymentRepository;
-    @Mock private PaymentRefundOutbox outbox;
+    @Mock private CardRefunds cardRefunds;
 
     private OrderEntity order;
 
@@ -54,16 +54,16 @@ class RefundBookedListenerTest {
         lenient().when(orderRepository.findById(5L)).thenReturn(Optional.of(order));
         lenient().when(refundRepository.findByRequestId(REQUEST))
                 .thenReturn(Optional.of(OrderRefundEntity.builder().reference("Return #1").build()));
-        lenient().when(outbox.cardRefunded(5L)).thenReturn(new BigDecimal("15.00"));
+        lenient().when(cardRefunds.cardRefunded(5L)).thenReturn(new BigDecimal("15.00"));
     }
 
     @Test
-    void queuesTheCardPartAgainstTheCapturedPayment() {
+    void requestsTheCardPartAgainstTheCapturedPayment() {
         captured("50.00");
 
         listener(new CardFirstRefundSplitter(List.of())).onRefundBooked(refundBooked("20.00"));
 
-        verify(outbox).enqueue(5L, PAYMENT, REQUEST, new BigDecimal("20.00"), "Return #1");
+        verify(cardRefunds).request(5L, "buyer", PAYMENT, REQUEST, new BigDecimal("20.00"), "Return #1");
     }
 
     @Test
@@ -83,7 +83,7 @@ class RefundBookedListenerTest {
             assertThat(context.requestId()).isEqualTo(REQUEST);
             assertThat(context.reference()).isEqualTo("Return #1");
         });
-        verify(outbox, never()).enqueue(any(), any(), any(), any(), any());
+        verify(cardRefunds, never()).request(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -112,8 +112,8 @@ class RefundBookedListenerTest {
 
         assertThat(seen.getFirst().cardRefundable()).isZero();
         assertThat(seen.getFirst().reference()).isNull();
-        verify(outbox, never()).enqueue(any(), any(), any(), any(), any());
-        verify(outbox, never()).cardRefunded(any());
+        verify(cardRefunds, never()).request(any(), any(), any(), any(), any(), any());
+        verify(cardRefunds, never()).cardRefunded(any());
     }
 
     @Test
@@ -125,10 +125,10 @@ class RefundBookedListenerTest {
                 new RefundLeg(RefundLegType.LOYALTY_POINTS, new BigDecimal("3.00")),
                 new RefundLeg(RefundLegType.GIFT_CARD, new BigDecimal("2.00"))));
 
-        new RefundBookedListener(orderRepository, refundRepository, paymentRepository, outbox, splitter,
+        new RefundBookedListener(orderRepository, refundRepository, paymentRepository, cardRefunds, splitter,
                 List.of(giftCard, points)).onRefundBooked(refundBooked("10.00"));
 
-        verify(outbox).enqueue(5L, PAYMENT, REQUEST, new BigDecimal("5.00"), "Return #1");
+        verify(cardRefunds).request(5L, "buyer", PAYMENT, REQUEST, new BigDecimal("5.00"), "Return #1");
         assertThat(points.booked).containsExactly(new BigDecimal("3.00"));
         assertThat(giftCard.booked).containsExactly(new BigDecimal("2.00"));
     }
@@ -149,7 +149,7 @@ class RefundBookedListenerTest {
             assertThatThrownBy(() -> listener(context -> invalid).onRefundBooked(refundBooked("10.00")))
                     .isInstanceOf(IllegalStateException.class).hasMessageStartingWith("Invalid refund split");
         }
-        verify(outbox, never()).enqueue(any(), any(), any(), any(), any());
+        verify(cardRefunds, never()).request(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -161,10 +161,10 @@ class RefundBookedListenerTest {
                 List.of(new RefundLeg(RefundLegType.GIFT_CARD, new BigDecimal("6.00"))));
 
         listener(fullCard).onRefundBooked(refundBooked("40.00"));
-        new RefundBookedListener(orderRepository, refundRepository, paymentRepository, outbox, fullLegs,
+        new RefundBookedListener(orderRepository, refundRepository, paymentRepository, cardRefunds, fullLegs,
                 List.of(giftCard)).onRefundBooked(refundBooked("10.00"));
 
-        verify(outbox).enqueue(5L, PAYMENT, REQUEST, new BigDecimal("35.00"), "Return #1");
+        verify(cardRefunds).request(5L, "buyer", PAYMENT, REQUEST, new BigDecimal("35.00"), "Return #1");
         assertThat(giftCard.booked).containsExactly(new BigDecimal("6.00"));
     }
 
@@ -181,12 +181,12 @@ class RefundBookedListenerTest {
         listener(new CardFirstRefundSplitter(List.of())).onRefundBooked(new CommerceEvent(UUID.randomUUID(),
                 CommerceEventType.ORDER_PAID, "buyer", 5L, Instant.now(), Map.of("orderId", 5L)));
 
-        verifyNoInteractions(orderRepository, refundRepository, paymentRepository, outbox);
+        verifyNoInteractions(orderRepository, refundRepository, paymentRepository, cardRefunds);
     }
 
     @Test
     void twoHandlersForOneLegTypeAreRejected() {
-        assertThatThrownBy(() -> new RefundBookedListener(orderRepository, refundRepository, paymentRepository, outbox,
+        assertThatThrownBy(() -> new RefundBookedListener(orderRepository, refundRepository, paymentRepository, cardRefunds,
                 new CardFirstRefundSplitter(List.of()),
                 List.of(new RecordingHandler(RefundLegType.GIFT_CARD), new RecordingHandler(RefundLegType.GIFT_CARD))))
                 .isInstanceOf(IllegalStateException.class).hasMessage("Two refund leg handlers for GIFT_CARD");
@@ -198,7 +198,7 @@ class RefundBookedListenerTest {
     }
 
     private RefundBookedListener listener(RefundSplitter splitter) {
-        return new RefundBookedListener(orderRepository, refundRepository, paymentRepository, outbox, splitter, List.of());
+        return new RefundBookedListener(orderRepository, refundRepository, paymentRepository, cardRefunds, splitter, List.of());
     }
 
     private static CommerceEvent refundBooked(String amount) {

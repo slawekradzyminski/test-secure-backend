@@ -37,13 +37,21 @@ public class CommerceEvents {
         data.put("status", order.getStatus().name());
         data.put("totalAmount", order.getTotalAmount());
         data.putAll(extra);
+        return publishData(type, order.getUsername(), order.getId(), data);
+    }
+
+    /**
+     * Publishes an event whose {@code data} is exactly {@code data} (no order status or total),
+     * for internal events such as {@link CommerceEventType#CARD_REFUND_REQUESTED}.
+     */
+    public CommerceEvent publishData(CommerceEventType type, String username, Long orderId, Map<String, ?> data) {
         CommerceEvent event = new CommerceEvent(
                 UUID.randomUUID(),
                 type,
-                order.getUsername(),
-                order.getId(),
+                username,
+                orderId,
                 commerceClock.instant(),
-                Collections.unmodifiableMap(data));
+                Collections.unmodifiableMap(new LinkedHashMap<>(data)));
         eventPublisher.publishEvent(event);
         return event;
     }

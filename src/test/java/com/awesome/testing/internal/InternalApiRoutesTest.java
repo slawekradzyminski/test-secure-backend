@@ -26,6 +26,12 @@ class InternalApiRoutesTest {
     }
 
     @Test
+    void theEventFeedAcceptsBothCallers() {
+        assertThat(routes.callersFor("/internal/v1/events")).isEqualTo(Set.of(WAREHOUSE, PAYMENT));
+        assertThat(routes.callersFor("/internal/v1/events/1")).isEqualTo(Set.of(WAREHOUSE));
+    }
+
+    @Test
     void everythingElseStaysWarehouseOnly() {
         for (String path : new String[] {"/internal/v1/orders", "/internal/v1/orders/42/refunds",
                 "/internal/v1/orders/42/fulfilment", "/internal/v1/orders/42/warehouse-cancel",

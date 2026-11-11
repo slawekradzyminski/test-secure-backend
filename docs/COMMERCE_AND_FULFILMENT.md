@@ -286,8 +286,8 @@ caller the endpoint accepts:
 
 `InternalApiConfig.internalRoutes()` maps path patterns to callers. The payment
 token is accepted by `POST /orders/{id}/payment` (payment token only),
-`GET /orders/{id}` and `GET /jwks.json` (both tokens); every other endpoint
-below accepts only the warehouse token.
+`GET /orders/{id}`, `GET /jwks.json` and `GET /events` (both tokens); every other
+endpoint below accepts only the warehouse token.
 
 | Situation | Result |
 | --- | --- |
@@ -311,6 +311,7 @@ and is absent from `/v3/api-docs`.
 | `POST /notifications` | 202. `requestId` is required (400); `template` must be `ORDER_SHIPPED`, `ORDER_DELIVERED`, `RETURN_UPDATED`, `SHIPMENT_OUT_FOR_DELIVERY` or `SHIPMENT_DELIVERY_FAILED` (400) and its properties must be present (400: `orderId`, `carrier`, `trackingNumber` / `orderId` / `returnId`, `orderId`, `status`, optional `refundAmount` and `note` / `orderId`, `carrier`, `trackingNumber` for both carrier templates); unknown username 404. The backend renders the subject and body (`CustomerEmailRenderer`) and queues the email through the existing pipeline. A repeated `requestId` is accepted without a second email |
 | `GET /jwks.json` | The RS256 access-token verification key as a JSON Web Key Set (`kty`, `use`, `alg`, `kid`, `n`, `e`) |
 | `POST /orders/{id}/payment` | Payment result from payment-service; see [Card payments](#card-payments) |
+| `GET /events?after&limit&types` | The commerce event feed; see [Event feed](#event-feed) |
 
 ```text
 InternalOrderDto   { id, username, status, fulfilmentState, subtotalAmount, discountAmount,
@@ -347,12 +348,16 @@ transaction that changed the order; consumers use
 | `ORDER_DELIVERED` | `shipment.delivered` | Admin status change to `DELIVERED` or fulfilment reaching `DELIVERED` |
 | `REFUND_BOOKED` | `refund.booked` | A new refund is booked (`data` adds `amount` and `requestId`) |
 | `PAYMENT_FAILED` | `payment.failed` | payment-service reports a failed payment for a `PENDING` order (`data` adds `paymentId`, `failureCode`) |
+| `CARD_REFUND_REQUESTED` | `card-refund.requested` | A booked refund or a cancellation needs money back on the captured card (internal; `data` is exactly `requestId`, `orderId`, `amount`, `reason`) |
 
 Repeating the current status or fulfilment state, replays, and rejected
 changes publish nothing.
 
-User webhook subscriptions deliver these events to customer URLs; see
-[WEBHOOKS.md](WEBHOOKS.md).
+Every event is also recorded in the [event feed](#event-feed) in the same
+transaction. User webhook subscriptions deliver these events, except the
+internal `card-refund.requested`, to customer URLs; see [WEBHOOKS.md](WEBHOOKS.md).
+`CommerceEvents.publishData(type, username, orderId, data)` publishes an event
+whose `data` is exactly the given map.
 
 ### Checkout and cart contributors
 
@@ -410,7 +415,7 @@ Final results are stored per order in `order_payments` (at most one
 When warehouse-service books a refund (`POST /internal/v1/orders/{id}/refunds`),
 the `REFUND_BOOKED` event is split by `RefundSplitter` inside the same
 transaction. `CardFirstRefundSplitter` sends the refund to the card up to the
-captured amount minus card refunds already sent or queued, then offers the rest
+captured amount minus card refunds already requested, then offers the rest
 to `RefundLegHandler` beans in `@Order`: `GiftCardRefundLegHandler` (`GIFT_CARD`)
 gives back up to what the order paid with its gift card, then
 `LoyaltyPointsRefundLegHandler` (`LOYALTY_POINTS`) up to the redeemed points'
@@ -418,31 +423,86 @@ value; anything beyond that is not sent anywhere. Orders without a captured
 payment (paid by an admin) get no card leg, so the whole refund goes to the gift
 card, then points.
 
-The card part is written to `payment_refund_outbox` and delivered by
-`PaymentRefundJob` to `POST {payment.base-url}/internal/v1/payments/refunds`
-with the payment token and `{requestId, orderId, amount, reason}` (the booked
-refund's requestId and reference).
+The card part is requested from payment-service through the event feed: inside
+the booking transaction `CardRefunds` records it in `card_refund_requests` and
+publishes `CARD_REFUND_REQUESTED` (`card-refund.requested`) with data
+`{requestId, orderId, amount, reason}` (the booked refund's requestId and
+reference). payment-service polls the feed, refunds the captured payment
+idempotently per requestId, and skips orders it has no captured payment for.
 
 Cancelling an order that has a captured card payment (customer, admin or
-warehouse cancel, `ORDER_CANCELLED`) queues a card refund in the same outbox,
+warehouse cancel, `ORDER_CANCELLED`) requests a card refund the same way,
 inside the cancelling transaction: the captured amount minus card refunds
-already sent or queued, requestId `UUID.nameUUIDFromBytes("cancel:" + orderId)`
-(queued at most once) and reason `Order cancelled`. Orders without a captured
+already requested, requestId `UUID.nameUUIDFromBytes("cancel:" + orderId)`
+(requested at most once) and reason `Order cancelled`. Orders without a captured
 payment (paid by an admin, or never paid) get none. In the same transaction the
 gift card and points are restored in full and the points the order earned are
 revoked (see "Gift cards and points at checkout").
 
-| payment-service answer | Outbox row |
-| --- | --- |
-| 2xx `{refundId, ...}` | `SENT` with the refund id |
-| 404 (no captured payment) | `SKIPPED`, nothing to refund on the card |
-| 409, 400, 422 | `FAILED`, logged, not retried |
-| 5xx, timeout, connection error, other 4xx | Retried after 30 s, doubling up to 30 min; `FAILED` after 10 attempts |
+`card_refund_requests` outlives the feed's retention, so later refunds are still
+capped at what is left on the captured payment. The backend does not learn
+whether payment-service carried a refund out; a rejected refund (for example,
+one exceeding the refundable amount) is logged by payment-service.
+
+The backend makes no outbound call to payment-service. Up to 3.15.0 it posted
+card refunds to `POST {payment.base-url}/internal/v1/payments/refunds` from
+`payment_refund_outbox`; 3.16.0 removed that job, its HTTP client and the
+`payment.base-url` (`PAYMENT_BASE_URL`) and `payment.refunds.delivery.*`
+properties. Migration V16 turned the outbox's undelivered (`PENDING`) rows into
+`card-refund.requested` feed events, copied `PENDING` and `SENT` rows to
+`card_refund_requests`, and dropped the table.
 
 | Property | Environment variable | Default (`local`) |
 | --- | --- | --- |
-| `payment.base-url` | `PAYMENT_BASE_URL` | `http://payment-service:4004` (`http://localhost:4004`) |
 | `payment.webhook-secret` | `PAYMENT_WEBHOOK_SECRET` | blank: every result is 401 (`local-payment-webhook-secret`) |
 | `internal.service-tokens.payment` | `PAYMENT_SERVICE_TOKEN` | blank: payment caller disabled (`local-payment-token`) |
-| `payment.refunds.delivery.enabled` | `PAYMENT_REFUNDS_DELIVERY_ENABLED` | `true` |
-| `payment.refunds.delivery.interval` | `PAYMENT_REFUNDS_DELIVERY_INTERVAL` | `PT15S` |
+
+## Event feed
+
+warehouse-service and payment-service learn about commerce events by polling
+a durable feed; the backend never calls them. Every `CommerceEvent` is appended
+to `domain_events` by `DomainEventRecorder`, a synchronous listener, so the row
+commits or rolls back with the state change that published it (migration V16).
+
+`GET /internal/v1/events?after={sequence}&limit={n}&types={wire names}` accepts
+the warehouse and the payment service token.
+
+| Parameter | Rule |
+| --- | --- |
+| `after` | Sequence to continue after; default `0`; a non-negative integer, else 400 |
+| `limit` | 1–200, default 100, else 400 |
+| `types` | Optional comma-separated wire names (`order.created`, `card-refund.requested`, ...); an unknown name is 400 |
+
+```text
+200 { events: [ { sequence, id, type, occurredAt, orderId, username, data } ],
+      nextCursor, hasMore }
+```
+
+- Events are ordered by `sequence` ascending. Every event has exactly these
+  seven fields (nulls included); `occurredAt` is ISO-8601 UTC with millisecond
+  precision and `data` is the event's data with sorted keys and plain decimals,
+  stored once, so a redelivered event has identical bytes.
+- `nextCursor` is the last returned sequence (or `after` for an empty page);
+  pass it as the next `after`. `hasMore` is true when more matching settled
+  events exist.
+- Only events recorded at least `events.settle-delay` ago are served, so a
+  transaction that took a lower sequence but committed later is not skipped.
+- Errors: 400 `{"message": ...}` for bad parameters, 401 for a missing or wrong
+  service token, 404 when neither service token is configured.
+- Consumers keep their own cursor and deduplicate by event `id`. Events are
+  deleted `events.retention` after they were recorded.
+
+| Type | Consumer |
+| --- | --- |
+| `card-refund.requested` | payment-service refunds the captured card payment |
+| `order.cancelled` | warehouse-service cancels the order's open shipment |
+
+`card-refund.requested` is internal: it is not listed by
+`GET /api/v1/webhooks/event-types` and never reaches user webhooks.
+
+| Property | Environment variable | Default |
+| --- | --- | --- |
+| `events.settle-delay` | `EVENTS_SETTLE_DELAY` | `PT3S` |
+| `events.retention` | `EVENTS_RETENTION` | `P30D` |
+| `events.retention-job.enabled` | `EVENTS_RETENTION_JOB_ENABLED` | `true` (off in tests) |
+| `events.retention-job.interval` | `EVENTS_RETENTION_JOB_INTERVAL` | `PT1H` |
