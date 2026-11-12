@@ -75,17 +75,17 @@ class StrictJsonTypesTest extends AbstractEcommerceTest {
     }
 
     @Test
-    void aStringPriceIsRejected() {
+    void aDecimalAmountMayStillBeSentAsAString() {
         // given
         ProductEntity product = setupProduct();
 
         // when
-        ResponseEntity<Map<String, String>> response = executePut(PRODUCTS_ENDPOINT + "/" + product.getId(),
-                "{\"price\":\"12.50\"}", getHeadersWith(adminToken), mapTypeReference());
+        ResponseEntity<String> response = executePut(PRODUCTS_ENDPOINT + "/" + product.getId(),
+                "{\"price\":\"12.50\"}", getHeadersWith(adminToken), String.class);
 
         // then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).isEqualTo(Map.of("price", "Must be a number"));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).contains("12.5");
     }
 
     @Test

@@ -10,8 +10,9 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.type.LogicalType;
 
 /**
- * Request bodies of this API's own endpoints are bound without scalar coercion: 1.5 is not an
- * integer, "10" is not a number and true or 1234 is not a string. Jackson accepted all of them by
+ * Request bodies of this API's own endpoints are bound without scalar coercion: 1.5 and "10" are
+ * not integers and true or 1234 is not a string. Decimal amounts may still be sent as strings
+ * ("12.50"), the usual lossless form for money (the internal refund API and GraphQL use it). Jackson accepted all of them by
  * default, so a cart quantity of 1.5 was stored as 1 and a first name of true as "true". The
  * mismatch becomes a 400 field error (see RequestFormatExceptionHandler).
  *
@@ -38,8 +39,6 @@ public class StrictRequestJsonConfig implements WebMvcConfigurer {
         return base.rebuild()
                 .withCoercionConfig(LogicalType.Integer, config -> config
                         .setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
-                        .setCoercion(CoercionInputShape.String, CoercionAction.Fail))
-                .withCoercionConfig(LogicalType.Float, config -> config
                         .setCoercion(CoercionInputShape.String, CoercionAction.Fail))
                 .withCoercionConfig(LogicalType.Textual, config -> config
                         .setCoercion(CoercionInputShape.Integer, CoercionAction.Fail)
