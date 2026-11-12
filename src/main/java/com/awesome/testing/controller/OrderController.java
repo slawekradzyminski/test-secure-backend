@@ -101,9 +101,12 @@ public class OrderController {
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Update order status (Admin only)",
-            description = "Sets the supplied status using administrator privileges. CANCELLED is allowed only from PENDING or PAID and restores deducted stock; other status values are assigned directly.")
+            description = "Sets the supplied status using administrator privileges. Statuses only move forward "
+                    + "(PENDING -> PAID -> SHIPPED -> DELIVERED; steps may be skipped) and DELIVERED and CANCELLED are terminal, "
+                    + "so an order is never reopened. Setting the current status is a no-op. CANCELLED is allowed only from "
+                    + "PENDING or PAID and restores deducted stock.")
     @ApiResponse(responseCode = "200", description = "Order status updated successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid status transition",
+    @ApiResponse(responseCode = "400", description = "Invalid status transition, for example \"Cannot change order status from CANCELLED to PAID\"",
             content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, ErrorDto.class})))
     @ApiResponse(responseCode = "403", description = "Forbidden",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))

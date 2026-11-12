@@ -354,8 +354,11 @@ class TenderCheckoutFlowTest extends AbstractTenderFlowTest {
         OrderDto order = order(clientToken, product, 1);
 
         markPaid(order.getId());
-        executePut(ORDERS_ENDPOINT + "/" + order.getId() + "/status", OrderStatus.PENDING, getHeadersWith(adminToken), OrderDto.class);
+        ResponseEntity<String> reopened = executePut(ORDERS_ENDPOINT + "/" + order.getId() + "/status",
+                OrderStatus.PENDING, getHeadersWith(adminToken), String.class);
         markPaid(order.getId());
+
+        assertThat(reopened.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 
         assertThat(loyalty(clientToken).getBalance()).isEqualTo(123);
         assertThat(loyalty(clientToken).getLifetimeEarned()).isEqualTo(123);

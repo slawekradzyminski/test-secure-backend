@@ -168,11 +168,16 @@ public class OrderService {
                     "Order is being fulfilled by the warehouse; use the warehouse endpoints", HttpStatus.CONFLICT);
         }
         OrderStatus previous = order.getStatus();
+        if (previous == newStatus) {
+            return OrderDto.from(order);
+        }
+        if (!previous.canMoveTo(newStatus)) {
+            throw new CustomException(
+                    "Cannot change order status from " + previous + " to " + newStatus, HttpStatus.BAD_REQUEST);
+        }
         order.setStatus(newStatus);
         OrderEntity saved = orderRepository.save(order);
-        if (previous != newStatus) {
-            CommerceEventType.reaching(newStatus).ifPresent(type -> commerceEvents.publish(type, saved));
-        }
+        CommerceEventType.reaching(newStatus).ifPresent(type -> commerceEvents.publish(type, saved));
         return OrderDto.from(saved);
     }
 

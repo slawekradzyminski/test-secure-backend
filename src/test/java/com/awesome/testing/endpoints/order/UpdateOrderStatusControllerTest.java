@@ -1,5 +1,6 @@
 package com.awesome.testing.endpoints.order;
 
+import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.order.AddressDto;
 import com.awesome.testing.dto.order.OrderDto;
 import com.awesome.testing.dto.cart.CartItemDto;
@@ -8,9 +9,12 @@ import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.endpoints.AbstractEcommerceTest;
 import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.entity.ProductEntity;
+import com.awesome.testing.repository.ProductRepository;
 import com.awesome.testing.service.CartService;
 import com.awesome.testing.service.OrderService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +33,9 @@ class UpdateOrderStatusControllerTest extends AbstractEcommerceTest {
 
     @Autowired
     private OrderService orderService;
+
+    @Autowired
+    private ProductRepository productRepository;
 
     @Test
     void shouldUpdateOrderStatusAsAdmin() {
@@ -70,6 +77,83 @@ class UpdateOrderStatusControllerTest extends AbstractEcommerceTest {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void shouldNotReopenACancelledOrderNorTakeItsStockAgain() {
+        // given
+        String adminToken = getToken(getRandomUserWithRoles(List.of(Role.ROLE_ADMIN)));
+        ProductEntity product = setupProduct();
+        OrderDto createdOrder = createOrder(product);
+        orderService.cancelOrder(createdOrder.getId(), "admin", true);
+        int stockAfterCancel = productRepository.findById(product.getId()).orElseThrow().getStockQuantity();
+
+        // when
+        ResponseEntity<ErrorDto> response = executePut(
+                ORDERS_ENDPOINT + "/" + createdOrder.getId() + "/status",
+                OrderStatus.PAID,
+                getHeadersWith(adminToken),
+                ErrorDto.class
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getMessage()).isEqualTo("Cannot change order status from CANCELLED to PAID");
+        assertThat(orderService.getOrderById(createdOrder.getId()).getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(productRepository.findById(product.getId()).orElseThrow().getStockQuantity())
+                .isEqualTo(stockAfterCancel);
+    }
+
+    @ParameterizedTest(name = "{0} -> {1}")
+    @CsvSource({
+            "PAID, PENDING",
+            "SHIPPED, PAID",
+            "SHIPPED, PENDING",
+            "DELIVERED, SHIPPED",
+            "DELIVERED, PENDING"
+    })
+    void shouldGet400ForABackwardTransition(OrderStatus reached, OrderStatus target) {
+        // given
+        String adminToken = getToken(getRandomUserWithRoles(List.of(Role.ROLE_ADMIN)));
+        OrderDto createdOrder = createOrder();
+        orderService.updateOrderStatus(createdOrder.getId(), reached);
+
+        // when
+        ResponseEntity<ErrorDto> response = executePut(
+                ORDERS_ENDPOINT + "/" + createdOrder.getId() + "/status",
+                target,
+                getHeadersWith(adminToken),
+                ErrorDto.class
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getMessage())
+                .isEqualTo("Cannot change order status from " + reached + " to " + target);
+        assertThat(orderService.getOrderById(createdOrder.getId()).getStatus()).isEqualTo(reached);
+    }
+
+    @Test
+    void shouldAcceptTheCurrentStatusAsANoOp() {
+        // given
+        String adminToken = getToken(getRandomUserWithRoles(List.of(Role.ROLE_ADMIN)));
+        OrderDto createdOrder = createOrder();
+        orderService.updateOrderStatus(createdOrder.getId(), OrderStatus.DELIVERED);
+
+        // when
+        ResponseEntity<OrderDto> response = executePut(
+                ORDERS_ENDPOINT + "/" + createdOrder.getId() + "/status",
+                OrderStatus.DELIVERED,
+                getHeadersWith(adminToken),
+                OrderDto.class
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getStatus()).isEqualTo(OrderStatus.DELIVERED);
     }
 
     @Test
@@ -124,9 +208,12 @@ class UpdateOrderStatusControllerTest extends AbstractEcommerceTest {
     }
 
     private OrderDto createOrder() {
+        return createOrder(setupProduct());
+    }
+
+    private OrderDto createOrder(ProductEntity testProduct) {
         UserRegisterDto client = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         AddressDto testAddress = getRandomAddress();
-        ProductEntity testProduct = setupProduct();
         CartItemDto cartItemDto = getSingleCartItemFrom(testProduct.getId());
         cartService.addToCart(client.getUsername(), cartItemDto);
         return orderService.createOrder(client.getUsername(), testAddress);
