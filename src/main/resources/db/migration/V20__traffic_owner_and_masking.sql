@@ -2,7 +2,14 @@
 --
 -- owner_username: the authenticated user of a request (null for anonymous requests). Rows stored before
 -- this migration have no owner and are readable only through a session bound to its user below.
-ALTER TABLE traffic_log ADD COLUMN IF NOT EXISTS owner_username varchar(255);
+-- Guarded like V15: a schema baselined at V1 (legacy databases) may not have traffic_log.
+DO $migration$
+BEGIN
+    IF to_regclass('traffic_log') IS NOT NULL THEN
+        ALTER TABLE traffic_log ADD COLUMN IF NOT EXISTS owner_username varchar(255);
+    END IF;
+END
+$migration$;
 
 -- The first authenticated user seen on a traffic session; anonymous records of the session are readable
 -- only by this user.
