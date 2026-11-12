@@ -39,7 +39,7 @@ base file's active profiles and publishes only `127.0.0.1:9091`. See
 
 ## Authenticate and call
 
-Obtain an administrator access token through the existing REST sign-in or SSO
+Obtain an administrator access token through the existing REST sign-in
 flow. Set `ACCESS_TOKEN` in your shell without checking it into source control.
 The commands below run from this backend repository and use
 [grpcurl](https://github.com/fullstorydev/grpcurl). They work with reflection off.

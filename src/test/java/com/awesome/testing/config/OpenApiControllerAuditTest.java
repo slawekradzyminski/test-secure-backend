@@ -320,18 +320,6 @@ class OpenApiControllerAuditTest extends HttpHelper {
                 assertThat(operation.responses().has(status)).as("%s -> %s", operation.expected().endpoint(), status).isTrue()));
     }
 
-    @Test
-    void shouldDescribeSsoValidationAsAFieldErrorMap() {
-        // given
-        var endpoint = new Endpoint("/api/v1/users/sso/exchange", "post");
-
-        // when
-        var schema = document.response(endpoint, "400").path("content").path("application/json").path("schema");
-
-        // then
-        assertThat(schema.path("$ref").asText()).endsWith("/ValidationErrorsDto");
-    }
-
     private void assertJsonErrorContract(DocumentedResponse response) {
         var schema = response.jsonSchema();
         assertThat(response.node().path("content").size()).as("%s media types", response).isEqualTo(1);

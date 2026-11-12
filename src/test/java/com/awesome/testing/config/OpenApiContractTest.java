@@ -35,13 +35,26 @@ class OpenApiContractTest extends HttpHelper {
     void shouldKeepPublicEndpointsUnsecured() {
         // given
         var paths = List.of("/api/v1/users/signin", "/api/v1/users/signin/2fa", "/api/v1/users/signup",
-                "/api/v1/users/refresh", "/api/v1/users/sso/exchange", "/api/v1/users/password/forgot", "/api/v1/users/password/reset");
+                "/api/v1/users/refresh", "/api/v1/users/password/forgot", "/api/v1/users/password/reset");
 
         // when
         var operations = paths.stream().map(path -> getOperation(spec, path, "post")).toList();
 
         // then
         assertThat(operations).allSatisfy(operation -> assertThat(operation.path("security").isEmpty()).isTrue());
+    }
+
+    @Test
+    void shouldNotDocumentTheRemovedSsoExchange() {
+        // when
+        var paths = spec.path("paths").properties().stream().map(Map.Entry::getKey).toList();
+        var schemas = spec.path("components").path("schemas");
+
+        // then
+        assertThat(paths).noneMatch(path -> path.contains("/sso"));
+        assertThat(schemas.has("SsoExchangeRequestDto")).isFalse();
+        assertThat(schemas.path("UserEntity").path("properties").has("authProvider")).isFalse();
+        assertThat(schemas.path("UserEntity").path("properties").has("providerSubject")).isFalse();
     }
 
     @Test
@@ -270,8 +283,6 @@ class OpenApiContractTest extends HttpHelper {
         assertOperationResponsesContain(spec, "/api/v1/users/2fa/recovery-codes", "post", List.of("200", "400", "401", "409"));
         assertOperationResponsesContain(spec, "/api/v1/users/2fa/disable", "post", List.of("200", "400", "401", "409"));
         assertOperationResponsesContain(spec, "/api/v1/users/refresh", "post", List.of("200", "400", "401"));
-        assertOperationResponsesContain(spec, "/api/v1/users/sso/exchange", "post", List.of("200", "400", "401", "404", "409"));
-        assertResponseSchemaRef(spec, "/api/v1/users/sso/exchange", "post", "409", "ErrorDto");
         assertOperationResponsesContain(spec, "/api/v1/users/password/forgot", "post", List.of("202", "400"));
         assertOperationResponsesContain(spec, "/api/v1/users/password/reset", "post", List.of("200", "400"));
         assertOperationResponsesContain(spec, "/api/v1/users", "get", List.of("200", "401"));

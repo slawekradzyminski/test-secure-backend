@@ -18,11 +18,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "app_user",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_app_user_auth_provider_subject",
-                columnNames = {"auth_provider", "provider_subject"}
-        ))
+@Table(name = "app_user")
 public class UserEntity {
 
     @Id
@@ -41,16 +37,6 @@ public class UserEntity {
     @Size(min = 8, message = "Minimum password length: 8 characters")
     @NonNull
     private String password;
-
-    @Size(max = 100)
-    @Column(name = "auth_provider")
-    @Schema(types = {"string", "null"})
-    private String authProvider;
-
-    @Size(max = 255)
-    @Column(name = "provider_subject")
-    @Schema(types = {"string", "null"})
-    private String providerSubject;
 
     @Column(name = "email_verified")
     @Schema(types = {"boolean", "null"})

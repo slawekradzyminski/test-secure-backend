@@ -60,10 +60,6 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         <dependency>
@@ -545,7 +541,6 @@
                                 <param>com.awesome.testing.security.ratelimit.AuthRateLimitGuard</param>
                                 <param>com.awesome.testing.security.JwtTokenProvider</param>
                                 <param>com.awesome.testing.security.JwtTokenFilter</param>
-                                <param>com.awesome.testing.security.oidc.OidcTokenVerifier</param>
                                 <param>com.awesome.testing.traffic.TrafficCapturePolicy</param>
                                 <param>com.awesome.testing.traffic.TrafficDataSanitizer</param>
                                 <param>com.awesome.testing.service.ollama.function.ProductCatalogFunctionHandler</param>
@@ -593,7 +588,6 @@
                                 <param>com.awesome.testing.security.ratelimit.AuthRateLimitGuardTest</param>
                                 <param>com.awesome.testing.security.JwtTokenProviderTest</param>
                                 <param>com.awesome.testing.security.JwtTokenFilterTest</param>
-                                <param>com.awesome.testing.security.oidc.OidcTokenVerifier*Test</param>
                                 <param>com.awesome.testing.traffic.TrafficCapturePolicyTest</param>
                                 <param>com.awesome.testing.traffic.TrafficDataSanitizerTest</param>
                                 <param>com.awesome.testing.traffic.TrafficLogBufferTest</param>

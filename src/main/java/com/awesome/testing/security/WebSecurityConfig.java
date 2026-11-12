@@ -54,7 +54,6 @@ public class WebSecurityConfig {
                     "/api/v1/users/signin/2fa",
                     "/api/v1/users/signup",
                     "/api/v1/users/refresh",
-                    "/api/v1/users/sso/exchange",
                     "/api/v1/users/password/forgot",
                     "/api/v1/users/password/reset",
                     "/v3/api-docs",
