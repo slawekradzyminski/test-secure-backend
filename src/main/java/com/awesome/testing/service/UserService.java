@@ -111,7 +111,10 @@ public class UserService {
     }
 
     public void forget(String username) {
-        UserEntity user = getUser(username);
+        // Lock first: an email event inserted concurrently would otherwise land after its rows were deleted
+        // and make the final user delete fail on email_event_user_id_fkey.
+        UserEntity user = userRepository.findByUsernameForUpdate(username)
+                .orElseThrow(() -> new UserNotFoundException("The user doesn't exist"));
         refreshTokenService.removeAllTokensForUser(username);
         passwordResetTokenRepository.deleteAllByUser(user);
         emailEventRepository.deleteAllByUser(user);

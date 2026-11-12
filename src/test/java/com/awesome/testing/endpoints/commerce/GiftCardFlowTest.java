@@ -143,6 +143,7 @@ class GiftCardFlowTest extends AbstractTenderFlowTest {
         assertThat(disabled.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(disabled.getBody().getStatus()).isEqualTo(GiftCardStatus.DISABLED);
         assertThat(disabled.getBody().getBalance()).isEqualByComparingTo("40.00");
+        assertThat(disabled.getBody().getUpdatedAt()).isAfter(issued.getUpdatedAt()).isEqualTo(reloaded.getUpdatedAt());
         assertThat(again.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(again.getBody().getMessage()).isEqualTo("Gift card is already disabled");
         assertThat(unknown.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -172,7 +173,8 @@ class GiftCardFlowTest extends AbstractTenderFlowTest {
         }
         List<String> all = codes(executeGet(ADMIN_GIFT_CARDS + "?size=100", getHeadersWith(adminToken), PAGE));
         PageDto<GiftCardDto> clamped = executeGet(ADMIN_GIFT_CARDS + "?page=-1&size=0", getHeadersWith(adminToken), PAGE).getBody();
-        ResponseEntity<String> badStatus = executeGet(ADMIN_GIFT_CARDS + "?status=LOST", getHeadersWith(adminToken), String.class);
+        ResponseEntity<Map> badStatus = executeGet(ADMIN_GIFT_CARDS + "?status=LOST", getHeadersWith(adminToken), Map.class);
+        ResponseEntity<Map> badPage = executeGet(ADMIN_GIFT_CARDS + "?page=abc", getHeadersWith(adminToken), Map.class);
         ResponseEntity<String> client = executeGet(ADMIN_GIFT_CARDS, getHeadersWith(clientToken), String.class);
 
         assertThat(byStatus.get(GiftCardStatus.ACTIVE)).contains(active.getCode())
@@ -187,6 +189,10 @@ class GiftCardFlowTest extends AbstractTenderFlowTest {
         assertThat(clamped.getPageNumber()).isZero();
         assertThat(clamped.getPageSize()).isEqualTo(1);
         assertThat(badStatus.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(badStatus.getBody()).isEqualTo(Map.of("message",
+                "Unknown status 'LOST'. Allowed values: ACTIVE, REDEEMED, EXPIRED, DISABLED"));
+        assertThat(badPage.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(badPage.getBody()).isEqualTo(Map.of("message", "Invalid page 'abc'"));
         assertThat(client.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 

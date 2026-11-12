@@ -121,7 +121,8 @@ public class GiftCardService {
             throw new CustomException("Gift card is already disabled", HttpStatus.CONFLICT);
         }
         card.setDisabledAt(LocalDateTime.now(commerceClock));
-        giftCardRepository.save(card);
+        // Flush so @UpdateTimestamp sets updatedAt before the response is built from the entity.
+        giftCardRepository.saveAndFlush(card);
         record(card, GiftCardTransactionType.DISABLED, BigDecimal.ZERO.setScale(2), null, null, admin);
         return toDto(card, null);
     }

@@ -226,7 +226,7 @@ class UserServiceTest {
 
     @Test
     void shouldDeleteExistingUser() {
-        when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
+        when(userRepository.findByUsernameForUpdate(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
 
         userService.delete(registerDto.getUsername());
 

@@ -153,6 +153,18 @@ class OpenApiContractTest extends HttpHelper {
     }
 
     @Test
+    void reviewTextFieldsKeepTheirDocumentedNonBlankPattern() {
+        // given
+        JsonNode review = spec.path("components").path("schemas").path("ReviewRequestDto").path("properties");
+
+        // then: the validation-only minimum-length @Pattern must not leak into the documented schema
+        assertThat(review.path("title").path("pattern").asText()).isEqualTo("\\S");
+        assertThat(review.path("title").path("maxLength").asInt()).isEqualTo(120);
+        assertThat(review.path("body").path("pattern").asText()).isEqualTo("\\S");
+        assertThat(review.path("body").path("maxLength").asInt()).isEqualTo(2000);
+    }
+
+    @Test
     void documentedErrorsShouldUseErrorBodiesInsteadOfSuccessModels() {
         // given
         var document = new OpenApiDocument(spec);

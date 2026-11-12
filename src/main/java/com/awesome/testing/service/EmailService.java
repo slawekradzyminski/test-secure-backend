@@ -46,6 +46,10 @@ public class EmailService {
      */
     public void sendEmail(EmailDto emailDto, String destination, UserEntity user, UUID requestId) {
         Integer emailEventId = user == null ? null : emailEventService.recordQueued(user, emailDto, destination, requestId);
+        if (user != null && emailEventId == null) {
+            log.info("Not sending {} email: user {} was deleted", emailDto.getTemplate(), user.getUsername());
+            return;
+        }
         Optional<CorrelationIds> correlation = CorrelationIds.current();
         long delay = delayGenerator.getDelayMillis();
         logDelay(delay);

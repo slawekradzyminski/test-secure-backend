@@ -44,7 +44,7 @@ class EmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(delayGenerator.getDelayMillis()).thenReturn(0L);
+        lenient().when(delayGenerator.getDelayMillis()).thenReturn(0L);
         lenient().when(emailTaskScheduler.schedule(any(Runnable.class), any(Instant.class)))
                 .thenAnswer(invocation -> {
                     invocation.<Runnable>getArgument(0).run();
@@ -85,6 +85,18 @@ class EmailServiceTest {
         verify(jmsTemplate, timeout(500)).convertAndSend("queue", dto);
         verify(emailEventService).recordQueued(user, dto, "queue", null);
         verify(emailEventService, timeout(500)).markSentToSink(eq(42));
+    }
+
+    @Test
+    void shouldNotSendWhenTheUserWasDeletedBeforeTheEventWasRecorded() {
+        EmailDto dto = EmailDto.builder().to("gone@example.com").subject("Subject").message("Body").build();
+        UserEntity user = UserEntity.builder().username("gone").email("gone@example.com").password("secret").build();
+        when(emailEventService.recordQueued(user, dto, "queue", null)).thenReturn(null);
+
+        emailService.sendEmail(dto, "queue", user);
+
+        verify(emailTaskScheduler, never()).schedule(any(Runnable.class), any(Instant.class));
+        verify(jmsTemplate, never()).convertAndSend(any(String.class), any(Object.class));
     }
 
     @Test
