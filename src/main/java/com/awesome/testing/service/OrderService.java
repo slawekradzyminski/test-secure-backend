@@ -136,6 +136,7 @@ public class OrderService {
                     .build());
         }
         commerceEvents.publish(CommerceEventType.ORDER_CREATED, savedOrder);
+        flushBeforeMapping();
 
         return new OrderCreation(OrderDto.from(savedOrder), false);
     }
@@ -178,6 +179,7 @@ public class OrderService {
         order.setStatus(newStatus);
         OrderEntity saved = orderRepository.save(order);
         CommerceEventType.reaching(newStatus).ifPresent(type -> commerceEvents.publish(type, saved));
+        flushBeforeMapping();
         return OrderDto.from(saved);
     }
 
@@ -295,6 +297,7 @@ public class OrderService {
         if (implied != null) {
             CommerceEventType.reaching(implied).ifPresent(type -> commerceEvents.publish(type, saved));
         }
+        flushBeforeMapping();
         return saved;
     }
 
@@ -341,7 +344,17 @@ public class OrderService {
         }
         OrderEntity saved = orderRepository.save(order);
         commerceEvents.publish(CommerceEventType.ORDER_CANCELLED, saved);
+        flushBeforeMapping();
         return saved;
+    }
+
+    /**
+     * Writes the order, and whatever the synchronous event listeners changed,
+     * before the response is mapped, so the response carries the updatedAt that
+     * {@code @UpdateTimestamp} stores and the next read returns.
+     */
+    private void flushBeforeMapping() {
+        orderRepository.flush();
     }
 
 }
