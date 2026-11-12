@@ -53,7 +53,7 @@ public class HttpTrafficRecorder {
             throws IOException {
         Instant timestamp = Instant.now();
         String clientSessionId = resolveClientSessionId(request);
-        String owner = TrafficOwner.of(request);
+        String owner = TrafficOwner.from(request);
         String rawPath = request.getRequestURI();
         String path = trafficDataSanitizer.sanitizePath(rawPath);
         String responseBody =

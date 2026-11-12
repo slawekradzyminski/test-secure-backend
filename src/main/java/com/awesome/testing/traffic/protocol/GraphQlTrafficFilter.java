@@ -46,7 +46,7 @@ public class GraphQlTrafficFilter extends OncePerRequestFilter {
             if (response.getStatus() >= 400 && "SUCCESS".equals(result.outcome())) {
                 result = new Summary(result.operation(), "ERROR", List.of("TRANSPORT_ERROR"));
             }
-            recorder.complete(trace, TrafficOwner.of(request), "GRAPHQL", "/api/v1/graphql", response.getStatus(),
+            recorder.complete(trace, TrafficOwner.from(request), "GRAPHQL", "/api/v1/graphql", response.getStatus(),
                     result.operation(), result.outcome(), result.codes());
         };
         try {

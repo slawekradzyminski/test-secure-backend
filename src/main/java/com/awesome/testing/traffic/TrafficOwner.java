@@ -20,7 +20,7 @@ public final class TrafficOwner {
         }
     }
 
-    public static String of(ServletRequest request) {
+    public static String from(ServletRequest request) {
         return request.getAttribute(ATTRIBUTE) instanceof String username ? username : null;
     }
 }
