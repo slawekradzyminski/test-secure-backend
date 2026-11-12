@@ -21,12 +21,14 @@ public class UserEditDto {
     @Schema(minLength = 1, pattern = "\\S", description = "Email address", example = "john.doe@example.com")
     private String email;
 
-    @Size(min = 4, max = 255, message = "Minimum firstName length: 4 characters")
-    @Schema(types = {"string", "null"}, description = "First name", example = "John")
+    @Size(min = 4, message = "Minimum firstName length: 4 characters")
+    @Size(max = 255, message = "Maximum firstName length: 255 characters")
+    @Schema(minLength = 4, maxLength = 255, types = {"string", "null"}, description = "First name", example = "John")
     private String firstName;
 
-    @Size(min = 4, max = 255, message = "Minimum lastName length: 4 characters")
-    @Schema(types = {"string", "null"}, description = "Last name", example = "Boyd")
+    @Size(min = 4, message = "Minimum lastName length: 4 characters")
+    @Size(max = 255, message = "Maximum lastName length: 255 characters")
+    @Schema(minLength = 4, maxLength = 255, types = {"string", "null"}, description = "Last name", example = "Boyd")
     private String lastName;
 
 }

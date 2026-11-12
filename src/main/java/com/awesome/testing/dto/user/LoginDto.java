@@ -14,12 +14,14 @@ import jakarta.validation.constraints.Size;
 @AllArgsConstructor
 public class LoginDto {
 
-    @Size(min = 4, max = 255, message = "Minimum username length: 4 characters")
-    @Schema(description = "Username", example = "admin")
+    @Size(min = 4, message = "Minimum username length: 4 characters")
+    @Size(max = 255, message = "Maximum username length: 255 characters")
+    @Schema(minLength = 4, maxLength = 255, description = "Username", example = "admin")
     private String username;
 
-    @Size(min = 4, max = 255, message = "Minimum password length: 4 characters")
-    @Schema(description = "Password", example = "admin")
+    @Size(min = 4, message = "Minimum password length: 4 characters")
+    @Size(max = 255, message = "Maximum password length: 255 characters")
+    @Schema(minLength = 4, maxLength = 255, description = "Password", example = "admin")
     private String password;
 
 }
