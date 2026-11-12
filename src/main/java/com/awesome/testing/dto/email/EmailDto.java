@@ -16,7 +16,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class EmailDto {
 
-    @Schema(description = "Email recipient", example = "user@example.com")
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, minLength = 1, description = "Email recipient",
+            example = "user@example.com")
+    @NotBlank(message = "Recipient is required")
     @Email(message = "Invalid email format")
     private String to;
 

@@ -100,6 +100,28 @@ class EmailControllerTest extends AbstractEcommerceTest {
     }
 
     @Test
+    void shouldGet400FieldErrorWhenRecipientIsMissingOrBlank() {
+        // given
+        String authToken = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+
+        for (String recipient : new String[] {null, "", "   "}) {
+            EmailDto email = EmailDto.builder().to(recipient).subject("Subject").message("message").build();
+
+            // when
+            ResponseEntity<Map<String, String>> response = executePost(
+                    EMAIL_ENDPOINT,
+                    email,
+                    getHeadersWith(authToken),
+                    mapTypeReference()
+            );
+
+            // then
+            assertThat(response.getStatusCode()).as("to=%s", recipient).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody()).as("to=%s", recipient).isEqualTo(Map.of("to", "Recipient is required"));
+        }
+    }
+
+    @Test
     void shouldGet401WhenNoAuthorizationHeader() {
         // given
         EmailDto emailDto = getRandomEmail();
