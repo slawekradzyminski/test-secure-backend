@@ -174,6 +174,66 @@ class OllamaFunctionCallingServiceTest {
     }
 
     @Test
+    @DisplayName("T-041: done=true only on the terminal event of the whole tool orchestration")
+    void shouldMarkOnlyTheTerminalEventAsDone() {
+        ChatRequestDto request = createToolChatRequest();
+        ChatResponseDto toolCallChunk = createToolCallChunk("get_product_snapshot", Map.of("name", "iPhone"));
+        toolCallChunk.setDone(false);
+        ChatResponseDto toolIterationDone = createChunk("", true);
+        ChatResponseDto answer = createChunk("The iPhone costs $999.", false);
+        ChatResponseDto answerDone = createChunk("", true);
+        ChatMessageDto toolResponse = ChatMessageDto.builder()
+                .role("tool")
+                .toolName("get_product_snapshot")
+                .content("{\"name\":\"iPhone\",\"price\":999}")
+                .build();
+
+        when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri("/api/chat")).thenReturn(requestBodySpec);
+        when(requestBodySpec.bodyValue(any(ChatRequestDto.class)))
+                .thenReturn((WebClient.RequestHeadersSpec) requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToFlux(ChatResponseDto.class))
+                .thenReturn(Flux.just(toolCallChunk, toolIterationDone))
+                .thenReturn(Flux.just(answer, answerDone));
+        when(toolRegistry.execute(any(ToolCallDto.class))).thenReturn(toolResponse);
+
+        List<ChatResponseDto> events = functionCallingService.chatWithTools(request).collectList().block();
+
+        assertThat(events).extracting(ChatResponseDto::isDone)
+                .containsExactly(false, false, false, false, true);
+        assertThat(toolIterationDone.isDone()).as("the upstream chunk is not modified").isTrue();
+    }
+
+    @Test
+    @DisplayName("T-041: a tool request carried by the upstream done chunk is not reported as done")
+    void shouldNotReportADoneChunkWithToolCallsAsDone() {
+        ChatRequestDto request = createToolChatRequest();
+        ChatResponseDto toolCallChunk = createToolCallChunk("get_product_snapshot", Map.of("name", "iPhone"));
+        ChatResponseDto finalChunk = createChunk("The iPhone costs $999.", true);
+        ChatMessageDto toolResponse = ChatMessageDto.builder()
+                .role("tool")
+                .toolName("get_product_snapshot")
+                .content("{}")
+                .build();
+
+        when(ollamaWebClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri("/api/chat")).thenReturn(requestBodySpec);
+        when(requestBodySpec.bodyValue(any(ChatRequestDto.class)))
+                .thenReturn((WebClient.RequestHeadersSpec) requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToFlux(ChatResponseDto.class))
+                .thenReturn(Flux.just(toolCallChunk))
+                .thenReturn(Flux.just(finalChunk));
+        when(toolRegistry.execute(any(ToolCallDto.class))).thenReturn(toolResponse);
+
+        List<ChatResponseDto> events = functionCallingService.chatWithTools(request).collectList().block();
+
+        assertThat(events).extracting(ChatResponseDto::isDone).containsExactly(false, false, true);
+        assertThat(events.getFirst().getMessage().getToolCalls()).hasSize(1);
+    }
+
+    @Test
     @DisplayName("Should fail when no tools are provided")
     void shouldFailWhenNoToolsProvided() {
         ChatRequestDto request = ChatRequestDto.builder()

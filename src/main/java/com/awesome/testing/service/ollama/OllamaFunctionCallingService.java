@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -55,6 +56,7 @@ public class OllamaFunctionCallingService {
                 iteration + 1, history.size(), baseRequest.getTools().size());
 
         Sinks.Many<ChatResponseDto> replaySink = Sinks.many().replay().all();
+        AtomicBoolean toolCallsRequested = new AtomicBoolean();
 
         ChatRequestDto iterationRequest = ChatRequestDto.builder()
                 .model(baseRequest.getModel())
@@ -72,9 +74,13 @@ public class OllamaFunctionCallingService {
                 .retrieve()
                 .bodyToFlux(ChatResponseDto.class)
                 .doOnNext(resp -> {
-                    logToolCalls(ctx, resp.getMessage() != null ? resp.getMessage().getToolCalls() : null);
+                    List<ToolCallDto> toolCalls = resp.getMessage() != null ? resp.getMessage().getToolCalls() : null;
+                    logToolCalls(ctx, toolCalls);
                     handleChunk(ctx, resp);
-                    replaySink.tryEmitNext(resp);
+                    if (toolCalls != null && !toolCalls.isEmpty()) {
+                        toolCallsRequested.set(true);
+                    }
+                    replaySink.tryEmitNext(forClient(resp, toolCallsRequested.get()));
                 })
                 .doOnError(e -> {
                     ctx.logError(e);
@@ -144,6 +150,24 @@ public class OllamaFunctionCallingService {
         }
 
         return Flux.empty();
+    }
+
+    /**
+     * Ollama ends every request with a done chunk, but an iteration that asked
+     * for tools is not the end of the orchestration: the client sees done=true
+     * only on the terminal event of the whole stream. The chunk is copied so the
+     * collected upstream chunks stay unchanged.
+     */
+    private static ChatResponseDto forClient(ChatResponseDto resp, boolean toolCallsRequested) {
+        if (!resp.isDone() || !toolCallsRequested) {
+            return resp;
+        }
+        return ChatResponseDto.builder()
+                .model(resp.getModel())
+                .createdAt(resp.getCreatedAt())
+                .message(resp.getMessage())
+                .done(false)
+                .build();
     }
 
     private ChatResponseDto buildToolResponse(String model, ChatMessageDto toolMessage) {
