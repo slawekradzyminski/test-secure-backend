@@ -1,6 +1,7 @@
 package com.awesome.testing.service;
 
 import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
@@ -10,6 +11,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.zip.CRC32;
 import java.util.zip.DeflaterOutputStream;
 
@@ -25,12 +27,33 @@ public class QrService {
     private static final byte[] PNG_SIGNATURE = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'};
 
     public byte[] generateQrPng(String text) {
+        BitMatrix matrix;
         try {
-            BitMatrix matrix = new QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, SIZE, SIZE);
-            return toPng(matrix);
-        } catch (WriterException | IOException ex) {
+            matrix = new QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, SIZE, SIZE, hints(text));
+        } catch (WriterException ex) {
+            if (ex.getMessage() != null && ex.getMessage().startsWith("Data too big")) {
+                throw new QrTextTooLongException(ex);
+            }
             throw new IllegalStateException("Unable to create QR code", ex);
         }
+        try {
+            return toPng(matrix);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Unable to create QR code", ex);
+        }
+    }
+
+    /**
+     * ZXing encodes byte-mode text as ISO-8859-1 unless told otherwise, which
+     * turns Polish letters and emoji into '?'. Non-ASCII text is encoded as
+     * UTF-8 with an ECI header, so scanners decode exactly the submitted text;
+     * ASCII text keeps the header-less encoding (and the same image) as before.
+     */
+    static Map<EncodeHintType, Object> hints(String text) {
+        if (StandardCharsets.US_ASCII.newEncoder().canEncode(text)) {
+            return Map.of();
+        }
+        return Map.of(EncodeHintType.CHARACTER_SET, StandardCharsets.UTF_8.name());
     }
 
     static byte[] toPng(BitMatrix matrix) throws IOException {

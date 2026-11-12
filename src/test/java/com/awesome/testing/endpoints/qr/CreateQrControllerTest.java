@@ -59,6 +59,40 @@ class CreateQrControllerTest extends DomainHelper {
     }
 
     @Test
+    void shouldGet400WithAFieldErrorWhenTextDoesNotFitInAQrCode() {
+        // given
+        String apiToken = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+        CreateQrDto createQrDto = new CreateQrDto("a".repeat(2954));
+
+        // when
+        ResponseEntity<String> response = executePost(CREATE_QR_CODE_ENDPOINT, createQrDto,
+                getImageHeadersWith(apiToken), String.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
+        assertThat(response.getBody()).isEqualTo("{\"text\":\"Text is too long for a QR code\"}");
+    }
+
+    @Test
+    void shouldEncodePolishLettersAndEmojiExactly() throws Exception {
+        // given
+        String apiToken = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+        String text = "Zażółć gęślą jaźń 😀";
+
+        // when
+        ResponseEntity<byte[]> response = executePost(CREATE_QR_CODE_ENDPOINT, new CreateQrDto(text),
+                getImageHeadersWith(apiToken), byte[].class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        var image = ImageIO.read(new ByteArrayInputStream(response.getBody()));
+        var bitmap = new com.google.zxing.BinaryBitmap(new com.google.zxing.common.HybridBinarizer(
+                new com.google.zxing.client.j2se.BufferedImageLuminanceSource(image)));
+        assertThat(new com.google.zxing.MultiFormatReader().decode(bitmap).getText()).isEqualTo(text);
+    }
+
+    @Test
     void shouldGet401AsUnauthorized() {
         // given
         CreateQrDto createQrDto = new CreateQrDto("test");
