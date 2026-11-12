@@ -31,10 +31,12 @@ public class QrController {
 
     @PostMapping(value = "/create", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.IMAGE_PNG_VALUE)
     @Operation(summary = "Generate QR code",
-            description = "Generates a PNG QR code for the supplied text payload.",
+            description = "Generates a PNG QR code for the supplied text payload. Non-ASCII text (Polish letters, emoji) is encoded "
+                    + "as UTF-8 and decodes to exactly the submitted text. The capacity is counted in UTF-8 bytes: about 2953 "
+                    + "bytes, so fewer characters for multi-byte text; longer text answers 400 {\"text\": \"Text is too long for a QR code\"}.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponse(responseCode = "200", description = "Successfully generated QR code", content = @Content(mediaType = "image/png", schema = @Schema(type = "string", format = "binary")))
-    @ApiResponse(responseCode = "400", description = "Invalid input",
+    @ApiResponse(responseCode = "400", description = "Invalid input: blank text, or text too long for a QR code",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
     @ApiResponse(responseCode = "401", description = "Unauthorized",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))

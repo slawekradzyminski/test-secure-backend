@@ -445,6 +445,10 @@
                             <imageName>backend</imageName>
                             <buildArgs>
                                 <buildArg>-H:+ReportExceptionStackTraces</buildArg>
+                                <!-- Reactor Netty (Ollama WebClient) allocates through Arena.ofShared(); without it
+                                     concurrent Ollama calls fail with UnsupportedFeatureError (T-NATIVE-ARENA). -->
+                                <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+                                <buildArg>-H:+SharedArenaSupport</buildArg>
                                 <buildArg>-march=compatibility</buildArg>
                                 <buildArg>-J-Xmx${native.xmx}</buildArg>
                             </buildArgs>

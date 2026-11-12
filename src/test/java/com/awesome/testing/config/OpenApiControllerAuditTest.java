@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class OpenApiControllerAuditTest extends HttpHelper {
     private static final Set<String> MESSAGE_ERROR_STATUSES = Set.of("401", "403", "409", "410", "422", "429");
     private static final Set<String> SUCCESS_SCHEMAS = Set.of(
-            "LoginResponseDto", "CartDto", "OrderDto", "ProductDto", "UserEntity", "UserResponseDto",
+            "LoginResponseDto", "CartDto", "OrderDto", "ProductDto", "UserResponseDto",
             "InventoryItemDto", "TokenRefreshResponseDto", "ChatResponseDto", "GenerateResponseDto");
     private static final Set<Endpoint> EMPTY_NOT_FOUND_ENDPOINTS = Set.of(
             new Endpoint("/api/v1/products/{id}", "delete"),
@@ -296,7 +296,7 @@ class OpenApiControllerAuditTest extends HttpHelper {
     @Test
     void shouldExcludePasswordsFromUserResponses() {
         // given
-        var response = "UserEntity";
+        var response = "UserResponseDto";
 
         // when
         var properties = document.root().path("components").path("schemas").path(response).path("properties");
@@ -398,7 +398,6 @@ class OpenApiControllerAuditTest extends HttpHelper {
                 Map.entry("ForgotPasswordResponseDto", List.of("token")),
                 Map.entry("EmailEventDto", List.of("failureReason")),
                 Map.entry("InventoryMovementDto", List.of("orderId", "requestId")),
-                Map.entry("UserEntity", List.of("authProvider", "providerSubject", "emailVerified", "chatSystemPrompt", "toolSystemPrompt")),
                 Map.entry("UserResponseDto", List.of("firstName", "lastName")),
                 Map.entry("TrafficLogEntryDto", List.of("queryString", "clientSessionId", "requestContentType", "responseContentType")),
                 Map.entry("GenerateResponseDto", List.of("thinking", "context", "total_duration")),

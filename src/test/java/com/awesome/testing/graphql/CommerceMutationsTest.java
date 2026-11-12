@@ -2,6 +2,7 @@ package com.awesome.testing.graphql;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.awesome.testing.dto.order.OrderStatus;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -219,5 +220,29 @@ class CommerceMutationsTest extends AbstractCommerceGraphQlTest {
         assertThat(cancelled.at("/cancelOrder/username").asString()).isEqualTo(customer.username());
         assertThat(cart.at("/addCartItem/username").asString()).isEqualTo(customer.username());
         assertThat(cart.at("/addCartItem/totalItems").asInt()).isEqualTo(2);
+    }
+
+    @Test
+    void updateOrderStatusCannotReopenACancelledOrder() {
+        // given
+        var customer = customer();
+        var administrator = admin();
+        var product = product("10.25", 10);
+        var order = givenOrder(customer, product);
+        orderService.cancelOrder(order.getId(), administrator.username(), true);
+
+        // when
+        var reopened =
+                query(
+                        administrator.token(),
+                        "mutation($id:ID!){updateOrderStatus(id:$id,status:PAID){status}}",
+                        Map.of("id", order.getId()));
+
+        // then
+        assertError(reopened, "BAD_REQUEST");
+        assertThat(reopened.at("/errors/0/message").asString())
+                .isEqualTo("Cannot change order status from CANCELLED to PAID");
+        assertThat(orderService.getOrderById(order.getId()).getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(productRepository.findById(product.getId()).orElseThrow().getStockQuantity()).isEqualTo(10);
     }
 }

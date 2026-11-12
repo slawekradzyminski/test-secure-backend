@@ -104,6 +104,7 @@ public class OllamaController {
                     Available tools: get_product_snapshot, list_products.
                     Use GET /api/v1/ollama/chat/tools/definitions for the full JSON schema.
                     This endpoint requires the caller to resend the full conversation on every request.
+                    The stream may run several model iterations with tool calls in between; done=true is sent only on the terminal event of the whole orchestration.
                     Small local models stay grounded only when they keep everything in the product lane—always snapshot a SKU first and follow up with list_products if it needs comparisons."""
     )
     @ApiResponse(responseCode = "200", description = "One JSON ChatResponseDto per SSE data event", content = @Content(mediaType = "text/event-stream", schema = @Schema(implementation = ChatResponseDto.class)))

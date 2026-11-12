@@ -295,6 +295,8 @@ springdoc:
   paths-to-exclude: /internal/**
   # Controller responses are explicit; advice inference adds unreachable statuses and wrong bodies.
   override-with-generic-response: false
+  # Every controller without an explicit produces answers JSON; without this the docs say */*.
+  default-produces-media-type: application/json
   swagger-ui:
     oauth2-redirect-url: ${SWAGGER_UI_OAUTH2_REDIRECT_URL:http://localhost:8081/swagger-ui/oauth2-redirect.html}
     # The warehouse and payment entries are warehouse-service's and payment-service's documents,

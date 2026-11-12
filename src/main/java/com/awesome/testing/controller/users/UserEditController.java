@@ -5,7 +5,7 @@ import com.awesome.testing.dto.ErrorDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Content;
 import com.awesome.testing.dto.user.UserEditDto;
-import com.awesome.testing.entity.UserEntity;
+import com.awesome.testing.dto.user.UserResponseDto;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -44,10 +44,10 @@ public class UserEditController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "409", description = "A concurrent change claimed the same email",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
-    public UserEntity edit(
+    public UserResponseDto edit(
             @Parameter(description = "Username") @PathVariable String username,
             @Parameter(description = "User details") @Valid @RequestBody UserEditDto userDto) {
-        return userService.edit(username, userDto);
+        return UserResponseDto.from(userService.edit(username, userDto));
     }
 
 }

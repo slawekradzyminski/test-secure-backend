@@ -2,7 +2,6 @@ package com.awesome.testing.controller.users;
 
 import com.awesome.testing.dto.systemprompt.ChatSystemPromptDto;
 import com.awesome.testing.dto.systemprompt.ToolSystemPromptDto;
-import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,7 +44,7 @@ public class UserPromptController {
 
     @PutMapping("/chat-system-prompt")
     @Operation(summary = "Update your chat system prompt",
-            description = "Stores a new chat prompt override for the authenticated user. Null, an omitted field, or an empty string resets the override; PUT echoes the stored value and GET returns the effective default.")
+            description = "Stores a new chat prompt override for the authenticated user. Null, an omitted field, or a blank string resets the override. PUT answers with the effective prompt, the same value the next GET returns: the stored override, or the default after a reset.")
     @ApiResponse(responseCode = "200", description = "Chat system prompt was updated")
     @ApiResponse(responseCode = "400", description = "Bad request",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
@@ -53,9 +52,10 @@ public class UserPromptController {
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Parameter(description = "Chat system prompt") @Valid @RequestBody ChatSystemPromptDto systemPromptDto) {
         String username = principal.getUsername();
-        UserEntity updatedUser = userService.updateChatSystemPrompt(username, systemPromptDto.getChatSystemPrompt());
+        userService.updateChatSystemPrompt(username, systemPromptDto.getChatSystemPrompt());
+        // Answer with the effective prompt, so a reset returns the default exactly as the next GET does.
         return ChatSystemPromptDto.builder()
-                .chatSystemPrompt(updatedUser.getChatSystemPrompt())
+                .chatSystemPrompt(userService.getChatSystemPrompt(username))
                 .build();
     }
 
@@ -74,7 +74,7 @@ public class UserPromptController {
 
     @PutMapping("/tool-system-prompt")
     @Operation(summary = "Update your tool system prompt",
-            description = "Stores a new tool-calling prompt override for the authenticated user. Null, an omitted field, or an empty string resets the override; PUT echoes the stored value and GET returns the effective default.")
+            description = "Stores a new tool-calling prompt override for the authenticated user. Null, an omitted field, or a blank string resets the override. PUT answers with the effective prompt, the same value the next GET returns: the stored override, or the default after a reset.")
     @ApiResponse(responseCode = "200", description = "Tool system prompt was updated")
     @ApiResponse(responseCode = "400", description = "Bad request",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
@@ -82,9 +82,10 @@ public class UserPromptController {
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Parameter(description = "Tool system prompt") @Valid @RequestBody ToolSystemPromptDto systemPromptDto) {
         String username = principal.getUsername();
-        UserEntity updatedUser = userService.updateToolSystemPrompt(username, systemPromptDto.getToolSystemPrompt());
+        userService.updateToolSystemPrompt(username, systemPromptDto.getToolSystemPrompt());
+        // Answer with the effective prompt, so a reset returns the default exactly as the next GET does.
         return ToolSystemPromptDto.builder()
-                .toolSystemPrompt(updatedUser.getToolSystemPrompt())
+                .toolSystemPrompt(userService.getToolSystemPrompt(username))
                 .build();
     }
 }

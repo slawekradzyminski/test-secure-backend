@@ -1,5 +1,7 @@
 package com.awesome.testing.service.search;
 
+import com.awesome.testing.repository.search.SearchFolding;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,7 +15,7 @@ import java.util.Set;
 /**
  * Validated parameters of {@code GET /api/v1/products/search}.
  *
- * @param likePattern lower-case {@code %term%} pattern with {@code \}, {@code %} and {@code _} escaped by
+ * @param likePattern lower-case, accent-folded {@code %term%} pattern with {@code \}, {@code %} and {@code _} escaped by
  *     {@link #LIKE_ESCAPE}; null when no text query was given
  * @param categories lower-case category names; empty means every category
  * @param sort requested order; {@code RELEVANCE} without a text query becomes {@code NEWEST}
@@ -116,7 +118,7 @@ public record ProductSearchCriteria(
 
     static String likePattern(String query) {
         StringBuilder pattern = new StringBuilder(query.length() + 2).append('%');
-        for (char character : query.toLowerCase(Locale.ROOT).toCharArray()) {
+        for (char character : SearchFolding.fold(query.toLowerCase(Locale.ROOT)).toCharArray()) {
             if (character == LIKE_ESCAPE || character == '%' || character == '_') {
                 pattern.append(LIKE_ESCAPE);
             }

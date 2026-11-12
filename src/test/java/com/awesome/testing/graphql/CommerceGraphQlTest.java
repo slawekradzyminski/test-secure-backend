@@ -218,4 +218,29 @@ class CommerceGraphQlTest extends AbstractCommerceGraphQlTest {
         assertThat(oversized.getStatusCode()).isEqualTo(HttpStatus.CONTENT_TOO_LARGE);
         assertThat(batched.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
+
+    @Test
+    void moneyKeepsOneRepresentationAcrossCreateReadAndAnEmptyCart() {
+        // given
+        var administrator = admin();
+        var customer = customer();
+
+        // when
+        var created =
+                successful(
+                        administrator,
+                        "mutation{createProduct(input:{name:\"Scale\",description:\"d\",price:\"12.5\",stockQuantity:3,category:\"Probe\"}){id price}}",
+                        Map.of());
+        var read =
+                successful(
+                        customer,
+                        "query($id:ID!){product(id:$id){price}}",
+                        Map.of("id", created.at("/createProduct/id").asString()));
+        var emptyCart = successful(customer, "{ cart { totalPrice } }", Map.of());
+
+        // then
+        assertThat(created.at("/createProduct/price").asString()).isEqualTo("12.50");
+        assertThat(read.at("/product/price").asString()).isEqualTo("12.50");
+        assertThat(emptyCart.at("/cart/totalPrice").asString()).isEqualTo("0");
+    }
 }

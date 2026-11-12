@@ -19,8 +19,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Portable (H2 and PostgreSQL) criteria for product search: {@code lower(column) LIKE ? ESCAPE '\'} text
- * matching, correlated subqueries over approved reviews for ratings, and a {@code CASE} relevance score.
+ * Portable (H2 and PostgreSQL) criteria for product search: accent-folded
+ * {@code translate(lower(column), ...) LIKE ? ESCAPE '\'} text matching (see {@link SearchFolding}),
+ * correlated subqueries over approved reviews for ratings, and a {@code CASE} relevance score.
  * Ordering lives in the specification because relevance and rating are expressions, not entity properties;
  * the page request must therefore be unsorted.
  */
@@ -107,7 +108,7 @@ public final class ProductSearchSpecifications {
     }
 
     private static Predicate matches(CriteriaBuilder cb, Expression<String> column, ProductSearchCriteria criteria) {
-        return cb.like(cb.lower(column), criteria.likePattern(), ProductSearchCriteria.LIKE_ESCAPE);
+        return cb.like(SearchFolding.fold(cb, column), criteria.likePattern(), ProductSearchCriteria.LIKE_ESCAPE);
     }
 
     private static Subquery<Double> averageRating(Root<ProductEntity> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
