@@ -37,6 +37,8 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
 
     boolean existsByEmail(String email);
 
+    boolean existsByEmailAndIdNot(String email, Integer id);
+
     @Transactional
     void deleteByUsername(String username);
 

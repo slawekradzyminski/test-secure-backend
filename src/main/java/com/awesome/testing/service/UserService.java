@@ -158,12 +158,15 @@ public class UserService {
 
     public UserEntity edit(String username, UserEditDto userDto) {
         UserEntity existingUser = getUser(username);
+        if (userDto.getEmail() != null && userRepository.existsByEmailAndIdNot(userDto.getEmail(), existingUser.getId())) {
+            throw new CustomException("Email is already in use", HttpStatus.BAD_REQUEST);
+        }
 
         updateIfNotNull(userDto.getEmail(), UserEntity::setEmail, existingUser);
         updateIfNotNull(userDto.getFirstName(), UserEntity::setFirstName, existingUser);
         updateIfNotNull(userDto.getLastName(), UserEntity::setLastName, existingUser);
 
-        return userRepository.save(existingUser);
+        return userRepository.saveAndFlush(existingUser);
     }
 
     public String getChatSystemPrompt(String username) {

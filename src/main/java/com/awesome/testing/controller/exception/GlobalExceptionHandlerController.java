@@ -7,6 +7,7 @@ import com.awesome.testing.dto.ErrorDto;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.webmvc.error.DefaultErrorAttributes;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -70,6 +71,18 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
                 .badRequest()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(errors);
+    }
+
+    /**
+     * Last line of defence for a unique or foreign-key constraint that a service did not check first
+     * (for example two concurrent profile edits claiming the same email): a conflict, not a 500.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorDto> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorDto("Operation conflicts with existing data"));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
