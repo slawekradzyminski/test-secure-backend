@@ -1,6 +1,7 @@
 package com.awesome.testing.dto.user;
 
 import com.awesome.testing.dto.validation.MaxUtf8Bytes;
+import com.awesome.testing.dto.validation.MinLengthUnlessBlank;
 import com.awesome.testing.dto.validation.VisibleText;
 import com.awesome.testing.security.PasswordPolicy;
 import com.awesome.testing.service.identity.UserIdentity;
@@ -43,7 +44,8 @@ public class UserRegisterDto {
 
     @NotNull(message = "Password is required")
     @VisibleText(message = "Password is required")
-    @Size(min = 8, message = "Minimum password length: 8 characters")
+    // @MinLengthUnlessBlank instead of @Size(min): a @Size would publish maxLength = Integer.MAX_VALUE
+    @MinLengthUnlessBlank(value = 8, message = "Minimum password length: 8 characters")
     @MaxUtf8Bytes(value = PasswordPolicy.MAX_BYTES, message = PasswordPolicy.MAX_BYTES_MESSAGE)
     @Schema(minLength = 8, maxLength = 72, pattern = "\\S",
             description = "Password of at least 8 characters and at most 72 bytes in UTF-8 (the BCrypt limit; "
