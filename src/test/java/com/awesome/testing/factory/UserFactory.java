@@ -7,6 +7,7 @@ import net.bytebuddy.utility.RandomString;
 
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.Locale;
 
 import static com.awesome.testing.dto.user.Role.ROLE_ADMIN;
 
@@ -58,7 +59,8 @@ public class UserFactory {
     }
 
     public static String getRandomEmail() {
-        return MessageFormat.format("{0}@slawek.com", RandomString.make(10));
+        // Emails are stored lower-case, so tests that read them back compare with the canonical form.
+        return MessageFormat.format("{0}@slawek.com", RandomString.make(10)).toLowerCase(Locale.ROOT);
     }
 
 }

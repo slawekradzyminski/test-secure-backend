@@ -145,11 +145,16 @@ public class ProductService {
         updateIfNotNull(productUpdateDto.getName(), ProductEntity::setName, product);
         updateIfNotNull(productUpdateDto.getDescription(), ProductEntity::setDescription, product);
         updateIfNotNull(productUpdateDto.getPrice(), ProductEntity::setPrice, product);
-        updateIfNotNull(productUpdateDto.getCategory(), ProductEntity::setCategory, product);
+        // An empty category on update means "not provided": the course contract sends "" and expects no error.
+        updateIfNotNull(emptyToNull(productUpdateDto.getCategory()), ProductEntity::setCategory, product);
         updateIfNotNull(productUpdateDto.getImageUrl(), ProductEntity::setImageUrl, product);
     }
 
     private ProductEntity findProductById(Long id) {
         return productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException("Product not found"));
+    }
+
+    private static String emptyToNull(String value) {
+        return value == null || value.isEmpty() ? null : value;
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import jakarta.transaction.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<UserEntity, Integer> {
@@ -36,6 +37,25 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);
+
+    @Query("select count(u) > 0 from UserEntity u where lower(u.username) = lower(:username)")
+    boolean existsByUsernameIgnoringCase(@Param("username") String username);
+
+    @Query("select count(u) > 0 from UserEntity u where lower(u.email) = lower(:email)")
+    boolean existsByEmailIgnoringCase(@Param("email") String email);
+
+    @Query("select count(u) > 0 from UserEntity u where lower(u.email) = lower(:email) and u.id <> :id")
+    boolean existsByEmailIgnoringCaseAndIdNot(@Param("email") String email, @Param("id") Integer id);
+
+    @Query("select u from UserEntity u where lower(u.username) = lower(:username)")
+    List<UserEntity> findAllByUsernameIgnoringCase(@Param("username") String username);
+
+    @Query("select u from UserEntity u where lower(u.email) = lower(:email)")
+    List<UserEntity> findAllByEmailIgnoringCase(@Param("email") String email);
+
+    /** id, username and email of every account, ordered by id (no roles, so no per-row collection load). */
+    @Query("select u.id, u.username, u.email from UserEntity u order by u.id")
+    List<Object[]> findAllIdentityColumns();
 
     @Transactional
     void deleteByUsername(String username);

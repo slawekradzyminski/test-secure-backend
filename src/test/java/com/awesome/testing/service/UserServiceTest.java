@@ -19,6 +19,7 @@ import com.awesome.testing.security.AuthenticationHandler;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.service.token.RefreshTokenService;
 import com.awesome.testing.service.tender.TenderDataEraser;
+import com.awesome.testing.service.identity.UserIdentity;
 import com.awesome.testing.service.token.IssuedRefreshToken;
 import com.awesome.testing.service.mfa.MfaChallenge;
 import com.awesome.testing.service.mfa.MfaService;
@@ -91,6 +92,9 @@ class UserServiceTest {
     @Mock
     private TenderDataEraser tenderDataEraser;
 
+    @Mock
+    private UserIdentity userIdentity;
+
     @InjectMocks
     private UserService userService;
 
@@ -113,7 +117,7 @@ class UserServiceTest {
 
     @Test
     void shouldSignInWhenCredentialsAreValid() {
-        when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
+        when(userIdentity.findBySignInName(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
         when(jwtTokenProvider.createToken(registerDto.getUsername(), userEntity.getRoles())).thenReturn("jwt-token");
         IssuedRefreshToken refreshTokenEntity = buildRefreshToken("refresh-token", userEntity);
         when(refreshTokenService.createToken(userEntity)).thenReturn(refreshTokenEntity);
@@ -128,7 +132,7 @@ class UserServiceTest {
 
     @Test
     void shouldReturnChallengeWithoutTokensWhenMfaIsEnabled() {
-        when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
+        when(userIdentity.findBySignInName(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
         when(mfaService.isEnabled(userEntity)).thenReturn(true);
         when(mfaService.startSignIn(userEntity)).thenReturn(new MfaChallenge(
                 "challenge-token", Instant.parse("2026-07-13T20:00:00Z")));
@@ -180,7 +184,7 @@ class UserServiceTest {
 
     @Test
     void shouldThrowWhenSignupWithExistingUsername() {
-        when(userRepository.existsByUsername(registerDto.getUsername())).thenReturn(true);
+        when(userIdentity.usernameTaken(registerDto.getUsername())).thenReturn(true);
 
         assertThatThrownBy(() -> userService.signup(registerDto))
                 .isInstanceOf(CustomException.class)
@@ -191,7 +195,7 @@ class UserServiceTest {
 
     @Test
     void shouldThrowWhenSignupWithExistingEmail() {
-        when(userRepository.existsByEmail(registerDto.getEmail())).thenReturn(true);
+        when(userIdentity.emailTaken(registerDto.getEmail())).thenReturn(true);
 
         assertThatThrownBy(() -> userService.signup(registerDto))
                 .isInstanceOf(CustomException.class)
@@ -205,7 +209,7 @@ class UserServiceTest {
         when(passwordEncoder.encode(registerDto.getPassword())).thenReturn("encoded");
         when(userRepository.saveAndFlush(any(UserEntity.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate username"));
-        when(userRepository.existsByUsername(registerDto.getUsername())).thenReturn(false, true);
+        when(userIdentity.usernameTaken(registerDto.getUsername())).thenReturn(false, true);
 
         assertThatThrownBy(() -> userService.signup(registerDto))
                 .isInstanceOf(CustomException.class)
@@ -217,7 +221,7 @@ class UserServiceTest {
         when(passwordEncoder.encode(registerDto.getPassword())).thenReturn("encoded");
         when(userRepository.saveAndFlush(any(UserEntity.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate email"));
-        when(userRepository.existsByEmail(registerDto.getEmail())).thenReturn(false, true);
+        when(userIdentity.emailTaken(registerDto.getEmail())).thenReturn(false, true);
 
         assertThatThrownBy(() -> userService.signup(registerDto))
                 .isInstanceOf(CustomException.class)
@@ -296,7 +300,7 @@ class UserServiceTest {
                 .lastName("NewLast")
                 .build();
         when(userRepository.findByUsername(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
-        when(userRepository.save(any(UserEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(userRepository.saveAndFlush(any(UserEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
         UserEntity updated = userService.edit(registerDto.getUsername(), editDto);
 

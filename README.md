@@ -340,8 +340,14 @@ mvn test
 - GET `/api/v1/users/me/email-events` - Get the authenticated user's latest email events
 - GET `/api/v1/users` - Get all users (ADMIN only)
 - GET `/api/v1/users/{username}` - Get user by username
-- PUT `/api/v1/users/{username}` - Update user
+- PUT `/api/v1/users/{username}` - Update user (non-administrators get 403 for any username but their own)
 - DELETE `/api/v1/users/{username}` - Delete user (ADMIN only)
+- GET `/api/v1/admin/users/identity-issues` - Accounts that predate the username and email rules, for clean-up (ADMIN only)
+
+Usernames use 4-255 letters, digits, `.`, `_` or `-` and are unique regardless of letter case; sign-in accepts
+any case. Emails are stored lower-case and unique regardless of case. Passwords are 8 characters to 72 UTF-8 bytes
+(the BCrypt limit). Request bodies are bound without type coercion: `1.5` or `"10"` is not an integer and `true`
+is not a string; decimal amounts may be sent as numbers or strings.
 
 ### Products
 

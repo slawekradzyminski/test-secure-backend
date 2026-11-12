@@ -10,6 +10,7 @@ import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.repository.PasswordResetTokenRepository;
 import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.service.EmailService;
+import com.awesome.testing.service.identity.UserIdentity;
 import com.awesome.testing.service.token.PasswordResetTokenGenerator;
 import com.awesome.testing.service.token.RefreshTokenService;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -38,6 +39,7 @@ public class PasswordResetService {
     private static final String PASSWORD_RESET_COMPLETED_METRIC = "password.reset.completed";
 
     private final UserRepository userRepository;
+    private final UserIdentity userIdentity;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordResetTokenGenerator tokenGenerator;
     private final PasswordEncoder passwordEncoder;
@@ -53,7 +55,7 @@ public class PasswordResetService {
     @Transactional
     public ForgotPasswordResponseDto requestReset(String identifier, String clientIp, String userAgent) {
         Instant now = Instant.now();
-        Optional<String> maybeToken = userRepository.findByUsernameOrEmail(identifier, identifier)
+        Optional<String> maybeToken = userIdentity.findByUsernameOrEmail(identifier)
                 .map(user -> handleResetRequestForUser(user, clientIp, userAgent, now));
         meterRegistry.ifAvailable(registry -> registry.counter(PASSWORD_RESET_REQUESTED_METRIC).increment());
         return ForgotPasswordResponseDto.builder()

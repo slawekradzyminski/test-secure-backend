@@ -27,18 +27,22 @@ public class UserEditController {
     private final UserService userService;
 
     @PutMapping("/{username}")
-    @PreAuthorize("@userService.exists(#username) and (hasRole('ROLE_ADMIN') or #username == authentication.principal.username)")
+    // Only administrators learn whether another username exists (404); everyone else gets 403 for any
+    // username but their own.
+    @PreAuthorize("hasRole('ROLE_ADMIN') ? @userService.exists(#username) : #username == authentication.principal.username")
     @Operation(summary = "Update user",
             description = "Updates editable profile fields for an existing user. Users may edit themselves; administrators may edit any user.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponse(responseCode = "200", description = "User was updated")
-    @ApiResponse(responseCode = "400", description = "Bad request",
-            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
+    @ApiResponse(responseCode = "400", description = "Invalid fields, or the email is already used by another account",
+            content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, ErrorDto.class})))
     @ApiResponse(responseCode = "401", description = "Unauthorized",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
-    @ApiResponse(responseCode = "403", description = "Forbidden",
+    @ApiResponse(responseCode = "403", description = "A non-administrator addressed any username other than their own",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
-    @ApiResponse(responseCode = "404", description = "The user doesn't exist",
+    @ApiResponse(responseCode = "404", description = "The user doesn't exist (administrators only)",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "409", description = "A concurrent change claimed the same email",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public UserEntity edit(
             @Parameter(description = "Username") @PathVariable String username,

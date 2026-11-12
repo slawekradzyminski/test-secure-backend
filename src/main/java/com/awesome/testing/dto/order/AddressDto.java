@@ -4,6 +4,7 @@ import com.awesome.testing.entity.AddressEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,24 +17,28 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Address data transfer object")
 public class AddressDto {
     @NotBlank(message = "Street is required")
-    @Schema(minLength = 1, pattern = "\\S", description = "Street address", example = "123 Main St")
+    @Size(max = 255, message = "Street must be at most 255 characters")
+    @Schema(minLength = 1, maxLength = 255, pattern = "\\S", description = "Street address", example = "123 Main St")
     private String street;
 
     @NotBlank(message = "City is required")
-    @Schema(minLength = 1, pattern = "\\S", description = "City", example = "New York")
+    @Size(max = 255, message = "City must be at most 255 characters")
+    @Schema(minLength = 1, maxLength = 255, pattern = "\\S", description = "City", example = "New York")
     private String city;
 
     @NotBlank(message = "State is required")
-    @Schema(minLength = 1, pattern = "\\S", description = "State", example = "NY")
+    @Size(max = 255, message = "State must be at most 255 characters")
+    @Schema(minLength = 1, maxLength = 255, pattern = "\\S", description = "State", example = "NY")
     private String state;
 
     @NotBlank(message = "Zip code is required")
     @Pattern(regexp = "^[0-9]{2}(-[0-9]{3})?|[0-9]{5}(-[0-9]{4})?$", message = "Invalid postal/zip code format")
-    @Schema(minLength = 1, description = "Postal/ZIP code", example = "35-119")
+    @Schema(minLength = 1, maxLength = 10, description = "Postal/ZIP code", example = "35-119")
     private String zipCode;
 
     @NotBlank(message = "Country is required")
-    @Schema(minLength = 1, pattern = "\\S", description = "Country", example = "Poland")
+    @Size(max = 255, message = "Country must be at most 255 characters")
+    @Schema(minLength = 1, maxLength = 255, pattern = "\\S", description = "Country", example = "Poland")
     private String country;
 
     public static AddressDto from(AddressEntity address) {

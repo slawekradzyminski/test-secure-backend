@@ -10,6 +10,7 @@ import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.security.oidc.OidcTokenVerifier;
 import com.awesome.testing.security.oidc.OidcUserClaims;
+import com.awesome.testing.service.identity.UserIdentity;
 import com.awesome.testing.service.token.RefreshTokenService;
 import com.awesome.testing.service.token.IssuedRefreshToken;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -42,6 +42,7 @@ public class SsoLoginService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
+    private final UserIdentity userIdentity;
 
     public LoginResponseDto exchange(String idToken) {
         OidcUserClaims claims = oidcTokenVerifier.verify(idToken);
@@ -67,16 +68,16 @@ public class SsoLoginService {
     }
 
     private UserEntity provisionUser(OidcUserClaims claims) {
-        userRepository.findByEmail(claims.email()).ifPresent(existing -> {
+        if (userIdentity.emailTaken(claims.email())) {
             throw new CustomException(
                     "Email is already used by another login method",
                     HttpStatus.CONFLICT
             );
-        });
+        }
 
         UserEntity user = UserEntity.builder()
                 .username(uniqueUsername(claims))
-                .email(claims.email())
+                .email(UserIdentity.canonicalEmail(claims.email()))
                 .password(passwordEncoder.encode(unusablePassword()))
                 .roles(List.of(Role.ROLE_CLIENT))
                 .firstName(claims.firstName())
@@ -92,7 +93,7 @@ public class SsoLoginService {
 
     private UserEntity updateProfile(UserEntity user, OidcUserClaims claims) {
         ensureEmailCanBeUsedBy(user, claims.email());
-        user.setEmail(claims.email());
+        user.setEmail(UserIdentity.canonicalEmail(claims.email()));
         user.setFirstName(claims.firstName());
         user.setLastName(claims.lastName());
         user.setEmailVerified(claims.emailVerified());
@@ -100,14 +101,12 @@ public class SsoLoginService {
     }
 
     private void ensureEmailCanBeUsedBy(UserEntity user, String email) {
-        userRepository.findByEmail(email)
-                .filter(existing -> !Objects.equals(existing.getId(), user.getId()))
-                .ifPresent(existing -> {
-                    throw new CustomException(
-                            "Email is already used by another login method",
-                            HttpStatus.CONFLICT
-                    );
-                });
+        if (userIdentity.emailTakenByAnother(email, user.getId())) {
+            throw new CustomException(
+                    "Email is already used by another login method",
+                    HttpStatus.CONFLICT
+            );
+        }
     }
 
     private TokenPair createTokens(UserEntity user) {
@@ -123,7 +122,7 @@ public class SsoLoginService {
         String baseUsername = normalizeUsername(
                 firstText(claims.username(), claims.email().split("@", 2)[0])
         );
-        if (!userRepository.existsByUsername(baseUsername)) {
+        if (!userIdentity.usernameTaken(baseUsername)) {
             return baseUsername;
         }
 
@@ -132,7 +131,7 @@ public class SsoLoginService {
         String truncatedBase = baseUsername.substring(0, Math.min(baseUsername.length(), baseLimit));
         String candidate = truncatedBase + "-" + suffix;
         int counter = 2;
-        while (userRepository.existsByUsername(candidate)) {
+        while (userIdentity.usernameTaken(candidate)) {
             String counterSuffix = suffix + counter;
             int counterBaseLimit = USERNAME_MAX_LENGTH - counterSuffix.length() - 1;
             candidate = baseUsername.substring(0, Math.min(baseUsername.length(), counterBaseLimit))

@@ -82,6 +82,15 @@ class GlobalExceptionHandlerControllerTest {
         assertThat(response.getBody().getMessage()).isEqualTo("Unauthorized");
     }
 
+    @Test
+    void shouldAnswerAnUncheckedConstraintViolationWithConflict() {
+        ResponseEntity<ErrorDto> response = controller.handleDataIntegrityViolation(
+                new org.springframework.dao.DataIntegrityViolationException("duplicate key"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().getMessage()).isEqualTo("Operation conflicts with existing data");
+    }
+
     private static final class Dummy {
         @SuppressWarnings("unused")
         void dummy(String arg) {}

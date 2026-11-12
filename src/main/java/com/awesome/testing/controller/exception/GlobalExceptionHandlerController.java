@@ -7,13 +7,13 @@ import com.awesome.testing.dto.ErrorDto;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.webmvc.error.DefaultErrorAttributes;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -44,19 +44,23 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            String errorMessage = error.getDefaultMessage();
-            if (error instanceof FieldError fieldError) {
-                errors.put(fieldError.getField(), errorMessage);
-            } else if (error instanceof ObjectError objectError) {
-                errors.put(objectError.getObjectName(), errorMessage);
-            }
-        });
         return ResponseEntity
                 .badRequest()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(errors);
+                .body(ValidationMessages.byField(ex.getBindingResult().getAllErrors()));
+    }
+
+    /**
+     * A path or query parameter that does not convert (for example {@code /products/abc} or an unknown
+     * enum). Kept in the {@code error} shape of invalid arguments; names the parameter and the
+     * rejected value instead of the converter's message.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, String>> handleArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return ResponseEntity
+                .badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("error", ArgumentMismatchMessages.message(ex.getName(), ex.getValue(), ex.getRequiredType())));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -67,6 +71,18 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
                 .badRequest()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(errors);
+    }
+
+    /**
+     * Last line of defence for a unique or foreign-key constraint that a service did not check first
+     * (for example two concurrent profile edits claiming the same email): a conflict, not a 500.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorDto> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorDto("Operation conflicts with existing data"));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
