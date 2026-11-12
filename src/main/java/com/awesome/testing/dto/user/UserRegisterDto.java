@@ -1,5 +1,6 @@
 package com.awesome.testing.dto.user;
 
+import com.awesome.testing.dto.validation.VisibleText;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.List;
 public class UserRegisterDto {
 
     @NotNull(message = "Username is required")
+    @VisibleText(message = "Username is required")
     @Size(min = 4, message = "Minimum username length: 4 characters")
     @Size(max = 255, message = "Maximum username length: 255 characters")
     @Schema(minLength = 4, maxLength = 255, description = "Username", example = "johndoe")
@@ -31,21 +33,24 @@ public class UserRegisterDto {
     private String email;
 
     @NotNull(message = "Password is required")
+    @VisibleText(message = "Password is required")
     @Size(min = 8, message = "Minimum password length: 8 characters")
     @Size(max = 255, message = "Maximum password length: 255 characters")
-    @Schema(minLength = 8, maxLength = 255, description = "Password", example = "password123")
+    @Schema(minLength = 8, maxLength = 255, pattern = "\\S", description = "Password", example = "password123")
     private String password;
 
     @NotNull(message = "firstName is required")
+    @VisibleText(message = "firstName is required")
     @Size(min = 4, message = "Minimum firstName length: 4 characters")
     @Size(max = 255, message = "Maximum firstName length: 255 characters")
-    @Schema(minLength = 4, maxLength = 255, description = "First name", example = "John")
+    @Schema(minLength = 4, maxLength = 255, pattern = "\\S", description = "First name", example = "John")
     private String firstName;
 
     @NotNull(message = "lastName is required")
+    @VisibleText(message = "lastName is required")
     @Size(min = 4, message = "Minimum lastName length: 4 characters")
     @Size(max = 255, message = "Maximum lastName length: 255 characters")
-    @Schema(minLength = 4, maxLength = 255, description = "Last name", example = "Boyd")
+    @Schema(minLength = 4, maxLength = 255, pattern = "\\S", description = "Last name", example = "Boyd")
     private String lastName;
 
     @JsonIgnore

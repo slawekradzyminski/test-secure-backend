@@ -1,6 +1,7 @@
 package com.awesome.testing.config;
 
 import com.awesome.testing.dto.validation.MinLengthUnlessBlankValidator;
+import com.awesome.testing.dto.validation.VisibleTextValidator;
 import com.awesome.testing.event.CommerceEvent;
 import com.awesome.testing.event.CommerceEventType;
 
@@ -61,8 +62,10 @@ public class NativeRuntimeHints {
                         MemberCategory.INVOKE_PUBLIC_METHODS, MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
             }
             // Hibernate Validator instantiates custom constraint validators reflectively.
-            hints.reflection().registerType(MinLengthUnlessBlankValidator.class,
-                    MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS, MemberCategory.INVOKE_PUBLIC_METHODS);
+            for (Class<?> validator : new Class<?>[] {MinLengthUnlessBlankValidator.class, VisibleTextValidator.class}) {
+                hints.reflection().registerType(validator,
+                        MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS, MemberCategory.INVOKE_PUBLIC_METHODS);
+            }
             hints.reflection().registerType(TypeReference.of("com.awesome.testing.service.UserService"),
                     MemberCategory.INVOKE_PUBLIC_METHODS);
             hints.reflection().registerType(TypeReference.of("com.awesome.testing.security.CustomPrincipal"),
