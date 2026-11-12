@@ -4,6 +4,7 @@ import com.awesome.testing.HttpHelper;
 import com.awesome.testing.config.OpenApiDocument.DocumentedOperation;
 import com.awesome.testing.config.OpenApiDocument.DocumentedResponse;
 import com.awesome.testing.config.OpenApiDocument.Endpoint;
+import com.awesome.testing.dto.validation.MinLengthUnlessBlank;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -195,6 +197,20 @@ class OpenApiControllerAuditTest extends HttpHelper {
         // then
         assertThat(constraints).isNotEmpty().allSatisfy(field ->
                 assertThat(field.schema().path("minLength").asInt()).as("%s nonblank minimum", field.name()).isPositive());
+    }
+
+    @Test
+    void shouldDocumentEnforcedMinimumLengths() throws IOException {
+        // given
+        var fields = documentedFields().filter(field -> field.source().isAnnotationPresent(MinLengthUnlessBlank.class)).toList();
+
+        // when
+        var documented = fields.stream().collect(Collectors.toMap(this::resolveField,
+                field -> field.source().getAnnotation(MinLengthUnlessBlank.class).value()));
+
+        // then
+        assertThat(documented).isNotEmpty().allSatisfy((property, enforced) ->
+                assertThat(property.schema().path("minLength").asInt()).as("%s enforced minimum", property.name()).isEqualTo(enforced));
     }
 
     @Test
