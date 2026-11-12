@@ -59,6 +59,22 @@ class UserInputValidationTest extends DomainHelper {
     }
 
     @Test
+    void signupRejectsAnEmptyOrBlankEmail() {
+        for (String email : new String[] {"", "   "}) {
+            // given
+            Map<String, Object> body = signupBody();
+            body.put("email", email);
+
+            // when
+            ResponseEntity<Map<String, String>> response = signup(body);
+
+            // then
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody()).isEqualTo(Map.of("email", "Email is required"));
+        }
+    }
+
+    @Test
     void signinReportsTheMaximumLengthForOverlongValues() {
         // when
         ResponseEntity<Map<String, String>> response = executePost(LOGIN_ENDPOINT,
