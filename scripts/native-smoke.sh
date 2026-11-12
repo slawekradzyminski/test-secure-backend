@@ -88,6 +88,18 @@ qr=$(docker run --rm --network "$NETWORK" curlimages/curl:8.17.0 -s -o /dev/null
 [[ "$qr" == "200 image/png" ]] || fail "qr: $qr"
 echo "qr: ok"
 
+# Custom constraint validators are created reflectively; the request converter is strict about JSON types.
+invalid=$(call -H 'Content-Type: application/json' \
+  -d "{\"username\":\"    \",\"email\":\"smoke-invalid@example.test\",\"password\":\"$(printf 'p%.0s' {1..80})\",\"firstName\":\"Smoke\",\"lastName\":\"Tester\"}" \
+  http://backend:4001/api/v1/users/signup)
+[[ "$invalid" == 400* && "$invalid" == *'"username":"Username is required"'* \
+  && "$invalid" == *'"password":"Maximum password length: 72 bytes"'* ]] || fail "signup validation: $invalid"
+typed=$(call -H 'Content-Type: application/json' -d '{"username":"smoketyped","password":1234}' http://backend:4001/api/v1/users/signin)
+[[ "$typed" == 400* && "$typed" == *'"password":"Must be a string"'* ]] || fail "strict JSON types: $typed"
+issues=$(call -H "Authorization: Bearer $token" http://backend:4001/api/v1/admin/users/identity-issues)
+[[ "$issues" == 200* ]] || fail "identity issues: $issues"
+echo "validation and identity report: ok"
+
 outbox=$(call -H "Authorization: Bearer $token" http://backend:4001/api/v1/local/email/outbox)
 [[ "$outbox" == 404* ]] || fail "local outbox must be unavailable with the jms transport: $outbox"
 echo "local outbox hidden: ok"
