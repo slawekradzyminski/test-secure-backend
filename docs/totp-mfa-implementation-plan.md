@@ -4,7 +4,7 @@
 
 Add opt-in, application-owned TOTP multi-factor authentication for local password accounts. The implementation must work with Microsoft Authenticator's standard "Other account" TOTP mode and remain compatible with other RFC 6238 authenticator apps.
 
-Production does not run Keycloak and explicitly disables SSO, so the production MFA ceremony belongs to the Spring backend. SSO accounts remain the responsibility of their identity provider and cannot enroll in application-owned TOTP.
+Production does not run Keycloak, so the production MFA ceremony belongs to the Spring backend. (The SSO exchange was removed in 3.18.0; accounts it once provisioned are now ordinary local accounts and can enroll in TOTP after a password reset.)
 
 ## Technology choices
 

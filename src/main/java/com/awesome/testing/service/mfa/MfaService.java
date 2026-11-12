@@ -31,7 +31,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -75,7 +74,7 @@ public class MfaService {
 
     @Transactional
     public MfaSetupResponseDto setup(String username) {
-        UserEntity user = localUser(username);
+        UserEntity user = existingUser(username);
         MfaCredentialEntity credential = credentialRepository.findByUserIdForUpdate(user.getId())
                 .orElseGet(() -> MfaCredentialEntity.builder().user(user).build());
         if (credential.isEnabled()) {
@@ -102,7 +101,7 @@ public class MfaService {
 
     @Transactional
     public MfaRecoveryCodesResponseDto confirm(String username, String code) {
-        UserEntity user = localUser(username);
+        UserEntity user = existingUser(username);
         MfaCredentialEntity credential = credentialRepository.findByUserIdForUpdate(user.getId())
                 .orElseThrow(() -> new CustomException("Start two-factor setup first", HttpStatus.CONFLICT));
         if (credential.isEnabled()) {
@@ -124,7 +123,7 @@ public class MfaService {
 
     @Transactional
     public MfaRecoveryCodesResponseDto regenerateRecoveryCodes(String username, String password, String code) {
-        UserEntity user = localUser(username);
+        UserEntity user = existingUser(username);
         authenticationHandler.authUser(username, password);
         MfaCredentialEntity credential = enabledCredentialForUpdate(user);
         credential.setLastAcceptedTimeStep(requireTotp(credential, code));
@@ -136,7 +135,7 @@ public class MfaService {
 
     @Transactional
     public void disable(String username, String password, String code) {
-        UserEntity user = localUser(username);
+        UserEntity user = existingUser(username);
         authenticationHandler.authUser(username, password);
         MfaCredentialEntity credential = enabledCredentialForUpdate(user);
         requireSecondFactor(credential, code);
@@ -219,14 +218,9 @@ public class MfaService {
                 .orElseThrow(() -> new CustomException("Two-factor authentication is not enabled", HttpStatus.CONFLICT));
     }
 
-    private UserEntity localUser(String username) {
-        UserEntity user = userRepository.findByUsername(username)
+    private UserEntity existingUser(String username) {
+        return userRepository.findByUsername(username)
                 .orElseThrow(() -> new CustomException("The user doesn't exist", HttpStatus.NOT_FOUND));
-        if (StringUtils.hasText(user.getAuthProvider()) || StringUtils.hasText(user.getProviderSubject())) {
-            throw new CustomException("Two-factor authentication is managed by the identity provider",
-                    HttpStatus.CONFLICT);
-        }
-        return user;
     }
 
     private TokenPair issueTokens(UserEntity user) {

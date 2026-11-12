@@ -11,7 +11,7 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 ```
 
 The endpoint uses the existing application access JWT in `Authorization: Bearer
-<access-token>`. Obtain it through the existing sign-in/SSO flow; GraphQL does not
+<access-token>`. Obtain it through the existing sign-in flow; GraphQL does not
 introduce a second login system. The base configuration includes the `graphql`
 Spring profile automatically, including when `SPRING_PROFILES_ACTIVE` selects
 `local`, `docker`, or a deployment profile. No extra enablement flag is needed.

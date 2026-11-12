@@ -67,8 +67,6 @@ app:
     transport: local-outbox
   seed-demo-data:
     enabled: true
-  sso:
-    enabled: false
   traffic:
     obfuscate-authorization: true
     obfuscate-emails: true
