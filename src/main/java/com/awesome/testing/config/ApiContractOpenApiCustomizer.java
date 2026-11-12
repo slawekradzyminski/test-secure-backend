@@ -48,6 +48,7 @@ public class ApiContractOpenApiCustomizer implements OpenApiCustomizer {
     }
 
     private void normalizeProperty(Schema<?> property) {
+        applyMinLengthUnlessBlank(property);
         if (Optional.ofNullable(property.getTypes()).orElseGet(Set::of).contains("null")) {
             makeReferenceNullable(property);
             if (property.getEnum() != null && !property.getEnum().contains(null)) {
@@ -56,6 +57,15 @@ public class ApiContractOpenApiCustomizer implements OpenApiCustomizer {
         }
         if (NON_BLANK_PATTERN.equals(property.getPattern())) {
             property.setMinLength(Math.max(1, Optional.ofNullable(property.getMinLength()).orElse(0)));
+        }
+    }
+
+    private void applyMinLengthUnlessBlank(Schema<?> property) {
+        Optional.ofNullable(property.getExtensions())
+                .map(extensions -> extensions.remove(MinLengthUnlessBlankPropertyCustomizer.MIN_LENGTH_EXTENSION))
+                .ifPresent(minimum -> property.setMinLength(((Number) minimum).intValue()));
+        if (property.getExtensions() != null && property.getExtensions().isEmpty()) {
+            property.setExtensions(null);
         }
     }
 

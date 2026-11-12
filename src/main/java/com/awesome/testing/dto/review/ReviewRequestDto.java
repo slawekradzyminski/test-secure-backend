@@ -31,12 +31,12 @@ public class ReviewRequestDto {
     @NotBlank(message = "Title is required")
     @Size(max = 120, message = TITLE_LENGTH)
     @MinLengthUnlessBlank(value = 3, message = TITLE_LENGTH)
-    @Schema(minLength = 1, pattern = "\\S", maxLength = 120, description = "Review title", example = "Great phone")
+    @Schema(pattern = "\\S", maxLength = 120, description = "Review title", example = "Great phone")
     private String title;
 
     @NotBlank(message = "Review text is required")
     @Size(max = 2000, message = BODY_LENGTH)
     @MinLengthUnlessBlank(value = 10, message = BODY_LENGTH)
-    @Schema(minLength = 1, pattern = "\\S", maxLength = 2000, description = "Review text", example = "Battery lasts two days and the camera is excellent.")
+    @Schema(pattern = "\\S", maxLength = 2000, description = "Review text", example = "Battery lasts two days and the camera is excellent.")
     private String body;
 }

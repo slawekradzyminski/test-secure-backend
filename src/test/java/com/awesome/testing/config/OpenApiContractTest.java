@@ -153,15 +153,37 @@ class OpenApiContractTest extends HttpHelper {
     }
 
     @Test
-    void reviewTextFieldsKeepTheirDocumentedNonBlankPattern() {
+    void reviewTextFieldsDocumentTheEnforcedLengthsAndNonBlankPattern() {
         // given
         JsonNode review = spec.path("components").path("schemas").path("ReviewRequestDto").path("properties");
 
         // then: the validation-only minimum-length @Pattern must not leak into the documented schema
         assertThat(review.path("title").path("pattern").asText()).isEqualTo("\\S");
+        assertThat(review.path("title").path("minLength").asInt()).isEqualTo(3);
         assertThat(review.path("title").path("maxLength").asInt()).isEqualTo(120);
         assertThat(review.path("body").path("pattern").asText()).isEqualTo("\\S");
+        assertThat(review.path("body").path("minLength").asInt()).isEqualTo(10);
         assertThat(review.path("body").path("maxLength").asInt()).isEqualTo(2000);
+    }
+
+    @Test
+    void minimumLengthMarkerIsNotPublished() {
+        // when
+        var markers = spec.findValues(MinLengthUnlessBlankPropertyCustomizer.MIN_LENGTH_EXTENSION);
+
+        // then
+        assertThat(markers).isEmpty();
+    }
+
+    @Test
+    void giftCardCodeDocumentsANonBlankCodeOfUpTo32Characters() {
+        // given
+        JsonNode code = spec.path("components").path("schemas").path("ApplyGiftCardDto").path("properties").path("code");
+
+        // then
+        assertThat(code.path("pattern").asText()).isEqualTo("\\S");
+        assertThat(code.path("minLength").asInt()).isEqualTo(1);
+        assertThat(code.path("maxLength").asInt()).isEqualTo(32);
     }
 
     @Test
