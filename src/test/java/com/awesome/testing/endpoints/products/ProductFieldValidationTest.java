@@ -78,6 +78,47 @@ class ProductFieldValidationTest extends AbstractEcommerceTest {
                 .isEqualTo(product.getCategory());
     }
 
+    @Test
+    void updateRejectsAnImageUrlWithoutAValidHost() {
+        // given
+        ProductEntity product = setupProduct();
+
+        // when
+        ResponseEntity<Map<String, String>> response = update(product, Map.of("imageUrl", "https://not a host"));
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isEqualTo(Map.of("imageUrl", "Image URL must be a valid URL or empty"));
+        assertThat(productRepository.findById(product.getId()).orElseThrow().getImageUrl())
+                .isEqualTo(product.getImageUrl());
+    }
+
+    @Test
+    void createRejectsAnImageUrlWithoutAHost() {
+        // given
+        Map<String, Object> body = validProduct();
+        body.put("imageUrl", "https://");
+
+        // when
+        ResponseEntity<Map<String, String>> response = create(body);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isEqualTo(Map.of("imageUrl", "Image URL must be a valid URL or empty"));
+    }
+
+    @Test
+    void anEmptyImageUrlStillMeansNoImage() {
+        // given
+        ProductEntity product = setupProduct();
+
+        // when
+        ResponseEntity<Map<String, String>> response = update(product, Map.of("imageUrl", ""));
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
     private ResponseEntity<Map<String, String>> create(Map<String, Object> body) {
         return executePost(PRODUCTS_ENDPOINT, body, getHeadersWith(adminToken), mapTypeReference());
     }

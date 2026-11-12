@@ -1,5 +1,6 @@
 package com.awesome.testing.config;
 
+import com.awesome.testing.dto.validation.HttpUrlValidator;
 import com.awesome.testing.dto.validation.MinLengthUnlessBlankValidator;
 import com.awesome.testing.dto.validation.VisibleTextValidator;
 import com.awesome.testing.event.CommerceEvent;
@@ -62,7 +63,8 @@ public class NativeRuntimeHints {
                         MemberCategory.INVOKE_PUBLIC_METHODS, MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
             }
             // Hibernate Validator instantiates custom constraint validators reflectively.
-            for (Class<?> validator : new Class<?>[] {MinLengthUnlessBlankValidator.class, VisibleTextValidator.class}) {
+            for (Class<?> validator : new Class<?>[] {MinLengthUnlessBlankValidator.class,
+                    VisibleTextValidator.class, HttpUrlValidator.class}) {
                 hints.reflection().registerType(validator,
                         MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS, MemberCategory.INVOKE_PUBLIC_METHODS);
             }

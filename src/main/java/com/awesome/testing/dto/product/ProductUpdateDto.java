@@ -1,6 +1,7 @@
 package com.awesome.testing.dto.product;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import com.awesome.testing.dto.validation.HttpUrl;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,9 +38,9 @@ public class ProductUpdateDto {
     @Schema(types = {"string", "null"}, maxLength = 255, description = "Product category", example = "Electronics")
     private String category;
 
-    @Pattern(regexp = "^(https?://.*|)$", message = "Image URL must be a valid URL or empty")
+    @HttpUrl(message = "Image URL must be a valid URL or empty")
     @Size(max = 255, message = "Image URL must be at most 255 characters")
-    @Schema(types = {"string", "null"}, maxLength = 255, description = "Product image URL", example = "https://example.com/iphone13.jpg")
+    @Schema(types = {"string", "null"}, maxLength = 255, description = "Absolute http(s) URL of the product image, or empty for none", example = "https://example.com/iphone13.jpg")
     private String imageUrl;
 
 }
