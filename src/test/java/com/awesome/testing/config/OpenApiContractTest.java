@@ -180,6 +180,23 @@ class OpenApiContractTest extends HttpHelper {
     }
 
     @Test
+    void zipCodeRecipientAndLoginExampleMatchTheEnforcedRules() {
+        // given
+        JsonNode schemas = spec.path("components").path("schemas");
+        String zipPattern = schemas.path("AddressDto").path("properties").path("zipCode").path("pattern").asText();
+
+        // then: the alternation is grouped, so a client-side (search) regex cannot match a partial value
+        assertThat(zipPattern).isEqualTo("^(?:[0-9]{2}(?:-[0-9]{3})?|[0-9]{5}(?:-[0-9]{4})?)$");
+        java.util.regex.Pattern zip = java.util.regex.Pattern.compile(zipPattern);
+        assertThat(List.of("12-345", "12", "12345", "12345-6789")).allMatch(value -> zip.matcher(value).find());
+        assertThat(List.of("12abc", "x12345", "123", "12-34")).noneMatch(value -> zip.matcher(value).find());
+        assertThat(schemas.path("EmailDto").path("required")).extracting(JsonNode::asText).contains("to");
+        JsonNode login = schemas.path("LoginDto").path("properties");
+        assertThat(login.path("username").path("example").asText()).isEqualTo("client");
+        assertThat(login.path("password").path("example").asText()).isEqualTo("client");
+    }
+
+    @Test
     void minimumLengthMarkerIsNotPublished() {
         // when
         var markers = spec.findValues(MinLengthUnlessBlankPropertyCustomizer.MIN_LENGTH_EXTENSION);

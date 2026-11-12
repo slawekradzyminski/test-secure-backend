@@ -105,6 +105,58 @@ class CreateQrControllerTest extends DomainHelper {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
+    @Test
+    void shouldReportValidationErrorsAs400JsonWhenTheClientAcceptsOnlyJson() {
+        // given
+        String apiToken = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+
+        // when
+        ResponseEntity<String> response = executePost(CREATE_QR_CODE_ENDPOINT, new CreateQrDto(""),
+                acceptHeadersWith(apiToken, MediaType.APPLICATION_JSON_VALUE), String.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
+        assertThat(response.getBody()).isEqualTo("{\"text\":\"Text is required\"}");
+    }
+
+    @Test
+    void shouldGet406ForValidTextWhenTheClientAcceptsOnlyJson() {
+        // given
+        String apiToken = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+
+        // when
+        ResponseEntity<String> response = executePost(CREATE_QR_CODE_ENDPOINT, new CreateQrDto("test"),
+                acceptHeadersWith(apiToken, MediaType.APPLICATION_JSON_VALUE), String.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_ACCEPTABLE);
+        assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
+        assertThat(response.getBody()).isEqualTo("{\"message\":\"The requested response media type is not available\"}");
+    }
+
+    @Test
+    void shouldReturnPngForAWildcardAccept() {
+        // given
+        String apiToken = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+
+        // when
+        ResponseEntity<byte[]> response = executePost(CREATE_QR_CODE_ENDPOINT, new CreateQrDto("test"),
+                acceptHeadersWith(apiToken, "application/json, */*;q=0.5"), byte[].class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.IMAGE_PNG);
+    }
+
+    private HttpHeaders acceptHeadersWith(String apiToken, String accept) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.ACCEPT, accept);
+        headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken);
+        return headers;
+    }
+
     protected HttpHeaders getImageHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.ACCEPT, MediaType.IMAGE_PNG_VALUE);

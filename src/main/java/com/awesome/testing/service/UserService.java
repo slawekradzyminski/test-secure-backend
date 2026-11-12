@@ -6,6 +6,7 @@ import com.awesome.testing.dto.user.UserRegisterDto;
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.controller.exception.UserNotFoundException;
 import com.awesome.testing.security.AuthenticationHandler;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.repository.EmailEventRepository;
@@ -76,6 +77,8 @@ public class UserService {
     private final WishlistItemRepository wishlistItemRepository;
     private final ProductReviewRepository productReviewRepository;
     private final OrderRepository orderRepository;
+    private final OrderService orderService;
+    private final EntityManager entityManager;
     private final MfaService mfaService;
     private final WebhookService webhookService;
     private final TenderDataEraser tenderDataEraser;
@@ -119,7 +122,14 @@ public class UserService {
         // (they lock the cart or order and then share-lock the user to record an email). Locking the user
         // first and deleting orders later deadlocked with a payment result for the same user.
         cartItemRepository.findByUsernameForUpdate(username);
-        orderRepository.findByUsernameForUpdate(username);
+        // Locks the orders and cancels the open ones first, so their reserved stock goes back to the
+        // catalogue (and card payments are refunded) before the order rows are deleted below.
+        orderService.cancelOpenOrdersForErasure(username);
+        // The cancellations wrote inventory movements and tender ledger rows that reference the managed orders.
+        // Write them and detach everything, so deleting the orders below does not trip over those references
+        // (the database sets their order_id to null). Row locks are kept until the transaction ends.
+        entityManager.flush();
+        entityManager.clear();
         // The user row lock keeps a concurrently recorded email event from landing after its rows were
         // deleted and failing the final user delete on email_event_user_id_fkey.
         UserEntity user = userRepository.findByUsernameForUpdate(username)
