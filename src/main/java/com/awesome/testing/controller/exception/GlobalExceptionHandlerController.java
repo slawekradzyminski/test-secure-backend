@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -46,6 +47,19 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
                 .badRequest()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(ValidationMessages.byField(ex.getBindingResult().getAllErrors()));
+    }
+
+    /**
+     * A path or query parameter that does not convert (for example {@code /products/abc} or an unknown
+     * enum). Kept in the {@code error} shape of invalid arguments; names the parameter and the
+     * rejected value instead of the converter's message.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, String>> handleArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return ResponseEntity
+                .badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("error", ArgumentMismatchMessages.of(ex.getName(), ex.getValue(), ex.getRequiredType())));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
