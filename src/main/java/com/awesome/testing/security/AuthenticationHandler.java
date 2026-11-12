@@ -16,6 +16,10 @@ public class AuthenticationHandler {
     private final AuthenticationManager authenticationManager;
 
     public void authUser(String username, String password) {
+        if (PasswordPolicy.exceedsBcryptLimit(password)) {
+            // BCrypt would compare only the first 72 bytes and accept any suffix.
+            throw new CustomException("Invalid username/password supplied", HttpStatus.UNPROCESSABLE_CONTENT);
+        }
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
         } catch (BadCredentialsException e) {

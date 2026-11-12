@@ -36,7 +36,7 @@ class UserInputValidationTest extends DomainHelper {
         assertThat(response.getBody()).containsEntry("username", "Maximum username length: 255 characters")
                 .containsEntry("firstName", "Maximum firstName length: 255 characters")
                 .containsEntry("lastName", "Maximum lastName length: 255 characters")
-                .containsKey("password");
+                .containsEntry("password", "Maximum password length: 72 bytes");
     }
 
     @Test

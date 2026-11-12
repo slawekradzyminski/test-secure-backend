@@ -1,6 +1,8 @@
 package com.awesome.testing.dto.user;
 
+import com.awesome.testing.dto.validation.MaxUtf8Bytes;
 import com.awesome.testing.dto.validation.VisibleText;
+import com.awesome.testing.security.PasswordPolicy;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -35,8 +37,10 @@ public class UserRegisterDto {
     @NotNull(message = "Password is required")
     @VisibleText(message = "Password is required")
     @Size(min = 8, message = "Minimum password length: 8 characters")
-    @Size(max = 255, message = "Maximum password length: 255 characters")
-    @Schema(minLength = 8, maxLength = 255, pattern = "\\S", description = "Password", example = "password123")
+    @MaxUtf8Bytes(value = PasswordPolicy.MAX_BYTES, message = PasswordPolicy.MAX_BYTES_MESSAGE)
+    @Schema(minLength = 8, maxLength = 72, pattern = "\\S",
+            description = "Password of at least 8 characters and at most 72 bytes in UTF-8 (the BCrypt limit; "
+                    + "a character outside ASCII takes 2 to 4 bytes)", example = "password123")
     private String password;
 
     @NotNull(message = "firstName is required")
