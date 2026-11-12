@@ -38,11 +38,13 @@ public class ProductCreateDto {
     private Integer stockQuantity;
 
     @NotBlank(message = "Category is required")
-    @Schema(minLength = 1, pattern = "\\S", description = "Product category", example = "Electronics")
+    @Size(max = 255, message = "Category must be at most 255 characters")
+    @Schema(minLength = 1, maxLength = 255, pattern = "\\S", description = "Product category", example = "Electronics")
     private String category;
 
     @Pattern(regexp = "^(https?://.*|)$", message = "Image URL must be a valid URL or empty")
-    @Schema(types = {"string", "null"}, description = "Product image URL", example = "https://example.com/iphone13.jpg")
+    @Size(max = 255, message = "Image URL must be at most 255 characters")
+    @Schema(types = {"string", "null"}, maxLength = 255, description = "Product image URL", example = "https://example.com/iphone13.jpg")
     private String imageUrl;
 
 }
