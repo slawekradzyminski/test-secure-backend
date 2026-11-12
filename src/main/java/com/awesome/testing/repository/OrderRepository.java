@@ -29,6 +29,11 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long>, JpaSp
     @Query("select o from OrderEntity o where o.id = :id")
     Optional<OrderEntity> findByIdForUpdate(@Param("id") Long id);
 
+    /** Locks every order of a user, by id, before the user row is locked for deletion (see UserService#forget). */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select o from OrderEntity o where o.username = :username order by o.id")
+    List<OrderEntity> findByUsernameForUpdate(@Param("username") String username);
+
     void deleteByUsername(String username);
 
     @Query("select count(i) > 0 from OrderItemEntity i "

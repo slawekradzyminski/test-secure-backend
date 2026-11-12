@@ -3,7 +3,7 @@ package com.awesome.testing.controller.users;
 import com.awesome.testing.dto.ErrorDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Content;
-import com.awesome.testing.service.UserService;
+import com.awesome.testing.service.UserDeletion;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserDeleteController {
 
-    private final UserService userService;
+    private final UserDeletion userDeletion;
 
     @DeleteMapping(value = "/{username}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -36,7 +36,7 @@ public class UserDeleteController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@Parameter(description = "Username") @PathVariable String username) {
-        userService.delete(username);
+        userDeletion.forget(username);
     }
 
 }

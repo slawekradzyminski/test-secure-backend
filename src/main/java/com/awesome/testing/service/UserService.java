@@ -115,8 +115,13 @@ public class UserService {
     }
 
     public void forget(String username) {
-        // Lock first: an email event inserted concurrently would otherwise land after its rows were deleted
-        // and make the final user delete fail on email_event_user_id_fkey.
+        // Lock order: cart rows, then orders, then the user row - the order checkout and payment results use
+        // (they lock the cart or order and then share-lock the user to record an email). Locking the user
+        // first and deleting orders later deadlocked with a payment result for the same user.
+        cartItemRepository.findByUsernameForUpdate(username);
+        orderRepository.findByUsernameForUpdate(username);
+        // The user row lock keeps a concurrently recorded email event from landing after its rows were
+        // deleted and failing the final user delete on email_event_user_id_fkey.
         UserEntity user = userRepository.findByUsernameForUpdate(username)
                 .orElseThrow(() -> new UserNotFoundException("The user doesn't exist"));
         refreshTokenService.removeAllTokensForUser(username);

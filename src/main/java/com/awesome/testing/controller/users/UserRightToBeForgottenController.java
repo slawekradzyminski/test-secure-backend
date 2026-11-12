@@ -3,7 +3,7 @@ package com.awesome.testing.controller.users;
 import com.awesome.testing.dto.ErrorDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Content;
-import com.awesome.testing.service.UserService;
+import com.awesome.testing.service.UserDeletion;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserRightToBeForgottenController {
 
-    private final UserService userService;
+    private final UserDeletion userDeletion;
 
     @DeleteMapping("/{username}/right-to-be-forgotten")
     @PreAuthorize("@userService.exists(#username) and (hasRole('ROLE_ADMIN') or #username == authentication.principal.username)")
@@ -40,6 +40,6 @@ public class UserRightToBeForgottenController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void forget(@Parameter(description = "Username") @PathVariable String username) {
-        userService.forget(username);
+        userDeletion.forget(username);
     }
 }
