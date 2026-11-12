@@ -119,6 +119,63 @@ class ProductFieldValidationTest extends AbstractEcommerceTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
+    @Test
+    void updateRejectsABlankNameAndAWhitespaceOnlyCategory() {
+        // given
+        ProductEntity product = setupProduct();
+
+        // when
+        ResponseEntity<Map<String, String>> response = update(product, Map.of("name", "   ", "category", " "));
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isEqualTo(Map.of(
+                "name", "Product name is required",
+                "category", "Category must not be blank"));
+        ProductEntity stored = productRepository.findById(product.getId()).orElseThrow();
+        assertThat(stored.getName()).isEqualTo(product.getName());
+        assertThat(stored.getCategory()).isEqualTo(product.getCategory());
+    }
+
+    @Test
+    void anEmptyCategoryOnUpdateLeavesTheCategoryUnchanged() {
+        // given
+        ProductEntity product = setupProduct();
+
+        // when
+        ResponseEntity<Map<String, String>> response = update(product, Map.of("category", "", "name", "Renamed probe"));
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ProductEntity stored = productRepository.findById(product.getId()).orElseThrow();
+        assertThat(stored.getCategory()).isEqualTo(product.getCategory());
+        assertThat(stored.getName()).isEqualTo("Renamed probe");
+    }
+
+    @Test
+    void theCourseInvalidUpdateKeepsItsExactErrorMap() {
+        // given: l20 admin/products/id.put.spec.ts
+        ProductEntity product = setupProduct();
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", "x");
+        body.put("description", "");
+        body.put("price", 0);
+        body.put("stockQuantity", -1);
+        body.put("category", "");
+        body.put("imageUrl", "not-a-url");
+
+        // when
+        ResponseEntity<Map<String, String>> response = update(product, body);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isEqualTo(Map.of(
+                "name", "Product name must be between 3 and 100 characters",
+                "price", "Price must be greater than 0",
+                "stockQuantity", "Stock quantity cannot be negative",
+                "imageUrl", "Image URL must be a valid URL or empty"));
+    }
+
     private ResponseEntity<Map<String, String>> create(Map<String, Object> body) {
         return executePost(PRODUCTS_ENDPOINT, body, getHeadersWith(adminToken), mapTypeReference());
     }

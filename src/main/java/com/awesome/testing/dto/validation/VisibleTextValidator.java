@@ -10,9 +10,16 @@ public class VisibleTextValidator implements ConstraintValidator<VisibleText, Ch
     /** Letters and symbols that render as blank space (Hangul fillers, braille blank). */
     private static final Set<Integer> BLANK_GLYPHS = Set.of(0x115F, 0x1160, 0x3164, 0xFFA0, 0x2800);
 
+    private boolean allowEmpty;
+
+    @Override
+    public void initialize(VisibleText constraint) {
+        this.allowEmpty = constraint.allowEmpty();
+    }
+
     @Override
     public boolean isValid(CharSequence value, ConstraintValidatorContext context) {
-        return value == null || hasVisibleCharacter(value);
+        return value == null || (allowEmpty && value.isEmpty()) || hasVisibleCharacter(value);
     }
 
     public static boolean hasVisibleCharacter(CharSequence value) {

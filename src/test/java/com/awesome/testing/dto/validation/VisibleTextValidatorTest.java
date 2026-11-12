@@ -26,4 +26,22 @@ class VisibleTextValidatorTest {
     void nullIsLeftToNotNull() {
         assertThat(validator.isValid(null, null)).isTrue();
     }
+
+    @org.junit.jupiter.api.Test
+    void allowEmptyAcceptsOnlyTheEmptyStringBesidesVisibleText() {
+        try (jakarta.validation.ValidatorFactory factory = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
+            jakarta.validation.Validator beanValidator = factory.getValidator();
+
+            assertThat(beanValidator.validate(new Optional(""))).isEmpty();
+            assertThat(beanValidator.validate(new Optional("Books"))).isEmpty();
+            assertThat(beanValidator.validate(new Optional(" "))).hasSize(1);
+            assertThat(beanValidator.validate(new Required(""))).hasSize(1);
+        }
+    }
+
+    private record Optional(@VisibleText(allowEmpty = true, message = "blank") String value) {
+    }
+
+    private record Required(@VisibleText(message = "blank") String value) {
+    }
 }

@@ -2,6 +2,7 @@ package com.awesome.testing.dto.product;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.awesome.testing.dto.validation.HttpUrl;
+import com.awesome.testing.dto.validation.VisibleText;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,8 +18,9 @@ import java.math.BigDecimal;
 @Schema(description = "Update product data transfer object")
 public class ProductUpdateDto {
 
+    @VisibleText(message = "Product name is required")
     @Size(min = 3, max = 100, message = "Product name must be between 3 and 100 characters")
-    @Schema(types = {"string", "null"}, description = "Product name", example = "iPhone 13")
+    @Schema(types = {"string", "null"}, pattern = "\\S", description = "Product name", example = "iPhone 13")
     private String name;
 
     @Size(max = 1000, message = "Description cannot exceed 1000 characters")
@@ -34,8 +36,9 @@ public class ProductUpdateDto {
     @Schema(types = {"integer", "null"}, description = "Available stock quantity", example = "100")
     private Integer stockQuantity;
 
+    @VisibleText(allowEmpty = true, message = "Category must not be blank")
     @Size(max = 255, message = "Category must be at most 255 characters")
-    @Schema(types = {"string", "null"}, maxLength = 255, description = "Product category", example = "Electronics")
+    @Schema(types = {"string", "null"}, maxLength = 255, description = "Product category; null or an empty string leaves it unchanged", example = "Electronics")
     private String category;
 
     @HttpUrl(message = "Image URL must be a valid URL or empty")

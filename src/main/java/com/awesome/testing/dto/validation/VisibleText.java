@@ -23,6 +23,9 @@ public @interface VisibleText {
 
     String message();
 
+    /** Also accept the empty string (for update fields where "" means "leave unchanged"). */
+    boolean allowEmpty() default false;
+
     Class<?>[] groups() default {};
 
     Class<? extends Payload>[] payload() default {};
