@@ -43,6 +43,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import com.awesome.testing.service.identity.UserIdentity;
 
 @ExtendWith(MockitoExtension.class)
 class PasswordResetServiceTest {
@@ -77,6 +78,7 @@ class PasswordResetServiceTest {
     private void rebuildService() {
         passwordResetService = new PasswordResetService(
                 userRepository,
+                new UserIdentity(userRepository),
                 passwordResetTokenRepository,
                 passwordResetTokenGenerator,
                 passwordEncoder,
@@ -93,7 +95,7 @@ class PasswordResetServiceTest {
     void shouldGenerateTokenAndSendEmailForExistingUser() {
         Counter requestedCounter = mockMetricCounter("password.reset.requested");
         UserEntity user = sampleUser();
-        when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername("client")).thenReturn(Optional.of(user));
         when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");
         when(passwordResetTokenGenerator.hashToken("raw-token")).thenReturn("hash-token");
         when(passwordResetTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -116,7 +118,7 @@ class PasswordResetServiceTest {
         rebuildService();
 
         UserEntity user = sampleUser();
-        when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername("client")).thenReturn(Optional.of(user));
         when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");
         when(passwordResetTokenGenerator.hashToken("raw-token")).thenReturn("hash-token");
         when(passwordResetTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -134,7 +136,7 @@ class PasswordResetServiceTest {
         UserEntity user = sampleUser();
         user.setAuthProvider("keycloak");
         user.setProviderSubject("sso-subject");
-        when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername("client")).thenReturn(Optional.of(user));
 
         ForgotPasswordResponseDto response = passwordResetService.requestReset("client", "127.0.0.1", "JUnit");
 
@@ -148,7 +150,7 @@ class PasswordResetServiceTest {
     void shouldAllowLocalResetWhenSsoIdentityIsIncomplete() {
         UserEntity user = sampleUser();
         user.setAuthProvider("keycloak");
-        when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername("client")).thenReturn(Optional.of(user));
         when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");
         when(passwordResetTokenGenerator.hashToken("raw-token")).thenReturn("hash-token");
         when(emailFactory.buildResetRequestEmail(any(), anyString(), any())).thenReturn(
@@ -167,7 +169,7 @@ class PasswordResetServiceTest {
     void shouldBuildResetLinkFromTrustedConfiguration() {
         properties.setFrontendBaseUrl("https://shop.example/reset?source=email");
         UserEntity user = sampleUser();
-        when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername("client")).thenReturn(Optional.of(user));
         when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");
         when(passwordResetTokenGenerator.hashToken("raw-token")).thenReturn("hash-token");
         when(passwordResetTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -192,7 +194,7 @@ class PasswordResetServiceTest {
     void shouldRejectInvalidConfiguredResetBaseUrl(String baseUrl) {
         properties.setFrontendBaseUrl(baseUrl);
         UserEntity user = sampleUser();
-        when(userRepository.findByUsernameOrEmail("client", "client")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername("client")).thenReturn(Optional.of(user));
         when(passwordResetTokenGenerator.generateToken()).thenReturn("raw-token");
         when(passwordResetTokenGenerator.hashToken("raw-token")).thenReturn("hash-token");
         when(passwordResetTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));

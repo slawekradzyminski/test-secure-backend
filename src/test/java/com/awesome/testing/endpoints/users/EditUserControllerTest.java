@@ -70,7 +70,7 @@ class EditUserControllerTest extends DomainHelper {
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().getUsername()).isEqualTo(username);
-        assertThat(response.getBody().getEmail()).isEqualTo(newEmail);
+        assertThat(response.getBody().getEmail()).as("emails are stored lower-case").isEqualTo("newemail@gmail.com");
     }
 
     @Test

@@ -24,6 +24,7 @@ import com.awesome.testing.service.mfa.MfaChallenge;
 import com.awesome.testing.service.mfa.MfaService;
 import com.awesome.testing.service.webhook.WebhookService;
 import com.awesome.testing.service.tender.TenderDataEraser;
+import com.awesome.testing.service.identity.UserIdentity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -78,15 +79,18 @@ public class UserService {
     private final MfaService mfaService;
     private final WebhookService webhookService;
     private final TenderDataEraser tenderDataEraser;
+    private final UserIdentity userIdentity;
 
     public LoginResponseDto signIn(String username, String password) {
         authenticationHandler.authUser(username, password);
-        UserEntity user = getUser(username);
+        // The sign-in name may differ in case from the stored username; tokens carry the stored one.
+        UserEntity user = userIdentity.findBySignInName(username)
+                .orElseThrow(() -> new UserNotFoundException("The user doesn't exist"));
         if (mfaService.isEnabled(user)) {
             MfaChallenge challenge = mfaService.startSignIn(user);
             return LoginResponseDto.mfaChallenge(user, challenge.rawToken(), challenge.expiresAt());
         }
-        String jwt = jwtTokenProvider.createToken(username, user.getRoles());
+        String jwt = jwtTokenProvider.createToken(user.getUsername(), user.getRoles());
         String refreshToken = refreshTokenService.createToken(user).value();
         TokenPair tokens = TokenPair.builder()
                 .token(jwt)
@@ -158,11 +162,12 @@ public class UserService {
 
     public UserEntity edit(String username, UserEditDto userDto) {
         UserEntity existingUser = getUser(username);
-        if (userDto.getEmail() != null && userRepository.existsByEmailAndIdNot(userDto.getEmail(), existingUser.getId())) {
+        String email = UserIdentity.canonicalEmail(userDto.getEmail());
+        if (email != null && userIdentity.emailTakenByAnother(email, existingUser.getId())) {
             throw new CustomException("Email is already in use", HttpStatus.BAD_REQUEST);
         }
 
-        updateIfNotNull(userDto.getEmail(), UserEntity::setEmail, existingUser);
+        updateIfNotNull(email, UserEntity::setEmail, existingUser);
         updateIfNotNull(userDto.getFirstName(), UserEntity::setFirstName, existingUser);
         updateIfNotNull(userDto.getLastName(), UserEntity::setLastName, existingUser);
 
@@ -204,19 +209,19 @@ public class UserService {
     }
 
     private void ensureUniqueSignupIdentity(UserRegisterDto userRegisterDto) {
-        if (userRepository.existsByUsername(userRegisterDto.getUsername())) {
+        if (userIdentity.usernameTaken(userRegisterDto.getUsername())) {
             throw new CustomException("Username is already in use", HttpStatus.BAD_REQUEST);
         }
-        if (userRepository.existsByEmail(userRegisterDto.getEmail())) {
+        if (userIdentity.emailTaken(userRegisterDto.getEmail())) {
             throw new CustomException("Email is already in use", HttpStatus.BAD_REQUEST);
         }
     }
 
     private void handleDuplicateUsersErrors(UserRegisterDto userRegisterDto, DataIntegrityViolationException ex) {
-        if (userRepository.existsByUsername(userRegisterDto.getUsername())) {
+        if (userIdentity.usernameTaken(userRegisterDto.getUsername())) {
             throw new CustomException("Username is already in use", HttpStatus.BAD_REQUEST, ex);
         }
-        if (userRepository.existsByEmail(userRegisterDto.getEmail())) {
+        if (userIdentity.emailTaken(userRegisterDto.getEmail())) {
             throw new CustomException("Email is already in use", HttpStatus.BAD_REQUEST, ex);
         }
         throw ex;
@@ -228,7 +233,7 @@ public class UserService {
                 .firstName(userRegisterDto.getFirstName())
                 .lastName(userRegisterDto.getLastName())
                 .roles(List.of(ROLE_CLIENT))
-                .email(userRegisterDto.getEmail())
+                .email(UserIdentity.canonicalEmail(userRegisterDto.getEmail()))
                 .password(passwordEncoder.encode(userRegisterDto.getPassword()))
                 .chatSystemPrompt(DEFAULT_CHAT_SYSTEM_PROMPT.strip())
                 .toolSystemPrompt(DEFAULT_TOOL_SYSTEM_PROMPT.strip())

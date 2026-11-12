@@ -9,6 +9,7 @@ import com.awesome.testing.repository.UserRepository;
 import com.awesome.testing.security.JwtTokenProvider;
 import com.awesome.testing.security.oidc.OidcTokenVerifier;
 import com.awesome.testing.security.oidc.OidcUserClaims;
+import com.awesome.testing.service.identity.UserIdentity;
 import com.awesome.testing.service.token.RefreshTokenService;
 import com.awesome.testing.service.token.IssuedRefreshToken;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +64,8 @@ class SsoLoginServiceTest {
                 userRepository,
                 passwordEncoder,
                 jwtTokenProvider,
-                refreshTokenService
+                refreshTokenService,
+                new UserIdentity(userRepository)
         );
     }
 
@@ -73,8 +75,8 @@ class SsoLoginServiceTest {
         when(oidcTokenVerifier.verify("id-token")).thenReturn(claims);
         when(userRepository.findByAuthProviderAndProviderSubject("keycloak", "sso-subject"))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByEmail("sso-client@example.com")).thenReturn(Optional.empty());
-        when(userRepository.existsByUsername("sso-client")).thenReturn(false);
+        when(userRepository.existsByEmailIgnoringCase("sso-client@example.com")).thenReturn(false);
+        when(userRepository.existsByUsernameIgnoringCase("sso-client")).thenReturn(false);
         when(passwordEncoder.encode(any())).thenReturn("encoded-password");
         when(userRepository.saveAndFlush(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -121,7 +123,7 @@ class SsoLoginServiceTest {
         when(oidcTokenVerifier.verify("id-token")).thenReturn(claims);
         when(userRepository.findByAuthProviderAndProviderSubject("keycloak", "sso-subject"))
                 .thenReturn(Optional.of(existingUser));
-        when(userRepository.findByEmail("updated@example.com")).thenReturn(Optional.of(existingUser));
+        when(userRepository.existsByEmailIgnoringCaseAndIdNot("updated@example.com", null)).thenReturn(false);
         when(userRepository.save(existingUser)).thenReturn(existingUser);
         when(jwtTokenProvider.createToken("sso-client", List.of(Role.ROLE_CLIENT))).thenReturn("app-jwt");
         when(refreshTokenService.createToken(existingUser)).thenReturn(refreshToken(existingUser));
@@ -145,17 +147,10 @@ class SsoLoginServiceTest {
                 .authProvider("keycloak")
                 .providerSubject("sso-subject")
                 .build();
-        UserEntity otherUser = UserEntity.builder()
-                .id(2)
-                .username("other")
-                .email("taken@example.com")
-                .password("encoded-password")
-                .roles(List.of(Role.ROLE_CLIENT))
-                .build();
         when(oidcTokenVerifier.verify("id-token")).thenReturn(claims);
         when(userRepository.findByAuthProviderAndProviderSubject("keycloak", "sso-subject"))
                 .thenReturn(Optional.of(existingUser));
-        when(userRepository.findByEmail("taken@example.com")).thenReturn(Optional.of(otherUser));
+        when(userRepository.existsByEmailIgnoringCaseAndIdNot("taken@example.com", 1)).thenReturn(true);
 
         assertThatThrownBy(() -> ssoLoginService.exchange("id-token"))
                 .isInstanceOf(CustomException.class)
@@ -169,16 +164,10 @@ class SsoLoginServiceTest {
     @Test
     void shouldRejectEmailConflictWithPasswordUser() {
         OidcUserClaims claims = claims("sso-subject", "Sso Client", "existing@example.com");
-        UserEntity passwordUser = UserEntity.builder()
-                .username("existing")
-                .email("existing@example.com")
-                .password("encoded-password")
-                .roles(List.of(Role.ROLE_CLIENT))
-                .build();
         when(oidcTokenVerifier.verify("id-token")).thenReturn(claims);
         when(userRepository.findByAuthProviderAndProviderSubject("keycloak", "sso-subject"))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByEmail("existing@example.com")).thenReturn(Optional.of(passwordUser));
+        when(userRepository.existsByEmailIgnoringCase("existing@example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> ssoLoginService.exchange("id-token"))
                 .isInstanceOf(CustomException.class)
@@ -195,8 +184,8 @@ class SsoLoginServiceTest {
         when(oidcTokenVerifier.verify("id-token")).thenReturn(claims);
         when(userRepository.findByAuthProviderAndProviderSubject("keycloak", "symbol-subject"))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByEmail("!!!@example.com")).thenReturn(Optional.empty());
-        when(userRepository.existsByUsername("sso-user")).thenReturn(false);
+        when(userRepository.existsByEmailIgnoringCase("!!!@example.com")).thenReturn(false);
+        when(userRepository.existsByUsernameIgnoringCase("sso-user")).thenReturn(false);
         when(passwordEncoder.encode(any())).thenReturn("encoded-password");
         when(userRepository.saveAndFlush(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtTokenProvider.createToken("sso-user", List.of(Role.ROLE_CLIENT))).thenReturn("app-jwt");
@@ -213,9 +202,9 @@ class SsoLoginServiceTest {
         when(oidcTokenVerifier.verify("id-token")).thenReturn(claims);
         when(userRepository.findByAuthProviderAndProviderSubject("keycloak", "sso-subject"))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByEmail("sso-client@example.com")).thenReturn(Optional.empty());
-        when(userRepository.existsByUsername("sso-client")).thenReturn(true);
-        when(userRepository.existsByUsername("sso-client-992739")).thenReturn(false);
+        when(userRepository.existsByEmailIgnoringCase("sso-client@example.com")).thenReturn(false);
+        when(userRepository.existsByUsernameIgnoringCase("sso-client")).thenReturn(true);
+        when(userRepository.existsByUsernameIgnoringCase("sso-client-992739")).thenReturn(false);
         when(passwordEncoder.encode(any())).thenReturn("encoded-password");
         when(userRepository.saveAndFlush(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtTokenProvider.createToken("sso-client-992739", List.of(Role.ROLE_CLIENT))).thenReturn("app-jwt");
@@ -239,8 +228,8 @@ class SsoLoginServiceTest {
         when(oidcTokenVerifier.verify("id-token")).thenReturn(claims);
         when(userRepository.findByAuthProviderAndProviderSubject("google", "google-subject"))
                 .thenReturn(Optional.empty());
-        when(userRepository.findByEmail("google-user@gmail.com")).thenReturn(Optional.empty());
-        when(userRepository.existsByUsername("google-user")).thenReturn(false);
+        when(userRepository.existsByEmailIgnoringCase("google-user@gmail.com")).thenReturn(false);
+        when(userRepository.existsByUsernameIgnoringCase("google-user")).thenReturn(false);
         when(passwordEncoder.encode(any())).thenReturn("encoded-password");
         when(userRepository.saveAndFlush(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtTokenProvider.createToken("google-user", List.of(Role.ROLE_CLIENT))).thenReturn("app-jwt");

@@ -1,6 +1,6 @@
 package com.awesome.testing.security;
 
-import com.awesome.testing.repository.UserRepository;
+import com.awesome.testing.service.identity.UserIdentity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,17 +17,18 @@ import static org.springframework.security.core.userdetails.User.*;
 @RequiredArgsConstructor
 public class MyUserDetails implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    private final UserIdentity userIdentity;
 
+    /** Exact username first, else the only case-insensitive match; the details carry the stored username. */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByUsername(username)
-                .map(user -> toUserDetails(username, user))
+        return userIdentity.findBySignInName(username)
+                .map(this::toUserDetails)
                 .orElseThrow(() -> notFound(username));
     }
 
-    private UserDetails toUserDetails(String username, UserEntity user) {
-        return withUsername(username)
+    private UserDetails toUserDetails(UserEntity user) {
+        return withUsername(user.getUsername())
                 .password(user.getPassword())
                 .authorities(user.getRoles())
                 .accountExpired(false)

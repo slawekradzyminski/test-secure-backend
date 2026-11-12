@@ -3,6 +3,7 @@ package com.awesome.testing.dto.user;
 import com.awesome.testing.dto.validation.MaxUtf8Bytes;
 import com.awesome.testing.dto.validation.VisibleText;
 import com.awesome.testing.security.PasswordPolicy;
+import com.awesome.testing.service.identity.UserIdentity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
@@ -26,12 +28,17 @@ public class UserRegisterDto {
     @VisibleText(message = "Username is required")
     @Size(min = 4, message = "Minimum username length: 4 characters")
     @Size(max = 255, message = "Maximum username length: 255 characters")
-    @Schema(minLength = 4, maxLength = 255, description = "Username", example = "johndoe")
+    @Pattern(regexp = UserIdentity.USERNAME_CHARACTERS, message = UserIdentity.USERNAME_CHARACTERS_MESSAGE)
+    @Schema(minLength = 4, maxLength = 255, pattern = "^[A-Za-z0-9._-]{4,255}$",
+            description = "Username of letters, digits, dots, underscores and hyphens; unique regardless of letter case",
+            example = "johndoe")
     private String username;
 
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
-    @Schema(minLength = 1, pattern = "\\S", description = "Email address", example = "john.doe@example.com")
+    @Schema(minLength = 1, pattern = "\\S",
+            description = "Email address; stored lower-case and unique regardless of letter case",
+            example = "john.doe@example.com")
     private String email;
 
     @NotNull(message = "Password is required")
