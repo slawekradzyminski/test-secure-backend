@@ -11,6 +11,7 @@ import com.awesome.testing.entity.OrderEntity;
 import org.springframework.data.domain.Page;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.function.Function;
 
@@ -18,8 +19,16 @@ import java.util.function.Function;
 public final class CommerceViews {
     private CommerceViews() {}
 
+    /**
+     * Money with two decimals ("12.50") on every operation, whether the value
+     * comes from the request or the database. Zero stays "0", which the course
+     * contract asserts for an empty cart.
+     */
     public static String money(BigDecimal value) {
-        return value.toPlainString();
+        if (value.signum() == 0) {
+            return "0";
+        }
+        return value.setScale(Math.max(value.scale(), 2), RoundingMode.UNNECESSARY).toPlainString();
     }
 
     public record Product(

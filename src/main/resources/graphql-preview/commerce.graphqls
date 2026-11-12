@@ -1,4 +1,4 @@
-"""Authenticated commerce API. Money is an exact decimal string; dates are server-local ISO date-times."""
+"""Authenticated commerce API. Money is an exact decimal string with two decimals ("12.50"), except zero, which is "0"; dates are server-local ISO date-times."""
 type Query {
   products(offset: Int! = 0, limit: Int! = 20, category: String, inStockOnly: Boolean): ProductPage
   product(id: ID!): Product
