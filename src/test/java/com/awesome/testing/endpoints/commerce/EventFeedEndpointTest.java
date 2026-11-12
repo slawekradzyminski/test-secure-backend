@@ -19,6 +19,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.sql.Timestamp;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -269,6 +270,26 @@ class EventFeedEndpointTest extends AbstractPaymentFlowTest {
 
         // then
         assertThat(deleted).isPositive();
+        assertThat(eventRepository.findByOrderIdOrderBySequenceAsc(order.getId())).extracting(DomainEventEntity::getType)
+                .containsExactly("order.paid");
+    }
+
+    @Test
+    void theScheduledRetentionRunDeletesExpiredEventsWithoutACallerTransaction() {
+        // given: the scheduler calls scheduledPurge() on the bean, which reaches purge() by self-invocation,
+        // so purge()'s @Transactional never applies. A job built outside Spring reproduces that call path.
+        OrderDto order = order(clientToken, product("8.00", 5), 1);
+        markPaid(order.getId());
+        List<DomainEventEntity> rows = eventRepository.findByOrderIdOrderBySequenceAsc(order.getId());
+        jdbcTemplate.update("UPDATE domain_events SET recorded_at = ? WHERE sequence = ?",
+                Timestamp.from(Instant.now().minus(Duration.ofDays(31))), rows.getFirst().getSequence());
+        DomainEventRetentionJob scheduled = new DomainEventRetentionJob(eventRepository, Clock.systemUTC(),
+                Duration.ofDays(30), true);
+
+        // when
+        scheduled.scheduledPurge();
+
+        // then
         assertThat(eventRepository.findByOrderIdOrderBySequenceAsc(order.getId())).extracting(DomainEventEntity::getType)
                 .containsExactly("order.paid");
     }

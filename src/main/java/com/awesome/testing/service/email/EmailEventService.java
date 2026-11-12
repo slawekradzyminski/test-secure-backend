@@ -8,10 +8,12 @@ import com.awesome.testing.dto.email.EmailTemplate;
 import com.awesome.testing.entity.EmailEventEntity;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.repository.EmailEventRepository;
+import com.awesome.testing.repository.UserRepository;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +37,7 @@ public class EmailEventService {
     private static final Duration MAX_BACKOFF = Duration.ofHours(1);
 
     private final EmailEventRepository emailEventRepository;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
     private final Clock emailClock = Clock.systemUTC();
 
@@ -43,11 +46,21 @@ public class EmailEventService {
                              String traceparent) {
     }
 
+    /**
+     * Records a queued email for {@code user}, share-locking the user row so a concurrent deletion either
+     * waits for this insert (and then deletes the event with the user) or finishes first.
+     *
+     * @return the event id, or {@code null} when the user has been deleted and nothing was recorded
+     */
     @Transactional
     public Integer recordQueued(UserEntity user, EmailDto emailDto, String destination, UUID requestId) {
+        Optional<UserEntity> owner = userRepository.findByIdForShare(user.getId());
+        if (owner.isEmpty()) {
+            return null;
+        }
         Instant now = Instant.now(emailClock);
         EmailEventEntity event = EmailEventEntity.builder()
-                .user(user)
+                .user(owner.get())
                 .type(resolveType(emailDto))
                 .status(EmailDeliveryStatus.QUEUED)
                 .recipientEmail(emailDto.getTo())

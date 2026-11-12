@@ -215,7 +215,7 @@ class GiftCardServiceTest {
 
         assertThat(disabled.getStatus()).isEqualTo(GiftCardStatus.DISABLED);
         assertThat(card.getDisabledAt()).isEqualTo(NOW);
-        verify(giftCardRepository).save(card);
+        verify(giftCardRepository).saveAndFlush(card);
         GiftCardTransactionEntity ledger = savedTransaction();
         assertThat(ledger.getType()).isEqualTo(GiftCardTransactionType.DISABLED);
         assertThat(ledger.getAmount()).isEqualByComparingTo("0");

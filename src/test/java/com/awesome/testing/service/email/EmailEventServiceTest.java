@@ -65,6 +65,20 @@ class EmailEventServiceTest {
     }
 
     @Test
+    void recordsNothingForADeletedUser() {
+        Integer userId = user.getId();
+        entityManager.remove(user);
+        entityManager.flush();
+        long before = repository.count();
+
+        Integer id = service.recordQueued(UserEntity.builder().id(userId).username("gone")
+                .email("gone@example.com").password("secret-password").build(), email, "email", null);
+
+        assertThat(id).isNull();
+        assertThat(repository.count()).isEqualTo(before);
+    }
+
+    @Test
     void storesTheCorrelationIdsOfTheQueuingRequestForRetries() {
         String trace = "4bf92f3577b34da6a3ce929d0e0e4736";
         Integer id;

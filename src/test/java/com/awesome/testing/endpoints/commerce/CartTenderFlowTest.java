@@ -16,8 +16,10 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -118,6 +120,10 @@ class CartTenderFlowTest extends AbstractTenderFlowTest {
         ResponseEntity<ErrorDto> unknown = applyGiftCard(clientToken, "GC-AAAA-AAAA-AAAA", ErrorDto.class);
         ResponseEntity<ErrorDto> malformed = applyGiftCard(clientToken, "WELCOME10", ErrorDto.class);
         ResponseEntity<Map> blank = executePut(CART_GIFT_CARD, new ApplyGiftCardDto(" "), getHeadersWith(clientToken), Map.class);
+        // Two constraints used to fail on "" and the reported one varied between identical requests.
+        List<ResponseEntity<Map>> emptyCodes = IntStream.range(0, 10)
+                .mapToObj(attempt -> executePut(CART_GIFT_CARD, new ApplyGiftCardDto(""), getHeadersWith(clientToken), Map.class))
+                .toList();
         ResponseEntity<String> anonymous = executePut(CART_GIFT_CARD, new ApplyGiftCardDto(disabled.getCode()),
                 getJsonOnlyHeaders(), String.class);
 
@@ -132,7 +138,11 @@ class CartTenderFlowTest extends AbstractTenderFlowTest {
         assertThat(unknown.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(malformed.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(blank.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(blank.getBody()).containsKey("code");
+        assertThat(blank.getBody()).isEqualTo(Map.of("code", "Gift card code is required"));
+        assertThat(emptyCodes).allSatisfy(response -> {
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody()).isEqualTo(Map.of("code", "Gift card code is required"));
+        });
         assertThat(anonymous.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(fields(executeGet(CART_ENDPOINT, getHeadersWith(clientToken), String.class).getBody())).isEqualTo(LEGACY_CART);
     }

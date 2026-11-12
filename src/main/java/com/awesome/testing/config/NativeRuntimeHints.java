@@ -1,5 +1,6 @@
 package com.awesome.testing.config;
 
+import com.awesome.testing.dto.validation.MinLengthUnlessBlankValidator;
 import com.awesome.testing.event.CommerceEvent;
 import com.awesome.testing.event.CommerceEventType;
 
@@ -30,6 +31,7 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  *       the seed catalogue), so every type in the DTO and seed packages is registered for binding.
  *       The scan runs at build time during AOT processing. Commerce domain events are registered
  *       too so webhook payloads and listeners can serialize them.</li>
+ *   <li>Hibernate Validator creates custom constraint validators reflectively.</li>
  *   <li>{@code @PreAuthorize} SpEL calls {@code @userService.exists(...)} and reads
  *       {@code authentication.principal.username} reflectively.</li>
  *   <li>Caffeine selects generated cache and node classes by name and builds them through method
@@ -58,6 +60,9 @@ public class NativeRuntimeHints {
                 hints.reflection().registerType(TypeReference.of(jmsType),
                         MemberCategory.INVOKE_PUBLIC_METHODS, MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
             }
+            // Hibernate Validator instantiates custom constraint validators reflectively.
+            hints.reflection().registerType(MinLengthUnlessBlankValidator.class,
+                    MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS, MemberCategory.INVOKE_PUBLIC_METHODS);
             hints.reflection().registerType(TypeReference.of("com.awesome.testing.service.UserService"),
                     MemberCategory.INVOKE_PUBLIC_METHODS);
             hints.reflection().registerType(TypeReference.of("com.awesome.testing.security.CustomPrincipal"),

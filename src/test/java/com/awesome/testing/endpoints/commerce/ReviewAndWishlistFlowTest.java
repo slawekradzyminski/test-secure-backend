@@ -25,7 +25,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -141,6 +143,26 @@ class ReviewAndWishlistFlowTest extends AbstractCommerceFlowTest {
         List<WishlistItemDto> list = executeGet("/api/v1/wishlist", getHeadersWith(clientToken),
                 new ParameterizedTypeReference<List<WishlistItemDto>>() {}).getBody();
         assertThat(list.getFirst().getLastNotifiedAt()).isNotNull();
+    }
+
+    @Test
+    void blankReviewFieldsAlwaysGetTheSameValidationMessages() {
+        // given: "" used to fail both @NotBlank and @Size(min), and the reported message varied per request
+        ProductEntity product = product("10.00", 10);
+
+        // when
+        List<ResponseEntity<Map>> responses = IntStream.range(0, 10)
+                .mapToObj(attempt -> executePost(reviews(product), new ReviewRequestDto(5, "", ""),
+                        getHeadersWith(clientToken), Map.class))
+                .toList();
+
+        // then
+        assertThat(responses).allSatisfy(response -> {
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody()).isEqualTo(Map.of(
+                    "title", "Title is required",
+                    "body", "Review text is required"));
+        });
     }
 
     private void adjust(ProductEntity product, int delta) {

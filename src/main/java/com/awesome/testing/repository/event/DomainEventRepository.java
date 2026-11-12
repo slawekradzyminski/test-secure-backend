@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -41,6 +42,8 @@ public interface DomainEventRepository extends JpaRepository<DomainEventEntity, 
                                                @Param("types") Collection<String> types,
                                                Pageable pageable);
 
+    /** Runs in its own transaction when called outside one (the scheduled retention run calls it that way). */
+    @Transactional
     @Modifying
     @Query("DELETE FROM DomainEventEntity e WHERE e.recordedAt < :cutoff")
     int deleteRecordedBefore(@Param("cutoff") Instant cutoff);
