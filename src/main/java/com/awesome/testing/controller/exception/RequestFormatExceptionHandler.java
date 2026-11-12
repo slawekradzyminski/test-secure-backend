@@ -30,7 +30,7 @@ public class RequestFormatExceptionHandler {
         return ResponseEntity
                 .badRequest()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(UnreadableBodyMessages.of(ex));
+                .body(UnreadableBodyMessages.forException(ex));
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)

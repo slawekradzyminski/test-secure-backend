@@ -11,7 +11,7 @@ final class ArgumentMismatchMessages {
     private ArgumentMismatchMessages() {
     }
 
-    static String of(String parameter, Object value, Class<?> requiredType) {
+    static String message(String parameter, Object value, Class<?> requiredType) {
         String rejected = abbreviate(String.valueOf(value));
         if (requiredType != null && requiredType.isEnum()) {
             String allowed = Arrays.stream(requiredType.getEnumConstants())

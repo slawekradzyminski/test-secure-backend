@@ -23,7 +23,7 @@ final class UnreadableBodyMessages {
     private UnreadableBodyMessages() {
     }
 
-    static Map<String, String> of(HttpMessageNotReadableException ex) {
+    static Map<String, String> forException(HttpMessageNotReadableException ex) {
         Throwable cause = ex.getCause();
         if (cause instanceof MismatchedInputException mismatch) {
             String field = path(mismatch);

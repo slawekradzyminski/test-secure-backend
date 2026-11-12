@@ -60,7 +60,7 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
         return ResponseEntity
                 .badRequest()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("error", ArgumentMismatchMessages.of(ex.getName(), ex.getValue(), ex.getRequiredType())));
+                .body(Map.of("error", ArgumentMismatchMessages.message(ex.getName(), ex.getValue(), ex.getRequiredType())));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

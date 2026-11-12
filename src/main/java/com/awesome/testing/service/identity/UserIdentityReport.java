@@ -22,6 +22,9 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class UserIdentityReport {
 
+    /** More accounts than this sharing a lower-cased value are case duplicates. */
+    private static final long SINGLE = 1L;
+
     private final UserRepository userRepository;
 
     public List<UserIdentityIssueDto> issues() {
@@ -34,11 +37,11 @@ public class UserIdentityReport {
 
         List<UserIdentityIssueDto> result = new ArrayList<>();
         for (Row row : rows) {
-            EnumSet<IdentityIssue> issues = EnumSet.noneOf(IdentityIssue.class);
+            Set<IdentityIssue> issues = EnumSet.noneOf(IdentityIssue.class);
             if (row.username() == null || !UserIdentity.CANONICAL_USERNAME.matcher(row.username()).matches()) {
                 issues.add(IdentityIssue.USERNAME_FORMAT);
             }
-            if (usernames.getOrDefault(lower(row.username()), 0L) > 1) {
+            if (usernames.getOrDefault(lower(row.username()), 0L) > SINGLE) {
                 issues.add(IdentityIssue.USERNAME_CASE_DUPLICATE);
             }
             if (row.username() != null && row.username().contains("@") && canonicalEmails.contains(lower(row.username()))
@@ -50,7 +53,7 @@ public class UserIdentityReport {
             } else if (!row.email().equals(UserIdentity.canonicalEmail(row.email()))) {
                 issues.add(IdentityIssue.EMAIL_NOT_CANONICAL);
             }
-            if (emails.getOrDefault(lower(row.email()), 0L) > 1) {
+            if (emails.getOrDefault(lower(row.email()), 0L) > SINGLE) {
                 issues.add(IdentityIssue.EMAIL_CASE_DUPLICATE);
             }
             if (!issues.isEmpty()) {
