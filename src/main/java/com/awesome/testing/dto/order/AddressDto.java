@@ -32,7 +32,7 @@ public class AddressDto {
     private String state;
 
     @NotBlank(message = "Zip code is required")
-    @Pattern(regexp = "^[0-9]{2}(-[0-9]{3})?|[0-9]{5}(-[0-9]{4})?$", message = "Invalid postal/zip code format")
+    @Pattern(regexp = "^(?:[0-9]{2}(?:-[0-9]{3})?|[0-9]{5}(?:-[0-9]{4})?)$", message = "Invalid postal/zip code format")
     @Schema(minLength = 1, maxLength = 10, description = "Postal/ZIP code", example = "35-119")
     private String zipCode;
 
