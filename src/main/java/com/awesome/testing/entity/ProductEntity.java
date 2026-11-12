@@ -8,6 +8,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
@@ -54,6 +56,7 @@ public class ProductEntity {
     @Column(nullable = false)
     private String category;
 
+    /** Never null: a product without an image stores {@link #NO_IMAGE}. */
     private String imageUrl;
 
     @CreationTimestamp
@@ -63,6 +66,20 @@ public class ProductEntity {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    public static final String NO_IMAGE = "";
+
+    /**
+     * Every write path (REST, GraphQL, CSV import, seeding) stores an empty string instead of null, so
+     * readers and the V19 NOT NULL constraint see one representation of "no image".
+     */
+    @PrePersist
+    @PreUpdate
+    void normalizeImageUrl() {
+        if (imageUrl == null) {
+            imageUrl = NO_IMAGE;
+        }
+    }
 
     public static ProductEntity from(ProductCreateDto productCreateDto) {
         return ProductEntity.builder()

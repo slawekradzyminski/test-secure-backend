@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
@@ -46,13 +47,18 @@ public class SetupProducts {
         assignDemoProductHandles(createdProducts);
     }
 
+    /**
+     * Rewrites legacy absolute image URLs to relative paths and turns a missing image URL into an empty
+     * string. Runs on every start of a seeding profile, so it must accept any row the API, GraphQL or the
+     * CSV import can store (catalog X-01: a null image URL crash-looped the backend).
+     */
     @Transactional
     public void normalizeProductImageUrls() {
         List<ProductEntity> products = productRepository.findAll();
 
         for (ProductEntity product : products) {
             String normalizedImageUrl = normalizeLegacyImageUrl(product.getImageUrl());
-            if (!normalizedImageUrl.equals(product.getImageUrl())) {
+            if (!Objects.equals(normalizedImageUrl, product.getImageUrl())) {
                 product.setImageUrl(normalizedImageUrl);
             }
         }
@@ -87,7 +93,7 @@ public class SetupProducts {
 
     private String normalizeLegacyImageUrl(String imageUrl) {
         if (imageUrl == null) {
-            return null;
+            return ProductEntity.NO_IMAGE;
         }
 
         for (String legacyPrefix : LEGACY_IMAGE_URL_PREFIXES) {
