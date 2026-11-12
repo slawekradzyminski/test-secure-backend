@@ -11,8 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -44,19 +42,10 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            String errorMessage = error.getDefaultMessage();
-            if (error instanceof FieldError fieldError) {
-                errors.put(fieldError.getField(), errorMessage);
-            } else if (error instanceof ObjectError objectError) {
-                errors.put(objectError.getObjectName(), errorMessage);
-            }
-        });
         return ResponseEntity
                 .badRequest()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(errors);
+                .body(ValidationMessages.byField(ex.getBindingResult().getAllErrors()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
