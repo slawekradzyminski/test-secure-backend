@@ -123,11 +123,23 @@ public class CartService {
         return existingItem;
     }
 
+    /**
+     * The cart keeps the unit price of the moment a line was last added or
+     * updated, and checkout charges it. A line whose product price changed since
+     * then also carries that unit price and the current price, so the client can
+     * tell the customer; unchanged lines serialize exactly as before.
+     */
     private CartItemDto convertToCartItemDto(CartItemEntity item) {
-        return CartItemDto.builder()
+        CartItemDto.CartItemDtoBuilder line = CartItemDto.builder()
                 .productId(item.getProduct().getId())
-                .quantity(item.getQuantity())
-                .build();
+                .quantity(item.getQuantity());
+        BigDecimal currentPrice = item.getProduct().getPrice();
+        if (item.getPrice().compareTo(currentPrice) != 0) {
+            line.priceChanged(true)
+                    .unitPrice(item.getPrice())
+                    .currentPrice(currentPrice);
+        }
+        return line.build();
     }
 
     private BigDecimal calculateTotalPrice(List<CartItemEntity> cartItems) {
