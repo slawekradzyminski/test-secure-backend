@@ -70,4 +70,50 @@ class UpdateChatSystemPromptControllerTest extends DomainHelper {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    void shouldAnswerAResetWithTheDefaultPromptThatGetReturns() {
+        // given
+        String token = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+        executePut(CHAT_SYSTEM_PROMPT_ENDPOINT, new ChatSystemPromptDto("Custom prompt"), getHeadersWith(token),
+                ChatSystemPromptDto.class);
+
+        for (String reset : java.util.Arrays.asList(null, "", "   ")) {
+            // when
+            ResponseEntity<ChatSystemPromptDto> response = executePut(
+                    CHAT_SYSTEM_PROMPT_ENDPOINT,
+                    new ChatSystemPromptDto(reset),
+                    getHeadersWith(token),
+                    ChatSystemPromptDto.class);
+            ResponseEntity<ChatSystemPromptDto> current = executeGet(
+                    CHAT_SYSTEM_PROMPT_ENDPOINT, getHeadersWith(token), ChatSystemPromptDto.class);
+
+            // then
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(response.getBody().getChatSystemPrompt())
+                    .isNotBlank()
+                    .isNotEqualTo("Custom prompt")
+                    .isEqualTo(current.getBody().getChatSystemPrompt());
+        }
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    void shouldAnswerAnOmittedFieldWithTheDefaultPrompt() {
+        // given
+        String token = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+
+        // when
+        ResponseEntity<ChatSystemPromptDto> response = executePut(
+                CHAT_SYSTEM_PROMPT_ENDPOINT, Map.of(), getHeadersWith(token), ChatSystemPromptDto.class);
+        ResponseEntity<ChatSystemPromptDto> current = executeGet(
+                CHAT_SYSTEM_PROMPT_ENDPOINT, getHeadersWith(token), ChatSystemPromptDto.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getChatSystemPrompt())
+                .isNotBlank()
+                .isEqualTo(current.getBody().getChatSystemPrompt());
+    }
 }

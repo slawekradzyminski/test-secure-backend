@@ -70,4 +70,50 @@ class UpdateToolSystemPromptControllerTest extends DomainHelper {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    void shouldAnswerAResetWithTheDefaultPromptThatGetReturns() {
+        // given
+        String token = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+        executePut(TOOL_SYSTEM_PROMPT_ENDPOINT, new ToolSystemPromptDto("Custom prompt"), getHeadersWith(token),
+                ToolSystemPromptDto.class);
+
+        for (String reset : java.util.Arrays.asList(null, "", "   ")) {
+            // when
+            ResponseEntity<ToolSystemPromptDto> response = executePut(
+                    TOOL_SYSTEM_PROMPT_ENDPOINT,
+                    new ToolSystemPromptDto(reset),
+                    getHeadersWith(token),
+                    ToolSystemPromptDto.class);
+            ResponseEntity<ToolSystemPromptDto> current = executeGet(
+                    TOOL_SYSTEM_PROMPT_ENDPOINT, getHeadersWith(token), ToolSystemPromptDto.class);
+
+            // then
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(response.getBody().getToolSystemPrompt())
+                    .isNotBlank()
+                    .isNotEqualTo("Custom prompt")
+                    .isEqualTo(current.getBody().getToolSystemPrompt());
+        }
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    void shouldAnswerAnOmittedFieldWithTheDefaultPrompt() {
+        // given
+        String token = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+
+        // when
+        ResponseEntity<ToolSystemPromptDto> response = executePut(
+                TOOL_SYSTEM_PROMPT_ENDPOINT, Map.of(), getHeadersWith(token), ToolSystemPromptDto.class);
+        ResponseEntity<ToolSystemPromptDto> current = executeGet(
+                TOOL_SYSTEM_PROMPT_ENDPOINT, getHeadersWith(token), ToolSystemPromptDto.class);
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getToolSystemPrompt())
+                .isNotBlank()
+                .isEqualTo(current.getBody().getToolSystemPrompt());
+    }
 }
