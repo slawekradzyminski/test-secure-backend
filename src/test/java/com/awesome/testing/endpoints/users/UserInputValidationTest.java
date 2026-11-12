@@ -154,6 +154,33 @@ class UserInputValidationTest extends DomainHelper {
     }
 
     @Test
+    void signinWithMissingOrNullCredentialsReportsRequiredFields() {
+        for (String body : new String[] {"{}", "{\"username\":null,\"password\":null}",
+                "{\"username\":\"\",\"password\":\"\"}"}) {
+            // when
+            ResponseEntity<Map<String, String>> response = executePost(LOGIN_ENDPOINT, body, getJsonOnlyHeaders(),
+                    mapTypeReference());
+
+            // then
+            assertThat(response.getStatusCode()).as(body).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody()).as(body).isEqualTo(Map.of(
+                    "username", "Username is required",
+                    "password", "Password is required"));
+        }
+    }
+
+    @Test
+    void signinWithAMissingPasswordReportsOnlyThePassword() {
+        // when
+        ResponseEntity<Map<String, String>> response = executePost(LOGIN_ENDPOINT, "{\"username\":\"client\"}",
+                getJsonOnlyHeaders(), mapTypeReference());
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isEqualTo(Map.of("password", "Password is required"));
+    }
+
+    @Test
     void profileEditReportsTheMaximumLengthForOverlongNames() {
         // given
         UserRegisterDto user = getRandomUser();
