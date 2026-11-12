@@ -60,6 +60,7 @@ class TrafficPostgresIT extends DomainHelper {
                 TrafficLogEntity.builder()
                         .correlationId(correlation)
                         .clientSessionId(session)
+                        .ownerUsername(user.getUsername())
                         .timestamp(Instant.now())
                         .method("GET")
                         .path("/null-preview")

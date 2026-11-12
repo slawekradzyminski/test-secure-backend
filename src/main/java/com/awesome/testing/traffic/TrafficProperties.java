@@ -39,9 +39,15 @@ public class TrafficProperties {
     private int maxPageSize = DEFAULT_MAX_PAGE_SIZE;
     private Duration retention = Duration.ofDays(1);
     private Duration cleanupInterval = Duration.ofDays(1);
-    private boolean obfuscateAuthorization;
+    /**
+     * Masks email addresses in captured traffic. Secrets (passwords, tokens, 2FA and gift card codes,
+     * credential headers) are masked in every profile and cannot be switched off.
+     */
     private boolean obfuscateEmails;
-    private boolean obfuscateSensitiveBodyFields;
+    /**
+     * Lets anonymous callers reach the traffic endpoints without a session header. They receive an empty
+     * page and no STOMP events: traffic records are readable only by the user who made them.
+     */
     private boolean legacyPublicAccess;
     private List<String> excludedPaths =
             new ArrayList<>(

@@ -46,6 +46,12 @@ public class InventoryGrpcAuthentication implements ServerInterceptor {
         return Contexts.interceptCall(Context.current().withValue(IDENTITY, identity), call, headers, next);
     }
 
+    /** The authenticated caller of the current call, or null outside an authenticated call. */
+    public static String currentUsername() {
+        Authentication identity = IDENTITY.get();
+        return identity == null ? null : identity.getName();
+    }
+
     static String actor() {
         Authentication identity = IDENTITY.get();
         if (identity == null) {

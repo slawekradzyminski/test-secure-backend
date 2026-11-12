@@ -30,9 +30,9 @@ class ProtocolTrafficRecorderTest {
                 System.nanoTime() - 5_000_000, initial.completed());
 
         // when
-        recorder.complete(trace, "GRPC", "/service/Method", 0, "Method", "SUCCESS", List.of("OK"));
-        recorder.complete(trace, "GRPC", "/service/Method", 1, "Method", "ERROR", List.of("CANCELLED"));
-        recorder.complete(null, "GRPC", "/service/Method", 1, "Method", "ERROR", List.of("CANCELLED"));
+        recorder.complete(trace, "owner", "GRPC", "/service/Method", 0, "Method", "SUCCESS", List.of("OK"));
+        recorder.complete(trace, "owner", "GRPC", "/service/Method", 1, "Method", "ERROR", List.of("CANCELLED"));
+        recorder.complete(null, "owner", "GRPC", "/service/Method", 1, "Method", "ERROR", List.of("CANCELLED"));
 
         // then
         verify(logs, times(1)).save(any(TrafficLogEntity.class));
@@ -53,7 +53,7 @@ class ProtocolTrafficRecorderTest {
         doThrow(new IllegalStateException("PRIVATE_DATABASE_DETAILS")).when(logs).save(any());
 
         // when / then
-        assertThatCode(() -> recorder.complete(trace, "GRAPHQL", "/api/v1/graphql", 200, "query cart", "SUCCESS", List.of()))
+        assertThatCode(() -> recorder.complete(trace, "owner", "GRAPHQL", "/api/v1/graphql", 200, "query cart", "SUCCESS", List.of()))
                 .doesNotThrowAnyException();
         assertThat(events).isEmpty();
         assertThat(recorder.start(null)).isNull();

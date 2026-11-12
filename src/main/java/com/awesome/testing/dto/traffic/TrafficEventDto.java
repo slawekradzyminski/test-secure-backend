@@ -16,4 +16,7 @@ public class TrafficEventDto {
     private int status;
     private long durationMs;
     private Instant timestamp;
+    /** Authenticated user who made the request; decides which session subscribers receive the event. */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private String ownerUsername;
 }

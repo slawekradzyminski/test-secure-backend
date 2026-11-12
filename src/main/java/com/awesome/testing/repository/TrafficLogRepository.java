@@ -17,8 +17,6 @@ public interface TrafficLogRepository
 
     Optional<TrafficLogEntity> findByCorrelationId(String correlationId);
 
-    Optional<TrafficLogEntity> findByCorrelationIdAndClientSessionId(String correlationId, String clientSessionId);
-
     @Transactional
     @Modifying
     @Query("delete from TrafficLogEntity t where t.timestamp < :cutoff")

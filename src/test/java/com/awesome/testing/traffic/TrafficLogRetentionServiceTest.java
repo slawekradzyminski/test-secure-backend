@@ -1,6 +1,7 @@
 package com.awesome.testing.traffic;
 
 import com.awesome.testing.repository.TrafficLogRepository;
+import com.awesome.testing.repository.TrafficSessionOwnerRepository;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
@@ -20,9 +21,12 @@ class TrafficLogRetentionServiceTest {
         TrafficLogRepository repository = mock(TrafficLogRepository.class);
         Clock clock = Clock.fixed(Instant.parse("2026-04-08T10:15:30Z"), ZoneOffset.UTC);
 
-        TrafficLogRetentionService service = new TrafficLogRetentionService(repository, properties, clock);
+        TrafficSessionOwnerRepository owners = mock(TrafficSessionOwnerRepository.class);
+        TrafficLogRetentionService service = new TrafficLogRetentionService(repository, properties, clock, owners,
+                mock(TrafficSessionOwners.class));
         service.cleanupExpiredLogs();
 
         verify(repository).deleteByTimestampBefore(Instant.parse("2026-04-07T10:15:30Z"));
+        verify(owners).deleteUnusedBoundBefore(Instant.parse("2026-04-07T10:15:30Z"));
     }
 }

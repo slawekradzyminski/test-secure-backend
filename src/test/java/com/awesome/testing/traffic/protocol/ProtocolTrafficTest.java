@@ -124,7 +124,8 @@ class ProtocolTrafficTest extends DomainHelper {
     @Test
     void successfulOperationsProduceOneRecordAndRestEventShapeStaysUnchanged() {
         // given
-        var token = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+        var user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        var token = getToken(user);
 
         // when
         var response =
@@ -137,9 +138,11 @@ class ProtocolTrafficTest extends DomainHelper {
 
         // then
         assertThat(mapper.readTree(entry.getResponseBody()).path("outcome").asString()).isEqualTo("SUCCESS");
+        assertThat(entry.getOwnerUsername()).as("bound to the caller (X-03)").isEqualTo(user.getUsername());
         assertThat(logs.findAll().stream().filter(row -> "GRAPHQL".equals(row.getMethod()))).hasSize(1);
-        assertThat(mapper.writeValueAsString(TrafficEventDto.builder().method("GET").status(200).build()))
-                .doesNotContain("protocolDetails");
+        assertThat(mapper.writeValueAsString(TrafficEventDto.builder().method("GET").status(200)
+                .ownerUsername("private-owner").build()))
+                .doesNotContain("protocolDetails", "private-owner");
     }
 
     @Test

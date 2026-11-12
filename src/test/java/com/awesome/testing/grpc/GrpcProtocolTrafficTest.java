@@ -68,6 +68,8 @@ class GrpcProtocolTrafficTest extends AbstractInventoryGrpcTest {
         assertThat(event.getProtocolDetails().outcome()).isEqualTo("SUCCESS");
         assertThat(event.getProtocolDetails().codes()).containsExactly("OK");
         assertThat(trailers.get().get(CORRELATION)).isEqualTo(entry.getCorrelationId());
+        assertThat(entry.getOwnerUsername()).as("bound to the caller (X-03)").isNotNull();
+        assertThat(event.getOwnerUsername()).isEqualTo(entry.getOwnerUsername());
         assertThat(entry.getRequestHeaders()).isEqualTo("{}");
         assertThat(entry.getRequestBody()).isEqualTo("{}");
         assertThat(entry.getResponseBody()).doesNotContain("PRIVATE_REASON", token, request.getRequestId());

@@ -33,10 +33,13 @@ class TrafficReadSecurityTest extends DomainHelper {
 
     @Test
     void sessionIdsAreCaseSensitiveForListsAndDetails() {
-        var token = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+        var user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        var token = getToken(user);
         String session = "CaseSensitive-" + UUID.randomUUID();
         var own = row(session, "/own", Instant.now());
+        own.setOwnerUsername(user.getUsername());
         var other = row(session.toLowerCase(Locale.ROOT), "/private", Instant.now());
+        other.setOwnerUsername(user.getUsername());
         repository.saveAll(List.of(own, other));
         var headers = getHeadersWith(token);
         headers.set(TrafficSession.HEADER, session);
@@ -124,12 +127,14 @@ class TrafficReadSecurityTest extends DomainHelper {
     @Test
     void directDetailReadsFlushNewlyQueuedRecordsWithoutAListReadFirst() {
         var own = row("detail-session-1234", "/own-detail", Instant.now());
+        own.setOwnerUsername("detail-owner");
         service.save(own);
-        assertThat(service.findByCorrelationIdAndClientSessionId(own.getCorrelationId(), own.getClientSessionId()))
+        assertThat(service.findByCorrelationId("detail-owner", own.getCorrelationId(), own.getClientSessionId()))
                 .hasValueSatisfying(log -> assertThat(log.getPath()).isEqualTo("/own-detail"));
         var legacy = row("legacy-session-1234", "/legacy-detail", Instant.now());
+        legacy.setOwnerUsername("detail-owner");
         service.save(legacy);
-        assertThat(service.findByCorrelationId(legacy.getCorrelationId()))
+        assertThat(service.findByCorrelationId("detail-owner", legacy.getCorrelationId(), null))
                 .hasValueSatisfying(log -> assertThat(log.getPath()).isEqualTo("/legacy-detail"));
     }
 

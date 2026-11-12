@@ -5,6 +5,7 @@ import com.awesome.testing.dto.ValidationErrorsDto;
 import com.awesome.testing.dto.order.PageDto;
 import com.awesome.testing.dto.traffic.TrafficInfoDto;
 import com.awesome.testing.dto.traffic.TrafficLogEntryDto;
+import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.traffic.TrafficLogService;
 import com.awesome.testing.traffic.TrafficProperties;
 import com.awesome.testing.traffic.TrafficSession;
@@ -21,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -73,7 +76,10 @@ public class TrafficController {
     @Operation(
             summary = "Get paginated HTTP traffic logs",
             description =
-                    "Returns captured HTTP traffic logs with optional filters for session, method, status, path, text, and time range.")
+                    "Returns the caller's captured HTTP traffic with optional filters for session, method, status, path, text, and time range. "
+                            + "Only records the caller made while signed in are returned, plus the anonymous records (such as a sign-in attempt) of a session that belongs to the caller; "
+                            + "with X-Client-Session-Id the result is limited to that session. Passwords, tokens, 2FA and gift card codes and credential headers are always masked. "
+                            + "With legacy public access an anonymous caller receives an empty page.")
     @ApiResponse(responseCode = "200", description = "Successfully returned traffic logs")
     @ApiResponse(
             responseCode = "400",
@@ -108,6 +114,7 @@ public class TrafficController {
         return ResponseEntity.ok(
                 PageDto.from(
                         trafficLogService.findLogs(
+                                currentUsername(),
                                 resolveSession(clientSessionId),
                                 method,
                                 status,
@@ -121,18 +128,23 @@ public class TrafficController {
     @GetMapping("/logs/{correlationId}")
     @Operation(
             summary = "Get traffic log by correlation identifier",
-            description = "Returns one captured HTTP traffic log entry using its correlation identifier.")
+            description = "Returns one captured HTTP traffic log entry using its correlation identifier, under the same visibility rules as the list; a record the caller may not read returns 404.")
     @ApiResponse(responseCode = "200", description = "Successfully returned traffic log")
     @ApiResponse(responseCode = "404", description = "Traffic log not found; empty response body", content = @Content)
     public ResponseEntity<TrafficLogEntryDto> getTrafficLog(
             @PathVariable String correlationId,
             @RequestHeader(name = TrafficSession.HEADER, required = false) String clientSessionId) {
-        String resolvedSessionId = resolveSession(clientSessionId);
-        return (resolvedSessionId == null
-                        ? trafficLogService.findByCorrelationId(correlationId)
-                        : trafficLogService.findByCorrelationIdAndClientSessionId(correlationId, resolvedSessionId))
+        return trafficLogService.findByCorrelationId(currentUsername(), correlationId, resolveSession(clientSessionId))
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /** The authenticated caller; null for an anonymous caller, who can get here only with legacy public access. */
+    private static String currentUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getPrincipal() instanceof CustomPrincipal principal
+                ? principal.getUsername()
+                : null;
     }
 
     private String resolveSession(String clientSessionId) {

@@ -38,6 +38,13 @@ public final class TrafficLogSpecifications {
                         .toList());
     }
 
+    /** Records the reader made, plus anonymous records when the reader owns the session being read. */
+    public static Specification<TrafficLogEntity> visibleTo(String reader, boolean includeAnonymous) {
+        return (root, query, cb) -> includeAnonymous
+                ? cb.or(cb.equal(root.get("ownerUsername"), reader), cb.isNull(root.get("ownerUsername")))
+                : cb.equal(root.get("ownerUsername"), reader);
+    }
+
     private static Specification<TrafficLogEntity> equalsSession(String value) {
         return value == null ? null : (root, query, cb) -> cb.equal(root.get("clientSessionId"), value);
     }
