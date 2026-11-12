@@ -45,6 +45,33 @@ class TrafficDataSanitizerTest {
     }
 
     @Test
+    void masksLongBodiesWithoutOverflowingASmallThreadStack() throws Exception {
+        // given: a 1 MB string member (and a long escaped one) before a secret; masking runs before
+        // truncation, so the whole body is scanned. A per-character recursive pattern overflowed the stack
+        // (2,954 characters were enough on CI), which broke the request in the traffic filter.
+        String longText = "a".repeat(1_000_000);
+        String longEscaped = "\\\"x".repeat(100_000);
+        String body = "{\"text\":\"" + longText + "\",\"note\":\"" + longEscaped + "\",\"password\":\"hidden-value\"}";
+        String[] masked = new String[1];
+        Throwable[] failure = new Throwable[1];
+        Thread worker = new Thread(null, () -> {
+            try {
+                masked[0] = sanitizer(false, 100).sanitizeBody("/api/v1/qr/create", body).body();
+            } catch (Throwable t) {
+                failure[0] = t;
+            }
+        }, "small-stack", 256 * 1024);
+
+        // when
+        worker.start();
+        worker.join();
+
+        // then
+        assertThat(failure[0]).isNull();
+        assertThat(masked[0]).doesNotContain("hidden-value");
+    }
+
+    @Test
     void masksThePasswordResetAndPasswordChangeFieldsThatWereStoredInClear() {
         // given
         String body = """

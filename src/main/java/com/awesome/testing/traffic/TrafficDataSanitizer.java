@@ -35,12 +35,17 @@ public class TrafficDataSanitizer {
             "(?i)\\b[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}\\b"
     );
     /**
+     * The body of a JSON string as an "unrolled loop" with possessive quantifiers: the engine recurses once
+     * per escape sequence instead of once per character, so long strings cannot overflow the stack.
+     */
+    private static final String JSON_STRING_BODY = "[^\"\\\\]*+(?:\\\\.[^\"\\\\]*+)*+";
+    /**
      * A JSON member: quoted name, colon, then a string, number, literal or array of scalars. Works on
      * truncated or otherwise invalid JSON because it never needs the whole document.
      */
     private static final Pattern JSON_MEMBER = Pattern.compile(
-            "\"((?:[^\"\\\\]|\\\\.)*)\"(\\s*:\\s*)"
-                    + "(\"(?:[^\"\\\\]|\\\\.)*\"?|-?\\d[\\d.eE+-]*|true|false|null|\\[[^\\[\\]{}]*]?)"
+            "\"(" + JSON_STRING_BODY + ")\"(\\s*:\\s*)"
+                    + "(\"" + JSON_STRING_BODY + "\"?|-?\\d[\\d.eE+-]*|true|false|null|\\[[^\\[\\]{}]*]?)"
     );
     private static final Pattern FORM_PARAMETER = Pattern.compile("(^|[&;?])([^=&;]+)=([^&;]*)");
     private static final Pattern SECRET_NAME = Pattern.compile(
