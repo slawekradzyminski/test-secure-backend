@@ -355,4 +355,26 @@ class ProductSearchControllerTest extends AbstractProductSearchTest {
         assertThat(response.getBody().content().getFirst().getAverageRating()).isEqualByComparingTo(BigDecimal.valueOf(5));
         assertThat(response.getBody().facets().categories()).containsExactly(new CategoryFacetDto("Garden", 1));
     }
+
+    @Test
+    void shouldIgnoreDiacriticsInTheQueryAndTheCatalog() {
+        // given
+        product("Zażółć Gęślą", "Polish pangram", "Books", "10.00", 1);
+        product("Crème brûlée torch", "Kitchen", "Łódź Kitchen", "20.00", 1);
+        product("Plain", "Nothing special", "Misc", "30.00", 1);
+
+        // when
+        ResponseEntity<ProductSearchResultDto> plainQuery = search("?q=zazolc");
+        ResponseEntity<ProductSearchResultDto> accentedQuery = search("?q=ZAŻÓŁĆ");
+        ResponseEntity<ProductSearchResultDto> mixedQuery = search("?q=gesla");
+        ResponseEntity<ProductSearchResultDto> category = search("?q=lodz");
+        ResponseEntity<ProductSearchResultDto> french = search("?q=creme bru");
+
+        // then
+        assertThat(names(plainQuery)).containsExactly("Zażółć Gęślą");
+        assertThat(names(accentedQuery)).containsExactly("Zażółć Gęślą");
+        assertThat(names(mixedQuery)).containsExactly("Zażółć Gęślą");
+        assertThat(names(category)).containsExactly("Crème brûlée torch");
+        assertThat(names(french)).containsExactly("Crème brûlée torch");
+    }
 }

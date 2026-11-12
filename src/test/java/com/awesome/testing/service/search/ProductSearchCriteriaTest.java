@@ -60,6 +60,15 @@ class ProductSearchCriteriaTest {
     }
 
     @Test
+    void shouldFoldDiacriticsInTheQuery() {
+        // when
+        ProductSearchCriteria criteria = criteria("ZAŻÓŁĆ gęślą Crème", null, null, null, null, null, null, null, null);
+
+        // then
+        assertThat(criteria.likePattern()).isEqualTo("%zazolc gesla creme%");
+    }
+
+    @Test
     void shouldAcceptQueryOf100CharactersAfterTrimmingAndRejectLonger() {
         // given
         String longest = "x".repeat(100);

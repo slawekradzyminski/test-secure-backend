@@ -152,4 +152,16 @@ class ProductSearchPostgresIT {
     private static List<String> names(ProductSearchResultDto result) {
         return result.content().stream().map(ProductSearchItemDto::getName).toList();
     }
+
+    @Test
+    void shouldIgnoreDiacriticsOnPostgres() {
+        // given
+        product("Zażółć Gęślą Jaźń", "Polish pangram", "Books", "10.00", 1);
+        product("Plain", "Nothing special", "Misc", "30.00", 1);
+
+        // when / then
+        assertThat(names(search("zazolc", null, null, null, null, null))).containsExactly("Zażółć Gęślą Jaźń");
+        assertThat(names(search("ZAŻÓŁĆ", null, null, null, null, null))).containsExactly("Zażółć Gęślą Jaźń");
+        assertThat(names(search("jazn", null, null, null, null, null))).containsExactly("Zażółć Gęślą Jaźń");
+    }
 }
