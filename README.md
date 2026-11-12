@@ -480,6 +480,21 @@ tracking and visualization of all HTTP requests in the application.
 - Events are broadcast via WebSocket to connected clients
 - Secured access requiring authentication
 
+### Privacy
+
+- Secrets are masked before traffic is stored or published, in every profile: values of JSON members, form
+  and query parameters and headers whose names end in password, secret, token, code (a 2FA, recovery or gift
+  card code; coupon and currency codes stay visible), signature, cvc or API key, plus `Authorization`,
+  `Cookie` and service credential headers, and gift card codes in request paths. Only email masking is
+  configurable (`APP_TRAFFIC_OBFUSCATE_EMAILS`).
+- Every record keeps the user who made it. A caller reads only their own records, plus the anonymous records
+  (for example a failed sign-in) of a traffic session bound to them: a session is bound to the first user
+  seen on it. With `X-Client-Session-Id` the read is limited to that session.
+- `APP_TRAFFIC_LEGACY_PUBLIC_ACCESS=true` keeps the endpoints reachable without a token or session header,
+  but an anonymous caller receives an empty page, a 404 for any record, and no events on `/topic/traffic`.
+- Traffic stored by an older release is masked with the current rules once, on the first start of a release
+  with new rules (`TrafficHistoryMasker`, tracked in `traffic_masking_state`).
+
 ### Architecture
 
 - Traffic is captured using a servlet filter (`TrafficLoggingFilter`)
@@ -489,8 +504,9 @@ tracking and visualization of all HTTP requests in the application.
 
 ### WebSocket Endpoints
 
-- WebSocket Connection: `/api/v1/ws-traffic`
-- Subscription Topic: `/topic/traffic`
+- WebSocket Connection: `/api/v1/ws-traffic` (CONNECT with `Authorization: Bearer <token>` and
+  `X-Client-Session-Id`)
+- Subscription Topic: `/topic/traffic/{clientSessionId}`, only for the session's own user
 - Data Format:
   ```json
   {

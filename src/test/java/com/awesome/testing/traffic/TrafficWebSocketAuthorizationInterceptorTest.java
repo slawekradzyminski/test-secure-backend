@@ -27,12 +27,14 @@ class TrafficWebSocketAuthorizationInterceptorTest {
     private JwtTokenProvider jwtTokenProvider;
     private TrafficProperties trafficProperties;
     private TrafficWebSocketAuthorizationInterceptor interceptor;
+    private TrafficSessionOwners sessionOwners;
 
     @BeforeEach
     void setUp() {
         jwtTokenProvider = mock(JwtTokenProvider.class);
         trafficProperties = new TrafficProperties();
-        interceptor = new TrafficWebSocketAuthorizationInterceptor(jwtTokenProvider, trafficProperties);
+        sessionOwners = mock(TrafficSessionOwners.class);
+        interceptor = new TrafficWebSocketAuthorizationInterceptor(jwtTokenProvider, trafficProperties, sessionOwners);
     }
 
     @Test
@@ -63,13 +65,30 @@ class TrafficWebSocketAuthorizationInterceptorTest {
     }
 
     @Test
-    void shouldAllowSubscriptionToOwnBrowserSessionTopic() {
+    void shouldAllowSubscriptionToOwnBrowserSessionTopicAndBindTheSessionToTheSubscriber() {
         StompHeaderAccessor accessor = accessor(StompCommand.SUBSCRIBE);
-        accessor.setUser(mock(Principal.class));
+        accessor.setUser(user("alice"));
         accessor.getSessionAttributes().put(TrafficSession.STOMP_ATTRIBUTE, "browser-session-1234");
         accessor.setDestination("/topic/traffic/browser-session-1234");
+        when(sessionOwners.bind("browser-session-1234", "alice")).thenReturn("alice");
 
         assertThat(interceptor.preSend(message(accessor), mock(MessageChannel.class))).isNotNull();
+        verify(sessionOwners).bind("browser-session-1234", "alice");
+    }
+
+    @Test
+    void shouldRejectSubscriptionToASessionThatBelongsToAnotherUser() {
+        // given: catalog X-03 - a known session id no longer exposes another user's live traffic
+        StompHeaderAccessor accessor = accessor(StompCommand.SUBSCRIBE);
+        accessor.setUser(user("mallory"));
+        accessor.getSessionAttributes().put(TrafficSession.STOMP_ATTRIBUTE, "browser-session-1234");
+        accessor.setDestination("/topic/traffic/browser-session-1234");
+        when(sessionOwners.bind("browser-session-1234", "mallory")).thenReturn("alice");
+
+        // when / then
+        assertThatThrownBy(() -> interceptor.preSend(message(accessor), mock(MessageChannel.class)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Traffic session belongs to another user");
     }
 
     @Test
@@ -149,6 +168,12 @@ class TrafficWebSocketAuthorizationInterceptorTest {
 
         assertThat(interceptor.preSend(message(connect), mock(MessageChannel.class))).isNotNull();
         assertThat(interceptor.preSend(message(subscribe), mock(MessageChannel.class))).isNotNull();
+    }
+
+    private static Principal user(String name) {
+        Principal principal = mock(Principal.class);
+        when(principal.getName()).thenReturn(name);
+        return principal;
     }
 
     private static StompHeaderAccessor accessor(StompCommand command) {

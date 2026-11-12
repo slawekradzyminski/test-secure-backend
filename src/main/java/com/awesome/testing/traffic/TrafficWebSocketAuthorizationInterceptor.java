@@ -21,6 +21,7 @@ public class TrafficWebSocketAuthorizationInterceptor implements ChannelIntercep
 
     private final JwtTokenProvider jwtTokenProvider;
     private final TrafficProperties trafficProperties;
+    private final TrafficSessionOwners sessionOwners;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -59,6 +60,7 @@ public class TrafficWebSocketAuthorizationInterceptor implements ChannelIntercep
     }
 
     private void authorizeSubscription(StompHeaderAccessor accessor) {
+        // Kept for old clients; nothing is published to the global topic any more.
         if (trafficProperties.isLegacyPublicAccess()
                 && "/topic/traffic".equals(accessor.getDestination())) {
             return;
@@ -72,6 +74,10 @@ public class TrafficWebSocketAuthorizationInterceptor implements ChannelIntercep
         }
         if (!TrafficSession.topic(sessionId).equals(accessor.getDestination())) {
             throw new AccessDeniedException("Traffic subscriptions are restricted to the current browser session");
+        }
+        String subscriber = accessor.getUser().getName();
+        if (!subscriber.equals(sessionOwners.bind(sessionId, subscriber))) {
+            throw new AccessDeniedException("Traffic session belongs to another user");
         }
     }
 }

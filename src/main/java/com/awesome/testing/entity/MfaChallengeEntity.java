@@ -46,6 +46,11 @@ public class MfaChallengeEntity {
     @Column(name = "consumed_at")
     private Instant consumedAt;
 
+    /** Wrong codes entered for this challenge; it is consumed when the limit is reached. */
+    @Column(name = "failed_attempts", nullable = false)
+    @Builder.Default
+    private int failedAttempts = 0;
+
     @Version
     private long version;
 }

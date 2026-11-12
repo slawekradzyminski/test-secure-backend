@@ -1,6 +1,7 @@
 package com.awesome.testing.security;
 
 import com.awesome.testing.controller.exception.CustomException;
+import com.awesome.testing.traffic.TrafficOwner;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,6 +34,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             if (jwtTokenProvider.validateToken(token)) {
                 Authentication auth = jwtTokenProvider.getAuthentication(token);
                 SecurityContextHolder.getContext().setAuthentication(auth);
+                TrafficOwner.assign(request, auth.getName());
                 filterChain.doFilter(request, response);
                 return;
             }

@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import com.awesome.testing.traffic.TrafficOwner;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,7 +44,10 @@ public class UserSignInController {
             HttpServletRequest request,
             @Parameter(description = "Login details") @Valid @RequestBody LoginDto loginDetails) {
         authRateLimitGuard.checkSignIn(request, loginDetails.getUsername());
-        return userService.signIn(loginDetails.getUsername(), loginDetails.getPassword());
+        LoginResponseDto response = userService.signIn(loginDetails.getUsername(), loginDetails.getPassword());
+        // The sign-in is recorded as traffic of the verified user, so only that user can read it.
+        TrafficOwner.assign(request, response.getUsername());
+        return response;
     }
 
 }

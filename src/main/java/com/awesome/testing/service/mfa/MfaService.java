@@ -160,7 +160,12 @@ public class MfaService {
         return new MfaChallenge(rawToken, expiresAt);
     }
 
-    @Transactional
+    /**
+     * Commits on a wrong code (noRollbackFor) so that the failed attempt is counted: after
+     * {@code app.mfa.max-challenge-attempts} wrong codes the challenge is consumed and the user must sign in
+     * with the password again (catalog X-04).
+     */
+    @Transactional(noRollbackFor = CustomException.class)
     public LoginResponseDto completeSignIn(String challengeToken, String code) {
         MfaChallengeEntity challenge = challengeRepository
                 .findByTokenHashForUpdate(challengeTokenService.hash(challengeToken))
@@ -172,7 +177,12 @@ public class MfaService {
 
         UserEntity user = challenge.getUser();
         MfaCredentialEntity credential = enabledCredentialForUpdate(user);
-        requireSecondFactor(credential, code);
+        try {
+            requireSecondFactor(credential, code);
+        } catch (CustomException wrongCode) {
+            recordFailedAttempt(challenge, now);
+            throw wrongCode;
+        }
         challenge.setConsumedAt(now);
         challengeRepository.save(challenge);
 
@@ -187,6 +197,14 @@ public class MfaService {
             recoveryCodeRepository.deleteByCredential(credential);
             credentialRepository.delete(credential);
         });
+    }
+
+    private void recordFailedAttempt(MfaChallengeEntity challenge, Instant now) {
+        challenge.setFailedAttempts(challenge.getFailedAttempts() + 1);
+        if (challenge.getFailedAttempts() >= properties.getMaxChallengeAttempts()) {
+            challenge.setConsumedAt(now);
+        }
+        challengeRepository.save(challenge);
     }
 
     private void requireSecondFactor(MfaCredentialEntity credential, String code) {

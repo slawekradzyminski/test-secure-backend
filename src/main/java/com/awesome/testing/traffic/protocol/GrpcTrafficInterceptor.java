@@ -1,5 +1,6 @@
 package com.awesome.testing.traffic.protocol;
 
+import com.awesome.testing.grpc.InventoryGrpcAuthentication;
 import io.grpc.ForwardingServerCall;
 import io.grpc.ForwardingServerCallListener;
 import io.grpc.Context;
@@ -36,7 +37,8 @@ public class GrpcTrafficInterceptor implements ServerInterceptor {
             return next.startCall(call, headers);
         }
         Context context = Context.current();
-        java.util.function.Consumer<Status> finish = status -> recorder.complete(trace, "GRPC", "/" + method,
+        java.util.function.Consumer<Status> finish = status -> recorder.complete(trace,
+                InventoryGrpcAuthentication.currentUsername(), "GRPC", "/" + method,
                 status.getCode().value(), call.getMethodDescriptor().getBareMethodName(),
                 status.isOk() ? "SUCCESS" : "ERROR", List.of(status.getCode().name()));
         ServerCall.Listener<Q> listener = next.startCall(new ForwardingServerCall.SimpleForwardingServerCall<>(call) {

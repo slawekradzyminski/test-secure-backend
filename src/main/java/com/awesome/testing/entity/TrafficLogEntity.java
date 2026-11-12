@@ -43,6 +43,10 @@ public class TrafficLogEntity {
     @Column(name = "client_session_id", length = 128)
     private String clientSessionId;
 
+    /** Authenticated user who made the request; null for anonymous requests such as a failed sign-in. */
+    @Column(name = "owner_username", length = 255)
+    private String ownerUsername;
+
     @Column(nullable = false, updatable = false)
     private Instant timestamp;
 
@@ -101,6 +105,7 @@ public class TrafficLogEntity {
             Long id,
             String correlationId,
             String clientSessionId,
+            String ownerUsername,
             Instant timestamp,
             long durationMs,
             String method,
@@ -122,6 +127,7 @@ public class TrafficLogEntity {
         this.id = id;
         this.correlationId = correlationId;
         this.clientSessionId = clientSessionId;
+        this.ownerUsername = ownerUsername;
         this.timestamp = timestamp;
         this.durationMs = durationMs;
         this.method = method;

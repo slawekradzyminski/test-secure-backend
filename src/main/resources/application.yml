@@ -190,6 +190,7 @@ app:
     adjacent-time-steps: 1
     secret-bits: 160
     recovery-code-count: 8
+    max-challenge-attempts: ${APP_MFA_MAX_CHALLENGE_ATTEMPTS:5}
     challenge-token-bytes: 32
   seed-demo-data:
     enabled: false
@@ -214,9 +215,9 @@ app:
     max-page-size: ${APP_TRAFFIC_MAX_PAGE_SIZE:100}
     retention: ${APP_TRAFFIC_RETENTION:P1D}
     cleanup-interval: ${APP_TRAFFIC_CLEANUP_INTERVAL:PT24H}
-    obfuscate-authorization: ${APP_TRAFFIC_OBFUSCATE_AUTHORIZATION:false}
+    # Secrets are always masked; APP_TRAFFIC_OBFUSCATE_AUTHORIZATION and
+    # APP_TRAFFIC_OBFUSCATE_SENSITIVE_BODY_FIELDS no longer exist and are ignored if set.
     obfuscate-emails: ${APP_TRAFFIC_OBFUSCATE_EMAILS:false}
-    obfuscate-sensitive-body-fields: ${APP_TRAFFIC_OBFUSCATE_SENSITIVE_BODY_FIELDS:false}
     legacy-public-access: ${APP_TRAFFIC_LEGACY_PUBLIC_ACCESS:false}
   
 UserController:

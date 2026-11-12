@@ -17,11 +17,12 @@ class TrafficLogBufferTest {
     private final TrafficLogRepository repository = mock(TrafficLogRepository.class);
     private final TrafficProperties properties = new TrafficProperties();
     private final SimpleMeterRegistry metrics = new SimpleMeterRegistry();
+    private final TrafficSessionOwners sessionOwners = mock(TrafficSessionOwners.class);
 
     @Test
     void requestThreadEnqueuesAndFlushPersistsBoundedBatchesInOrder() {
         properties.setPersistenceBatchSize(1);
-        var service = new TrafficLogBuffer(repository, properties, metrics);
+        var service = new TrafficLogBuffer(repository, properties, metrics, sessionOwners);
         var first = TrafficLogEntity.builder().correlationId("first").build();
         var second = TrafficLogEntity.builder().correlationId("second").build();
         service.enqueue(first);
@@ -39,7 +40,7 @@ class TrafficLogBufferTest {
     @Test
     void readFlushDrainsAllPreviouslyQueuedBatches() {
         properties.setPersistenceBatchSize(1);
-        var service = new TrafficLogBuffer(repository, properties, metrics);
+        var service = new TrafficLogBuffer(repository, properties, metrics, sessionOwners);
         service.enqueue(TrafficLogEntity.builder().correlationId("one").build());
         service.enqueue(TrafficLogEntity.builder().correlationId("two").build());
         service.flushForRead();
@@ -49,7 +50,7 @@ class TrafficLogBufferTest {
 
     @Test
     void oversizedHttpMetadataCannotPoisonTheSharedPersistenceBatch() {
-        var service = new TrafficLogBuffer(repository, properties, metrics);
+        var service = new TrafficLogBuffer(repository, properties, metrics, sessionOwners);
         var record =
                 TrafficLogEntity.builder()
                         .correlationId("bounded")
@@ -73,7 +74,7 @@ class TrafficLogBufferTest {
 
     @Test
     void nullBytesCannotPoisonTextPayloadPersistence() {
-        var service = new TrafficLogBuffer(repository, properties, metrics);
+        var service = new TrafficLogBuffer(repository, properties, metrics, sessionOwners);
         var record =
                 TrafficLogEntity.builder()
                         .requestBody("a\0b")
@@ -99,7 +100,7 @@ class TrafficLogBufferTest {
     @Test
     void fullQueueDropsNewRecordsWithoutBlockingAndCountsLoss() {
         properties.setPersistenceQueueCapacity(1);
-        var service = new TrafficLogBuffer(repository, properties, metrics);
+        var service = new TrafficLogBuffer(repository, properties, metrics, sessionOwners);
         var accepted = TrafficLogEntity.builder().correlationId("accepted").build();
         service.enqueue(accepted);
         assertThat(metrics.get("traffic.persistence.dropped").counter().count()).isZero();
@@ -111,7 +112,7 @@ class TrafficLogBufferTest {
 
     @Test
     void failedBatchIsCountedAndDoesNotPreventLaterBatches() {
-        var service = new TrafficLogBuffer(repository, properties, metrics);
+        var service = new TrafficLogBuffer(repository, properties, metrics, sessionOwners);
         var failed = TrafficLogEntity.builder().correlationId("failed").build();
         doThrow(new IllegalStateException("PRIVATE_DATABASE_DETAILS"))
                 .when(repository)

@@ -53,17 +53,22 @@ public class HttpTrafficRecorder {
             throws IOException {
         Instant timestamp = Instant.now();
         String clientSessionId = resolveClientSessionId(request);
+        String owner = TrafficOwner.from(request);
+        String rawPath = request.getRequestURI();
+        String path = trafficDataSanitizer.sanitizePath(rawPath);
         String responseBody =
                 captureResponseBody
                         ? readResponseBody((ContentCachingResponseWrapper) response)
                         : omittedBodyPlaceholder(response.getContentType());
-        TrafficBodySanitizationResult requestBody = trafficDataSanitizer.sanitizeBody(readRequestBody(request));
-        TrafficBodySanitizationResult sanitizedResponseBody = trafficDataSanitizer.sanitizeBody(responseBody);
+        TrafficBodySanitizationResult requestBody =
+                trafficDataSanitizer.sanitizeBody(rawPath, readRequestBody(request));
+        TrafficBodySanitizationResult sanitizedResponseBody = trafficDataSanitizer.sanitizeBody(rawPath, responseBody);
         trafficQueue.offer(
                 TrafficEventDto.builder()
                         .clientSessionId(clientSessionId)
+                        .ownerUsername(owner)
                         .method(request.getMethod())
-                        .path(request.getRequestURI())
+                        .path(path)
                         .status(response.getStatus())
                         .durationMs(duration)
                         .timestamp(timestamp)
@@ -72,11 +77,12 @@ public class HttpTrafficRecorder {
                 TrafficLogEntity.builder()
                         .correlationId(UUID.randomUUID().toString())
                         .clientSessionId(clientSessionId)
+                        .ownerUsername(owner)
                         .timestamp(timestamp)
                         .durationMs(duration)
                         .method(request.getMethod())
-                        .path(request.getRequestURI())
-                        .queryString(request.getQueryString())
+                        .path(path)
+                        .queryString(trafficDataSanitizer.sanitizeQuery(rawPath, request.getQueryString()))
                         .status(response.getStatus())
                         .requestContentType(request.getContentType())
                         .requestBodyTruncated(requestBody.truncated())

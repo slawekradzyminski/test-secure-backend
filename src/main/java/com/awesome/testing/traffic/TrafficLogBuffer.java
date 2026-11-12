@@ -26,9 +26,12 @@ public class TrafficLogBuffer {
     private final TrafficProperties properties;
     private final Counter dropped;
     private final Counter failed;
+    private final TrafficSessionOwners sessionOwners;
 
-    public TrafficLogBuffer(TrafficLogRepository repository, TrafficProperties properties, MeterRegistry metrics) {
+    public TrafficLogBuffer(TrafficLogRepository repository, TrafficProperties properties, MeterRegistry metrics,
+                            TrafficSessionOwners sessionOwners) {
         this.trafficLogRepository = repository;
+        this.sessionOwners = sessionOwners;
         this.properties = properties;
         this.pending = new ArrayBlockingQueue<>(properties.getPersistenceQueueCapacity());
         this.dropped = metrics.counter("traffic.persistence.dropped");
@@ -75,6 +78,20 @@ public class TrafficLogBuffer {
         } catch (RuntimeException exception) {
             failed.increment(batch.size());
             log.warn("Could not persist {} traffic records; batch discarded", batch.size());
+        }
+        bindSessions(batch);
+    }
+
+    private void bindSessions(List<TrafficLogEntity> batch) {
+        for (TrafficLogEntity entity : batch) {
+            if (entity.getClientSessionId() == null || entity.getOwnerUsername() == null) {
+                continue;
+            }
+            try {
+                sessionOwners.bind(entity.getClientSessionId(), entity.getOwnerUsername());
+            } catch (RuntimeException exception) {
+                log.warn("Could not bind a traffic session to its user");
+            }
         }
     }
 

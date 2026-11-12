@@ -21,4 +21,6 @@ public class MfaProperties {
     private int secretBits = 160;
     private int recoveryCodeCount = 8;
     private int challengeTokenBytes = 32;
+    /** Wrong codes accepted per sign-in challenge; the challenge is invalid after the last one (catalog X-04). */
+    private int maxChallengeAttempts = 5;
 }

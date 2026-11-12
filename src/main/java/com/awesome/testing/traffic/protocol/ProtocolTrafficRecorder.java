@@ -30,7 +30,8 @@ public class ProtocolTrafficRecorder {
                 Instant.now(), System.nanoTime(), new AtomicBoolean());
     }
 
-    public void complete(Trace trace, String protocol, String path, int status,
+    /** Records the call; {@code owner} is the authenticated caller, or null when it was not authenticated. */
+    public void complete(Trace trace, String owner, String protocol, String path, int status,
                          String operation, String outcome, List<String> codes) {
         if (trace == null || !trace.completed().compareAndSet(false, true)) {
             return;
@@ -40,12 +41,14 @@ public class ProtocolTrafficRecorder {
             ProtocolDetails details = new ProtocolDetails(protocol, operation, outcome, List.copyOf(codes), trace.id());
             String summary = mapper.writeValueAsString(details);
             logs.save(TrafficLogEntity.builder().correlationId(trace.id()).clientSessionId(trace.session())
+                    .ownerUsername(owner)
                     .timestamp(trace.timestamp()).durationMs(duration).method(protocol).path(path).status(status)
                     .requestHeaders("{}").requestContentType("application/json").requestBody("{}")
                     .requestBodyOriginalLength(2).requestBodyStoredLength(2)
                     .responseHeaders("{}").responseContentType("application/json").responseBody(summary)
                     .responseBodyOriginalLength(summary.length()).responseBodyStoredLength(summary.length()).build());
-            events.offer(TrafficEventDto.builder().clientSessionId(trace.session()).method(protocol).path(path)
+            events.offer(TrafficEventDto.builder().clientSessionId(trace.session()).ownerUsername(owner)
+                    .method(protocol).path(path)
                     .status(status).durationMs(duration).timestamp(trace.timestamp()).protocolDetails(details).build());
         } catch (RuntimeException exception) {
             // Telemetry must neither fail an operation nor expose exception text that may contain private data.

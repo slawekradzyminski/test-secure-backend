@@ -10,12 +10,18 @@ import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Demo orders and a demo cart for an empty order table. A demo user or product that no longer exists
+ * (deleted, renamed, or skipped by {@link SetupUsers}) only skips the rows that need it.
+ */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class SetupOrders {
@@ -59,6 +65,9 @@ public class SetupOrders {
     }
 
     private void createOrder(UserEntity user, ProductEntity product, int quantity, OrderStatus status, LocalDateTime createdAt) {
+        if (missing(user, product)) {
+            return;
+        }
         BigDecimal totalPrice = product.getPrice().multiply(BigDecimal.valueOf(quantity));
         
         OrderEntity order = OrderEntity.builder()
@@ -81,6 +90,9 @@ public class SetupOrders {
     }
 
     private void createCartItem(UserEntity user, ProductEntity product, int quantity) {
+        if (missing(user, product)) {
+            return;
+        }
         CartItemEntity cartItem = CartItemEntity.builder()
                 .username(user.getUsername())
                 .product(product)
@@ -89,6 +101,14 @@ public class SetupOrders {
                 .version(0L)
                 .build();
         cartItemRepository.save(cartItem);
+    }
+
+    private boolean missing(UserEntity user, ProductEntity product) {
+        if (user == null || product == null) {
+            log.warn("Skipping a demo order or cart row: its demo user or product no longer exists");
+            return true;
+        }
+        return false;
     }
 
     private AddressEntity createAddress() {

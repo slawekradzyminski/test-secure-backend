@@ -282,6 +282,58 @@ class MfaLifecycleControllerTest extends DomainHelper {
         assertThat(recoveryCodeRepository.countByCredentialUserUsername(account.username())).isZero();
     }
 
+    @Test
+    void shouldInvalidateTheChallengeAfterFiveWrongCodes() {
+        // given: catalog X-04 - one challenge accepted unlimited guesses when rate limiting was off
+        TestAccount account = createAccount();
+        MfaSetupResponseDto setup = startSetup(account.initialLogin().getToken());
+        confirm(account.initialLogin().getToken(), setup.getSecret());
+        LoginResponseDto challenge = passwordLogin(account);
+        String wrongTotp = codeAtStep(setup.getSecret(), currentStep() + 20);
+
+        // when: five wrong codes, TOTP and recovery-code shaped
+        List<ResponseEntity<ErrorDto>> wrong = List.of(
+                complete(challenge.getChallengeToken(), wrongTotp, ErrorDto.class),
+                complete(challenge.getChallengeToken(), "WRONG-RECOVERY", ErrorDto.class),
+                complete(challenge.getChallengeToken(), wrongTotp, ErrorDto.class),
+                complete(challenge.getChallengeToken(), wrongTotp, ErrorDto.class),
+                complete(challenge.getChallengeToken(), wrongTotp, ErrorDto.class));
+        ResponseEntity<ErrorDto> correctAfterLimit = complete(challenge.getChallengeToken(),
+                codeAtStep(setup.getSecret(), currentStep() + 1), ErrorDto.class);
+
+        // then
+        assertThat(wrong).allSatisfy(response -> {
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+            assertThat(response.getBody().getMessage()).isEqualTo("Invalid authenticator or recovery code");
+        });
+        assertThat(correctAfterLimit.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(correctAfterLimit.getBody().getMessage()).isEqualTo("Invalid or expired MFA challenge");
+        assertThat(challengeRepository.findFirstByUserUsernameOrderByCreatedAtDesc(account.username()))
+                .hasValueSatisfying(stored -> {
+                    assertThat(stored.getFailedAttempts()).isEqualTo(5);
+                    assertThat(stored.getConsumedAt()).isNotNull();
+                });
+    }
+
+    @Test
+    void shouldStillAcceptTheCorrectCodeAfterFourWrongOnes() {
+        TestAccount account = createAccount();
+        MfaSetupResponseDto setup = startSetup(account.initialLogin().getToken());
+        confirm(account.initialLogin().getToken(), setup.getSecret());
+        LoginResponseDto challenge = passwordLogin(account);
+        String wrongTotp = codeAtStep(setup.getSecret(), currentStep() + 20);
+        for (int attempt = 0; attempt < 4; attempt++) {
+            assertThat(complete(challenge.getChallengeToken(), wrongTotp, ErrorDto.class).getStatusCode())
+                    .isEqualTo(HttpStatus.UNAUTHORIZED);
+        }
+
+        ResponseEntity<LoginResponseDto> completed = complete(challenge.getChallengeToken(),
+                codeAtStep(setup.getSecret(), currentStep() + 1), LoginResponseDto.class);
+
+        assertThat(completed.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(completed.getBody().getToken()).isNotBlank();
+    }
+
     private TestAccount createAccount() {
         UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
         LoginResponseDto initialLogin = registerAndLogin(user);
