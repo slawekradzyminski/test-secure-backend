@@ -11,6 +11,18 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
 
+    static final String DESCRIPTION = """
+            This is a sample JWT authentication service.
+
+            Error bodies come in three documented shapes:
+            - `ErrorDto` `{"message": "..."}` for business, authentication, authorization, unknown-path (404) and
+              unsupported-method (405) errors;
+            - `ValidationErrorsDto` `{"<field>": "<message>"}` for invalid request bodies, one message per field;
+            - `{"error": "..."}` (also a `ValidationErrorsDto`) when a body cannot be read at all or a path or query
+              parameter does not convert.
+            Two endpoints answer 404 with an empty body: deleting an unknown product and reading the traffic of an
+            unknown correlation id.""";
+
     @Bean
     public OpenAPI customOpenAPI() {
         final String securitySchemeName = "bearerAuth";
@@ -25,7 +37,7 @@ public class SwaggerConfig {
                 .info(new Info()
                         .title("JWT Authentication API")
                         .version("1.0")
-                        .description("This is a sample JWT authentication service.")
+                        .description(DESCRIPTION)
                         .termsOfService("http://swagger.io/terms/")
                         .license(new License().name("Apache 2.0").url("http://springdoc.org")));
     }
