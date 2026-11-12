@@ -11,7 +11,6 @@ import com.awesome.testing.entity.UserEntity;
 
 import java.text.MessageFormat;
 
-import static org.springframework.security.core.userdetails.User.*;
 
 @Service
 @RequiredArgsConstructor
@@ -28,14 +27,8 @@ public class MyUserDetails implements UserDetailsService {
     }
 
     private UserDetails toUserDetails(UserEntity user) {
-        return withUsername(user.getUsername())
-                .password(user.getPassword())
-                .authorities(user.getRoles())
-                .accountExpired(false)
-                .accountLocked(false)
-                .credentialsExpired(false)
-                .disabled(false)
-                .build();
+        return new VersionedUserDetails(user.getUsername(), user.getPassword(), user.getRoles(),
+                user.getTokenVersion());
     }
 
     private UsernameNotFoundException notFound(String username) {
