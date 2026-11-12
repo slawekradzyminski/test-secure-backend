@@ -24,11 +24,13 @@ import com.awesome.testing.service.token.IssuedRefreshToken;
 import com.awesome.testing.service.mfa.MfaChallenge;
 import com.awesome.testing.service.mfa.MfaService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import com.awesome.testing.service.webhook.WebhookService;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -73,6 +75,12 @@ class UserServiceTest {
 
     @Mock
     private OrderRepository orderRepository;
+
+    @Mock
+    private OrderService orderService;
+
+    @Mock
+    private EntityManager entityManager;
 
     @Mock
     private MfaService mfaService;
@@ -234,6 +242,13 @@ class UserServiceTest {
 
         userService.delete(registerDto.getUsername());
 
+        InOrder erasure = inOrder(cartItemRepository, orderService, entityManager, userRepository, orderRepository);
+        erasure.verify(cartItemRepository).findByUsernameForUpdate(registerDto.getUsername());
+        erasure.verify(orderService).cancelOpenOrdersForErasure(registerDto.getUsername());
+        erasure.verify(entityManager).flush();
+        erasure.verify(entityManager).clear();
+        erasure.verify(userRepository).findByUsernameForUpdate(registerDto.getUsername());
+        erasure.verify(orderRepository).deleteByUsername(registerDto.getUsername());
         verify(refreshTokenService).removeAllTokensForUser(registerDto.getUsername());
         verify(passwordResetTokenRepository).deleteAllByUser(userEntity);
         verify(emailEventRepository).deleteAllByUser(userEntity);

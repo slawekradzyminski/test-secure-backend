@@ -29,7 +29,9 @@ public class UserRightToBeForgottenController {
     @DeleteMapping("/{username}/right-to-be-forgotten")
     @PreAuthorize("@userService.exists(#username) and (hasRole('ROLE_ADMIN') or #username == authentication.principal.username)")
     @Operation(summary = "Delete user account and all user-owned data",
-            description = "Deletes the user account together with refresh tokens, reset tokens, email events, cart items, and orders.",
+            description = "Deletes the user account together with refresh tokens, reset tokens, email events, cart items, and orders. "
+                    + "Open (PENDING or PAID) orders are cancelled first: their stock is restored and card payments are "
+                    + "refunded through the event feed. Shipped and delivered orders are deleted as they are.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponse(responseCode = "204", description = "User account and user-owned data were deleted", content = @Content)
     @ApiResponse(responseCode = "401", description = "Unauthorized",

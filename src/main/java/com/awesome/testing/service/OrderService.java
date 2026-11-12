@@ -195,6 +195,24 @@ public class OrderService {
         return cancelLocked(order);
     }
 
+    /**
+     * Cancels every open (PENDING or PAID, not yet shipped) order of a user whose account is
+     * being erased, through the same path as a customer or admin cancellation: reserved stock
+     * is restored, the coupon, gift card and points are released, and a card-paid order gets
+     * its {@code card-refund.requested} feed event. The feed rows are not tied to the order,
+     * so the refund still reaches payment-service after the order rows are deleted. The
+     * warehouse state is not checked: an erased customer's order can no longer ship.
+     * Shipped and delivered orders are left alone and deleted with the account.
+     */
+    @Transactional
+    public void cancelOpenOrdersForErasure(String username) {
+        for (OrderEntity order : orderRepository.findByUsernameForUpdate(username)) {
+            if (canBeCancelled(order.getStatus())) {
+                releaseAndCancel(order);
+            }
+        }
+    }
+
     @Transactional(readOnly = true)
     public Page<OrderDto> getAllOrders(OrderStatus status, Pageable pageable) {
         Page<OrderEntity> orders = status == null ?
