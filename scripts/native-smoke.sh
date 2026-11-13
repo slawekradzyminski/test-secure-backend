@@ -129,6 +129,13 @@ outbox=$(call -H "Authorization: Bearer $token" http://backend:4001/api/v1/local
 [[ "$outbox" == 404* ]] || fail "local outbox must be unavailable with the jms transport: $outbox"
 echo "local outbox hidden: ok"
 
+# X-08: logout revokes the access token (token version checked on every request).
+logout=$(call -X POST -H "Authorization: Bearer $token" http://backend:4001/api/v1/users/logout)
+[[ "$logout" == 200* ]] || fail "logout: $logout"
+revoked=$(call -H "Authorization: Bearer $token" http://backend:4001/api/v1/users/me)
+[[ "$revoked" == 401* && "$revoked" == *'Invalid or expired token'* ]] || fail "access token after logout: $revoked"
+echo "logout revokes access token: ok"
+
 echo "== local profile (local email outbox, demo seed)"
 docker exec "$RUN_ID-postgres" psql -U postgres -c 'drop database testdb with (force)' -c 'create database testdb' >/dev/null
 start_backend \

@@ -4,6 +4,7 @@ import com.awesome.testing.entity.UserEntity;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import jakarta.transaction.Transactional;
@@ -58,5 +59,11 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
 
     @Transactional
     void deleteByUsername(String username);
+
+    /** Revokes every access token of the user (catalog X-08). */
+    @Transactional
+    @Modifying
+    @Query("update UserEntity u set u.tokenVersion = u.tokenVersion + 1 where u.username = :username")
+    int incrementTokenVersion(@Param("username") String username);
 
 }

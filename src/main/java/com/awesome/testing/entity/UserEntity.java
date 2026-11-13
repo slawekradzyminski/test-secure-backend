@@ -65,6 +65,16 @@ public class UserEntity {
     @Schema(types = {"string", "null"})
     private String toolSystemPrompt;
 
+    /**
+     * Version of the access tokens this account accepts (catalog X-08). Logout and password reset increment
+     * it, which revokes every access token issued before.
+     */
+    @Column(name = "token_version", nullable = false)
+    @Builder.Default
+    @JsonIgnore
+    @Schema(hidden = true)
+    private int tokenVersion = 0;
+
     @JsonIgnore
     public String getPassword() {
         return password;

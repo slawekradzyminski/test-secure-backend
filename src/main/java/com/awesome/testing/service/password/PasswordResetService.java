@@ -137,6 +137,8 @@ public class PasswordResetService {
 
         UserEntity user = tokenEntity.getUser();
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        // Revokes every access token issued with the old password (catalog X-08); refresh tokens follow.
+        user.setTokenVersion(user.getTokenVersion() + 1);
         userRepository.save(user);
         refreshTokenService.removeAllTokensForUser(user.getUsername());
         passwordResetTokenRepository.deleteAllByUser(user);

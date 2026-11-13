@@ -243,7 +243,7 @@ public class MfaService {
 
     private TokenPair issueTokens(UserEntity user) {
         return TokenPair.builder()
-                .token(jwtTokenProvider.createToken(user.getUsername(), user.getRoles()))
+                .token(jwtTokenProvider.createToken(user))
                 .refreshToken(refreshTokenService.createToken(user).value())
                 .build();
     }

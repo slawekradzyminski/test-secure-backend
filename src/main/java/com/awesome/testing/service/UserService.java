@@ -93,7 +93,7 @@ public class UserService {
             MfaChallenge challenge = mfaService.startSignIn(user);
             return LoginResponseDto.mfaChallenge(user, challenge.rawToken(), challenge.expiresAt());
         }
-        String jwt = jwtTokenProvider.createToken(user.getUsername(), user.getRoles());
+        String jwt = jwtTokenProvider.createToken(user);
         String refreshToken = refreshTokenService.createToken(user).value();
         TokenPair tokens = TokenPair.builder()
                 .token(jwt)
@@ -160,15 +160,17 @@ public class UserService {
     public TokenPair refresh(String refreshToken) {
         IssuedRefreshToken rotatedToken = refreshTokenService.rotateToken(refreshToken);
         UserEntity user = rotatedToken.user();
-        String jwt = jwtTokenProvider.createToken(user.getUsername(), user.getRoles());
+        String jwt = jwtTokenProvider.createToken(user);
         return TokenPair.builder()
                 .token(jwt)
                 .refreshToken(rotatedToken.value())
                 .build();
     }
 
+    /** Signs the user out everywhere: revokes every refresh token and every access token (catalog X-08). */
     public void logout(String username) {
         refreshTokenService.removeAllTokensForUser(username);
+        userRepository.incrementTokenVersion(username);
     }
 
     public List<UserEntity> getAll() {

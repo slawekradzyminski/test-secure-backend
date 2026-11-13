@@ -54,6 +54,7 @@ import com.awesome.testing.dto.user.Role;
 public class JwtTokenProvider {
 
     static final int MINIMUM_KEY_BITS = 2048;
+    static final String TOKEN_VERSION_CLAIM = "ver";
 
     @Value("${security.jwt.token.signing-key:}")
     private String signingKey;
@@ -86,10 +87,20 @@ public class JwtTokenProvider {
         }
     }
 
+    /** Issues an access token bound to the account's current token version (catalog X-08). */
+    public String createToken(com.awesome.testing.entity.UserEntity user) {
+        return createToken(user.getUsername(), user.getRoles(), user.getTokenVersion());
+    }
+
     public String createToken(String username, List<Role> roles) {
+        return createToken(username, roles, 0);
+    }
+
+    public String createToken(String username, List<Role> roles, int tokenVersion) {
         Claims claims = Jwts.claims()
                 .subject(username)
                 .add("auth", getRoles(roles))
+                .add(TOKEN_VERSION_CLAIM, tokenVersion)
                 .build();
 
         Date now = new Date();
@@ -104,20 +115,38 @@ public class JwtTokenProvider {
                 .compact();
     }
 
+    /**
+     * Loads the token's user and rejects a token issued before the user's last logout or password reset.
+     * The version check happens here, so every caller (HTTP filter, STOMP, gRPC) enforces revocation.
+     * Tokens issued before versions existed carry no claim and count as version 0.
+     */
     public Authentication getAuthentication(String token) {
-        String username = getUsername(token);
+        Claims claims = parseClaims(token);
+        String username = claims.getSubject();
         UserDetails userDetails = myUserDetails.loadUserByUsername(username);
+        if (userDetails instanceof VersionedUserDetails versioned
+                && versioned.getTokenVersion() != tokenVersion(claims)) {
+            throw new CustomException("Invalid or expired token", HttpStatus.UNAUTHORIZED);
+        }
         CustomPrincipal principal = new CustomPrincipal(username, userDetails);
         return new UsernamePasswordAuthenticationToken(principal, "", userDetails.getAuthorities());
     }
 
     public String getUsername(String token) {
+        return parseClaims(token).getSubject();
+    }
+
+    private Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(publicKey)
                 .build()
                 .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
+                .getPayload();
+    }
+
+    private static int tokenVersion(Claims claims) {
+        Object version = claims.get(TOKEN_VERSION_CLAIM);
+        return version instanceof Number number ? number.intValue() : 0;
     }
 
     public String extractTokenFromRequest(HttpServletRequest req) {
