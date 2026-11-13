@@ -23,7 +23,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -39,6 +43,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Supplier;
 
 @SuppressWarnings("unused")
 @Configuration
@@ -106,6 +111,7 @@ public class WebSecurityConfig {
                     }
 
                     auth.requestMatchers(matcherBuilder.matcher("/actuator/**")).hasRole("ADMIN");
+                    authorizeBeforeBodyValidation(auth, matcherBuilder);
 
                     // Finally, require authentication for all other endpoints
                     auth.anyRequest().authenticated();
@@ -121,6 +127,39 @@ public class WebSecurityConfig {
         http.addFilterBefore(new JwtTokenFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Catalog X-23: {@code @PreAuthorize} runs after the request body was bound and validated, so a client
+     * sending an invalid body to an administrator endpoint got a 400 listing the administrator validation
+     * rules instead of a 403. These rules decide on the URL before the body is read; the method annotations
+     * stay as a second line of defence.
+     */
+    private static void authorizeBeforeBodyValidation(
+            AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth,
+            PathPatternRequestMatcher.Builder matcher) {
+        auth.requestMatchers(matcher.matcher("/api/v1/admin/**")).hasRole("ADMIN");
+        auth.requestMatchers(matcher.matcher(HttpMethod.POST, "/api/v1/products")).hasRole("ADMIN");
+        auth.requestMatchers(matcher.matcher(HttpMethod.PUT, "/api/v1/products/{id}")).hasRole("ADMIN");
+        auth.requestMatchers(matcher.matcher(HttpMethod.DELETE, "/api/v1/products/{id}")).hasRole("ADMIN");
+        auth.requestMatchers(matcher.matcher(HttpMethod.PUT, "/api/v1/orders/{id}/status")).hasRole("ADMIN");
+        auth.requestMatchers(matcher.matcher(HttpMethod.GET, "/api/v1/orders/admin")).hasRole("ADMIN");
+        auth.requestMatchers(matcher.matcher(HttpMethod.DELETE, "/api/v1/users/{username}")).hasRole("ADMIN");
+        // The caller's own prompts share the PUT /api/v1/users/{segment} shape with the profile edit.
+        auth.requestMatchers(matcher.matcher(HttpMethod.PUT, "/api/v1/users/chat-system-prompt"),
+                matcher.matcher(HttpMethod.PUT, "/api/v1/users/tool-system-prompt")).authenticated();
+        auth.requestMatchers(matcher.matcher(HttpMethod.PUT, "/api/v1/users/{username}"))
+                .access(WebSecurityConfig::adminOrSelf);
+    }
+
+    private static AuthorizationDecision adminOrSelf(
+            Supplier<? extends Authentication> authentication, RequestAuthorizationContext context) {
+        Authentication caller = authentication.get();
+        if (caller == null || !(caller.getPrincipal() instanceof CustomPrincipal principal)) {
+            return new AuthorizationDecision(false);
+        }
+        return new AuthorizationDecision(
+                principal.isAdmin() || principal.getUsername().equals(context.getVariables().get("username")));
     }
 
     private boolean isApiDocsRequest(String path) {

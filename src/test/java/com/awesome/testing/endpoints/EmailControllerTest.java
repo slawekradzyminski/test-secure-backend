@@ -22,6 +22,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
@@ -119,6 +120,43 @@ class EmailControllerTest extends AbstractEcommerceTest {
             assertThat(response.getStatusCode()).as("to=%s", recipient).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(response.getBody()).as("to=%s", recipient).isEqualTo(Map.of("to", "Recipient is required"));
         }
+    }
+
+    @Test
+    void clientsMayOnlySendGenericEmails() {
+        // given: catalog X-05 - a client sent a PASSWORD_RESET_REQUESTED email with its own reset link
+        String clientToken = getToken(getRandomUserWithRoles(List.of(Role.ROLE_CLIENT)));
+        EmailDto phishing = EmailDto.builder().to("victim@example.com").subject("Reset your password")
+                .message("Click the link").template(EmailTemplate.PASSWORD_RESET_REQUESTED)
+                .properties(Map.of("resetLink", "http://evil.example/reset")).build();
+        EmailDto generic = EmailDto.builder().to("recipient@example.com").subject("Hello").message("Hi")
+                .template(EmailTemplate.GENERIC).properties(Map.of("source", "l19-regression")).build();
+        when(delayGenerator.getDelayMillis()).thenReturn(0L);
+
+        // when
+        ResponseEntity<Map<String, String>> rejected =
+                executePost(EMAIL_ENDPOINT, phishing, getHeadersWith(clientToken), mapTypeReference());
+        ResponseEntity<Void> accepted = executePost(EMAIL_ENDPOINT, generic, getHeadersWith(clientToken), Void.class);
+
+        // then
+        assertThat(rejected.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(rejected.getBody()).isEqualTo(Map.of("template", "Only GENERIC emails can be sent"));
+        assertThat(accepted.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(emailEventRepository.findAll()).extracting(event -> event.getType())
+                .containsExactly(EmailTemplate.GENERIC);
+        verify(jmsTemplate, never()).convertAndSend(destination, phishing);
+    }
+
+    @Test
+    void administratorsMayStillChooseAnyTemplate() {
+        String adminToken = getToken(getRandomUserWithRoles(List.of(Role.ROLE_ADMIN)));
+        EmailDto shipped = EmailDto.builder().to("recipient@example.com").subject("Shipped").message("On its way")
+                .template(EmailTemplate.ORDER_SHIPPED).build();
+        when(delayGenerator.getDelayMillis()).thenReturn(0L);
+
+        ResponseEntity<Void> response = executePost(EMAIL_ENDPOINT, shipped, getHeadersWith(adminToken), Void.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test

@@ -10,6 +10,11 @@ public class CustomPrincipal {
     private final String username;
     private final UserDetails userDetails;
 
+    public boolean isAdmin() {
+        return userDetails.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+    }
+
     @Override
     public String toString() {
         return username;

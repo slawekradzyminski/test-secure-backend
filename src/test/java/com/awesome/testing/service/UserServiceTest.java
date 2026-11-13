@@ -126,7 +126,7 @@ class UserServiceTest {
     @Test
     void shouldSignInWhenCredentialsAreValid() {
         when(userIdentity.findBySignInName(registerDto.getUsername())).thenReturn(Optional.of(userEntity));
-        when(jwtTokenProvider.createToken(registerDto.getUsername(), userEntity.getRoles())).thenReturn("jwt-token");
+        when(jwtTokenProvider.createToken(userEntity)).thenReturn("jwt-token");
         IssuedRefreshToken refreshTokenEntity = buildRefreshToken("refresh-token", userEntity);
         when(refreshTokenService.createToken(userEntity)).thenReturn(refreshTokenEntity);
 
@@ -285,7 +285,7 @@ class UserServiceTest {
     void shouldRefreshToken() {
         IssuedRefreshToken rotatedToken = buildRefreshToken("new-refresh", userEntity);
         when(refreshTokenService.rotateToken("old-refresh")).thenReturn(rotatedToken);
-        when(jwtTokenProvider.createToken(userEntity.getUsername(), userEntity.getRoles())).thenReturn("refreshed");
+        when(jwtTokenProvider.createToken(userEntity)).thenReturn("refreshed");
 
         TokenPair tokenPair = userService.refresh("old-refresh");
 
@@ -298,6 +298,7 @@ class UserServiceTest {
         userService.logout("johndoe");
 
         verify(refreshTokenService).removeAllTokensForUser("johndoe");
+        verify(userRepository).incrementTokenVersion("johndoe");
     }
 
     @Test

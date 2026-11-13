@@ -9,7 +9,9 @@ import com.awesome.testing.dto.ErrorDto;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.awesome.testing.security.CustomPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,14 +26,15 @@ public class UserGetUsersController {
 
     @GetMapping
     @Operation(summary = "Get all users",
-            description = "Returns all user accounts visible to the authenticated caller.",
+            description = "Returns all user accounts. Administrators see every email address; other callers see only their own in full and the others masked (j***@example.com).",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponse(responseCode = "200", description = "List of users")
     @ApiResponse(responseCode = "401", description = "Unauthorized",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
-    public List<UserResponseDto> getAll() {
+    public List<UserResponseDto> getAll(@AuthenticationPrincipal CustomPrincipal principal) {
+        boolean admin = principal.isAdmin();
         return userService.getAll().stream()
-                .map(UserResponseDto::from)
+                .map(user -> UserResponseDto.forViewer(user, principal.getUsername(), admin))
                 .toList();
     }
 

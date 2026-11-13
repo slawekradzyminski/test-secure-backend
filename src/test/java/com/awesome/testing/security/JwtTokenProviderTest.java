@@ -166,6 +166,37 @@ class JwtTokenProviderTest {
     }
 
     @Test
+    void shouldRejectATokenIssuedForAnOlderTokenVersion() {
+        // catalog X-08: logout and password reset increment the version and revoke older tokens
+        when(myUserDetails.loadUserByUsername("john")).thenReturn(versioned(2));
+        String revoked = jwtTokenProvider.createToken("john", List.of(Role.ROLE_CLIENT), 1);
+        String current = jwtTokenProvider.createToken("john", List.of(Role.ROLE_CLIENT), 2);
+
+        assertThatThrownBy(() -> jwtTokenProvider.getAuthentication(revoked))
+                .isInstanceOf(CustomException.class)
+                .hasMessage("Invalid or expired token");
+        assertThat(jwtTokenProvider.getAuthentication(current).getName()).isEqualTo("john");
+    }
+
+    @Test
+    void shouldTreatATokenWithoutVersionClaimAsVersionZero() {
+        // tokens issued before 3.20.0 stay valid until the first logout or reset of the account
+        String legacy = Jwts.builder().subject("john").claim("auth", List.of())
+                .expiration(new java.util.Date(System.currentTimeMillis() + 60_000))
+                .signWith(JwtTokenProvider.parsePrivateKey(configuredKey).getPrivate(), Jwts.SIG.RS256)
+                .compact();
+        when(myUserDetails.loadUserByUsername("john")).thenReturn(versioned(0));
+        assertThat(jwtTokenProvider.getAuthentication(legacy).getName()).isEqualTo("john");
+
+        when(myUserDetails.loadUserByUsername("john")).thenReturn(versioned(1));
+        assertThatThrownBy(() -> jwtTokenProvider.getAuthentication(legacy)).isInstanceOf(CustomException.class);
+    }
+
+    private static VersionedUserDetails versioned(int version) {
+        return new VersionedUserDetails("john", "pwd", List.of(Role.ROLE_CLIENT), version);
+    }
+
+    @Test
     void shouldRejectTokenWithTamperedPayload() {
         String token = jwtTokenProvider.createToken("john", List.of(Role.ROLE_CLIENT));
         String[] parts = token.split("\\.");
