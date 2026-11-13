@@ -16,6 +16,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import com.awesome.testing.dto.email.EmailTemplate;
+import java.util.Map;
+import org.springframework.http.MediaType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -40,9 +43,11 @@ public class EmailController {
 
     @PostMapping
     @Operation(summary = "Send email",
-            description = "Queues an email message for asynchronous delivery through the configured JMS destination.")
+            description = "Queues an email message for asynchronous delivery through the configured JMS destination. "
+                    + "Only administrators may choose a template other than GENERIC; system templates such as "
+                    + "PASSWORD_RESET_REQUESTED are sent by the backend itself.")
     @ApiResponse(responseCode = "200", description = "Email queued; delivery is asynchronous", content = @Content)
-    @ApiResponse(responseCode = "400", description = "Invalid email data",
+    @ApiResponse(responseCode = "400", description = "Invalid email data, or a non-GENERIC template from a non-administrator",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
     @ApiResponse(responseCode = "429", description = "Too many requests",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
@@ -50,8 +55,29 @@ public class EmailController {
                                           @AuthenticationPrincipal CustomPrincipal principal,
                                           @RequestBody @Valid EmailDto emailDto) {
         authRateLimitGuard.checkEmail(request, principal != null ? principal.getUsername() : null);
+        // Catalog X-05: system templates (password reset, order and payment notices) carry backend-generated
+        // links and properties; a client must not be able to send them with its own content.
+        if (emailDto.getTemplate() != null && emailDto.getTemplate() != EmailTemplate.GENERIC
+                && (principal == null || !principal.isAdmin())) {
+            throw new TemplateNotAllowedException();
+        }
         UserEntity user = principal == null ? null : userRepository.findByUsername(principal.getUsername()).orElse(null);
         emailService.sendEmail(emailDto, destination, user);
         return ResponseEntity.ok().build();
+    }
+
+    @ExceptionHandler(TemplateNotAllowedException.class)
+    ResponseEntity<Map<String, String>> templateNotAllowed() {
+        return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("template", "Only GENERIC emails can be sent"));
+    }
+
+    static final class TemplateNotAllowedException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        TemplateNotAllowedException() {
+            super("Only GENERIC emails can be sent", null, false, false);
+        }
     }
 }
