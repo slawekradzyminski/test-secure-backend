@@ -60,7 +60,7 @@ public class TrafficWebSocketAuthorizationInterceptor implements ChannelIntercep
     }
 
     private void authorizeSubscription(StompHeaderAccessor accessor) {
-        // Kept for old clients; nothing is published to the global topic any more.
+        // Legacy public access: anonymous subscribers receive every event on the global topic.
         if (trafficProperties.isLegacyPublicAccess()
                 && "/topic/traffic".equals(accessor.getDestination())) {
             return;

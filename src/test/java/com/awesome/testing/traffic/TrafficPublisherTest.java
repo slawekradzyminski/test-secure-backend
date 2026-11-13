@@ -92,7 +92,7 @@ class TrafficPublisherTest {
     }
 
     @Test
-    void legacyPublicAccessNoLongerFeedsTheGlobalTopic() {
+    void legacyPublicAccessFeedsTheGlobalTopicAsBefore319() {
         // given
         TrafficProperties properties = new TrafficProperties();
         properties.setLegacyPublicAccess(true);
@@ -105,8 +105,22 @@ class TrafficPublisherTest {
         trafficPublisher.broadcastTraffic();
 
         // then
-        verify(messagingTemplate, never()).convertAndSend(eq("/topic/traffic"), any(Object.class));
+        verify(messagingTemplate).convertAndSend("/topic/traffic", event);
         verify(messagingTemplate).convertAndSend("/topic/traffic/test-session-1234", event);
+    }
+
+    @Test
+    void withoutLegacyPublicAccessNothingGoesToTheGlobalTopic() {
+        // given
+        TrafficEventDto event = trafficEvent();
+        event.setOwnerUsername("session-user");
+        queue.add(event);
+
+        // when
+        trafficPublisher.broadcastTraffic();
+
+        // then
+        verify(messagingTemplate, never()).convertAndSend(eq("/topic/traffic"), any(Object.class));
     }
 
     @Test

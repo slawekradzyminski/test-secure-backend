@@ -18,8 +18,9 @@ import java.util.Optional;
 /**
  * Reads traffic for one caller (catalog X-03). A caller sees only records they made while authenticated,
  * plus the anonymous records (for example a failed sign-in) of a session bound to them; with a session
- * header the read is limited to that session. Anonymous callers, possible only with legacy public access,
- * see nothing.
+ * header the read is limited to that session. Anonymous callers are possible only with legacy public access
+ * (owner decision 2026-11-13, the course API relies on it): they read the session given in the header, or every
+ * record without one, as before 3.19.0.
  */
 @Service
 @RequiredArgsConstructor
@@ -28,6 +29,7 @@ public class TrafficLogService {
     private final TrafficLogMapper mapper;
     private final TrafficLogBuffer buffer;
     private final TrafficSessionOwners sessionOwners;
+    private final TrafficProperties properties;
 
     public void save(TrafficLogEntity entity) {
         buffer.enqueue(entity);
@@ -43,12 +45,17 @@ public class TrafficLogService {
             Instant from,
             Instant to,
             Pageable pageable) {
-        if (reader == null) {
+        if (reader == null && !properties.isLegacyPublicAccess()) {
             return Page.empty(pageable);
         }
         buffer.flushForRead();
         Specification<TrafficLogEntity> filters = TrafficLogSpecifications.matching(
                 clientSessionId, method, status, pathContains, text, from, to);
+        if (reader == null) {
+            // Legacy public access (the course API on awesome.byst.re): anonymous callers read the given
+            // session's records, or every record without a session header, as before 3.19.0.
+            return trafficLogRepository.findAll(filters, pageable).map(mapper::toDto);
+        }
         return trafficLogRepository
                 .findAll(filters.and(TrafficLogSpecifications.visibleTo(
                         reader, readsAnonymousRecords(reader, clientSessionId))), pageable)
@@ -56,10 +63,17 @@ public class TrafficLogService {
     }
 
     public Optional<TrafficLogEntryDto> findByCorrelationId(String reader, String correlationId, String clientSessionId) {
-        if (reader == null) {
+        if (reader == null && !properties.isLegacyPublicAccess()) {
             return Optional.empty();
         }
         buffer.flushForRead();
+        if (reader == null) {
+            // Legacy public access: the pre-3.19.0 lookups, scoped to the session header when one is sent.
+            return (clientSessionId == null
+                            ? trafficLogRepository.findByCorrelationId(correlationId)
+                            : trafficLogRepository.findByCorrelationIdAndClientSessionId(correlationId, clientSessionId))
+                    .map(mapper::toDto);
+        }
         boolean anonymousRecords = readsAnonymousRecords(reader, clientSessionId);
         return trafficLogRepository.findByCorrelationId(correlationId)
                 .filter(entity -> clientSessionId == null || clientSessionId.equals(entity.getClientSessionId()))

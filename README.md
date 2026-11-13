@@ -492,8 +492,10 @@ tracking and visualization of all HTTP requests in the application.
 - Every record keeps the user who made it. A caller reads only their own records, plus the anonymous records
   (for example a failed sign-in) of a traffic session bound to them: a session is bound to the first user
   seen on it. With `X-Client-Session-Id` the read is limited to that session.
-- `APP_TRAFFIC_LEGACY_PUBLIC_ACCESS=true` keeps the endpoints reachable without a token or session header,
-  but an anonymous caller receives an empty page, a 404 for any record, and no events on `/topic/traffic`.
+- `APP_TRAFFIC_LEGACY_PUBLIC_ACCESS=true` (the server profile behind the AI Testers API course) keeps the
+  endpoints public as before 3.19.0: an anonymous caller reads the records of the session in
+  `X-Client-Session-Id` (list and detail), or every record without the header, and can subscribe to every
+  event on `/topic/traffic`. Secrets stay masked. Authenticated callers follow the rules above.
 - Traffic stored by an older release is masked with the current rules once, on the first start of a release
   with new rules (`TrafficHistoryMasker`, tracked in `traffic_masking_state`).
 
