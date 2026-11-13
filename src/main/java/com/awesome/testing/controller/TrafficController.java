@@ -79,7 +79,7 @@ public class TrafficController {
                     "Returns the caller's captured HTTP traffic with optional filters for session, method, status, path, text, and time range. "
                             + "Only records the caller made while signed in are returned, plus the anonymous records (such as a sign-in attempt) of a session that belongs to the caller; "
                             + "with X-Client-Session-Id the result is limited to that session. Passwords, tokens, 2FA and gift card codes and credential headers are always masked. "
-                            + "With legacy public access an anonymous caller receives an empty page.")
+                            + "With legacy public access an anonymous caller reads the records of the session in X-Client-Session-Id, or every record without the header.")
     @ApiResponse(responseCode = "200", description = "Successfully returned traffic logs")
     @ApiResponse(
             responseCode = "400",

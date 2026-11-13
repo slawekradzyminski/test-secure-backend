@@ -32,8 +32,11 @@ public class TrafficPublisher {
                 return;
             }
             try {
-                // Legacy public access no longer feeds the global /topic/traffic (catalog X-03): events go
-                // only to the session topic, and only when they belong to the session's user.
+                // Legacy public access (the course API) feeds the anonymous global topic as before 3.19.0.
+                if (trafficProperties.isLegacyPublicAccess()) {
+                    messagingTemplate.convertAndSend("/topic/traffic", event);
+                }
+                // Session topics carry only the events of the session's user (catalog X-03).
                 if (event.getClientSessionId() != null && belongsToSessionUser(event)) {
                     messagingTemplate.convertAndSend(TrafficSession.topic(event.getClientSessionId()), event);
                 }
