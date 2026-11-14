@@ -11,7 +11,8 @@ import java.util.UUID;
 /**
  * Sends webhook deliveries whose retry is due, and deliveries that were never sent because
  * the backend stopped or the dispatch queue was full. Backoff and the attempt limit live in
- * {@link WebhookDeliveryLog}; {@code webhooks.retry.enabled=false} turns the schedule off
+ * {@link WebhookDeliveryLog}; {@code webhooks.retry.enabled=false} or
+ * {@code webhooks.enabled=false} turns the schedule off
  * (tests call {@link #retryDueDeliveries()} directly).
  */
 @Slf4j
@@ -26,7 +27,7 @@ public class WebhookRetryJob {
     @Scheduled(fixedDelayString = "${webhooks.retry.interval:PT30S}",
             initialDelayString = "${webhooks.retry.initial-delay:PT30S}")
     public void scheduledRetry() {
-        if (properties.getRetry().isEnabled()) {
+        if (properties.isEnabled() && properties.getRetry().isEnabled()) {
             retryDueDeliveries();
         }
     }

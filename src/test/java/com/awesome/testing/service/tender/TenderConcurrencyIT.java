@@ -1,6 +1,7 @@
 package com.awesome.testing.service.tender;
 
 import com.awesome.testing.config.CommerceClockConfig;
+import com.awesome.testing.service.reservation.OrderReservations;
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.order.AddressDto;
 import com.awesome.testing.dto.order.OrderDto;
@@ -58,7 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Import({InventoryService.class, OrderService.class, CouponService.class, CommerceClockConfig.class,
+@Import({InventoryService.class, OrderService.class, CouponService.class, CommerceClockConfig.class, OrderReservations.class,
         CheckoutContributors.class, CommerceEvents.class, TenderCheckoutContributor.class, GiftCardService.class,
         LoyaltyService.class, LoyaltyAccountCreator.class, TenderOrderEvents.class, TenderRefundService.class})
 class TenderConcurrencyIT {

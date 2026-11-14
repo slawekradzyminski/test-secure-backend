@@ -11,6 +11,8 @@ import com.awesome.testing.entity.OrderEntity;
 import com.awesome.testing.entity.OrderItemEntity;
 import com.awesome.testing.entity.OrderIdempotencyKeyEntity;
 import com.awesome.testing.entity.ProductEntity;
+import com.awesome.testing.dto.order.UtcMillis;
+import com.awesome.testing.event.CancellationReason;
 import com.awesome.testing.event.CommerceEventType;
 import com.awesome.testing.event.CommerceEvents;
 import com.awesome.testing.service.checkout.CheckoutContext;
@@ -22,6 +24,7 @@ import com.awesome.testing.entity.inventory.InventoryState;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
+import com.awesome.testing.service.reservation.OrderReservations;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,8 +38,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -61,6 +67,7 @@ public class OrderService {
     private final Clock commerceClock;
     private final CheckoutContributors checkoutContributors;
     private final CommerceEvents commerceEvents;
+    private final OrderReservations orderReservations;
 
     @Transactional
     public OrderDto createOrder(String username, AddressDto addressDto) {
@@ -100,6 +107,7 @@ public class OrderService {
 
         OrderEntity order = getInitialEmptyOrder(username, addressDto);
         order.setInventoryState(InventoryState.DEDUCTED);
+        order.setReservationExpiresAt(orderReservations.expiryFor(commerceClock.instant()));
         cartItems.forEach(cartItem -> updateOrder(cartItem, order));
         Map<Long, Integer> quantities = cartItems.stream()
                 .collect(Collectors.groupingBy(
@@ -162,7 +170,7 @@ public class OrderService {
                 .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
 
         if (newStatus == OrderStatus.CANCELLED) {
-            return cancelLocked(order);
+            return cancelLocked(order, CancellationReason.ADMIN);
         }
         if (fulfilmentOf(order).blocksManualStatusChange()) {
             throw new CustomException(
@@ -192,7 +200,7 @@ public class OrderService {
             throw new CustomException("You cannot cancel someone else's order", HttpStatus.FORBIDDEN);
         }
 
-        return cancelLocked(order);
+        return cancelLocked(order, isAdmin ? CancellationReason.ADMIN : CancellationReason.CUSTOMER);
     }
 
     /**
@@ -208,7 +216,7 @@ public class OrderService {
     public void cancelOpenOrdersForErasure(String username) {
         for (OrderEntity order : orderRepository.findByUsernameForUpdate(username)) {
             if (canBeCancelled(order.getStatus())) {
-                releaseAndCancel(order);
+                releaseAndCancel(order, CancellationReason.ACCOUNT_ERASURE);
             }
         }
     }
@@ -275,7 +283,52 @@ public class OrderService {
             throw new CustomException("Order cannot be cancelled by the warehouse in status " + order.getStatus()
                     + " with fulfilment state " + fulfilmentOf(order), HttpStatus.CONFLICT);
         }
-        return releaseAndCancel(order);
+        return releaseAndCancel(order, CancellationReason.WAREHOUSE);
+    }
+
+    /**
+     * Cancels {@code orderId} when it is still PENDING and its reservation has run out, through the same
+     * path as a customer cancellation, with the actor {@code system}. The row is locked with
+     * {@code FOR UPDATE SKIP LOCKED}: an order another transaction holds (a capture, a customer cancel or
+     * another backend instance running the job) is skipped now and looked at again on the next run, when
+     * it is either no longer PENDING or still due. Safe to call repeatedly.
+     *
+     * @return true when this call expired the order
+     */
+    @Transactional
+    public boolean expireIfDue(Long orderId) {
+        Optional<OrderEntity> due = orderRepository.findExpiredReservationForUpdate(
+                orderId, OrderStatus.PENDING, commerceClock.instant());
+        due.ifPresent(this::expire);
+        return due.isPresent();
+    }
+
+    /**
+     * Time control for tests and the lab: ends the reservation of a PENDING order now
+     * ({@code reservation_expires_at = now()}) and expires it at once. Waits for the order's row lock,
+     * so a concurrent capture or cancel decides first.
+     */
+    @Transactional
+    public OrderDto expireReservationNow(Long orderId) {
+        OrderEntity order = lockOrder(orderId);
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new CustomException(
+                    "Only PENDING orders hold a reservation; order is " + order.getStatus(), HttpStatus.CONFLICT);
+        }
+        order.setReservationExpiresAt(commerceClock.instant().truncatedTo(ChronoUnit.MILLIS));
+        return OrderDto.from(expire(order));
+    }
+
+    private OrderEntity expire(OrderEntity order) {
+        Instant expiredAt = order.getReservationExpiresAt();
+        OrderEntity saved = releaseAndCancel(order, CancellationReason.RESERVATION_EXPIRED);
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("orderId", saved.getId());
+        data.put("expiredAt", UtcMillis.format(expiredAt));
+        data.put("totalAmount", saved.getTotalAmount());
+        commerceEvents.publishData(CommerceEventType.ORDER_RESERVATION_EXPIRED, saved.getUsername(), saved.getId(), data);
+        flushBeforeMapping();
+        return saved;
     }
 
     /**
@@ -328,7 +381,7 @@ public class OrderService {
         return FulfilmentState.orNone(order.getFulfilmentState());
     }
 
-    private OrderDto cancelLocked(OrderEntity order) {
+    private OrderDto cancelLocked(OrderEntity order, CancellationReason reason) {
         if (!canBeCancelled(order.getStatus())) {
             throw new CustomException("Order cannot be cancelled in current status", HttpStatus.BAD_REQUEST);
         }
@@ -336,10 +389,10 @@ public class OrderService {
             throw new CustomException(
                     "Order is already being packed and cannot be cancelled", HttpStatus.CONFLICT);
         }
-        return OrderDto.from(releaseAndCancel(order));
+        return OrderDto.from(releaseAndCancel(order, reason));
     }
 
-    private OrderEntity releaseAndCancel(OrderEntity order) {
+    private OrderEntity releaseAndCancel(OrderEntity order, CancellationReason reason) {
         couponService.releaseRedemption(order);
         if (order.getInventoryState() == InventoryState.DEDUCTED) {
             Map<Long, Integer> quantities = order.getItems().stream()
@@ -350,7 +403,7 @@ public class OrderService {
             quantities.forEach((productId, quantity) -> {
                 ProductEntity product = productRepository.findByIdForUpdate(productId)
                         .orElseThrow(() -> new CustomException("Product not found", HttpStatus.NOT_FOUND));
-                inventoryService.restore(product, quantity, order);
+                inventoryService.restore(product, quantity, order, reason.actorFor(order.getUsername()));
             });
             order.setInventoryState(InventoryState.RESTORED);
         }
@@ -361,7 +414,7 @@ public class OrderService {
             order.setFulfilmentState(FulfilmentState.CANCELLED);
         }
         OrderEntity saved = orderRepository.save(order);
-        commerceEvents.publish(CommerceEventType.ORDER_CANCELLED, saved);
+        commerceEvents.publish(CommerceEventType.ORDER_CANCELLED, saved, Map.of("reason", reason.name()));
         flushBeforeMapping();
         return saved;
     }

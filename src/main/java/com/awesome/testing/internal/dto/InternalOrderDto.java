@@ -3,14 +3,19 @@ package com.awesome.testing.internal.dto;
 import com.awesome.testing.dto.order.AddressDto;
 import com.awesome.testing.dto.order.FulfilmentState;
 import com.awesome.testing.dto.order.OrderStatus;
+import com.awesome.testing.dto.order.UtcMillis;
 import com.awesome.testing.entity.OrderEntity;
 import com.awesome.testing.service.checkout.OrderAmounts;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/** Order snapshot for warehouse-service and payment-service; {@code amountDue} is what a card payment must cover. */
+/**
+ * Order snapshot for warehouse-service and payment-service; {@code amountDue} is what a card payment must cover.
+ * {@code reservationExpiresAt} (ISO-8601 UTC, milliseconds) is omitted for orders without a reservation.
+ */
 public record InternalOrderDto(
         Long id,
         String username,
@@ -25,7 +30,8 @@ public record InternalOrderDto(
         AddressDto shippingAddress,
         List<InternalOrderItemDto> items,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt) {
+        LocalDateTime updatedAt,
+        @JsonInclude(JsonInclude.Include.NON_NULL) String reservationExpiresAt) {
 
     public static InternalOrderDto from(OrderEntity order) {
         return new InternalOrderDto(
@@ -42,6 +48,7 @@ public record InternalOrderDto(
                 AddressDto.from(order.getShippingAddress()),
                 order.getItems().stream().map(InternalOrderItemDto::from).toList(),
                 order.getCreatedAt(),
-                order.getUpdatedAt());
+                order.getUpdatedAt(),
+                UtcMillis.format(order.getReservationExpiresAt()));
     }
 }

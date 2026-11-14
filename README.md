@@ -204,7 +204,7 @@ Access tokens are signed with RS256. Production deployments must provide `JWT_SI
 
 Token revocation: every access token carries the account's token version (`ver` claim). Logout (`POST /api/v1/users/logout`, all devices) and a password reset increment it and delete all refresh tokens, so every earlier access token is rejected with `401 Invalid or expired token` on its next use of this backend (HTTP, STOMP traffic subscription and gRPC). Tokens issued before 3.20.0 have no claim and count as version 0. `warehouse-service` and `payment-service` verify tokens offline against the JWKS and cannot see the version: there a revoked access token stays usable until it expires (`security.jwt.token.expire-length`, 1 hour by default). Their exposure is limited to their own role-gated endpoints (warehouse: `ROLE_WAREHOUSE`/`ROLE_ADMIN` fulfilment and admin purchasing/returns; payment: client payments and admin payment views), and no new token can be obtained after revocation because the refresh tokens are gone. 2FA enable and disable still revoke only refresh tokens.
 
-`warehouse-service` calls the internal API under `/internal/v1` with an `X-Service-Token` header instead of a JWT. Set the shared secret with `WAREHOUSE_SERVICE_TOKEN` on both services. When the variable is unset, the internal API responds with 404. The `local` profile defaults to `local-warehouse-token`. Each caller has its own token (`internal.service-tokens.warehouse` / `WAREHOUSE_SERVICE_TOKEN`, `internal.service-tokens.payment` / `PAYMENT_SERVICE_TOKEN`, local default `local-payment-token`), and each internal endpoint accepts only its own caller's token. Both services poll the durable commerce event feed `GET /internal/v1/events`; the backend makes no outbound calls to them. See [docs/COMMERCE_AND_FULFILMENT.md](docs/COMMERCE_AND_FULFILMENT.md#internal-api-for-warehouse-service).
+`warehouse-service` calls the internal API under `/internal/v1` with an `X-Service-Token` header instead of a JWT. Set the shared secret with `WAREHOUSE_SERVICE_TOKEN` on both services. When the variable is unset, the internal API responds with 404. The `local` profile defaults to `local-warehouse-token`. Each caller has its own token (`internal.service-tokens.warehouse` / `WAREHOUSE_SERVICE_TOKEN`, `internal.service-tokens.payment` / `PAYMENT_SERVICE_TOKEN`, local default `local-payment-token`), notification-service uses `internal.service-tokens.notification` / `NOTIFICATION_SERVICE_TOKEN` (local default `local-notification-token`) for the feed, the JWKS and the one-time webhook export `GET /internal/v1/webhooks/export`, and each internal endpoint accepts only its own callers' tokens. `WEBHOOKS_ENABLED=false` stops webhook delivery in the backend and `NOTIFICATIONS_DELIVERY=feed` turns commerce emails into `notification.requested` feed events for the notification-service (both default to the old behaviour). Both services poll the durable commerce event feed `GET /internal/v1/events`; the backend makes no outbound calls to them. See [docs/COMMERCE_AND_FULFILMENT.md](docs/COMMERCE_AND_FULFILMENT.md#internal-api-for-warehouse-service).
 
 Users can subscribe signed webhooks to their order events (`/api/v1/webhooks`, with a built-in `inbox://` receiver and SSRF protection). See [docs/WEBHOOKS.md](docs/WEBHOOKS.md).
 
@@ -219,7 +219,7 @@ Password sign-in is the only login method. The OIDC/Keycloak single sign-on brid
 - Ollama integration for AI text generation and chat
 - Product management
 - Shopping cart functionality
-- Order management
+- Order management, with stock reservations that expire (`ORDERS_RESERVATION_TTL`, default 30 minutes; see [docs/COMMERCE_AND_FULFILMENT.md](docs/COMMERCE_AND_FULFILMENT.md#stock-reservations-with-a-time-limit))
 - Swagger/OpenAPI documentation
 - Comprehensive test coverage
 
@@ -231,7 +231,8 @@ Password sign-in is the only login method. The OIDC/Keycloak single sign-on brid
   and every hop gets a new span id. The MDC holds `requestId`, `traceId` and `spanId`
   for the request; the response always carries `X-Request-Id` (exposed to browsers by CORS).
 - Outbound calls send the same `X-Request-Id` and a child `traceparent` (same trace id,
-  new parent id): the Ollama `WebClient` and webhook deliveries.
+  new parent id): the Ollama `WebClient` and webhook deliveries (with tracing on, the
+  `traceparent` of the real client or dispatch span instead).
 - Persisted hand-offs keep the ids (V17): feed events (`domain_events.request_id` /
   `trace_id`, served as `requestId` / `traceId`), email events and webhook deliveries
   (request id + traceparent). Delayed email sends and the email and webhook retry jobs
@@ -239,6 +240,12 @@ Password sign-in is the only login method. The OIDC/Keycloak single sign-on brid
 - Console and file logs show `[traceId,requestId]`. Set
   `LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs` for ECS JSON console logs, where the MDC entries
   are top-level `requestId`, `traceId` and `spanId` fields (works in the native image).
+- Feed events also carry the writing span (`domain_events.span_id`, V24, served as `spanId`).
+- Distributed tracing (OpenTelemetry spans exported over OTLP/HTTP) is off by default:
+  `TRACING_ENABLED`, `TRACING_OTLP_ENDPOINT`, `TRACING_SAMPLING_PROBABILITY`. With it on,
+  the server span continues the incoming `traceparent`, the MDC trace and span ids are the
+  server span's, the Ollama client propagates its own span and outbox sends run in spans parented
+  by the stored trace. See [docs/TRACING.md](docs/TRACING.md).
 
 ## Testing & Coverage
 
@@ -320,6 +327,9 @@ is not a string; decimal amounts may be sent as numbers or strings.
 - GET `/api/v1/orders/{id}` - Get order by ID
 - PUT `/api/v1/orders/{id}/status` - Update order status (ADMIN only)
 - POST `/api/v1/orders/{id}/cancel` - Cancel order
+- POST `/api/v1/admin/orders/{id}/expire-reservation` - Expire a PENDING order's stock reservation now (ADMIN only, time control for tests)
+
+New orders carry `reservationExpiresAt` (ISO-8601 UTC, milliseconds) in every order body; a PENDING order that is not paid by then is cancelled and its stock restored.
 
 ### QR Code
 

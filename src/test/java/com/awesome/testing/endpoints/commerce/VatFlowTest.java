@@ -40,7 +40,9 @@ class VatFlowTest extends AbstractCommerceFlowTest {
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final Set<String> LEGACY_CART = Set.of("username", "items", "totalPrice", "totalItems");
     private static final Set<String> LEGACY_ORDER = Set.of(
-            "id", "username", "items", "totalAmount", "status", "shippingAddress", "createdAt", "updatedAt");
+            "id", "username", "items", "totalAmount", "status", "shippingAddress", "createdAt", "updatedAt",
+            // 3.21.0: the reservation end, identical in POST, GET and list bodies (OrderReservationFlowTest).
+            "reservationExpiresAt");
     private static final Set<String> TAX_FIELDS = Set.of("taxCountry", "taxRate", "taxAmount", "netAmount");
 
     @Autowired

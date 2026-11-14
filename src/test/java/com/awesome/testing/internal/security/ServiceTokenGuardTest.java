@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.awesome.testing.internal.security.ServiceCaller.NOTIFICATION;
 import static com.awesome.testing.internal.security.ServiceCaller.PAYMENT;
 import static com.awesome.testing.internal.security.ServiceCaller.WAREHOUSE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,5 +75,24 @@ class ServiceTokenGuardTest {
                 .as("a shared endpoint stays reachable for the enabled caller")
                 .isEqualTo(Decision.ACCEPTED);
         assertThat(paymentDisabled.check(EnumSet.allOf(ServiceCaller.class), "x")).isEqualTo(Decision.REJECTED);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "   "})
+    void theNotificationCallerHasItsOwnTokenAndABlankOneDisablesIt(String blank) {
+        Map<ServiceCaller, String> tokens = new HashMap<>();
+        tokens.put(WAREHOUSE, "s3cret-token");
+        tokens.put(NOTIFICATION, "notification-token");
+        ServiceTokenGuard enabled = new ServiceTokenGuard(tokens);
+        tokens.put(NOTIFICATION, blank);
+        ServiceTokenGuard disabled = new ServiceTokenGuard(tokens);
+
+        assertThat(enabled.check(Set.of(NOTIFICATION), "notification-token")).isEqualTo(Decision.ACCEPTED);
+        assertThat(enabled.check(Set.of(NOTIFICATION), "s3cret-token")).isEqualTo(Decision.REJECTED);
+        assertThat(enabled.check(Set.of(WAREHOUSE, PAYMENT), "notification-token")).isEqualTo(Decision.REJECTED);
+        assertThat(disabled.isEnabled(NOTIFICATION)).isFalse();
+        assertThat(disabled.check(Set.of(NOTIFICATION), "notification-token")).isEqualTo(Decision.DISABLED);
+        assertThat(disabled.check(Set.of(WAREHOUSE, NOTIFICATION), "notification-token")).isEqualTo(Decision.REJECTED);
     }
 }

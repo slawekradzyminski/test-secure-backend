@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Smoke test for the published (GraalVM native) backend image. The native image fixes its bean
 # graph at build time, so this starts the same image under the production profiles (Artemis JMS,
-# bootstrap admin) and under the local profile (local email outbox) and checks the paths that
-# depend on runtime properties.
+# bootstrap admin), under the local profile (local email outbox) and under the local profile with
+# TRACING_ENABLED=true (spans exported over OTLP to Jaeger) and checks the paths that depend on
+# runtime properties. It prints the resident memory of each run (tracing off and on, same workload).
 #   scripts/native-smoke.sh <image>
 set -euo pipefail
 
@@ -12,7 +13,8 @@ NETWORK="$RUN_ID"
 ADMIN_PASSWORD="SmokeAdminPassword-$(openssl rand -hex 8)"
 
 cleanup() {
-  docker rm -f "$RUN_ID-backend" "$RUN_ID-postgres" "$RUN_ID-artemis" "$RUN_ID-ollama" >/dev/null 2>&1 || true
+  docker rm -f "$RUN_ID-backend" "$RUN_ID-postgres" "$RUN_ID-artemis" "$RUN_ID-ollama" "$RUN_ID-jaeger" \
+    >/dev/null 2>&1 || true
   docker network rm "$NETWORK" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -37,6 +39,29 @@ wait_for_health() {
 call() {
   docker run --rm --network "$NETWORK" curlimages/curl:8.17.0 -s -w '\n%{http_code}' "$@" \
     | awk 'BEGIN{body=""} {lines[NR]=$0} END{for(i=1;i<NR;i++) body=body lines[i]; print lines[NR] " " body}'
+}
+
+# Resident set size of the backend process, in MiB.
+rss_mib() {
+  docker exec "$RUN_ID-backend" bash -c 'while read -r key value _; do if [[ $key == VmRSS: ]]; then echo $((value / 1024)); fi; done < /proc/1/status'
+}
+
+# Signs in as the seeded local admin and orders one product (optionally with extra curl headers).
+# Sets token and order_id.
+local_checkout() {
+  signin=$(call -H 'Content-Type: application/json' -d '{"username":"admin","password":"LocalDemoAdmin123!"}' http://backend:4001/api/v1/users/signin)
+  [[ "$signin" == 200* ]] || fail "seeded admin sign-in: $signin"
+  token=$(sed -E 's/.*"token" *: *"([^"]+)".*/\1/' <<< "${signin#* }")
+  product_id=$(call -H "Authorization: Bearer $token" http://backend:4001/api/v1/products | grep -oE '"id" *: *[0-9]+' | head -1 | grep -oE '[0-9]+$' || true)
+  [[ "$product_id" =~ ^[0-9]+$ ]] || fail "product id for the event feed check: $product_id"
+  cart=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+    -d "{\"productId\":$product_id,\"quantity\":1}" http://backend:4001/api/v1/cart/items)
+  [[ "$cart" == 200* ]] || fail "add to cart: $cart"
+  order=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' "$@" \
+    -d '{"street":"1 Smoke Street","city":"Smoke City","state":"SC","zipCode":"12345","country":"USA"}' \
+    http://backend:4001/api/v1/orders)
+  [[ "$order" == 201* ]] || fail "checkout: $order"
+  order_id=$(grep -oE '"id" *: *[0-9]+' <<< "${order#* }" | head -1 | grep -oE '[0-9]+$')
 }
 
 start_backend() {
@@ -138,9 +163,12 @@ echo "logout revokes access token: ok"
 
 echo "== local profile (local email outbox, demo seed)"
 docker exec "$RUN_ID-postgres" psql -U postgres -c 'drop database testdb with (force)' -c 'create database testdb' >/dev/null
+# Short reservations so the expiry job (scheduled, FOR UPDATE SKIP LOCKED) runs inside the smoke test.
 start_backend \
   -e SPRING_PROFILES_ACTIVE=local -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/testdb \
-  -e SPRING_DATASOURCE_USERNAME=postgres -e SPRING_DATASOURCE_PASSWORD=postgres
+  -e SPRING_DATASOURCE_USERNAME=postgres -e SPRING_DATASOURCE_PASSWORD=postgres \
+  -e ORDERS_RESERVATION_TTL=PT8S -e ORDERS_RESERVATION_EXPIRY_JOB_INTERVAL=PT1S \
+  -e ORDERS_RESERVATION_EXPIRY_JOB_INITIAL_DELAY=PT1S
 
 signin=$(call -H 'Content-Type: application/json' -d '{"username":"admin","password":"LocalDemoAdmin123!"}' http://backend:4001/api/v1/users/signin)
 [[ "$signin" == 200* ]] || fail "seeded admin sign-in: $signin"
@@ -155,15 +183,7 @@ echo "local outbox available: ok"
 
 # Event feed: checkout records order.created in domain_events; the feed serves it (after the
 # settle delay) with the raw data JSON to the payment service token.
-product_id=$(call -H "Authorization: Bearer $token" http://backend:4001/api/v1/products | grep -oE '"id" *: *[0-9]+' | head -1 | grep -oE '[0-9]+$' || true)
-[[ "$product_id" =~ ^[0-9]+$ ]] || fail "product id for the event feed check: $product_id"
-cart=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
-  -d "{\"productId\":$product_id,\"quantity\":1}" http://backend:4001/api/v1/cart/items)
-[[ "$cart" == 200* ]] || fail "add to cart: $cart"
-order=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
-  -d '{"street":"1 Smoke Street","city":"Smoke City","state":"SC","zipCode":"12345","country":"USA"}' \
-  http://backend:4001/api/v1/orders)
-[[ "$order" == 201* ]] || fail "checkout: $order"
+local_checkout
 sleep 4
 # The local profile indents JSON, so compare without spaces.
 feed=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?types=order.created&limit=5' | tr -d ' ')
@@ -171,6 +191,109 @@ feed=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/inter
   && "$feed" == *'"nextCursor":'* ]] || fail "event feed: $feed"
 bad=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?limit=0')
 [[ "$bad" == 400* ]] || fail "event feed must reject limit=0: $bad"
+[[ "$feed" == *'"spanId":"'* ]] || fail "feed events must carry spanId: $feed"
 echo "event feed: ok"
+rss_off=$(rss_mib)
+echo "RSS (local profile, tracing off): ${rss_off} MiB"
+
+
+# Reservations (3.21.0): orders carry reservationExpiresAt; the admin time control expires one order at once
+# and the scheduled job expires the first order after its 8-second reservation; both record
+# order.reservation-expired in the feed.
+first_order=$(tr -d ' ' <<< "${order#* }")
+first_id=$(grep -oE '"id":[0-9]+' <<< "$first_order" | head -1 | grep -oE '[0-9]+$')
+grep -qE '"reservationExpiresAt":"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}\.[0-9]{3}Z"' <<< "$first_order" \
+  || fail "order without reservationExpiresAt: $order"
+cart=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d "{\"productId\":$product_id,\"quantity\":1}" http://backend:4001/api/v1/cart/items)
+[[ "$cart" == 200* ]] || fail "add to cart: $cart"
+second=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d '{"street":"1 Smoke Street","city":"Smoke City","state":"SC","zipCode":"12345","country":"USA"}' \
+  http://backend:4001/api/v1/orders | tr -d ' ')
+[[ "$second" == 201* ]] || fail "second checkout: $second"
+second_id=$(grep -oE '"id":[0-9]+' <<< "${second#* }" | head -1 | grep -oE '[0-9]+$')
+expired=$(call -X POST -H "Authorization: Bearer $token" "http://backend:4001/api/v1/admin/orders/$second_id/expire-reservation" | tr -d ' ')
+[[ "$expired" == 200* && "$expired" == *'"status":"CANCELLED"'* ]] || fail "admin expire-reservation: $expired"
+again=$(call -X POST -H "Authorization: Bearer $token" "http://backend:4001/api/v1/admin/orders/$second_id/expire-reservation")
+[[ "$again" == 409* ]] || fail "expire-reservation of a cancelled order must be 409: $again"
+for _ in $(seq 1 30); do
+  first_now=$(call -H "Authorization: Bearer $token" "http://backend:4001/api/v1/orders/$first_id" | tr -d ' ')
+  [[ "$first_now" == *'"status":"CANCELLED"'* ]] && break
+  sleep 1
+done
+[[ "$first_now" == *'"status":"CANCELLED"'* ]] || fail "expiry job did not cancel order $first_id: $first_now"
+for _ in $(seq 1 10); do
+  feed=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?types=order.reservation-expired&limit=10' | tr -d ' ')
+  [[ "$feed" == *"\"orderId\":$first_id,"* && "$feed" == *"\"orderId\":$second_id,"* ]] && break
+  sleep 1
+done
+[[ "$feed" == *"\"orderId\":$first_id,"* && "$feed" == *"\"orderId\":$second_id,"* ]] || fail "reservation-expired feed: $feed"
+docker logs "$RUN_ID-backend" 2>&1 | grep -q 'Could not expire the reservation' && fail "expiry job failed in the native image"
+echo "reservations (admin time control, expiry job, feed): ok"
+echo "== local profile with tracing on (OTLP/HTTP to Jaeger)"
+docker run -d --name "$RUN_ID-jaeger" --network "$NETWORK" --network-alias jaeger \
+  jaegertracing/jaeger:2.22.0@sha256:836b967b5abcf1f7758066aa6b348619267a2f1459f72d472840570f9bd88a17 >/dev/null
+start_backend \
+  -e SPRING_PROFILES_ACTIVE=local -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/testdb \
+  -e SPRING_DATASOURCE_USERNAME=postgres -e SPRING_DATASOURCE_PASSWORD=postgres \
+  -e TRACING_ENABLED=true -e TRACING_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+trace_id=$(openssl rand -hex 16)
+local_checkout -H "traceparent: 00-$trace_id-$(openssl rand -hex 8)-01" -H "X-Request-Id: smoke-traced-$$"
+sleep 4
+feed=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?types=order.created&limit=200' | tr -d ' \n')
+[[ "$feed" == *"\"orderId\":$order_id,\"username\":\"admin\""*"\"traceId\":\"$trace_id\",\"spanId\":\""* ]] \
+  || fail "traced feed event must continue trace $trace_id: $feed"
+# Read the logs once: grep -q on a live pipe would SIGPIPE docker logs and trip pipefail.
+backend_logs=$(docker logs "$RUN_ID-backend" 2>&1)
+grep -q "\[$trace_id,smoke-traced-$$\]" <<< "$backend_logs" || fail "logs must carry trace $trace_id"
+exported=""
+for _ in $(seq 1 20); do
+  exported=$(call "http://jaeger:16686/api/traces/$trace_id")
+  [[ "$exported" == 200* && "$exported" == *'"serviceName":"backend"'* ]] && break
+  sleep 1
+done
+[[ "$exported" == 200* && "$exported" == *'"serviceName":"backend"'* && "$exported" == *'http post /api/v1/orders'* ]] \
+  || fail "Jaeger has no backend server span for trace $trace_id: ${exported:0:300}"
+backend_logs=$(docker logs "$RUN_ID-backend" 2>&1)
+grep -qiE 'UnsupportedFeatureError|MissingReflectionRegistrationError|ClassNotFoundException|Failed to export spans' \
+  <<< "$backend_logs" && fail "tracing in the native image logged an error"
+echo "tracing (server span continues traceparent, feed, logs, OTLP export): ok"
+rss_on=$(rss_mib)
+echo "RSS (local profile, tracing on): ${rss_on} MiB (off: ${rss_off} MiB)"
+echo "== notification-service split (local profile, NOTIFICATIONS_DELIVERY=feed, WEBHOOKS_ENABLED=false)"
+start_backend \
+  -e SPRING_PROFILES_ACTIVE=local -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/testdb \
+  -e SPRING_DATASOURCE_USERNAME=postgres -e SPRING_DATASOURCE_PASSWORD=postgres \
+  -e NOTIFICATIONS_DELIVERY=feed -e WEBHOOKS_ENABLED=false
+
+signin=$(call -H 'Content-Type: application/json' -d '{"username":"admin","password":"LocalDemoAdmin123!"}' http://backend:4001/api/v1/users/signin)
+[[ "$signin" == 200* ]] || fail "seeded admin sign-in (feed mode): $signin"
+token=$(sed -E 's/.*"token" *: *"([^"]+)".*/\1/' <<< "${signin#* }")
+inbox=$(call -X POST -H "Authorization: Bearer $token" http://backend:4001/api/v1/webhook-inboxes | tr -d ' ')
+[[ "$inbox" == 201* ]] || fail "create inbox: $inbox"
+inbox_url=$(sed -E 's/.*"url":"([^"]+)".*/\1/' <<< "${inbox#* }")
+hook=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d "{\"url\":\"$inbox_url\",\"events\":[\"order.created\"]}" http://backend:4001/api/v1/webhooks | tr -d ' ')
+[[ "$hook" == 201* ]] || fail "create webhook: $hook"
+hook_id=$(sed -E 's/.*"id":([0-9]+).*/\1/' <<< "${hook#* }")
+secret=$(sed -E 's/.*"secret":"([^"]+)".*/\1/' <<< "${hook#* }")
+exported=$(call -H 'X-Service-Token: local-notification-token' http://backend:4001/internal/v1/webhooks/export | tr -d ' ')
+[[ "$exported" == 200* && "$exported" == *"\"secret\":\"$secret\""* && "$exported" == *'"inboxes":[{"token":'* ]] \
+  || fail "webhook export: $exported"
+foreign=$(call -H 'X-Service-Token: local-payment-token' http://backend:4001/internal/v1/webhooks/export)
+[[ "$foreign" == 401* ]] || fail "webhook export must reject the payment token: $foreign"
+ping=$(call -X POST -H "Authorization: Bearer $token" "http://backend:4001/api/v1/webhooks/$hook_id/test")
+[[ "$ping" == 409* ]] || fail "test ping must be refused while webhooks are disabled: $ping"
+echo "webhook export and disabled delivery: ok"
+
+card=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d '{"amount":10,"recipientUsername":"admin"}' http://backend:4001/api/v1/admin/gift-cards)
+[[ "$card" == 201* ]] || fail "issue gift card: $card"
+sleep 4
+feed=$(call -H 'X-Service-Token: local-notification-token' \
+  'http://backend:4001/internal/v1/events?types=notification.requested&limit=50' | tr -d ' ')
+[[ "$feed" == 200* && "$feed" == *'"type":"notification.requested"'* && "$feed" == *'"template":"GIFT_CARD_ISSUED"'* ]] \
+  || fail "notification.requested feed: $feed"
+echo "notification.requested feed: ok"
 
 echo "native smoke test passed"

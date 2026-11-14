@@ -1,5 +1,7 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.service.reservation.OrderReservations;
+
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.order.AddressDto;
 import com.awesome.testing.dto.order.FulfilmentState;
@@ -31,13 +33,16 @@ import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -93,7 +98,8 @@ class OrderServiceEventsTest {
 
     private OrderService service(CheckoutContributors contributors) {
         return new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
-                idempotencyKeyRepository, Clock.systemUTC(), contributors, commerceEvents);
+                idempotencyKeyRepository, Clock.systemUTC(), contributors, commerceEvents,
+                new OrderReservations(true, Duration.ofMinutes(30)));
     }
 
     @Test
@@ -165,7 +171,7 @@ class OrderServiceEventsTest {
     @Test
     void everyCancellationPathPublishesOrderCancelledOnce() {
         service.cancelOrder(7L, USER, false);
-        verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, order);
+        verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, order, Map.of("reason", "CUSTOMER"));
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
 
         assertThatThrownBy(() -> service.updateOrderStatus(7L, OrderStatus.CANCELLED)).isInstanceOf(CustomException.class);
@@ -174,7 +180,8 @@ class OrderServiceEventsTest {
         order.setFulfilmentState(FulfilmentState.PICKED);
         service.cancelForWarehouse(7L);
 
-        verify(commerceEvents, times(2)).publish(CommerceEventType.ORDER_CANCELLED, order);
+        verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, order, Map.of("reason", "WAREHOUSE"));
+        verify(commerceEvents, times(2)).publish(eq(CommerceEventType.ORDER_CANCELLED), eq(order), any());
     }
 
     @Test

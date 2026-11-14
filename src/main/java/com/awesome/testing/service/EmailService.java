@@ -1,6 +1,7 @@
 package com.awesome.testing.service;
 
 import com.awesome.testing.correlation.CorrelationIds;
+import com.awesome.testing.correlation.CorrelationTracing;
 import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.entity.UserEntity;
 import com.awesome.testing.service.delay.DelayGenerator;
@@ -31,6 +32,7 @@ public class EmailService {
     private final EmailEventService emailEventService;
     @Qualifier("emailTaskScheduler")
     private final TaskScheduler emailTaskScheduler;
+    private final CorrelationTracing correlationTracing;
 
     public void sendEmail(EmailDto emailDto, String destination) {
         sendEmail(emailDto, destination, null, null);
@@ -67,15 +69,18 @@ public class EmailService {
         deliver(emailEventId, emailDto, destination);
     }
 
-    /** The delayed send runs on the scheduler thread under the ids of the request that queued it. */
+    /**
+     * The delayed send runs on the scheduler thread under the ids of the request that queued it
+     * (with tracing on, in a {@value CorrelationTracing#EMAIL_SPAN} span that is a child of the request's span).
+     */
     private void deliverLater(Optional<CorrelationIds> correlation, Integer emailEventId, EmailDto emailDto,
                               String destination) {
         if (correlation.isEmpty()) {
             deliver(emailEventId, emailDto, destination);
             return;
         }
-        CorrelationIds ids = CorrelationIds.resume(correlation.get().requestId(), correlation.get().traceparent());
-        try (CorrelationIds.Scope ignored = ids.open()) {
+        try (CorrelationIds.Scope ignored = correlationTracing.resume(CorrelationTracing.EMAIL_SPAN,
+                correlation.get().requestId(), correlation.get().traceparent())) {
             deliver(emailEventId, emailDto, destination);
         }
     }

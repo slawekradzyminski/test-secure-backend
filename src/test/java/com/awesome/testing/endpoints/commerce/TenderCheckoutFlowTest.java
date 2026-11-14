@@ -48,6 +48,11 @@ class TenderCheckoutFlowTest extends AbstractTenderFlowTest {
     @Autowired
     private EmailEventRepository emailEventRepository;
 
+    @org.junit.jupiter.api.BeforeEach
+    void forgetEarlierEvents() {
+        recorded.clear();
+    }
+
     @Test
     void ordersWithoutTendersKeepTheirBodyAndAmountDue() {
         OrderDto order = order(clientToken, product("10.00", 5), 1);

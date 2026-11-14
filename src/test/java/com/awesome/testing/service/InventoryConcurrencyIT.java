@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import com.awesome.testing.config.CommerceClockConfig;
+import com.awesome.testing.service.reservation.OrderReservations;
 import com.awesome.testing.service.coupon.CouponService;
 import com.awesome.testing.service.checkout.CheckoutContributors;
 import com.awesome.testing.event.CommerceEvents;
@@ -45,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Import({InventoryService.class, OrderService.class, CouponService.class, CommerceClockConfig.class,
+@Import({InventoryService.class, OrderService.class, CouponService.class, CommerceClockConfig.class, OrderReservations.class,
         CheckoutContributors.class, CommerceEvents.class})
 class InventoryConcurrencyIT {
 
