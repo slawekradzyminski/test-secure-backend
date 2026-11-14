@@ -231,7 +231,8 @@ Password sign-in is the only login method. The OIDC/Keycloak single sign-on brid
   and every hop gets a new span id. The MDC holds `requestId`, `traceId` and `spanId`
   for the request; the response always carries `X-Request-Id` (exposed to browsers by CORS).
 - Outbound calls send the same `X-Request-Id` and a child `traceparent` (same trace id,
-  new parent id): the Ollama `WebClient` and webhook deliveries.
+  new parent id): the Ollama `WebClient` and webhook deliveries (with tracing on, the
+  `traceparent` of the real client or dispatch span instead).
 - Persisted hand-offs keep the ids (V17): feed events (`domain_events.request_id` /
   `trace_id`, served as `requestId` / `traceId`), email events and webhook deliveries
   (request id + traceparent). Delayed email sends and the email and webhook retry jobs
@@ -239,6 +240,12 @@ Password sign-in is the only login method. The OIDC/Keycloak single sign-on brid
 - Console and file logs show `[traceId,requestId]`. Set
   `LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs` for ECS JSON console logs, where the MDC entries
   are top-level `requestId`, `traceId` and `spanId` fields (works in the native image).
+- Feed events also carry the writing span (`domain_events.span_id`, V24, served as `spanId`).
+- Distributed tracing (OpenTelemetry spans exported over OTLP/HTTP) is off by default:
+  `TRACING_ENABLED`, `TRACING_OTLP_ENDPOINT`, `TRACING_SAMPLING_PROBABILITY`. With it on,
+  the server span continues the incoming `traceparent`, the MDC trace and span ids are the
+  server span's, the Ollama client propagates its own span and outbox sends run in spans parented
+  by the stored trace. See [docs/TRACING.md](docs/TRACING.md).
 
 ## Testing & Coverage
 

@@ -4,7 +4,9 @@ import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.service.EmailService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.awesome.testing.correlation.CorrelationTracing;
 import org.mockito.InjectMocks;
+import org.mockito.Spy;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -28,6 +30,7 @@ class EmailRetryJobTest {
 
     @Mock private EmailEventService emailEventService;
     @Mock private EmailService emailService;
+    @Spy private CorrelationTracing correlationTracing = CorrelationTracing.disabled();
     @InjectMocks private EmailRetryJob job;
 
     @Test

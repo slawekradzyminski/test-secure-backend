@@ -6,6 +6,7 @@ import com.awesome.testing.dto.ollama.GenerateResponseDto;
 import com.awesome.testing.service.ollama.OllamaService;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,7 +55,7 @@ class CorrelationExchangeFilterTest {
                 .withBody("{\"model\":\"m\",\"response\":\"hi\",\"done\":true}\n")));
         OllamaProperties properties = new OllamaProperties();
         properties.setBaseUrl(OLLAMA.baseUrl());
-        webClient = new OllamaConfig(properties).ollamaWebClient();
+        webClient = new OllamaConfig(properties).ollamaWebClient(CorrelationTracing.disabled(), ObservationRegistry.NOOP);
     }
 
     @AfterEach

@@ -81,6 +81,8 @@ traceparent: 00-<trace id of that request>-<new parent id>-01
 `X-Request-Id` and `traceparent` (3.17.0) correlate the delivery with the request that
 caused it: the ids are stored with the delivery when it is queued, so retries and
 redeliveries send the same request id and trace id (with a new parent id per attempt).
+With tracing on (docs/TRACING.md) each attempt is a `deliver webhook` span parented by
+the stored trace, and the parent id sent is that span's id.
 They are not signed; deduplicate on `X-Webhook-Id` / the event `id`, not on them.
 
 `v1` is the lowercase hex HMAC-SHA256 of `t + "." + rawBody`, keyed with the whole secret

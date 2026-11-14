@@ -1,5 +1,6 @@
 package com.awesome.testing.service.webhook;
 
+import com.awesome.testing.correlation.CorrelationTracing;
 import com.awesome.testing.dto.webhook.WebhookDeliveryStatus;
 import com.awesome.testing.entity.webhook.WebhookDeliveryEntity;
 import com.awesome.testing.entity.webhook.WebhookSubscriptionEntity;
@@ -45,7 +46,8 @@ class WebhookDeliveryLogTest {
 
     @BeforeEach
     void setUp() {
-        log = new WebhookDeliveryLog(deliveries, subscriptions, secrets, properties, Clock.fixed(NOW, ZoneOffset.UTC));
+        log = new WebhookDeliveryLog(deliveries, subscriptions, secrets, properties, Clock.fixed(NOW, ZoneOffset.UTC),
+                CorrelationTracing.disabled());
         subscription = WebhookSubscriptionEntity.builder().id(7L).username("alice").url("https://hooks.example.com/")
                 .secret("encrypted").active(true).consecutiveFailures(0).build();
         subscription.setEventList(List.of("order.created"));
