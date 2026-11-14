@@ -17,8 +17,11 @@ RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q -Pnative -Dmaven.test.skip=
 COPY src src
 COPY config config
 ARG NATIVE_XMX=12g
+# BuildKit's docker-container driver (GitHub Actions) injects OTEL_* variables into RUN steps; Spring Boot
+# maps OTEL_EXPORTER_OTLP_PROTOCOL onto the OTLP transport, and AOT would freeze a gRPC exporter into the image.
+# The native build therefore runs without any OTEL_* variable.
 RUN --mount=type=cache,target=/root/.m2 MAVEN_OPTS="-Xmx768m" \
-    ./mvnw -B -Pnative -Dmaven.test.skip=true -Dnative.xmx=${NATIVE_XMX} native:compile \
+    env $(env | sed -n "s/^\(OTEL_[A-Za-z0-9_]*\)=.*/-u \1/p") ./mvnw -B -Pnative -Dmaven.test.skip=true -Dnative.xmx=${NATIVE_XMX} native:compile \
     && mkdir /workspace/dist \
     && cp target/backend /workspace/dist/ \
     && (cp target/*.so /workspace/dist/ 2>/dev/null || true)
