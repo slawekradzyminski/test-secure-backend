@@ -43,7 +43,7 @@ call() {
 
 # Resident set size of the backend process, in MiB.
 rss_mib() {
-  docker exec "$RUN_ID-backend" bash -ec 'while read -r key value _; do [[ $key == VmRSS: ]] && echo $((value / 1024)); done < /proc/1/status'
+  docker exec "$RUN_ID-backend" bash -c 'while read -r key value _; do if [[ $key == VmRSS: ]]; then echo $((value / 1024)); fi; done < /proc/1/status'
 }
 
 # Signs in as the seeded local admin and orders one product (optionally with extra curl headers).
@@ -206,7 +206,9 @@ sleep 4
 feed=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?types=order.created&limit=200' | tr -d ' \n')
 [[ "$feed" == *"\"orderId\":$order_id,\"username\":\"admin\""*"\"traceId\":\"$trace_id\",\"spanId\":\""* ]] \
   || fail "traced feed event must continue trace $trace_id: $feed"
-docker logs "$RUN_ID-backend" 2>&1 | grep -q "\[$trace_id,smoke-traced-$$\]" || fail "logs must carry trace $trace_id"
+# Read the logs once: grep -q on a live pipe would SIGPIPE docker logs and trip pipefail.
+backend_logs=$(docker logs "$RUN_ID-backend" 2>&1)
+grep -q "\[$trace_id,smoke-traced-$$\]" <<< "$backend_logs" || fail "logs must carry trace $trace_id"
 exported=""
 for _ in $(seq 1 20); do
   exported=$(call "http://jaeger:16686/api/traces/$trace_id")
@@ -215,8 +217,9 @@ for _ in $(seq 1 20); do
 done
 [[ "$exported" == 200* && "$exported" == *'"serviceName":"backend"'* && "$exported" == *'http post /api/v1/orders'* ]] \
   || fail "Jaeger has no backend server span for trace $trace_id: ${exported:0:300}"
-docker logs "$RUN_ID-backend" 2>&1 | grep -qiE 'UnsupportedFeatureError|ClassNotFoundException|Failed to export spans' \
-  && fail "tracing in the native image logged an error"
+backend_logs=$(docker logs "$RUN_ID-backend" 2>&1)
+grep -qiE 'UnsupportedFeatureError|MissingReflectionRegistrationError|ClassNotFoundException|Failed to export spans' \
+  <<< "$backend_logs" && fail "tracing in the native image logged an error"
 echo "tracing (server span continues traceparent, feed, logs, OTLP export): ok"
 rss_on=$(rss_mib)
 echo "RSS (local profile, tracing on): ${rss_on} MiB (off: ${rss_off} MiB)"
