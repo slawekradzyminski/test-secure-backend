@@ -196,36 +196,6 @@ echo "event feed: ok"
 rss_off=$(rss_mib)
 echo "RSS (local profile, tracing off): ${rss_off} MiB"
 
-echo "== local profile with tracing on (OTLP/HTTP to Jaeger)"
-docker run -d --name "$RUN_ID-jaeger" --network "$NETWORK" --network-alias jaeger \
-  jaegertracing/jaeger:2.22.0@sha256:836b967b5abcf1f7758066aa6b348619267a2f1459f72d472840570f9bd88a17 >/dev/null
-start_backend \
-  -e SPRING_PROFILES_ACTIVE=local -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/testdb \
-  -e SPRING_DATASOURCE_USERNAME=postgres -e SPRING_DATASOURCE_PASSWORD=postgres \
-  -e TRACING_ENABLED=true -e TRACING_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
-trace_id=$(openssl rand -hex 16)
-local_checkout -H "traceparent: 00-$trace_id-$(openssl rand -hex 8)-01" -H "X-Request-Id: smoke-traced-$$"
-sleep 4
-feed=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?types=order.created&limit=200' | tr -d ' \n')
-[[ "$feed" == *"\"orderId\":$order_id,\"username\":\"admin\""*"\"traceId\":\"$trace_id\",\"spanId\":\""* ]] \
-  || fail "traced feed event must continue trace $trace_id: $feed"
-# Read the logs once: grep -q on a live pipe would SIGPIPE docker logs and trip pipefail.
-backend_logs=$(docker logs "$RUN_ID-backend" 2>&1)
-grep -q "\[$trace_id,smoke-traced-$$\]" <<< "$backend_logs" || fail "logs must carry trace $trace_id"
-exported=""
-for _ in $(seq 1 20); do
-  exported=$(call "http://jaeger:16686/api/traces/$trace_id")
-  [[ "$exported" == 200* && "$exported" == *'"serviceName":"backend"'* ]] && break
-  sleep 1
-done
-[[ "$exported" == 200* && "$exported" == *'"serviceName":"backend"'* && "$exported" == *'http post /api/v1/orders'* ]] \
-  || fail "Jaeger has no backend server span for trace $trace_id: ${exported:0:300}"
-backend_logs=$(docker logs "$RUN_ID-backend" 2>&1)
-grep -qiE 'UnsupportedFeatureError|MissingReflectionRegistrationError|ClassNotFoundException|Failed to export spans' \
-  <<< "$backend_logs" && fail "tracing in the native image logged an error"
-echo "tracing (server span continues traceparent, feed, logs, OTLP export): ok"
-rss_on=$(rss_mib)
-echo "RSS (local profile, tracing on): ${rss_on} MiB (off: ${rss_off} MiB)"
 
 # Reservations (3.21.0): orders carry reservationExpiresAt; the admin time control expires one order at once
 # and the scheduled job expires the first order after its 8-second reservation; both record
@@ -260,6 +230,36 @@ done
 [[ "$feed" == *"\"orderId\":$first_id,"* && "$feed" == *"\"orderId\":$second_id,"* ]] || fail "reservation-expired feed: $feed"
 docker logs "$RUN_ID-backend" 2>&1 | grep -q 'Could not expire the reservation' && fail "expiry job failed in the native image"
 echo "reservations (admin time control, expiry job, feed): ok"
+echo "== local profile with tracing on (OTLP/HTTP to Jaeger)"
+docker run -d --name "$RUN_ID-jaeger" --network "$NETWORK" --network-alias jaeger \
+  jaegertracing/jaeger:2.22.0@sha256:836b967b5abcf1f7758066aa6b348619267a2f1459f72d472840570f9bd88a17 >/dev/null
+start_backend \
+  -e SPRING_PROFILES_ACTIVE=local -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/testdb \
+  -e SPRING_DATASOURCE_USERNAME=postgres -e SPRING_DATASOURCE_PASSWORD=postgres \
+  -e TRACING_ENABLED=true -e TRACING_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+trace_id=$(openssl rand -hex 16)
+local_checkout -H "traceparent: 00-$trace_id-$(openssl rand -hex 8)-01" -H "X-Request-Id: smoke-traced-$$"
+sleep 4
+feed=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?types=order.created&limit=200' | tr -d ' \n')
+[[ "$feed" == *"\"orderId\":$order_id,\"username\":\"admin\""*"\"traceId\":\"$trace_id\",\"spanId\":\""* ]] \
+  || fail "traced feed event must continue trace $trace_id: $feed"
+# Read the logs once: grep -q on a live pipe would SIGPIPE docker logs and trip pipefail.
+backend_logs=$(docker logs "$RUN_ID-backend" 2>&1)
+grep -q "\[$trace_id,smoke-traced-$$\]" <<< "$backend_logs" || fail "logs must carry trace $trace_id"
+exported=""
+for _ in $(seq 1 20); do
+  exported=$(call "http://jaeger:16686/api/traces/$trace_id")
+  [[ "$exported" == 200* && "$exported" == *'"serviceName":"backend"'* ]] && break
+  sleep 1
+done
+[[ "$exported" == 200* && "$exported" == *'"serviceName":"backend"'* && "$exported" == *'http post /api/v1/orders'* ]] \
+  || fail "Jaeger has no backend server span for trace $trace_id: ${exported:0:300}"
+backend_logs=$(docker logs "$RUN_ID-backend" 2>&1)
+grep -qiE 'UnsupportedFeatureError|MissingReflectionRegistrationError|ClassNotFoundException|Failed to export spans' \
+  <<< "$backend_logs" && fail "tracing in the native image logged an error"
+echo "tracing (server span continues traceparent, feed, logs, OTLP export): ok"
+rss_on=$(rss_mib)
+echo "RSS (local profile, tracing on): ${rss_on} MiB (off: ${rss_off} MiB)"
 echo "== notification-service split (local profile, NOTIFICATIONS_DELIVERY=feed, WEBHOOKS_ENABLED=false)"
 start_backend \
   -e SPRING_PROFILES_ACTIVE=local -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/testdb \

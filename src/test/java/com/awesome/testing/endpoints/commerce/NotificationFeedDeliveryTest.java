@@ -90,7 +90,7 @@ class NotificationFeedDeliveryTest extends AbstractTenderFlowTest {
         assertThat(notifications).allSatisfy(event -> assertThat(event.get("type").asString()).isEqualTo(TYPE));
         JsonNode received = forRecipient(notifications, EmailTemplate.PAYMENT_RECEIVED);
         assertThat(fieldNames(received)).containsExactly("sequence", "id", "type", "occurredAt", "orderId", "username",
-                "data", "requestId", "traceId");
+                "data", "requestId", "traceId", "spanId");
         assertThat(received.get("orderId").isNull()).isTrue();
         assertThat(received.get("username").asString()).isEqualTo(client.getUsername());
         UUID expectedRequestId = UUID.nameUUIDFromBytes(
