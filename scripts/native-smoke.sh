@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Smoke test for the published (GraalVM native) backend image. The native image fixes its bean
 # graph at build time, so this starts the same image under the production profiles (Artemis JMS,
-# bootstrap admin) and under the local profile (local email outbox) and checks the paths that
-# depend on runtime properties.
+# bootstrap admin), under the local profile (local email outbox) and under the local profile with
+# TRACING_ENABLED=true (spans exported over OTLP to Jaeger) and checks the paths that depend on
+# runtime properties. It prints the resident memory of each run (tracing off and on, same workload).
 #   scripts/native-smoke.sh <image>
 set -euo pipefail
 
@@ -12,7 +13,8 @@ NETWORK="$RUN_ID"
 ADMIN_PASSWORD="SmokeAdminPassword-$(openssl rand -hex 8)"
 
 cleanup() {
-  docker rm -f "$RUN_ID-backend" "$RUN_ID-postgres" "$RUN_ID-artemis" "$RUN_ID-ollama" >/dev/null 2>&1 || true
+  docker rm -f "$RUN_ID-backend" "$RUN_ID-postgres" "$RUN_ID-artemis" "$RUN_ID-ollama" "$RUN_ID-jaeger" \
+    >/dev/null 2>&1 || true
   docker network rm "$NETWORK" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -37,6 +39,29 @@ wait_for_health() {
 call() {
   docker run --rm --network "$NETWORK" curlimages/curl:8.17.0 -s -w '\n%{http_code}' "$@" \
     | awk 'BEGIN{body=""} {lines[NR]=$0} END{for(i=1;i<NR;i++) body=body lines[i]; print lines[NR] " " body}'
+}
+
+# Resident set size of the backend process, in MiB.
+rss_mib() {
+  docker exec "$RUN_ID-backend" bash -ec 'while read -r key value _; do [[ $key == VmRSS: ]] && echo $((value / 1024)); done < /proc/1/status'
+}
+
+# Signs in as the seeded local admin and orders one product (optionally with extra curl headers).
+# Sets token and order_id.
+local_checkout() {
+  signin=$(call -H 'Content-Type: application/json' -d '{"username":"admin","password":"LocalDemoAdmin123!"}' http://backend:4001/api/v1/users/signin)
+  [[ "$signin" == 200* ]] || fail "seeded admin sign-in: $signin"
+  token=$(sed -E 's/.*"token" *: *"([^"]+)".*/\1/' <<< "${signin#* }")
+  product_id=$(call -H "Authorization: Bearer $token" http://backend:4001/api/v1/products | grep -oE '"id" *: *[0-9]+' | head -1 | grep -oE '[0-9]+$' || true)
+  [[ "$product_id" =~ ^[0-9]+$ ]] || fail "product id for the event feed check: $product_id"
+  cart=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+    -d "{\"productId\":$product_id,\"quantity\":1}" http://backend:4001/api/v1/cart/items)
+  [[ "$cart" == 200* ]] || fail "add to cart: $cart"
+  order=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' "$@" \
+    -d '{"street":"1 Smoke Street","city":"Smoke City","state":"SC","zipCode":"12345","country":"USA"}' \
+    http://backend:4001/api/v1/orders)
+  [[ "$order" == 201* ]] || fail "checkout: $order"
+  order_id=$(grep -oE '"id" *: *[0-9]+' <<< "${order#* }" | head -1 | grep -oE '[0-9]+$')
 }
 
 start_backend() {
@@ -155,15 +180,7 @@ echo "local outbox available: ok"
 
 # Event feed: checkout records order.created in domain_events; the feed serves it (after the
 # settle delay) with the raw data JSON to the payment service token.
-product_id=$(call -H "Authorization: Bearer $token" http://backend:4001/api/v1/products | grep -oE '"id" *: *[0-9]+' | head -1 | grep -oE '[0-9]+$' || true)
-[[ "$product_id" =~ ^[0-9]+$ ]] || fail "product id for the event feed check: $product_id"
-cart=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
-  -d "{\"productId\":$product_id,\"quantity\":1}" http://backend:4001/api/v1/cart/items)
-[[ "$cart" == 200* ]] || fail "add to cart: $cart"
-order=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
-  -d '{"street":"1 Smoke Street","city":"Smoke City","state":"SC","zipCode":"12345","country":"USA"}' \
-  http://backend:4001/api/v1/orders)
-[[ "$order" == 201* ]] || fail "checkout: $order"
+local_checkout
 sleep 4
 # The local profile indents JSON, so compare without spaces.
 feed=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?types=order.created&limit=5' | tr -d ' ')
@@ -171,6 +188,37 @@ feed=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/inter
   && "$feed" == *'"nextCursor":'* ]] || fail "event feed: $feed"
 bad=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?limit=0')
 [[ "$bad" == 400* ]] || fail "event feed must reject limit=0: $bad"
+[[ "$feed" == *'"spanId":"'* ]] || fail "feed events must carry spanId: $feed"
 echo "event feed: ok"
+rss_off=$(rss_mib)
+echo "RSS (local profile, tracing off): ${rss_off} MiB"
+
+echo "== local profile with tracing on (OTLP/HTTP to Jaeger)"
+docker run -d --name "$RUN_ID-jaeger" --network "$NETWORK" --network-alias jaeger \
+  jaegertracing/jaeger:2.22.0@sha256:836b967b5abcf1f7758066aa6b348619267a2f1459f72d472840570f9bd88a17 >/dev/null
+start_backend \
+  -e SPRING_PROFILES_ACTIVE=local -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/testdb \
+  -e SPRING_DATASOURCE_USERNAME=postgres -e SPRING_DATASOURCE_PASSWORD=postgres \
+  -e TRACING_ENABLED=true -e TRACING_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+trace_id=$(openssl rand -hex 16)
+local_checkout -H "traceparent: 00-$trace_id-$(openssl rand -hex 8)-01" -H "X-Request-Id: smoke-traced-$$"
+sleep 4
+feed=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?types=order.created&limit=200' | tr -d ' \n')
+[[ "$feed" == *"\"orderId\":$order_id,\"username\":\"admin\""*"\"traceId\":\"$trace_id\",\"spanId\":\""* ]] \
+  || fail "traced feed event must continue trace $trace_id: $feed"
+docker logs "$RUN_ID-backend" 2>&1 | grep -q "\[$trace_id,smoke-traced-$$\]" || fail "logs must carry trace $trace_id"
+exported=""
+for _ in $(seq 1 20); do
+  exported=$(call "http://jaeger:16686/api/traces/$trace_id")
+  [[ "$exported" == 200* && "$exported" == *'"serviceName":"backend"'* ]] && break
+  sleep 1
+done
+[[ "$exported" == 200* && "$exported" == *'"serviceName":"backend"'* && "$exported" == *'http post /api/v1/orders'* ]] \
+  || fail "Jaeger has no backend server span for trace $trace_id: ${exported:0:300}"
+docker logs "$RUN_ID-backend" 2>&1 | grep -qiE 'UnsupportedFeatureError|ClassNotFoundException|Failed to export spans' \
+  && fail "tracing in the native image logged an error"
+echo "tracing (server span continues traceparent, feed, logs, OTLP export): ok"
+rss_on=$(rss_mib)
+echo "RSS (local profile, tracing on): ${rss_on} MiB (off: ${rss_off} MiB)"
 
 echo "native smoke test passed"

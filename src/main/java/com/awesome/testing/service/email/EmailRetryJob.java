@@ -1,6 +1,7 @@
 package com.awesome.testing.service.email;
 
 import com.awesome.testing.correlation.CorrelationIds;
+import com.awesome.testing.correlation.CorrelationTracing;
 import com.awesome.testing.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ public class EmailRetryJob {
 
     private final EmailEventService emailEventService;
     private final EmailService emailService;
+    private final CorrelationTracing correlationTracing;
 
     @Value("${app.email.retry.enabled:true}")
     private boolean enabled;
@@ -41,10 +43,13 @@ public class EmailRetryJob {
         due.forEach(this::redeliver);
     }
 
-    /** Sends one email again under the request id and trace of the request that queued it. */
+    /**
+     * Sends one email again under the request id and trace of the request that queued it (with
+     * tracing on, in a span parented by the stored {@code traceparent}).
+     */
     private void redeliver(EmailEventService.Redelivery redelivery) {
-        CorrelationIds ids = CorrelationIds.resume(redelivery.correlationRequestId(), redelivery.traceparent());
-        try (CorrelationIds.Scope ignored = ids.open()) {
+        try (CorrelationIds.Scope ignored = correlationTracing.resume(CorrelationTracing.EMAIL_SPAN,
+                redelivery.correlationRequestId(), redelivery.traceparent())) {
             emailService.redeliver(redelivery.eventId(), redelivery.email(), redelivery.destination());
         }
     }

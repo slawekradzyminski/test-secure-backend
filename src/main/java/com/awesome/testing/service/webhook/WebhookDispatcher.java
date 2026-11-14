@@ -1,6 +1,7 @@
 package com.awesome.testing.service.webhook;
 
 import com.awesome.testing.correlation.CorrelationIds;
+import com.awesome.testing.correlation.CorrelationTracing;
 import com.awesome.testing.entity.webhook.WebhookDeliveryEntity;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * again, posts it to the vetted address (or stores it in a built-in inbox) and records the
  * outcome. Each attempt runs under the request id and trace of the request that queued the
  * delivery (MDC) and sends them as {@code X-Request-Id} and a child {@code traceparent}; the
- * delivery id stays in {@code X-Webhook-Id}. Event deliveries run on a small background pool when
+ * delivery id stays in {@code X-Webhook-Id}. With tracing on each attempt is a
+ * {@value CorrelationTracing#WEBHOOK_SPAN} span parented by the stored {@code traceparent}, and
+ * the receiver gets that span as its parent. Event deliveries run on a small background pool when
  * {@code webhooks.async-dispatch} is on; a full pool leaves them PENDING for
  * {@link WebhookRetryJob}.
  */
@@ -42,9 +45,12 @@ public class WebhookDispatcher {
     private final WebhookProperties properties;
     private final Clock clock;
     private final ThreadPoolExecutor executor;
+    private final CorrelationTracing correlationTracing;
 
     public WebhookDispatcher(WebhookDeliveryLog deliveryLog, WebhookUrlPolicy urlPolicy, WebhookHttpSender sender,
-                             WebhookInboxService inboxService, WebhookProperties properties, Clock clock) {
+                             WebhookInboxService inboxService, WebhookProperties properties, Clock clock,
+                             CorrelationTracing correlationTracing) {
+        this.correlationTracing = correlationTracing;
         this.deliveryLog = deliveryLog;
         this.urlPolicy = urlPolicy;
         this.sender = sender;
@@ -81,8 +87,8 @@ public class WebhookDispatcher {
             if (attempt.isEmpty()) {
                 return Optional.empty();
             }
-            CorrelationIds ids = CorrelationIds.resume(attempt.get().requestId(), attempt.get().traceparent());
-            try (CorrelationIds.Scope ignored = ids.open()) {
+            try (CorrelationIds.Scope ignored = correlationTracing.resume(CorrelationTracing.WEBHOOK_SPAN,
+                    attempt.get().requestId(), attempt.get().traceparent())) {
                 return Optional.of(deliveryLog.record(deliveryId, send(attempt.get())));
             }
         } catch (RuntimeException e) {
@@ -136,7 +142,7 @@ public class WebhookDispatcher {
         headers.put("X-Webhook-Signature", WebhookSigner.signatureHeader(attempt.secret(), timestamp, attempt.payload()));
         CorrelationIds.current().ifPresent(ids -> {
             headers.put(CorrelationIds.REQUEST_ID_HEADER, ids.requestId());
-            headers.put(CorrelationIds.TRACEPARENT_HEADER, ids.childTraceparent());
+            headers.put(CorrelationIds.TRACEPARENT_HEADER, correlationTracing.outgoingTraceparent(ids));
         });
         return headers;
     }

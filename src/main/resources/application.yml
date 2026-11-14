@@ -172,6 +172,9 @@ security:
         window: ${SECURITY_RATE_LIMIT_WEBHOOK_REDELIVER_USER_WINDOW:15m}
 
 app:
+  tracing:
+    # Distributed tracing, off by default (docs/TRACING.md); see management.tracing below.
+    enabled: ${TRACING_ENABLED:false}
   email:
     # jms (Artemis, default) or local-outbox (in-memory outbox, no broker).
     transport: jms
@@ -307,6 +310,28 @@ springdoc:
 # The JMS health contributor is fixed at build time in the native image; with the local
 # outbox there is no broker, so broker reachability is not part of application health.
 management:
+  # Distributed tracing (docs/TRACING.md). The beans always exist (native image); app.tracing.enabled
+  # (TRACING_ENABLED) switches sampling, W3C propagation, export and the tracer's MDC entries at runtime.
+  tracing:
+    sampling:
+      # Used only while tracing is on; root spans only, children follow their parent's decision.
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+    propagation:
+      type: w3c
+    baggage:
+      enabled: false
+    export:
+      otlp:
+        # Spring Boot's exporter builds its HTTP client eagerly; TracingConfiguration builds the
+        # same exporter from the properties below, and only while tracing is on.
+        enabled: false
+  opentelemetry:
+    resource-attributes:
+      "[service.name]": backend
+    tracing:
+      export:
+        otlp:
+          endpoint: ${TRACING_OTLP_ENDPOINT:http://jaeger:4318/v1/traces}
   # Endpoint beans are chosen at build time in the native image, so include them all here;
   # profiles narrow the published set at runtime (aitesters: health, info, prometheus).
   endpoints:

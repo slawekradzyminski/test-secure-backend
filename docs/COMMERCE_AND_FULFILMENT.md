@@ -474,12 +474,12 @@ the warehouse and the payment service token.
 | `types` | Optional comma-separated wire names (`order.created`, `card-refund.requested`, ...); an unknown name is 400 |
 
 ```text
-200 { events: [ { sequence, id, type, occurredAt, orderId, username, data, requestId, traceId } ],
+200 { events: [ { sequence, id, type, occurredAt, orderId, username, data, requestId, traceId, spanId } ],
       nextCursor, hasMore }
 ```
 
 - Events are ordered by `sequence` ascending. Every event has exactly these
-  nine fields (nulls included); `occurredAt` is ISO-8601 UTC with millisecond
+  ten fields (nulls included); `occurredAt` is ISO-8601 UTC with millisecond
   precision and `data` is the event's data with sorted keys and plain decimals,
   stored once, so a redelivered event has identical bytes.
 - `requestId` and `traceId` (3.17.0, additive) are the `X-Request-Id` and W3C
@@ -487,6 +487,11 @@ the warehouse and the payment service token.
   / `trace_id`, V17). Both are null for events written outside a request
   (scheduled jobs) and for events recorded before 3.17.0. Consumers put them in
   their MDC while handling the event and send them on calls made for it.
+- `spanId` (additive, V24 `domain_events.span_id`) is the span id of the writing
+  request, null whenever `traceId` is. With tracing on (docs/TRACING.md) it is an
+  exported span; consumers start their `CONSUMER` span `process <type>` as its child
+  (`traceparent` `00-<traceId>-<spanId>-01`), so a cancellation and the refund it
+  triggers are one trace. With tracing off it is the hand-written hop span id.
 - `nextCursor` is the last returned sequence (or `after` for an empty page);
   pass it as the next `after`. `hasMore` is true when more matching settled
   events exist.
