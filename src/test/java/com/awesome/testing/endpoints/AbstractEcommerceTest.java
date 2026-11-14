@@ -5,6 +5,7 @@ import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
+import com.awesome.testing.stock.WarehouseSimulator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,10 +33,15 @@ public abstract class AbstractEcommerceTest extends DomainHelper {
     @Autowired
     protected CommerceTestData commerceTestData;
 
+    /** warehouse-service's side of cancellations: restores stock and pushes levels when asked. */
+    @Autowired
+    protected WarehouseSimulator warehouseSimulator;
+
     @BeforeEach
     @Transactional
     public void setUp() {
         commerceTestData.deleteAll();
+        warehouseSimulator.clear();
         cartItemRepository.deleteAll();
         orderRepository.deleteAll();
         productRepository.deleteAll();

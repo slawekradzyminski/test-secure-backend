@@ -38,10 +38,11 @@ class BrokerConfigTest {
     @Test
     void shouldCreateJpaTransactionManagerAndJmsTransactionManager() {
         EntityManagerFactory entityManagerFactory = mock(EntityManagerFactory.class);
-        PlatformTransactionManager transactionManager = config.transactionManager(entityManagerFactory);
+        PlatformTransactionManager jpaTransactionManager = config.jpaTransactionManager(entityManagerFactory);
 
-        assertThat(config.jpaTransactionManager(entityManagerFactory)).isInstanceOf(JpaTransactionManager.class);
+        assertThat(jpaTransactionManager).isInstanceOf(JpaTransactionManager.class);
         assertThat(config.jmsTransactionManager()).isInstanceOf(JmsTransactionManager.class);
-        assertThat(transactionManager).isInstanceOf(JpaTransactionManager.class);
+        // The primary manager is the JPA one itself, not a second instance built by a proxied call.
+        assertThat(config.transactionManager(jpaTransactionManager)).isSameAs(jpaTransactionManager);
     }
 }

@@ -1,6 +1,7 @@
 package com.awesome.testing.fakedata;
 
 import com.awesome.testing.repository.ProductRepository;
+import com.awesome.testing.service.stock.StockCommandOutbox;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -18,14 +19,17 @@ public class BootstrapProducts implements CommandLineRunner {
 
     private final ProductRepository productRepository;
     private final ProductCatalogLoader productCatalogLoader;
+    private final StockCommandOutbox stockCommands;
 
     private final boolean enabled;
 
     public BootstrapProducts(ProductRepository productRepository, ProductCatalogLoader productCatalogLoader,
+                             StockCommandOutbox stockCommands,
                              @org.springframework.beans.factory.annotation.Value("${app.bootstrap-products.enabled:false}") boolean enabled) {
         this.enabled = enabled;
         this.productRepository = productRepository;
         this.productCatalogLoader = productCatalogLoader;
+        this.stockCommands = stockCommands;
     }
 
     @Override
@@ -45,6 +49,7 @@ public class BootstrapProducts implements CommandLineRunner {
             throw new IllegalStateException("Bootstrap product catalog is empty");
         }
 
+        // Each product's stock item is created in warehouse-service after commit (contract section 4.3).
         productRepository.saveAll(products.stream()
                 .map(product -> com.awesome.testing.entity.ProductEntity.builder()
                         .name(product.name())
@@ -54,7 +59,8 @@ public class BootstrapProducts implements CommandLineRunner {
                         .category(product.category())
                         .imageUrl(product.imageUrl())
                         .build())
-                .toList());
+                .toList())
+                .forEach(product -> stockCommands.initialStock(product, SetupProducts.SEED_ACTOR));
 
         log.info("Bootstrapped {} products into an empty catalog", products.size());
     }

@@ -57,6 +57,10 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long>, JpaSp
     Optional<OrderEntity> findExpiredReservationForUpdate(
             @Param("id") Long id, @Param("status") OrderStatus status, @Param("now") Instant now);
 
+    /** Id of the order a warehouse stock reservation was confirmed for. */
+    @Query("select o.id from OrderEntity o where o.stockReservationId = :reservationId")
+    Optional<Long> findIdByStockReservationId(@Param("reservationId") java.util.UUID reservationId);
+
     void deleteByUsername(String username);
 
     @Query("select count(i) > 0 from OrderItemEntity i "

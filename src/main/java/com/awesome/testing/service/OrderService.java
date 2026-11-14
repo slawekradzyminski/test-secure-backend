@@ -25,12 +25,20 @@ import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
 import com.awesome.testing.service.reservation.OrderReservations;
-import lombok.RequiredArgsConstructor;
+import com.awesome.testing.dto.stock.ReservationDto;
+import com.awesome.testing.dto.stock.ReservedLineDto;
+import com.awesome.testing.dto.stock.StockLineDto;
+import com.awesome.testing.service.stock.StockLedgerClient;
+import com.awesome.testing.service.stock.StockLedgerRejection;
+import com.awesome.testing.service.stock.StockProjection;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +49,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Objects;
@@ -48,15 +58,30 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.UUID;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+/**
+ * Orders: checkout, cancellation, status and fulfilment changes.
+ *
+ * <p>Stock lives in warehouse-service's ledger (docs/ARCHITECTURE_DECISIONS.md ADR 6). Checkout is a
+ * small saga that never holds a database connection while it calls warehouse-service (the pool has
+ * 3 connections in production): a read-only transaction validates the cart, the reservation is made
+ * with no transaction open, a write transaction stores the order with the reservation id and applies
+ * the reserved levels to the {@code products.stock_quantity} projection, and the reservation is then
+ * confirmed. A failed write releases the reservation. Cancellations no longer touch stock: the
+ * {@code order.cancelled} event carries {@code stockRestore}, which warehouse-service applies.
+ */
+@Slf4j
 @Service
-@RequiredArgsConstructor
 public class OrderService {
 
     private static final Pattern IDEMPOTENCY_KEY = Pattern.compile("^[A-Za-z0-9_-]{8,64}$");
     private static final Duration IDEMPOTENCY_TTL = Duration.ofHours(24);
+    /** Checkout attempts when the cart changes between the read and the write transaction. */
+    static final int MAX_CHECKOUT_ATTEMPTS = 3;
 
     private final OrderRepository orderRepository;
     private final CartItemRepository cartItemRepository;
@@ -68,24 +93,164 @@ public class OrderService {
     private final CheckoutContributors checkoutContributors;
     private final CommerceEvents commerceEvents;
     private final OrderReservations orderReservations;
+    private final StockLedgerClient stockLedger;
+    private final StockProjection stockProjection;
+    private final TransactionTemplate readTransaction;
+    private final TransactionTemplate writeTransaction;
 
-    @Transactional
+    public OrderService(OrderRepository orderRepository,
+                        CartItemRepository cartItemRepository,
+                        ProductRepository productRepository,
+                        InventoryService inventoryService,
+                        CouponService couponService,
+                        OrderIdempotencyKeyRepository idempotencyKeyRepository,
+                        Clock commerceClock,
+                        CheckoutContributors checkoutContributors,
+                        CommerceEvents commerceEvents,
+                        OrderReservations orderReservations,
+                        StockLedgerClient stockLedger,
+                        StockProjection stockProjection,
+                        PlatformTransactionManager transactionManager) {
+        this.orderRepository = orderRepository;
+        this.cartItemRepository = cartItemRepository;
+        this.productRepository = productRepository;
+        this.inventoryService = inventoryService;
+        this.couponService = couponService;
+        this.idempotencyKeyRepository = idempotencyKeyRepository;
+        this.commerceClock = commerceClock;
+        this.checkoutContributors = checkoutContributors;
+        this.commerceEvents = commerceEvents;
+        this.orderReservations = orderReservations;
+        this.stockLedger = stockLedger;
+        this.stockProjection = stockProjection;
+        this.readTransaction = new TransactionTemplate(transactionManager);
+        this.readTransaction.setReadOnly(true);
+        this.writeTransaction = new TransactionTemplate(transactionManager);
+    }
+
     public OrderDto createOrder(String username, AddressDto addressDto) {
         return createOrder(username, addressDto, null).order();
     }
 
     /**
-     * Creates an order from the cart. When an idempotency key is supplied, a
-     * repeat with the same address within 24 hours replays the original order.
-     * The key is looked up after the cart rows are locked so a concurrent
-     * duplicate waits for the first checkout and then replays it.
+     * Creates an order from the cart (contract section 4.1). When an idempotency key is supplied, a
+     * repeat with the same address within 24 hours replays the original order. The key is checked
+     * again after the cart rows are locked, so a concurrent duplicate waits for the first checkout,
+     * replays it and releases its own reservation.
+     *
+     * <p>Must be called with no transaction open: the reservation is an HTTP call.
      */
-    @Transactional
     public OrderCreation createOrder(String username, AddressDto addressDto, String idempotencyKey) {
         if (idempotencyKey != null && !IDEMPOTENCY_KEY.matcher(idempotencyKey).matches()) {
             throw new CustomException(
                     "Idempotency-Key must be 8-64 letters, digits, hyphens or underscores", HttpStatus.BAD_REQUEST);
         }
+        for (int attempt = 1; ; attempt++) {
+            Optional<OrderCreation> created = attemptCheckout(username, addressDto, idempotencyKey);
+            if (created.isPresent()) {
+                return created.get();
+            }
+            if (attempt >= MAX_CHECKOUT_ATTEMPTS) {
+                throw new CustomException("Cart changed during checkout; please try again", HttpStatus.CONFLICT);
+            }
+        }
+    }
+
+    /** One pass of the saga; empty when the cart changed between the read and the write transaction. */
+    private Optional<OrderCreation> attemptCheckout(String username, AddressDto addressDto, String idempotencyKey) {
+        CheckoutPlan plan = readTransaction.execute(status -> prepareCheckout(username, addressDto, idempotencyKey));
+        if (plan.replay() != null) {
+            return Optional.of(plan.replay());
+        }
+        UUID reservationId = UUID.randomUUID();
+        ReservationDto reservation = reserve(reservationId, username, plan.quantities());
+        Placement placement;
+        try {
+            placement = writeTransaction.execute(status ->
+                    placeOrder(username, addressDto, idempotencyKey, plan, reservation));
+        } catch (CartChangedDuringCheckout changed) {
+            releaseQuietly(reservationId);
+            return Optional.empty();
+        } catch (RuntimeException e) {
+            releaseQuietly(reservationId);
+            throw e;
+        }
+        if (placement.creation().replayed()) {
+            releaseQuietly(reservationId);
+        } else {
+            confirmQuietly(reservationId, placement.orderId());
+        }
+        return Optional.of(placement.creation());
+    }
+
+    /** The read-only step of checkout: what to reserve, or the order an idempotency key replays. */
+    record CheckoutPlan(OrderCreation replay, SortedMap<Long, Integer> quantities) {
+    }
+
+    /** The write step's outcome: the new (or replayed) order. */
+    record Placement(OrderCreation creation, Long orderId) {
+    }
+
+    /** The cart changed between the read and the write transaction; checkout starts again. */
+    static final class CartChangedDuringCheckout extends RuntimeException {
+        @java.io.Serial
+        private static final long serialVersionUID = 1L;
+
+        CartChangedDuringCheckout() {
+            super("Cart changed during checkout", null, false, false);
+        }
+    }
+
+    private CheckoutPlan prepareCheckout(String username, AddressDto addressDto, String idempotencyKey) {
+        List<CartItemEntity> cartItems = cartItemRepository.findByUsername(username);
+        if (idempotencyKey != null) {
+            Optional<OrderIdempotencyKeyEntity> prior =
+                    idempotencyKeyRepository.findByUsernameAndKey(username, idempotencyKey)
+                            .filter(key -> !isExpired(key));
+            if (prior.isPresent()) {
+                return new CheckoutPlan(replay(prior.get(), requestHash(addressDto)), null);
+            }
+        }
+        if (cartItems.isEmpty()) {
+            throw new CustomException("Cart is empty", HttpStatus.BAD_REQUEST);
+        }
+        SortedMap<Long, Integer> quantities = quantitiesOf(cartItems);
+        Map<Long, ProductEntity> products = new TreeMap<>();
+        cartItems.forEach(item -> products.putIfAbsent(item.getProduct().getId(), item.getProduct()));
+        // Fast 409 against the projection; warehouse-service decides when the reservation is made.
+        products.forEach((id, product) -> inventoryService.checkAvailable(product, quantities.get(id)));
+        return new CheckoutPlan(null, quantities);
+    }
+
+    private boolean isExpired(OrderIdempotencyKeyEntity key) {
+        return key.getCreatedAt() != null
+                && key.getCreatedAt().isBefore(LocalDateTime.now(commerceClock).minus(IDEMPOTENCY_TTL));
+    }
+
+    private static OrderCreation replay(OrderIdempotencyKeyEntity prior, String requestHash) {
+        if (!prior.getRequestHash().equals(requestHash)) {
+            throw new CustomException(
+                    "Idempotency-Key was already used with a different request", HttpStatus.CONFLICT);
+        }
+        return new OrderCreation(OrderDto.from(prior.getOrder()), true);
+    }
+
+    private ReservationDto reserve(UUID reservationId, String username, SortedMap<Long, Integer> quantities) {
+        List<StockLineDto> lines = new ArrayList<>(quantities.size());
+        quantities.forEach((productId, quantity) -> lines.add(new StockLineDto(productId, quantity)));
+        try {
+            return stockLedger.reserve(reservationId, username, lines);
+        } catch (StockLedgerRejection rejection) {
+            if (rejection.isNotFound()) {
+                throw new CustomException("Product not found", HttpStatus.NOT_FOUND, rejection);
+            }
+            Long shortProduct = rejection.productId() != null ? rejection.productId() : quantities.firstKey();
+            throw new CustomException("Insufficient stock for product " + shortProduct, HttpStatus.CONFLICT, rejection);
+        }
+    }
+
+    private Placement placeOrder(String username, AddressDto addressDto, String idempotencyKey,
+                                 CheckoutPlan plan, ReservationDto reservation) {
         List<CartItemEntity> cartItems = cartItemRepository.findByUsernameForUpdate(username);
         String requestHash = idempotencyKey == null ? null : requestHash(addressDto);
         if (idempotencyKey != null) {
@@ -94,33 +259,21 @@ public class OrderService {
             Optional<OrderIdempotencyKeyEntity> prior =
                     idempotencyKeyRepository.findByUsernameAndKey(username, idempotencyKey);
             if (prior.isPresent()) {
-                if (!prior.get().getRequestHash().equals(requestHash)) {
-                    throw new CustomException(
-                            "Idempotency-Key was already used with a different request", HttpStatus.CONFLICT);
-                }
-                return new OrderCreation(OrderDto.from(prior.get().getOrder()), true);
+                return new Placement(replay(prior.get(), requestHash), null);
             }
         }
         if (cartItems.isEmpty()) {
             throw new CustomException("Cart is empty", HttpStatus.BAD_REQUEST);
         }
+        if (!quantitiesOf(cartItems).equals(plan.quantities())) {
+            throw new CartChangedDuringCheckout();
+        }
 
         OrderEntity order = getInitialEmptyOrder(username, addressDto);
         order.setInventoryState(InventoryState.DEDUCTED);
+        order.setStockReservationId(reservation.reservationId());
         order.setReservationExpiresAt(orderReservations.expiryFor(commerceClock.instant()));
         cartItems.forEach(cartItem -> updateOrder(cartItem, order));
-        Map<Long, Integer> quantities = cartItems.stream()
-                .collect(Collectors.groupingBy(
-                        cartItem -> cartItem.getProduct().getId(),
-                        TreeMap::new,
-                        Collectors.summingInt(CartItemEntity::getQuantity)));
-        List<ProductEntity> locked = quantities.keySet().stream()
-                .map(id -> productRepository.findByIdForUpdate(id)
-                        .orElseThrow(() -> new CustomException("Product not found", HttpStatus.NOT_FOUND)))
-                .toList();
-        for (ProductEntity product : locked) {
-            inventoryService.checkAvailable(product, quantities.get(product.getId()));
-        }
         BigDecimal subtotal = order.getTotalAmount();
         Optional<CouponQuote> quote = couponService.quoteForCheckout(username, subtotal);
         BigDecimal discount = quote.map(CouponQuote::discount).orElse(BigDecimal.ZERO);
@@ -130,9 +283,7 @@ public class OrderService {
         order.setTotalAmount(subtotal.subtract(discount));
         checkoutContributors.contribute(new CheckoutContext(username, addressDto, cartItems, order));
         OrderEntity savedOrder = orderRepository.save(order);
-        for (ProductEntity product : locked) {
-            inventoryService.deduct(product, quantities.get(product.getId()), savedOrder);
-        }
+        applyReservedLevels(reservation);
         quote.ifPresent(q -> couponService.recordRedemption(q, savedOrder));
         cartItemRepository.deleteByUsername(username);
         if (idempotencyKey != null) {
@@ -146,7 +297,54 @@ public class OrderService {
         commerceEvents.publish(CommerceEventType.ORDER_CREATED, savedOrder);
         flushBeforeMapping();
 
-        return new OrderCreation(OrderDto.from(savedOrder), false);
+        return new Placement(new OrderCreation(OrderDto.from(savedOrder), false), savedOrder.getId());
+    }
+
+    /** Sets the projection to the levels the reservation left, locking the products in id order. */
+    private void applyReservedLevels(ReservationDto reservation) {
+        if (reservation.lines() == null) {
+            return;
+        }
+        reservation.lines().stream()
+                .filter(line -> line.productId() != null && line.quantityAfter() != null && line.ledgerVersion() != null)
+                .sorted(Comparator.comparing(ReservedLineDto::productId))
+                .forEach(line -> productRepository.findByIdForUpdate(line.productId()).ifPresent(product ->
+                        stockProjection.apply(product, line.quantityAfter(), line.ledgerVersion())));
+    }
+
+    /**
+     * Step 4: ties the reservation to the order. A failure is only logged: the order exists, and
+     * warehouse-service's reaper confirms a reservation whose order it finds
+     * ({@code GET /internal/v1/orders/by-reservation/{id}}) instead of releasing it.
+     */
+    private void confirmQuietly(UUID reservationId, Long orderId) {
+        try {
+            stockLedger.confirm(reservationId, orderId);
+        } catch (RuntimeException e) {
+            log.warn("Could not confirm stock reservation {} of order {}; warehouse-service's reaper will: {}",
+                    reservationId, orderId, e.getMessage());
+        }
+    }
+
+    /**
+     * Step 5: gives back the stock of a reservation no order was stored for. A failure is only
+     * logged: warehouse-service's reaper releases unconfirmed reservations without an order.
+     */
+    private void releaseQuietly(UUID reservationId) {
+        try {
+            stockLedger.release(reservationId);
+        } catch (RuntimeException e) {
+            log.warn("Could not release stock reservation {}; warehouse-service's reaper will: {}",
+                    reservationId, e.getMessage());
+        }
+    }
+
+    private static SortedMap<Long, Integer> quantitiesOf(List<CartItemEntity> cartItems) {
+        return cartItems.stream()
+                .collect(Collectors.groupingBy(
+                        cartItem -> cartItem.getProduct().getId(),
+                        TreeMap::new,
+                        Collectors.summingInt(CartItemEntity::getQuantity)));
     }
 
     @Transactional(readOnly = true)
@@ -392,19 +590,18 @@ public class OrderService {
         return OrderDto.from(releaseAndCancel(order, reason));
     }
 
+    /**
+     * Cancels the order. Stock is not touched here any more: when the order still holds deducted
+     * stock, the {@code order.cancelled} event carries {@code stockRestore} (the lines and the actor
+     * the restore movements get) and warehouse-service restores the stock from the event feed, after
+     * which the projection catches up through the level push.
+     */
     private OrderEntity releaseAndCancel(OrderEntity order, CancellationReason reason) {
         couponService.releaseRedemption(order);
+        Map<String, Object> extra = new LinkedHashMap<>();
+        extra.put("reason", reason.name());
         if (order.getInventoryState() == InventoryState.DEDUCTED) {
-            Map<Long, Integer> quantities = order.getItems().stream()
-                    .collect(Collectors.groupingBy(
-                            item -> item.getProduct().getId(),
-                            TreeMap::new,
-                            Collectors.summingInt(OrderItemEntity::getQuantity)));
-            quantities.forEach((productId, quantity) -> {
-                ProductEntity product = productRepository.findByIdForUpdate(productId)
-                        .orElseThrow(() -> new CustomException("Product not found", HttpStatus.NOT_FOUND));
-                inventoryService.restore(product, quantity, order, reason.actorFor(order.getUsername()));
-            });
+            extra.put("stockRestore", stockRestore(order, reason.actorFor(order.getUsername())));
             order.setInventoryState(InventoryState.RESTORED);
         }
         order.setStatus(OrderStatus.CANCELLED);
@@ -414,9 +611,29 @@ public class OrderService {
             order.setFulfilmentState(FulfilmentState.CANCELLED);
         }
         OrderEntity saved = orderRepository.save(order);
-        commerceEvents.publish(CommerceEventType.ORDER_CANCELLED, saved, Map.of("reason", reason.name()));
+        commerceEvents.publish(CommerceEventType.ORDER_CANCELLED, saved, extra);
         flushBeforeMapping();
         return saved;
+    }
+
+    /** {@code {"actor": ..., "lines": [{"productId": 1, "quantity": 2}]}}, lines in product id order. */
+    static Map<String, Object> stockRestore(OrderEntity order, String actor) {
+        Map<Long, Integer> quantities = order.getItems().stream()
+                .collect(Collectors.groupingBy(
+                        item -> item.getProduct().getId(),
+                        TreeMap::new,
+                        Collectors.summingInt(OrderItemEntity::getQuantity)));
+        List<Map<String, Object>> lines = new ArrayList<>(quantities.size());
+        quantities.forEach((productId, quantity) -> {
+            Map<String, Object> line = new LinkedHashMap<>();
+            line.put("productId", productId);
+            line.put("quantity", quantity);
+            lines.add(line);
+        });
+        Map<String, Object> restore = new LinkedHashMap<>();
+        restore.put("actor", actor);
+        restore.put("lines", lines);
+        return restore;
     }
 
     /**

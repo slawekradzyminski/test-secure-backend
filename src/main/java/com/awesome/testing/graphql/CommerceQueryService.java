@@ -29,6 +29,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -109,7 +110,9 @@ public class CommerceQueryService {
         return inventoryService.get(productId, lowStockThreshold);
     }
 
+    /** No transaction: the movements are read from warehouse-service. */
     @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ResultPage<InventoryMovementDto> inventoryMovements(Long productId, int page, int size) {
         return ResultPage.from(inventoryService.movements(productId, pageRequest(page, size)), Function.identity());
     }

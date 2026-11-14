@@ -1,17 +1,18 @@
 package com.awesome.testing.service;
 
-import org.springframework.context.ApplicationEventPublisher;
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.inventory.InventoryAdjustmentDto;
 import com.awesome.testing.dto.inventory.InventoryItemDto;
 import com.awesome.testing.dto.inventory.InventoryMovementDto;
 import com.awesome.testing.dto.inventory.StockStatus;
-import com.awesome.testing.entity.OrderEntity;
+import com.awesome.testing.dto.stock.AdjustStockRequestDto;
+import com.awesome.testing.dto.stock.LedgerMovementDto;
 import com.awesome.testing.entity.ProductEntity;
-import com.awesome.testing.entity.inventory.InventoryMovementEntity;
 import com.awesome.testing.entity.inventory.InventoryMovementType;
 import com.awesome.testing.repository.ProductRepository;
-import com.awesome.testing.repository.inventory.InventoryMovementRepository;
+import com.awesome.testing.service.stock.StockLedgerClient;
+import com.awesome.testing.service.stock.StockLedgerRejection;
+import com.awesome.testing.service.stock.StockProjection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,31 +20,42 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+/** The inventory facade: validation, warehouse-service rejections and the projection update. */
 @ExtendWith(MockitoExtension.class)
 class InventoryServiceTest {
 
     private static final Long PRODUCT_ID = 1L;
+    private static final LocalDateTime AT = LocalDateTime.of(2026, 11, 14, 10, 0, 0, 123_456_000);
 
     @Mock
     private ProductRepository productRepository;
 
     @Mock
-    private InventoryMovementRepository movementRepository;
+    private StockLedgerClient stockLedger;
 
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private StockProjection projection;
 
     @InjectMocks
     private InventoryService inventoryService;
@@ -60,151 +72,146 @@ class InventoryServiceTest {
         assertThatThrownBy(() -> inventoryService.list(0, 10, null, null, StockStatus.LOW_STOCK, 0))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("lowStockThreshold must be at least 1");
-
+        verifyNoInteractions(productRepository);
     }
 
     @Test
-    void adjustLocksProductBeforeCheckingIdempotencyAndPersistsTheNewQuantity() {
+    void adjustChecksTheProductThenRecordsInTheLedgerAndAppliesTheReturnedLevel() {
         InventoryAdjustmentDto request = request(3, "delivery");
-        InventoryMovementEntity movement = InventoryMovementEntity.builder()
-                .id(9L)
-                .product(product)
-                .delta(3)
-                .quantityAfter(8)
-                .actor("admin")
-                .reason("delivery")
-                .requestId(request.getRequestId())
-                .build();
-        when(productRepository.findByIdForUpdate(PRODUCT_ID)).thenReturn(Optional.of(product));
-        when(movementRepository.findByProductIdAndRequestId(PRODUCT_ID, request.getRequestId()))
-                .thenReturn(Optional.empty());
-        when(movementRepository.save(any(InventoryMovementEntity.class))).thenReturn(movement);
+        when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
+        when(stockLedger.adjust(any())).thenReturn(movement(request.getRequestId(), 3, 8, 43L));
 
         InventoryMovementDto result = inventoryService.adjust(PRODUCT_ID, request, "admin");
 
-        assertThat(result.getQuantityAfter()).isEqualTo(8);
-        assertThat(product.getStockQuantity()).isEqualTo(8);
-        InOrder order = inOrder(productRepository, movementRepository);
-        order.verify(productRepository).findByIdForUpdate(PRODUCT_ID);
-        order.verify(movementRepository).findByProductIdAndRequestId(PRODUCT_ID, request.getRequestId());
-        verify(productRepository).save(product);
+        assertThat(result).isEqualTo(InventoryMovementDto.builder().id(9L).productId(PRODUCT_ID)
+                .type(InventoryMovementType.ADMIN_ADJUSTMENT).delta(3).quantityAfter(8).actor("admin")
+                .reason("delivery").requestId(request.getRequestId()).createdAt(AT).build());
+        InOrder order = inOrder(productRepository, stockLedger, projection);
+        order.verify(productRepository).existsById(PRODUCT_ID);
+        order.verify(stockLedger).adjust(new AdjustStockRequestDto(PRODUCT_ID, 3, "delivery",
+                request.getRequestId(), "admin"));
+        order.verify(projection).apply(PRODUCT_ID, 8, 43L);
     }
 
     @Test
-    void adjustReplaysAnIdenticalRequestWithoutChangingStock() {
-        InventoryAdjustmentDto request = request(2, "delivery");
-        InventoryMovementEntity existing = InventoryMovementEntity.builder()
-                .id(9L)
-                .product(product)
-                .delta(2)
-                .quantityAfter(7)
-                .actor("admin")
-                .reason("delivery")
-                .requestId(request.getRequestId())
-                .build();
-        when(productRepository.findByIdForUpdate(PRODUCT_ID)).thenReturn(Optional.of(product));
-        when(movementRepository.findByProductIdAndRequestId(PRODUCT_ID, request.getRequestId()))
-                .thenReturn(Optional.of(existing));
+    void aMovementWithoutALedgerVersionLeavesTheProjectionAlone() {
+        InventoryAdjustmentDto request = request(3, "delivery");
+        when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
+        when(stockLedger.adjust(any())).thenReturn(movement(request.getRequestId(), 3, 8, null));
 
-        InventoryMovementDto result = inventoryService.adjust(PRODUCT_ID, request, "admin");
+        assertThat(inventoryService.adjust(PRODUCT_ID, request, "admin").getQuantityAfter()).isEqualTo(8);
 
-        assertThat(result.getId()).isEqualTo(9L);
-        assertThat(product.getStockQuantity()).isEqualTo(5);
-        verify(productRepository, never()).save(any());
-        verify(movementRepository, never()).save(any());
+        verifyNoInteractions(projection);
     }
 
     @Test
-    void adjustRejectsAConflictingRequestReuseWithoutSaving() {
-        InventoryAdjustmentDto request = request(2, "delivery");
-        InventoryMovementEntity existing = InventoryMovementEntity.builder()
-                .product(product)
-                .delta(1)
-                .quantityAfter(6)
-                .reason("delivery")
-                .requestId(request.getRequestId())
-                .build();
-        when(productRepository.findByIdForUpdate(PRODUCT_ID)).thenReturn(Optional.of(product));
-        when(movementRepository.findByProductIdAndRequestId(PRODUCT_ID, request.getRequestId()))
-                .thenReturn(Optional.of(existing));
-
-        assertThatThrownBy(() -> inventoryService.adjust(PRODUCT_ID, request, "admin"))
-                .isInstanceOf(CustomException.class)
-                .hasMessage("requestId already used with different payload");
-
-        verify(productRepository, never()).save(any());
-        verify(movementRepository, never()).save(any());
+    void adjustValidatesBeforeCallingWarehouseService() {
+        assertThatThrownBy(() -> inventoryService.adjust(PRODUCT_ID, request(0, "x"), "admin"))
+                .isInstanceOfSatisfying(CustomException.class, e -> {
+                    assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(e.getMessage()).isEqualTo("Inventory delta must not be zero");
+                });
+        assertThatThrownBy(() -> inventoryService.adjust(PRODUCT_ID,
+                InventoryAdjustmentDto.builder().reason("x").requestId(UUID.randomUUID()).build(), "admin"))
+                .hasMessage("Inventory delta must not be zero");
+        assertThatThrownBy(() -> inventoryService.adjust(PRODUCT_ID,
+                InventoryAdjustmentDto.builder().delta(1).reason("x").build(), "admin"))
+                .isInstanceOfSatisfying(CustomException.class, e -> {
+                    assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(e.getMessage()).isEqualTo("Inventory requestId is required");
+                });
+        verifyNoInteractions(productRepository, stockLedger, projection);
     }
 
     @Test
-    void adjustRejectsBelowZeroWithoutPersistingAnything() {
-        InventoryAdjustmentDto request = request(-6, "correction");
-        when(productRepository.findByIdForUpdate(PRODUCT_ID)).thenReturn(Optional.of(product));
-        when(movementRepository.findByProductIdAndRequestId(PRODUCT_ID, request.getRequestId()))
-                .thenReturn(Optional.empty());
+    void adjustOfAnUnknownProductIsNotFoundWithoutCallingWarehouseService() {
+        when(productRepository.existsById(PRODUCT_ID)).thenReturn(false);
 
-        assertThatThrownBy(() -> inventoryService.adjust(PRODUCT_ID, request, "admin"))
-                .isInstanceOf(CustomException.class)
-                .hasMessage("Insufficient stock");
-
-        assertThat(product.getStockQuantity()).isEqualTo(5);
-        verify(productRepository, never()).save(any());
-        verify(movementRepository, never()).save(any());
+        assertThatThrownBy(() -> inventoryService.adjust(PRODUCT_ID, request(1, "x"), "admin"))
+                .isInstanceOfSatisfying(CustomException.class, e -> {
+                    assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+                    assertThat(e.getMessage()).isEqualTo("Product not found");
+                });
+        verifyNoInteractions(stockLedger);
     }
 
     @Test
-    void adjustAllowsTheExactZeroBoundary() {
-        InventoryAdjustmentDto request = request(-5, "sold at counter");
-        when(productRepository.findByIdForUpdate(PRODUCT_ID)).thenReturn(Optional.of(product));
-        when(movementRepository.findByProductIdAndRequestId(PRODUCT_ID, request.getRequestId()))
-                .thenReturn(Optional.empty());
-        when(movementRepository.save(any(InventoryMovementEntity.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+    void ledgerConflictsKeepWarehouseServicesMessageAndChangeNothing() {
+        when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
+        when(stockLedger.adjust(any())).thenThrow(new StockLedgerRejection(409, "Insufficient stock", null));
 
-        InventoryMovementDto result = inventoryService.adjust(PRODUCT_ID, request, "admin");
-
-        assertThat(result.getQuantityAfter()).isZero();
-        assertThat(product.getStockQuantity()).isZero();
-        verify(productRepository).save(product);
+        assertThatThrownBy(() -> inventoryService.adjust(PRODUCT_ID, request(-6, "x"), "admin"))
+                .isInstanceOfSatisfying(CustomException.class, e -> {
+                    assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(e.getMessage()).isEqualTo("Insufficient stock");
+                });
+        verifyNoInteractions(projection);
     }
 
     @Test
-    void adjustAllowsTheExactIntegerMaximumBoundary() {
-        product.setStockQuantity(1);
-        InventoryAdjustmentDto request = request(Integer.MAX_VALUE - 1, "bulk import");
-        when(productRepository.findByIdForUpdate(PRODUCT_ID)).thenReturn(Optional.of(product));
-        when(movementRepository.findByProductIdAndRequestId(PRODUCT_ID, request.getRequestId()))
-                .thenReturn(Optional.empty());
-        when(movementRepository.save(any(InventoryMovementEntity.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+    void aConflictWithoutAMessageGetsAGenericOne() {
+        when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
+        when(stockLedger.adjust(any())).thenThrow(new StockLedgerRejection(409, null, null));
 
-        InventoryMovementDto result = inventoryService.adjust(PRODUCT_ID, request, "admin");
-
-        assertThat(result.getQuantityAfter()).isEqualTo(Integer.MAX_VALUE);
-        assertThat(product.getStockQuantity()).isEqualTo(Integer.MAX_VALUE);
+        assertThatThrownBy(() -> inventoryService.adjust(PRODUCT_ID, request(-6, "x"), "admin"))
+                .hasMessage("Inventory adjustment conflicts with current state");
     }
 
     @Test
-    void deductAndRestorePersistAuditableOrderMovements() {
-        OrderEntity order = OrderEntity.builder().id(7L).username("buyer").build();
-        when(movementRepository.save(any(InventoryMovementEntity.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+    void aProductWithoutAStockItemIsNotFound() {
+        when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
+        when(stockLedger.adjust(any())).thenThrow(new StockLedgerRejection(404, "Product not found", null));
 
-        InventoryMovementEntity deducted = inventoryService.deduct(product, 5, order);
+        assertThatThrownBy(() -> inventoryService.adjust(PRODUCT_ID, request(1, "x"), "admin"))
+                .isInstanceOfSatisfying(CustomException.class, e -> {
+                    assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+                    assertThat(e.getMessage()).isEqualTo("Product not found");
+                });
+        verifyNoInteractions(projection);
+    }
 
-        assertThat(product.getStockQuantity()).isZero();
-        assertThat(deducted.getType()).isEqualTo(InventoryMovementType.ORDER_DEDUCTED);
-        assertThat(deducted.getDelta()).isEqualTo(-5);
-        assertThat(deducted.getQuantityAfter()).isZero();
-        assertThat(deducted.getOrder()).isSameAs(order);
+    @Test
+    void anUnavailableWarehousePropagatesThe503() {
+        when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
+        when(stockLedger.adjust(any())).thenThrow(
+                new CustomException(StockLedgerClient.UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE));
 
-        InventoryMovementEntity restored = inventoryService.restore(product, 5, order);
+        assertThatThrownBy(() -> inventoryService.adjust(PRODUCT_ID, request(1, "x"), "admin"))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
+        verifyNoInteractions(projection);
+    }
 
-        assertThat(product.getStockQuantity()).isEqualTo(5);
-        assertThat(restored.getType()).isEqualTo(InventoryMovementType.ORDER_RESTORED);
-        assertThat(restored.getDelta()).isEqualTo(5);
-        assertThat(restored.getQuantityAfter()).isEqualTo(5);
-        verify(productRepository, org.mockito.Mockito.times(2)).save(product);
+    @Test
+    void movementsComeFromWarehouseServiceAfterTheProductCheck() {
+        Page<InventoryMovementDto> page = new PageImpl<>(List.of(InventoryMovementDto.builder().id(4L).build()),
+                PageRequest.of(1, 3), 4);
+        when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
+        when(stockLedger.movements(PRODUCT_ID, 1, 3)).thenReturn(page);
+
+        assertThat(inventoryService.movements(PRODUCT_ID, PageRequest.of(1, 3))).isSameAs(page);
+    }
+
+    @Test
+    void movementsOfAnUnknownProductAreNotFoundAndOfAProductWithoutStockItemEmpty() {
+        when(productRepository.existsById(PRODUCT_ID)).thenReturn(false);
+        assertThatThrownBy(() -> inventoryService.movements(PRODUCT_ID, PageRequest.of(0, 20)))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.NOT_FOUND));
+        verify(stockLedger, never()).movements(anyLong(), anyInt(), anyInt());
+
+        when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
+        when(stockLedger.movements(PRODUCT_ID, 0, 20)).thenThrow(new StockLedgerRejection(404, "missing", PRODUCT_ID));
+        Page<InventoryMovementDto> empty = inventoryService.movements(PRODUCT_ID, PageRequest.of(0, 20));
+        assertThat(empty.getContent()).isEmpty();
+        assertThat(empty.getTotalElements()).isZero();
+        assertThat(empty.getPageable()).isEqualTo(PageRequest.of(0, 20));
+
+        org.mockito.Mockito.doThrow(new StockLedgerRejection(409, "odd", null))
+                .when(stockLedger).movements(PRODUCT_ID, 0, 20);
+        assertThatThrownBy(() -> inventoryService.movements(PRODUCT_ID, PageRequest.of(0, 20)))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.CONFLICT));
     }
 
     @Test
@@ -239,79 +246,16 @@ class InventoryServiceTest {
                 .hasMessage("lowStockThreshold must be at least 1");
     }
 
-    private InventoryAdjustmentDto request(int delta, String reason) {
+    private static LedgerMovementDto movement(UUID requestId, int delta, int after, Long version) {
+        return new LedgerMovementDto(9L, PRODUCT_ID, null, InventoryMovementType.ADMIN_ADJUSTMENT, delta, after,
+                "admin", "delivery", requestId, AT, version);
+    }
+
+    private static InventoryAdjustmentDto request(int delta, String reason) {
         return InventoryAdjustmentDto.builder()
                 .delta(delta)
                 .reason(reason)
                 .requestId(UUID.randomUUID())
                 .build();
-    }
-
-    @Test
-    void replenishingASoldOutProductPublishesOneEventButTopUpsDoNot() {
-        product.setStockQuantity(0);
-        when(productRepository.findByIdForUpdate(PRODUCT_ID)).thenReturn(java.util.Optional.of(product));
-        when(movementRepository.save(any(InventoryMovementEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        inventoryService.adjust(PRODUCT_ID, com.awesome.testing.dto.inventory.InventoryAdjustmentDto.builder()
-                .delta(1).reason("restock").requestId(java.util.UUID.randomUUID()).build(), "admin");
-        inventoryService.adjust(PRODUCT_ID, com.awesome.testing.dto.inventory.InventoryAdjustmentDto.builder()
-                .delta(4).reason("restock").requestId(java.util.UUID.randomUUID()).build(), "admin");
-
-        verify(eventPublisher, org.mockito.Mockito.times(1))
-                .publishEvent(new com.awesome.testing.service.notification.StockReplenishedEvent(PRODUCT_ID));
-    }
-
-    @Test
-    void sellingOutAndRestoringFromZeroPublishesTheReplenishment() {
-        OrderEntity order = OrderEntity.builder().id(7L).username("buyer").build();
-        when(movementRepository.save(any(InventoryMovementEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        inventoryService.deduct(product, 5, order);
-        org.mockito.Mockito.verifyNoInteractions(eventPublisher);
-        inventoryService.restore(product, 2, order);
-
-        verify(eventPublisher).publishEvent(new com.awesome.testing.service.notification.StockReplenishedEvent(PRODUCT_ID));
-    }
-
-    @Test
-    void receivingGoodsAddsStockAndRejectsUnsupportedOrEmptyReceipts() {
-        product.setStockQuantity(0);
-        when(movementRepository.save(any(InventoryMovementEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        InventoryMovementEntity movement = inventoryService.receive(product, 3,
-                InventoryMovementType.PURCHASE_RECEIVED, null, "admin", "Purchase order #1");
-
-        assertThat(product.getStockQuantity()).isEqualTo(3);
-        assertThat(movement.getDelta()).isEqualTo(3);
-        assertThat(movement.getQuantityAfter()).isEqualTo(3);
-        assertThat(movement.getType()).isEqualTo(InventoryMovementType.PURCHASE_RECEIVED);
-        verify(eventPublisher).publishEvent(new com.awesome.testing.service.notification.StockReplenishedEvent(PRODUCT_ID));
-        assertThatThrownBy(() -> inventoryService.receive(product, 0,
-                InventoryMovementType.PURCHASE_RECEIVED, null, "admin", "x")).hasMessage("Received quantity must be positive");
-        assertThatThrownBy(() -> inventoryService.receive(product, 1,
-                InventoryMovementType.ADMIN_ADJUSTMENT, null, "admin", "x")).isInstanceOf(IllegalArgumentException.class);
-        product.setStockQuantity(Integer.MAX_VALUE);
-        assertThatThrownBy(() -> inventoryService.receive(product, 1,
-                InventoryMovementType.RETURN_RESTOCKED, null, "admin", "x")).hasMessage("Inventory quantity exceeds supported maximum");
-    }
-
-    @Test
-    void receiptsTagTheMovementWithTheCallersRequestId() {
-        product.setStockQuantity(4);
-        when(movementRepository.save(any(InventoryMovementEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        java.util.UUID requestId = java.util.UUID.randomUUID();
-
-        InventoryMovementEntity tagged = inventoryService.receive(product, 2,
-                InventoryMovementType.RETURN_RESTOCKED, null, "warehouse-service", "RMA-3", requestId);
-        InventoryMovementEntity untagged = inventoryService.receive(product, 1,
-                InventoryMovementType.PURCHASE_RECEIVED, null, "admin", "PO-1");
-
-        assertThat(tagged.getRequestId()).isEqualTo(requestId);
-        assertThat(tagged.getActor()).isEqualTo("warehouse-service");
-        assertThat(tagged.getReason()).isEqualTo("RMA-3");
-        assertThat(untagged.getRequestId()).isNull();
-        assertThat(product.getStockQuantity()).isEqualTo(7);
-        org.mockito.Mockito.verifyNoInteractions(eventPublisher);
     }
 }

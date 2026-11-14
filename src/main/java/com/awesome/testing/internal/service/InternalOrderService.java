@@ -5,10 +5,12 @@ import com.awesome.testing.dto.order.FulfilmentState;
 import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.dto.order.PageDto;
 import com.awesome.testing.internal.dto.InternalOrderDto;
+import com.awesome.testing.internal.dto.OrderReferenceDto;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,13 @@ public class InternalOrderService {
     public InternalOrderDto get(Long orderId) {
         return orderRepository.findWithItemsById(orderId)
                 .map(InternalOrderDto::from)
+                .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
+    }
+
+    @Transactional(readOnly = true)
+    public OrderReferenceDto byReservation(UUID reservationId) {
+        return orderRepository.findIdByStockReservationId(reservationId)
+                .map(OrderReferenceDto::new)
                 .orElseThrow(() -> new CustomException("Order not found", HttpStatus.NOT_FOUND));
     }
 

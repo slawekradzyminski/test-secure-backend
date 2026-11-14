@@ -61,7 +61,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @Import({InventoryService.class, OrderService.class, CouponService.class, CommerceClockConfig.class, OrderReservations.class,
         CheckoutContributors.class, CommerceEvents.class, TenderCheckoutContributor.class, GiftCardService.class,
-        LoyaltyService.class, LoyaltyAccountCreator.class, TenderOrderEvents.class, TenderRefundService.class})
+        LoyaltyService.class, LoyaltyAccountCreator.class, TenderOrderEvents.class, TenderRefundService.class,
+        com.awesome.testing.stock.StockSliceConfig.class})
 class TenderConcurrencyIT {
 
     private static final PostgreSQLContainer POSTGRES =

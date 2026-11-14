@@ -69,6 +69,7 @@ public class CommerceGraphQlConfig {
                 case 403 -> new Failure(ErrorType.FORBIDDEN, "FORBIDDEN", "Access denied");
                 case 404 -> new Failure(ErrorType.NOT_FOUND, "NOT_FOUND", error.getMessage());
                 case 409 -> new Failure(ErrorType.BAD_REQUEST, "CONFLICT", error.getMessage());
+                case 503 -> new Failure(ErrorType.INTERNAL_ERROR, "UNAVAILABLE", error.getMessage());
                 default -> null;
             };
             default -> null;

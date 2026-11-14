@@ -113,6 +113,13 @@ public class OrderEntity {
     @Column(name = "reservation_expires_at")
     private Instant reservationExpiresAt;
 
+    /**
+     * The warehouse-service stock reservation this checkout created and confirmed. Internal only:
+     * never serialized; warehouse-service looks orders up by it before releasing a reservation.
+     */
+    @Column(name = "stock_reservation_id", unique = true)
+    private java.util.UUID stockReservationId;
+
     @Embedded
     private AddressEntity shippingAddress;
 

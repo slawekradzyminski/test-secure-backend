@@ -132,6 +132,7 @@ public class InventoryGrpcService extends InventoryServiceGrpc.InventoryServiceI
                 case 400 -> Status.INVALID_ARGUMENT.withDescription("Invalid inventory request");
                 case 404 -> Status.NOT_FOUND.withDescription("Product not found");
                 case 409 -> Status.FAILED_PRECONDITION.withDescription("Inventory adjustment conflicts with current state");
+                case 503 -> Status.UNAVAILABLE.withDescription(domain.getMessage());
                 default -> Status.INTERNAL.withDescription("Inventory operation failed");
             };
             default -> Status.INTERNAL.withDescription("Inventory operation failed");

@@ -1,5 +1,8 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.service.stock.StockLedgerClient;
+import com.awesome.testing.service.stock.StockProjection;
+import org.springframework.transaction.PlatformTransactionManager;
 import com.awesome.testing.service.reservation.OrderReservations;
 
 import com.awesome.testing.controller.exception.CustomException;
@@ -60,6 +63,9 @@ class OrderServiceCommerceTest {
     @Mock private CouponService couponService;
     @Mock private OrderIdempotencyKeyRepository idempotencyKeyRepository;
     @Mock private CommerceEvents commerceEvents;
+    @Mock private StockLedgerClient stockLedger;
+    @Mock private StockProjection stockProjection;
+    @Mock private PlatformTransactionManager transactionManager;
 
     private OrderService service;
     private ProductEntity product;
@@ -70,11 +76,15 @@ class OrderServiceCommerceTest {
         service = new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
                 idempotencyKeyRepository, Clock.fixed(NOW.toInstant(ZoneOffset.UTC), ZoneOffset.UTC),
                 CheckoutContributors.none(), commerceEvents,
-                new OrderReservations(true, Duration.ofMinutes(30)));
+                new OrderReservations(true, Duration.ofMinutes(30)),
+                stockLedger, stockProjection, transactionManager);
         product = ProductEntity.builder().id(1L).name("Phone").price(new BigDecimal("40.00")).stockQuantity(10).build();
         address = AddressDto.builder().street("Main 1").city("Warsaw").state("MZ").zipCode("00-001").country("PL").build();
-        lenient().when(cartItemRepository.findByUsernameForUpdate(USER)).thenReturn(List.of(CartItemEntity.builder()
-                .username(USER).product(product).quantity(3).price(product.getPrice()).build()));
+        List<CartItemEntity> cart = List.of(CartItemEntity.builder()
+                .username(USER).product(product).quantity(3).price(product.getPrice()).build());
+        lenient().when(cartItemRepository.findByUsername(USER)).thenReturn(cart);
+        lenient().when(cartItemRepository.findByUsernameForUpdate(USER)).thenReturn(cart);
+        CheckoutStubs.reserveEverything(stockLedger);
         lenient().when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
         lenient().when(orderRepository.save(any(OrderEntity.class))).thenAnswer(invocation -> {
             OrderEntity order = invocation.getArgument(0);
@@ -131,6 +141,27 @@ class OrderServiceCommerceTest {
     }
 
     @Test
+    void anExpiredKeyIsIgnoredWhenTheCheckoutIsPlannedAndDeletedWhenItIsWritten() {
+        when(couponService.quoteForCheckout(any(), any())).thenReturn(Optional.empty());
+        OrderEntity original = OrderEntity.builder().id(7L).username(USER).shippingAddress(AddressEntity.from(address))
+                .status(OrderStatus.PENDING).totalAmount(BigDecimal.TEN).build();
+        OrderIdempotencyKeyEntity expired = OrderIdempotencyKeyEntity.builder().order(original)
+                .requestHash(OrderService.requestHash(address)).createdAt(NOW.minusHours(24).minusNanos(1000)).build();
+        OrderIdempotencyKeyEntity fresh = OrderIdempotencyKeyEntity.builder().order(original)
+                .requestHash(OrderService.requestHash(address)).createdAt(NOW.minusHours(24)).build();
+        when(idempotencyKeyRepository.findByUsernameAndKey(USER, "checkout-key-1"))
+                .thenReturn(Optional.of(expired), Optional.empty(), Optional.of(fresh));
+
+        var created = service.createOrder(USER, address, "checkout-key-1");
+        var replayed = service.createOrder(USER, address, "checkout-key-1");
+
+        assertThat(created.replayed()).isFalse();
+        assertThat(created.order().getId()).isEqualTo(99L);
+        assertThat(replayed.replayed()).as("exactly 24 hours old still replays").isTrue();
+        verify(stockLedger).reserve(any(), any(), any());
+    }
+
+    @Test
     void aRepeatedKeyReplaysWithoutTouchingStockAndADifferentAddressConflicts() {
         OrderEntity original = OrderEntity.builder().id(7L).username(USER).shippingAddress(AddressEntity.from(address)).status(OrderStatus.PENDING)
                 .totalAmount(BigDecimal.TEN).build();
@@ -142,7 +173,7 @@ class OrderServiceCommerceTest {
 
         assertThat(replay.replayed()).isTrue();
         assertThat(replay.order().getId()).isEqualTo(7L);
-        verify(inventoryService, never()).deduct(any(), any(Integer.class), any());
+        verify(stockLedger, never()).reserve(any(), any(), any());
         assertThatThrownBy(() -> service.createOrder(USER, other, "checkout-key-1"))
                 .isInstanceOfSatisfying(CustomException.class, e -> assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.CONFLICT));
     }
@@ -153,6 +184,7 @@ class OrderServiceCommerceTest {
                 .isInstanceOfSatisfying(CustomException.class, e -> assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
         assertThatThrownBy(() -> service.createOrder(USER, address, "x".repeat(65))).isInstanceOf(CustomException.class);
         verify(cartItemRepository, never()).findByUsernameForUpdate(any());
+        verify(cartItemRepository, never()).findByUsername(any());
         assertThat(service.createOrder(USER, address, "a".repeat(8)).replayed()).isFalse();
     }
 

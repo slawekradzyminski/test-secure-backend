@@ -9,8 +9,10 @@ import com.awesome.testing.internal.dto.InternalOrderDto;
 import com.awesome.testing.internal.service.InternalOrderService;
 import com.awesome.testing.internal.service.InternalRefundService;
 import com.awesome.testing.internal.dto.OrderRefundDto;
+import com.awesome.testing.internal.dto.OrderReferenceDto;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,6 +35,15 @@ public class InternalOrderController {
 
     private final InternalOrderService internalOrderService;
     private final InternalRefundService internalRefundService;
+
+    /**
+     * Contract section 4.1 step 4: the order a stock reservation belongs to, so warehouse-service's
+     * reaper confirms an unconfirmed reservation of an existing order instead of releasing it.
+     */
+    @GetMapping("/by-reservation/{reservationId}")
+    public OrderReferenceDto byReservation(@PathVariable UUID reservationId) {
+        return internalOrderService.byReservation(reservationId);
+    }
 
     @GetMapping("/{id}")
     public InternalOrderDto get(@PathVariable Long id) {

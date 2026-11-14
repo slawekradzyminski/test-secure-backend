@@ -16,9 +16,6 @@ import com.awesome.testing.internal.dto.FulfilmentUpdateDto;
 import com.awesome.testing.internal.dto.InternalNotificationDto;
 import com.awesome.testing.internal.dto.InternalOrderDto;
 import com.awesome.testing.internal.dto.InternalProductDto;
-import com.awesome.testing.internal.dto.InventoryReceiptDto;
-import com.awesome.testing.internal.dto.InventoryReceiptLineDto;
-import com.awesome.testing.internal.dto.InventoryReceiptResultDto;
 import com.awesome.testing.repository.EmailEventRepository;
 import com.awesome.testing.repository.inventory.InventoryMovementRepository;
 import org.junit.jupiter.api.Test;
@@ -188,6 +185,9 @@ class InternalApiFlowTest extends AbstractCommerceFlowTest {
         assertThat(cancelPicked.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(adminCancelPicked.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(pickAfterCancel.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(stockOf(product)).as("until warehouse-service restores it").isEqualTo(10 - 2 - 3);
+        assertThat(warehouseSimulator.hasPendingRestore(picked.getId())).isFalse();
+        warehouseSimulator.restoreCancelledStock(awaiting.getId(), picked.getId());
         assertThat(stockOf(product)).isEqualTo(10 - 3);
     }
 
@@ -217,6 +217,9 @@ class InternalApiFlowTest extends AbstractCommerceFlowTest {
         assertThat(cancelPicked.getBody().fulfilmentState()).isEqualTo(FulfilmentState.CANCELLED);
         assertThat(cancelAgain.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(cancelPacked.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(stockOf(product)).as("until warehouse-service restores it").isEqualTo(10 - 1 - 2 - 3);
+        assertThat(warehouseSimulator.restoreCancelledStock(unreleased.getId(), picked.getId(), packed.getId()))
+                .as("only the cancelled order carries a stock restore").isOne();
         assertThat(stockOf(product)).isEqualTo(10 - 1 - 3);
     }
 
@@ -238,67 +241,27 @@ class InternalApiFlowTest extends AbstractCommerceFlowTest {
     }
 
     @Test
-    void receiptsAddStockAndReplayIdempotentlyPerRequestId() {
-        ProductEntity first = product("10.00", 0);
-        ProductEntity second = product("20.00", 5);
-        UUID requestId = UUID.randomUUID();
-        InventoryReceiptDto receipt = new InventoryReceiptDto(requestId, InventoryMovementType.PURCHASE_RECEIVED, null,
-                "PO-7 receipt", List.of(line(second, 4), line(first, 6)));
-
-        ResponseEntity<InventoryReceiptResultDto> created = receive(receipt, InventoryReceiptResultDto.class);
-        ResponseEntity<InventoryReceiptResultDto> replayed = receive(receipt, InventoryReceiptResultDto.class);
-        ResponseEntity<ErrorDto> differentLines = receive(new InventoryReceiptDto(requestId,
-                InventoryMovementType.PURCHASE_RECEIVED, null, "PO-7 receipt", List.of(line(second, 5), line(first, 6))),
-                ErrorDto.class);
-        ResponseEntity<ErrorDto> differentType = receive(new InventoryReceiptDto(requestId,
-                InventoryMovementType.RETURN_RESTOCKED, null, "PO-7 receipt", receipt.lines()), ErrorDto.class);
-
-        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(created.getBody().movementIds()).hasSize(2).doesNotContainNull();
-        assertThat(replayed.getBody().movementIds()).isEqualTo(created.getBody().movementIds());
-        assertThat(differentLines.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-        assertThat(differentLines.getBody().getMessage()).isEqualTo("requestId already used with different lines");
-        assertThat(differentType.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-        assertThat(stockOf(first)).isEqualTo(6);
-        assertThat(stockOf(second)).isEqualTo(9);
-        var movement = movementRepository.findById(created.getBody().movementIds().getFirst()).orElseThrow();
-        assertThat(movement.getProduct().getId()).isEqualTo(second.getId());
-        assertThat(movement.getRequestId()).isEqualTo(requestId);
-        assertThat(movement.getType()).isEqualTo(InventoryMovementType.PURCHASE_RECEIVED);
-        assertThat(movement.getReason()).isEqualTo("PO-7 receipt");
-        assertThat(movement.getActor()).isEqualTo("warehouse-service");
-    }
-
-    @Test
-    void returnRestockLinksTheOrderAndInvalidReceiptsAreRejected() {
+    void receiptsAreGoneBecauseWarehouseServiceRecordsThemInItsOwnLedger() {
         ProductEntity product = product("10.00", 5);
-        OrderDto order = order(clientToken, product, 2);
+        String receipt = "{\"requestId\":\"" + UUID.randomUUID() + "\",\"type\":\"PURCHASE_RECEIVED\","
+                + "\"reference\":\"PO-7\",\"lines\":[{\"productId\":" + product.getId() + ",\"quantity\":4}]}";
 
-        ResponseEntity<InventoryReceiptResultDto> restocked = receive(new InventoryReceiptDto(UUID.randomUUID(),
-                InventoryMovementType.RETURN_RESTOCKED, order.getId(), "RMA-1", List.of(line(product, 1))),
-                InventoryReceiptResultDto.class);
-        ResponseEntity<ErrorDto> wrongType = receive(new InventoryReceiptDto(UUID.randomUUID(),
-                InventoryMovementType.ADMIN_ADJUSTMENT, null, "x", List.of(line(product, 1))), ErrorDto.class);
-        ResponseEntity<ErrorDto> duplicateProduct = receive(new InventoryReceiptDto(UUID.randomUUID(),
-                InventoryMovementType.PURCHASE_RECEIVED, null, "x", List.of(line(product, 1), line(product, 2))), ErrorDto.class);
-        ResponseEntity<String> zeroQuantity = receive(new InventoryReceiptDto(UUID.randomUUID(),
-                InventoryMovementType.PURCHASE_RECEIVED, null, "x", List.of(line(product, 0))), String.class);
-        ResponseEntity<ErrorDto> unknownProduct = receive(new InventoryReceiptDto(UUID.randomUUID(),
-                InventoryMovementType.PURCHASE_RECEIVED, null, "x",
-                List.of(new InventoryReceiptLineDto(999999L, 1))), ErrorDto.class);
-        ResponseEntity<ErrorDto> unknownOrder = receive(new InventoryReceiptDto(UUID.randomUUID(),
-                InventoryMovementType.RETURN_RESTOCKED, 999999L, "x", List.of(line(product, 1))), ErrorDto.class);
+        ResponseEntity<ErrorDto> gone = executePost(INTERNAL + "/inventory/receipts", receipt, serviceHeaders(TOKEN),
+                ErrorDto.class);
+        ResponseEntity<ErrorDto> withoutBody = executePost(INTERNAL + "/inventory/receipts", null,
+                serviceHeaders(TOKEN), ErrorDto.class);
+        ResponseEntity<ErrorDto> unauthenticated = executePost(INTERNAL + "/inventory/receipts", receipt,
+                serviceHeaders("wrong-token"), ErrorDto.class);
 
-        assertThat(restocked.getStatusCode()).isEqualTo(HttpStatus.OK);
-        var movement = movementRepository.findById(restocked.getBody().movementIds().getFirst()).orElseThrow();
-        assertThat(movement.getType()).isEqualTo(InventoryMovementType.RETURN_RESTOCKED);
-        assertThat(movement.getOrder().getId()).isEqualTo(order.getId());
-        assertThat(wrongType.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(duplicateProduct.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(zeroQuantity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(unknownProduct.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(unknownOrder.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(stockOf(product)).isEqualTo(5 - 2 + 1);
+        assertThat(List.of(gone, withoutBody)).allSatisfy(response -> {
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.GONE);
+            assertThat(response.getBody().getMessage())
+                    .isEqualTo("Stock receipts are recorded by warehouse-service since backend 3.22.0");
+        });
+        assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(stockOf(product)).isEqualTo(5);
+        assertThat(movementRepository.findAll()).noneMatch(movement ->
+                movement.getProduct().getId().equals(product.getId()));
     }
 
     @Test
@@ -469,15 +432,8 @@ class InternalApiFlowTest extends AbstractCommerceFlowTest {
         return execute(HttpMethod.POST, ORDERS_ENDPOINT + "/" + orderId + "/cancel", null, getHeadersWith(token), type);
     }
 
-    private <T> ResponseEntity<T> receive(InventoryReceiptDto receipt, Class<T> type) {
-        return executePost(INTERNAL + "/inventory/receipts", receipt, serviceHeaders(TOKEN), type);
-    }
-
     private <T> ResponseEntity<T> notification(InternalNotificationDto notification, Class<T> type) {
         return executePost(INTERNAL + "/notifications", notification, serviceHeaders(TOKEN), type);
     }
 
-    private static InventoryReceiptLineDto line(ProductEntity product, int quantity) {
-        return new InventoryReceiptLineDto(product.getId(), quantity);
-    }
 }

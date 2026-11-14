@@ -240,7 +240,8 @@ ollama:
   base-url: http://localhost:11434
 
 # Stock reservations with a time limit (docs/COMMERCE_AND_FULFILMENT.md). Stock is deducted at checkout;
-# a PENDING order not paid within ttl is cancelled by ReservationExpiryJob and its stock restored.
+# a PENDING order not paid within ttl is cancelled by ReservationExpiryJob; warehouse-service restores
+# its stock from the order.cancelled event.
 orders:
   reservation:
     # false: new orders get no reservationExpiresAt and never expire (existing reservations still do).
@@ -282,6 +283,20 @@ notifications:
 warehouse:
   # Alias of internal.service-tokens.warehouse, kept for existing deployments.
   service-token: ${WAREHOUSE_SERVICE_TOKEN:}
+  # warehouse-service owns the stock ledger (docs/ARCHITECTURE_DECISIONS.md ADR 6): checkout, admin
+  # adjustments and movement reads call it; unreachable, slow (read timeout) or 5xx answers 503
+  # "Inventory service unavailable". Cart, product and inventory reads use the local projection.
+  url: ${WAREHOUSE_URL:http://warehouse-service:4003}
+  connect-timeout: ${WAREHOUSE_CONNECT_TIMEOUT:PT2S}
+  read-timeout: ${WAREHOUSE_READ_TIMEOUT:PT5S}
+  # Sent as "Authorization: Bearer" on every stock command; warehouse-service expects the same value
+  # in its BACKEND_SERVICE_TOKEN. Required wherever orders are placed.
+  backend-service-token: ${BACKEND_SERVICE_TOKEN:}
+  # stock_command_outbox: initial stock and deletes, sent after commit and retried on this interval.
+  stock-commands:
+    enabled: ${WAREHOUSE_STOCK_COMMANDS_ENABLED:true}
+    retry-interval: ${WAREHOUSE_STOCK_COMMANDS_RETRY_INTERVAL:PT5S}
+    initial-delay: ${WAREHOUSE_STOCK_COMMANDS_INITIAL_DELAY:PT5S}
 
 internal:
   # X-Service-Token secret per caller of the /internal/v1 API; a blank token disables that caller's endpoints (404).

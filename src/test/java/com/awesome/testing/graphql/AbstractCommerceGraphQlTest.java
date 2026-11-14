@@ -51,6 +51,7 @@ abstract class AbstractCommerceGraphQlTest extends AbstractEcommerceTest {
     @Autowired protected ObjectMapper mapper;
     @Autowired protected CartService cartService;
     @Autowired protected OrderService orderService;
+    @Autowired protected com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
 
     protected Actor customer() {
         return actor(Role.ROLE_CLIENT);

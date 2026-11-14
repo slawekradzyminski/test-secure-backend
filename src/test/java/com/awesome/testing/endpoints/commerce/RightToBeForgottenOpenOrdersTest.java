@@ -45,6 +45,16 @@ class RightToBeForgottenOpenOrdersTest extends AbstractPaymentFlowTest {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        // The order.cancelled feed events outlive the erased orders; warehouse-service restores from them.
+        assertThat(eventRepository.findByOrderIdOrderBySequenceAsc(pending.getId()))
+                .filteredOn(event -> "order.cancelled".equals(event.getType()))
+                .singleElement()
+                .extracting(DomainEventEntity::getPayload).asString()
+                .contains("\"stockRestore\":{\"actor\":\"" + client.getUsername() + "\",\"lines\":[{\"productId\":"
+                        + pendingProduct.getId() + ",\"quantity\":2}]}");
+        assertThat(stockOf(pendingProduct)).as("until warehouse-service restores it").isEqualTo(3);
+        assertThat(warehouseSimulator.restoreCancelledStock(pending.getId(), paid.getId(), delivered.getId()))
+                .isEqualTo(2);
         assertThat(stockOf(pendingProduct)).isEqualTo(5);
         assertThat(stockOf(paidProduct)).isEqualTo(5);
         assertThat(stockOf(deliveredProduct)).isEqualTo(4);

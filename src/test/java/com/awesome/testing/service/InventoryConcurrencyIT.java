@@ -24,6 +24,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import com.awesome.testing.config.CommerceClockConfig;
 import com.awesome.testing.service.reservation.OrderReservations;
+import com.awesome.testing.dto.stock.StockLevelDto;
+import com.awesome.testing.service.stock.StockProjection;
+import com.awesome.testing.stock.FakeStockLedger;
+import com.awesome.testing.stock.FakeWarehouse;
+import com.awesome.testing.stock.StockSliceConfig;
 import com.awesome.testing.service.coupon.CouponService;
 import com.awesome.testing.service.checkout.CheckoutContributors;
 import com.awesome.testing.event.CommerceEvents;
@@ -47,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 @Import({InventoryService.class, OrderService.class, CouponService.class, CommerceClockConfig.class, OrderReservations.class,
-        CheckoutContributors.class, CommerceEvents.class})
+        CheckoutContributors.class, CommerceEvents.class, StockSliceConfig.class})
 class InventoryConcurrencyIT {
 
     private static final PostgreSQLContainer POSTGRES =
@@ -78,6 +83,9 @@ class InventoryConcurrencyIT {
 
     @Autowired
     private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private StockProjection stockProjection;
 
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
@@ -122,7 +130,10 @@ class InventoryConcurrencyIT {
         assertThat(productRepository.findById(product.getId()).orElseThrow().getStockQuantity()).isZero();
         assertThat(orderRepository.count()).isEqualTo(1);
         assertThat(cartItemRepository.count()).isEqualTo(1);
-        assertThat(movementRepository.count()).isEqualTo(1);
+        // warehouse-service's ledger refused the second reservation: one deduction only.
+        assertThat(FakeWarehouse.ledger().movements(product.getId())).singleElement()
+                .satisfies(movement -> assertThat(movement.type()).isEqualTo("ORDER_DEDUCTED"));
+        assertThat(FakeWarehouse.ledger().item(product.getId()).orElseThrow().quantity()).isZero();
     }
 
     @Test
@@ -145,10 +156,16 @@ class InventoryConcurrencyIT {
                     .containsExactlyInAnyOrder(CheckoutOutcome.CREATED, CheckoutOutcome.CART_EMPTY);
         }
 
-        assertThat(productRepository.findById(product.getId()).orElseThrow().getStockQuantity()).isEqualTo(1);
         assertThat(orderRepository.count()).isEqualTo(1);
         assertThat(cartItemRepository.count()).isZero();
-        assertThat(movementRepository.count()).isEqualTo(1);
+        // The losing checkout either stopped at the empty cart or released its reservation.
+        FakeStockLedger.Item ledger = FakeWarehouse.ledger().item(product.getId()).orElseThrow();
+        assertThat(ledger.quantity()).isEqualTo(1);
+        assertThat(FakeWarehouse.ledger().movements(product.getId()).stream()
+                .mapToInt(FakeStockLedger.Movement::delta).sum()).as("one unit stays deducted").isEqualTo(-1);
+        // warehouse-service pushes the level after a release; the projection then agrees.
+        stockProjection.applyLevels(List.of(new StockLevelDto(product.getId(), ledger.quantity(), ledger.version())));
+        assertThat(productRepository.findById(product.getId()).orElseThrow().getStockQuantity()).isEqualTo(1);
     }
 
     @Test
@@ -166,7 +183,8 @@ class InventoryConcurrencyIT {
         assertThat(productRepository.findById(unavailable.getId()).orElseThrow().getStockQuantity()).isZero();
         assertThat(orderRepository.count()).isZero();
         assertThat(cartItemRepository.count()).isEqualTo(2);
-        assertThat(movementRepository.count()).isZero();
+        assertThat(FakeWarehouse.ledger().movements(available.getId())).isEmpty();
+        assertThat(FakeWarehouse.ledger().movements(unavailable.getId())).isEmpty();
     }
 
     private ProductEntity createProductAndCarts(int stock, List<String> usernames) {

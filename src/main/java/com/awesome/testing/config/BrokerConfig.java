@@ -2,6 +2,7 @@ package com.awesome.testing.config;
 
 import jakarta.persistence.EntityManagerFactory;
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,9 +49,17 @@ public class BrokerConfig {
         return new JmsTransactionManager(connectionFactory());
     }
 
+    /**
+     * The JPA transaction manager under the default name. It receives the bean instead of calling
+     * {@link #jpaTransactionManager(EntityManagerFactory)}: in the native image a proxied {@code @Bean}
+     * call with arguments cannot create the bean, which fails startup as soon as a bean injects
+     * {@link PlatformTransactionManager} before {@code jpaTransactionManager} exists (3.22.0: the
+     * checkout saga's {@code TransactionTemplate}s).
+     */
     @Primary
     @Bean(name = "transactionManager")
-    public PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
-        return jpaTransactionManager(entityManagerFactory);
+    public PlatformTransactionManager transactionManager(
+            @Qualifier("jpaTransactionManager") PlatformTransactionManager jpaTransactionManager) {
+        return jpaTransactionManager;
     }
 }

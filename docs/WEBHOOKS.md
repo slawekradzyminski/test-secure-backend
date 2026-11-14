@@ -53,7 +53,9 @@ Subscriptions name event wire names: `order.created`, `order.paid`, `order.cance
 `order.reservation-expired` (3.21.0; the commerce domain events, see
 [COMMERCE_AND_FULFILMENT.md](COMMERCE_AND_FULFILMENT.md#domain-events)), plus `webhook.ping`.
 `order.cancelled` data carries `reason` (`CUSTOMER`, `ADMIN`, `RESERVATION_EXPIRED`,
-`WAREHOUSE` or `ACCOUNT_ERASURE`); an expired reservation sends both `order.cancelled` and
+`WAREHOUSE` or `ACCOUNT_ERASURE`) and, since 3.22.0, `stockRestore` (`{actor, lines: [{productId,
+quantity}]}`, the stock warehouse-service puts back) when the order still held deducted stock;
+an expired reservation sends both `order.cancelled` and
 `order.reservation-expired` with data `{orderId, expiredAt, totalAmount}`. Each committed event creates one delivery per active subscription of
 the order's owner that lists its type.
 

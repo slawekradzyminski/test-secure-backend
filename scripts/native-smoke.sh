@@ -4,17 +4,21 @@
 # bootstrap admin), under the local profile (local email outbox) and under the local profile with
 # TRACING_ENABLED=true (spans exported over OTLP to Jaeger) and checks the paths that depend on
 # runtime properties. It prints the resident memory of each run (tracing off and on, same workload).
+# warehouse-service owns the stock ledger (3.22.0); scripts/warehouse-stub.py plays it in memory
+# (python:3.13-slim, network alias warehouse-service:4003, the default WAREHOUSE_URL).
 #   scripts/native-smoke.sh <image>
 set -euo pipefail
 
 IMAGE="${1:?usage: native-smoke.sh <image>}"
 RUN_ID="native-smoke-$$"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STUB_IMAGE="python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90"
 NETWORK="$RUN_ID"
 ADMIN_PASSWORD="SmokeAdminPassword-$(openssl rand -hex 8)"
 
 cleanup() {
   docker rm -f "$RUN_ID-backend" "$RUN_ID-postgres" "$RUN_ID-artemis" "$RUN_ID-ollama" "$RUN_ID-jaeger" \
-    >/dev/null 2>&1 || true
+    "$RUN_ID-warehouse" >/dev/null 2>&1 || true
   docker network rm "$NETWORK" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -46,6 +50,30 @@ rss_mib() {
   docker exec "$RUN_ID-backend" bash -c 'while read -r key value _; do if [[ $key == VmRSS: ]]; then echo $((value / 1024)); fi; done < /proc/1/status'
 }
 
+# The warehouse stub's view (no token): "<status> <body>".
+stub() {
+  call "http://warehouse-service:4003/__stub/$1"
+}
+
+# Restarts the warehouse stub with an empty ledger (product ids repeat after the database is recreated).
+reset_warehouse() {
+  docker restart "$RUN_ID-warehouse" >/dev/null
+  for _ in $(seq 1 30); do
+    [[ "$(stub requests)" == 200* ]] && return 0
+    sleep 1
+  done
+  fail "warehouse stub did not come back"
+}
+
+# Waits until the seeded product's stock item reached the stub through the stock command outbox.
+wait_for_stock_item() {
+  for _ in $(seq 1 30); do
+    [[ "$(stub "items/$1")" == 200* ]] && return 0
+    sleep 1
+  done
+  fail "the initial stock of product $1 never reached warehouse-service: $(stub "items/$1")"
+}
+
 # Signs in as the seeded local admin and orders one product (optionally with extra curl headers).
 # Sets token and order_id.
 local_checkout() {
@@ -54,6 +82,7 @@ local_checkout() {
   token=$(sed -E 's/.*"token" *: *"([^"]+)".*/\1/' <<< "${signin#* }")
   product_id=$(call -H "Authorization: Bearer $token" http://backend:4001/api/v1/products | grep -oE '"id" *: *[0-9]+' | head -1 | grep -oE '[0-9]+$' || true)
   [[ "$product_id" =~ ^[0-9]+$ ]] || fail "product id for the event feed check: $product_id"
+  wait_for_stock_item "$product_id"
   cart=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
     -d "{\"productId\":$product_id,\"quantity\":1}" http://backend:4001/api/v1/cart/items)
   [[ "$cart" == 200* ]] || fail "add to cart: $cart"
@@ -77,6 +106,9 @@ docker run -d --name "$RUN_ID-postgres" --network "$NETWORK" --network-alias pos
 docker run -d --name "$RUN_ID-artemis" --network "$NETWORK" --network-alias artemis \
   -e ARTEMIS_USER=admin -e ARTEMIS_PASSWORD=admin -e EXTRA_ARGS='--http-host 0.0.0.0 --relax-jolokia --no-autotune' \
   apache/artemis:2.55.0@sha256:a192eee9c46e6352625ca9dbf0beebe4a34c363111c628bbb10c4aff1227341d >/dev/null
+docker run -d --name "$RUN_ID-warehouse" --network "$NETWORK" --network-alias warehouse-service \
+  -e STUB_TOKEN=local-backend-token -v "$SCRIPT_DIR/warehouse-stub.py:/stub.py:ro" \
+  "$STUB_IMAGE" python3 -u /stub.py >/dev/null
 docker run -d --name "$RUN_ID-ollama" --network "$NETWORK" --network-alias ollama-mock \
   slawekradzyminski/ollama-mock:1.0.11@sha256:2dc7b225ed7351e4dc60cbdd9cb7a817bcfb4d671ccb7551a0fe1969ff065a29 >/dev/null
 for _ in $(seq 1 30); do
@@ -93,7 +125,7 @@ start_backend \
   -e APP_BOOTSTRAP_ADMIN_USERNAME=smokeadmin -e APP_BOOTSTRAP_ADMIN_PASSWORD="$ADMIN_PASSWORD" \
   -e APP_BOOTSTRAP_ADMIN_EMAIL=smoke@example.test -e APP_BOOTSTRAP_PRODUCTS_ENABLED=true \
   -e APP_MFA_ENCRYPTION_PASSWORD="$(openssl rand -hex 24)" -e APP_MFA_ENCRYPTION_SALT="$(openssl rand -hex 16)" \
-  -e OLLAMA_BASE_URL=http://ollama-mock:11434
+  -e OLLAMA_BASE_URL=http://ollama-mock:11434 -e BACKEND_SERVICE_TOKEN=local-backend-token
 
 signin=$(call -H 'Content-Type: application/json' -d "{\"username\":\"smokeadmin\",\"password\":\"$ADMIN_PASSWORD\"}" http://backend:4001/api/v1/users/signin)
 [[ "$signin" == 200* ]] || fail "bootstrap admin sign-in: $signin"
@@ -163,6 +195,7 @@ echo "logout revokes access token: ok"
 
 echo "== local profile (local email outbox, demo seed)"
 docker exec "$RUN_ID-postgres" psql -U postgres -c 'drop database testdb with (force)' -c 'create database testdb' >/dev/null
+reset_warehouse
 # Short reservations so the expiry job (scheduled, FOR UPDATE SKIP LOCKED) runs inside the smoke test.
 start_backend \
   -e SPRING_PROFILES_ACTIVE=local -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/testdb \
@@ -193,6 +226,56 @@ bad=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/intern
 [[ "$bad" == 400* ]] || fail "event feed must reject limit=0: $bad"
 [[ "$feed" == *'"spanId":"'* ]] || fail "feed events must carry spanId: $feed"
 echo "event feed: ok"
+
+# Stock ledger (3.22.0): checkout reserved the stock in warehouse-service with the caller's request id,
+# stored the order and confirmed the reservation with the order id; the projection shows the reserved level.
+seen=$(stub requests | tr -d ' ')
+[[ "$seen" == 200* && "$seen" == *'"method":"POST","path":"/internal/v1/stock/reservations"'* \
+  && "$seen" == *"\"lines\":[{\"productId\":$product_id,\"quantity\":1}]"* ]] || fail "stock reservation: $seen"
+[[ "$seen" == *'/confirm","body":{"orderId":'"$order_id"'}'* ]] || fail "reservation confirm for order $order_id: $seen"
+[[ "$seen" == *'"requestId":"'* && "$seen" == *'"traceparent":"00-'* ]] || fail "stock calls must carry X-Request-Id and traceparent: $seen"
+ledger=$(stub "items/$product_id" | tr -d ' ')
+ledger_quantity=$(grep -oE '"quantity":[0-9]+' <<< "$ledger" | grep -oE '[0-9]+$')
+ledger_version=$(grep -oE '"ledgerVersion":[0-9]+' <<< "$ledger" | grep -oE '[0-9]+$')
+projected=$(call -H "Authorization: Bearer $token" "http://backend:4001/api/v1/admin/inventory/$product_id" | tr -d ' ')
+[[ "$projected" == *"\"availableQuantity\":$ledger_quantity,"* ]] || fail "projection after checkout ($ledger): $projected"
+echo "checkout reserves and confirms in warehouse-service: ok"
+
+# Warehouse down: checkout and admin adjustments answer 503 while the cart and reads keep working.
+docker network disconnect "$NETWORK" "$RUN_ID-warehouse"
+cart=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d "{\"productId\":$product_id,\"quantity\":1}" http://backend:4001/api/v1/cart/items)
+[[ "$cart" == 200* ]] || fail "add to cart while warehouse is down: $cart"
+down=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d '{"street":"1 Smoke Street","city":"Smoke City","state":"SC","zipCode":"12345","country":"USA"}' \
+  http://backend:4001/api/v1/orders | tr -d ' ')
+[[ "$down" == 503* && "$down" == *'"message":"Inventoryserviceunavailable"'* ]] || fail "checkout with warehouse down: $down"
+adjust_down=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d "{\"delta\":1,\"reason\":\"smoke\",\"requestId\":\"$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid)\"}" \
+  "http://backend:4001/api/v1/admin/inventory/$product_id/adjustments")
+[[ "$adjust_down" == 503* ]] || fail "admin adjustment with warehouse down: $adjust_down"
+read_down=$(call -H "Authorization: Bearer $token" "http://backend:4001/api/v1/admin/inventory/$product_id")
+[[ "$read_down" == 200* ]] || fail "inventory read with warehouse down: $read_down"
+docker network connect --alias warehouse-service "$NETWORK" "$RUN_ID-warehouse"
+call -X DELETE -H "Authorization: Bearer $token" "http://backend:4001/api/v1/cart/items/$product_id" >/dev/null
+echo "warehouse down answers 503: ok"
+
+# Level push: warehouse-service posts ledger levels; only a newer ledgerVersion changes the projection.
+pushed=$(call -H 'X-Service-Token: local-warehouse-token' -H 'Content-Type: application/json' \
+  -d "{\"levels\":[{\"productId\":$product_id,\"quantity\":4242,\"ledgerVersion\":$((ledger_version + 1000))},{\"productId\":$product_id,\"quantity\":1,\"ledgerVersion\":1},{\"productId\":999999999,\"quantity\":1,\"ledgerVersion\":1}]}" \
+  http://backend:4001/internal/v1/inventory/levels | tr -d ' ')
+[[ "$pushed" == 200* && "$pushed" == *'"applied":1'* && "$pushed" == *'"ignored":2'* ]] || fail "level push: $pushed"
+projected=$(call -H "Authorization: Bearer $token" "http://backend:4001/api/v1/admin/inventory/$product_id" | tr -d ' ')
+[[ "$projected" == *'"availableQuantity":4242,'* ]] || fail "projection after the level push: $projected"
+exported=$(call -H 'X-Service-Token: local-warehouse-token' 'http://backend:4001/internal/v1/inventory/export?limit=1' | tr -d ' ')
+[[ "$exported" == 200* && "$exported" == *'"items":[{"productId":'* && "$exported" == *'"nextAfterProductId":'* ]] \
+  || fail "inventory export: $exported"
+receipts=$(call -X POST -H 'X-Service-Token: local-warehouse-token' -H 'Content-Type: application/json' -d '{}' \
+  http://backend:4001/internal/v1/inventory/receipts)
+[[ "$receipts" == 410* ]] || fail "receipts must be gone: $receipts"
+docker logs "$RUN_ID-backend" 2>&1 | grep -qiE 'MissingReflectionRegistrationError|InvalidDefinitionException' \
+  && fail "the stock ledger client hit a native reflection error"
+echo "level push, export and receipts (410): ok"
 rss_off=$(rss_mib)
 echo "RSS (local profile, tracing off): ${rss_off} MiB"
 

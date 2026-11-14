@@ -1,5 +1,7 @@
 package com.awesome.testing.service.reservation;
 
+import com.awesome.testing.stock.FakeWarehouse;
+import com.awesome.testing.stock.WarehouseSimulator;
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.cart.CartItemDto;
@@ -79,6 +81,8 @@ class ReservationExpiryConcurrencyIT extends DomainHelper {
     private JdbcTemplate jdbcTemplate;
     @Autowired
     private PlatformTransactionManager transactionManager;
+    @Autowired
+    private WarehouseSimulator warehouseSimulator;
 
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
@@ -123,6 +127,7 @@ class ReservationExpiryConcurrencyIT extends DomainHelper {
         assertThat(statusOf(order)).isEqualTo(OrderStatus.CANCELLED);
         assertThat(count("SELECT count(*) FROM order_payments WHERE order_id = ? AND status = 'CAPTURED'", order.getId()))
                 .isZero();
+        assertThat(warehouseSimulator.restoreCancelledStock(order.getId())).isOne();
         assertThat(stockOf(product)).isEqualTo(5);
     }
 
@@ -132,8 +137,10 @@ class ReservationExpiryConcurrencyIT extends DomainHelper {
         ProductEntity product = product(1_000);
         int expiryWins = 0;
         int cancelWins = 0;
+        List<Long> orderIds = new ArrayList<>();
         for (int round = 0; round < 20; round++) {
             OrderDto order = order(user, product, 2);
+            orderIds.add(order.getId());
             makeDue(order.getId());
             CountDownLatch start = new CountDownLatch(1);
 
@@ -170,6 +177,7 @@ class ReservationExpiryConcurrencyIT extends DomainHelper {
                     + "AND type = 'order.cancelled'", String.class, order.getId()))
                     .contains(expired ? "\"reason\":\"RESERVATION_EXPIRED\"" : "\"reason\":\"CUSTOMER\"");
         }
+        assertThat(warehouseSimulator.restoreCancelledStock(orderIds.toArray(Long[]::new))).isEqualTo(20);
         assertThat(stockOf(product)).isEqualTo(1_000);
         assertThat(expiryWins + cancelWins).isEqualTo(20);
     }
@@ -206,9 +214,15 @@ class ReservationExpiryConcurrencyIT extends DomainHelper {
             assertThat(statusOf(order)).isEqualTo(OrderStatus.CANCELLED);
             assertThat(restorations(order.getId())).isEqualTo(1);
             assertThat(events(order.getId(), "order.reservation-expired")).isEqualTo(1);
-            assertThat(jdbcTemplate.queryForObject("SELECT actor FROM inventory_movements WHERE order_id = ? "
-                    + "AND type = 'ORDER_RESTORED'", String.class, order.getId())).isEqualTo("system");
+            assertThat(jdbcTemplate.queryForObject("SELECT payload FROM domain_events WHERE order_id = ? "
+                    + "AND type = 'order.cancelled'", String.class, order.getId()))
+                    .contains("\"stockRestore\":{\"actor\":\"system\"");
         });
+        warehouseSimulator.restoreCancelledStock(orders.stream().map(OrderDto::getId).toArray(Long[]::new));
+        assertThat(FakeWarehouse.ledger().movements(product.getId()))
+                .filteredOn(movement -> movement.type().equals("ORDER_RESTORED"))
+                .hasSize(30)
+                .allSatisfy(movement -> assertThat(movement.actor()).isEqualTo("system"));
         assertThat(stockOf(product)).isEqualTo(500);
         assertThat(job.expireDue()).isZero();
     }
@@ -270,8 +284,10 @@ class ReservationExpiryConcurrencyIT extends DomainHelper {
         return productRepository.findById(product.getId()).orElseThrow().getStockQuantity();
     }
 
+    /** Cancellations that handed a stock restore to warehouse-service (contract section 3.1). */
     private long restorations(Long orderId) {
-        return count("SELECT count(*) FROM inventory_movements WHERE order_id = ? AND type = 'ORDER_RESTORED'", orderId);
+        return count("SELECT count(*) FROM domain_events WHERE order_id = ? AND type = 'order.cancelled' "
+                + "AND payload LIKE '%\"stockRestore\"%'", orderId);
     }
 
     private long events(Long orderId, String type) {

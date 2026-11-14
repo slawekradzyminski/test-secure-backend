@@ -32,7 +32,9 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  *       logger and message-bundle interfaces load their generated {@code *_impl} classes by name.</li>
  *   <li>Jackson binds DTOs outside controllers (Ollama client and streaming, JMS email payloads,
  *       the seed catalogue), so every type in the DTO and seed packages is registered for binding.
- *       The scan runs at build time during AOT processing. Commerce domain events are registered
+ *       The warehouse-service stock ledger client ({@code dto.stock}) and the internal API
+ *       ({@code internal.dto}) are registered the same way. The scan runs at build time during AOT
+ *       processing. Commerce domain events are registered
  *       too so webhook payloads and listeners can serialize them.</li>
  *   <li>Hibernate Validator creates custom constraint validators reflectively.</li>
  *   <li>{@code @PreAuthorize} SpEL calls {@code @userService.exists(...)} and reads
@@ -103,7 +105,10 @@ public class NativeRuntimeHints {
                         MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.ACCESS_DECLARED_FIELDS);
             }
             binding.registerReflectionHints(hints.reflection(), CommerceEvent.class, CommerceEventType.class);
-            for (String basePackage : new String[] {"com.awesome.testing.dto", "com.awesome.testing.fakedata"}) {
+            // dto.stock holds the warehouse-service stock ledger client's request and reply types, which
+            // the client binds with its own JsonMapper; internal.dto holds the internal API bodies.
+            for (String basePackage : new String[] {"com.awesome.testing.dto", "com.awesome.testing.fakedata",
+                    "com.awesome.testing.internal.dto"}) {
                 for (BeanDefinition candidate : scanner.findCandidateComponents(basePackage)) {
                     if (candidate.getBeanClassName() == null || candidate.getBeanClassName().endsWith("package-info")) {
                         continue;

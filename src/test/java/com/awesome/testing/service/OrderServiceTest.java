@@ -15,6 +15,14 @@ import com.awesome.testing.entity.inventory.InventoryState;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
+import com.awesome.testing.dto.stock.ReservationDto;
+import com.awesome.testing.dto.stock.ReservedLineDto;
+import com.awesome.testing.dto.stock.StockLineDto;
+import com.awesome.testing.event.CommerceEventType;
+import com.awesome.testing.service.stock.StockLedgerClient;
+import com.awesome.testing.service.stock.StockLedgerRejection;
+import com.awesome.testing.service.stock.StockProjection;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +38,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,6 +81,15 @@ class OrderServiceTest {
     @Spy
     private OrderReservations orderReservations = new OrderReservations(true, Duration.ofMinutes(30));
 
+    @Mock
+    private StockLedgerClient stockLedger;
+
+    @Mock
+    private StockProjection stockProjection;
+
+    @Mock
+    private PlatformTransactionManager transactionManager;
+
     @InjectMocks
     private OrderService orderService;
 
@@ -108,8 +126,12 @@ class OrderServiceTest {
 
     @Test
     void shouldCreateOrderFromCart() {
+        when(cartItemRepository.findByUsername(USERNAME)).thenReturn(List.of(cartItem));
         when(cartItemRepository.findByUsernameForUpdate(USERNAME)).thenReturn(List.of(cartItem));
         when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(cartItem.getProduct()));
+        when(stockLedger.reserve(any(), eq(USERNAME), eq(List.of(new StockLineDto(1L, 2)))))
+                .thenAnswer(invocation -> new ReservationDto(invocation.getArgument(0),
+                        List.of(new ReservedLineDto(1L, 8, 3L))));
         when(orderRepository.save(any(OrderEntity.class))).thenAnswer(invocation -> {
             OrderEntity order = invocation.getArgument(0);
             order.setId(5L);
@@ -121,32 +143,36 @@ class OrderServiceTest {
         assertThat(order.getId()).isEqualTo(5L);
         assertThat(order.getItems()).hasSize(1);
         assertThat(order.getTotalAmount()).isEqualTo(BigDecimal.valueOf(2000));
-        verify(orderRepository).save(argThat(saved -> saved.getInventoryState() == InventoryState.DEDUCTED));
+        verify(orderRepository).save(argThat(saved -> saved.getInventoryState() == InventoryState.DEDUCTED
+                && saved.getStockReservationId() != null));
         verify(inventoryService).checkAvailable(cartItem.getProduct(), 2);
-        verify(inventoryService).deduct(eq(cartItem.getProduct()), eq(2), any(OrderEntity.class));
+        verify(stockProjection).apply(cartItem.getProduct(), 8, 3L);
+        verify(stockLedger).confirm(any(), eq(5L));
+        verify(stockLedger, never()).release(any());
         verify(cartItemRepository).deleteByUsername(USERNAME);
     }
 
     @Test
     void shouldThrowWhenCartIsEmpty() {
-        when(cartItemRepository.findByUsernameForUpdate(USERNAME)).thenReturn(List.of());
+        when(cartItemRepository.findByUsername(USERNAME)).thenReturn(List.of());
 
         assertThatThrownBy(() -> orderService.createOrder(USERNAME, addressDto))
                 .isInstanceOf(CustomException.class)
                 .hasMessage("Cart is empty");
+        verifyNoInteractions(stockLedger);
     }
 
     @Test
-    void shouldRejectOrderWhenCartProductDisappearsBeforeInventoryLock() {
-        when(cartItemRepository.findByUsernameForUpdate(USERNAME)).thenReturn(List.of(cartItem));
-        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.empty());
+    void shouldRejectOrderWhenWarehouseServiceHasNoStockItemForACartProduct() {
+        when(cartItemRepository.findByUsername(USERNAME)).thenReturn(List.of(cartItem));
+        when(stockLedger.reserve(any(), any(), any())).thenThrow(new StockLedgerRejection(404, "Product 1 not found", 1L));
 
         assertThatThrownBy(() -> orderService.createOrder(USERNAME, addressDto))
                 .isInstanceOf(CustomException.class)
                 .hasMessage("Product not found");
 
         verify(orderRepository, never()).save(any());
-        verify(inventoryService, never()).deduct(any(), anyInt(), any());
+        verify(stockLedger, never()).release(any());
     }
 
     @Test
@@ -205,7 +231,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void shouldRestoreDeductedInventoryExactlyOnceWhenOrderIsCancelled() {
+    void shouldHandTheStockRestoreToWarehouseServiceExactlyOnceWhenOrderIsCancelled() {
         ProductEntity product = cartItem.getProduct();
         OrderEntity entity = OrderEntity.builder()
                 .id(14L)
@@ -220,42 +246,22 @@ class OrderServiceTest {
                         .build()))
                 .build();
         when(orderRepository.findByIdForUpdate(14L)).thenReturn(Optional.of(entity));
-        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.of(product));
         when(orderRepository.save(entity)).thenReturn(entity);
 
         OrderDto cancelled = orderService.cancelOrder(14L, USERNAME, false);
 
         assertThat(cancelled.getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(entity.getInventoryState()).isEqualTo(InventoryState.RESTORED);
-        verify(inventoryService).restore(product, 2, entity, USERNAME);
+        verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, entity, Map.of(
+                "reason", "CUSTOMER",
+                "stockRestore", Map.of("actor", USERNAME,
+                        "lines", List.of(Map.of("productId", 1L, "quantity", 2)))));
 
         assertThatThrownBy(() -> orderService.cancelOrder(14L, USERNAME, false))
                 .isInstanceOf(CustomException.class)
                 .hasMessage("Order cannot be cancelled in current status");
-        verify(inventoryService).restore(product, 2, entity, USERNAME);
-    }
-
-    @Test
-    void shouldNotCancelWhenDeductedProductCannotBeLockedForRestoration() {
-        ProductEntity product = cartItem.getProduct();
-        OrderEntity entity = OrderEntity.builder()
-                .id(16L)
-                .username(USERNAME)
-                .status(OrderStatus.PENDING)
-                .inventoryState(InventoryState.DEDUCTED)
-                .shippingAddress(AddressEntity.from(addressDto))
-                .items(List.of(OrderItemEntity.builder().product(product).quantity(2).price(product.getPrice()).build()))
-                .build();
-        when(orderRepository.findByIdForUpdate(16L)).thenReturn(Optional.of(entity));
-        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> orderService.cancelOrder(16L, USERNAME, false))
-                .isInstanceOf(CustomException.class)
-                .hasMessage("Product not found");
-
-        assertThat(entity.getStatus()).isEqualTo(OrderStatus.PENDING);
-        assertThat(entity.getInventoryState()).isEqualTo(InventoryState.DEDUCTED);
-        verify(inventoryService, never()).restore(any(), anyInt(), any(), any());
+        verify(commerceEvents, times(1)).publish(eq(CommerceEventType.ORDER_CANCELLED), any(), any());
+        verifyNoInteractions(productRepository, stockLedger, stockProjection);
     }
 
     @Test
@@ -274,7 +280,8 @@ class OrderServiceTest {
 
         assertThat(cancelled.getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(entity.getInventoryState()).isEqualTo(InventoryState.LEGACY_UNTRACKED);
-        verifyNoInteractions(productRepository, inventoryService);
+        verifyNoInteractions(productRepository, inventoryService, stockLedger);
+        verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, entity, Map.of("reason", "ADMIN"));
     }
 
     @Test

@@ -5,16 +5,15 @@ import com.awesome.testing.dto.inventory.InventoryAdjustmentDto;
 import com.awesome.testing.dto.inventory.InventoryItemDto;
 import com.awesome.testing.dto.inventory.InventoryMovementDto;
 import com.awesome.testing.dto.inventory.StockStatus;
-import com.awesome.testing.entity.OrderEntity;
+import com.awesome.testing.dto.stock.AdjustStockRequestDto;
+import com.awesome.testing.dto.stock.LedgerMovementDto;
+import com.awesome.testing.service.stock.StockLedgerClient;
+import com.awesome.testing.service.stock.StockLedgerRejection;
+import com.awesome.testing.service.stock.StockProjection;
 import com.awesome.testing.entity.ProductEntity;
-import com.awesome.testing.entity.inventory.InventoryMovementEntity;
-import com.awesome.testing.entity.inventory.InventoryMovementType;
 import com.awesome.testing.repository.ProductRepository;
-import com.awesome.testing.repository.inventory.InventoryMovementRepository;
 import jakarta.persistence.criteria.Predicate;
-import com.awesome.testing.service.notification.StockReplenishedEvent;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,10 +25,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
 
+/**
+ * Inventory facade. warehouse-service owns the stock ledger (docs/ARCHITECTURE_DECISIONS.md ADR 6):
+ * reads come from the {@code products.stock_quantity} projection, stock commands go to
+ * warehouse-service through {@link StockLedgerClient} and their replies update the projection
+ * through {@link StockProjection}.
+ */
 @Service
 @RequiredArgsConstructor
 public class InventoryService {
@@ -38,8 +40,8 @@ public class InventoryService {
     private static final int MIN_LOW_STOCK_THRESHOLD = 1;
 
     private final ProductRepository productRepository;
-    private final InventoryMovementRepository movementRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final StockLedgerClient stockLedger;
+    private final StockProjection projection;
 
     @Transactional(readOnly = true)
     public Page<InventoryItemDto> list(
@@ -89,7 +91,11 @@ public class InventoryService {
                 .orElseThrow(this::productNotFound), threshold);
     }
 
-    @Transactional
+    /**
+     * Admin adjustment (REST, GraphQL, gRPC, product update, CSV import; contract 4.2): validates as
+     * before, checks that the product exists, records the movement in warehouse-service's ledger and
+     * applies the returned level to the projection. Must be called with no transaction open.
+     */
     public InventoryMovementDto adjust(
             Long productId,
             InventoryAdjustmentDto request,
@@ -100,180 +106,44 @@ public class InventoryService {
         if (request.getRequestId() == null) {
             throw new CustomException("Inventory requestId is required", HttpStatus.BAD_REQUEST);
         }
-
-        ProductEntity product = productRepository.findByIdForUpdate(productId)
-                .orElseThrow(this::productNotFound);
-        Optional<InventoryMovementEntity> priorMovement = movementRepository.findByProductIdAndRequestId(
-                productId, request.getRequestId());
-        if (priorMovement.isPresent()) {
-            InventoryMovementEntity movement = priorMovement.get();
-            if (!Objects.equals(movement.getDelta(), request.getDelta())
-                    || !Objects.equals(movement.getReason(), request.getReason())) {
-                throw conflict("requestId already used with different payload");
+        if (!productRepository.existsById(productId)) {
+            throw productNotFound();
+        }
+        LedgerMovementDto movement;
+        try {
+            movement = stockLedger.adjust(new AdjustStockRequestDto(
+                    productId, request.getDelta(), request.getReason(), request.getRequestId(), actor));
+        } catch (StockLedgerRejection rejection) {
+            if (rejection.isNotFound()) {
+                throw new CustomException("Product not found", HttpStatus.NOT_FOUND, rejection);
             }
-            return toMovementDto(movement);
+            throw new CustomException(rejection.getMessage() == null
+                    ? "Inventory adjustment conflicts with current state"
+                    : rejection.getMessage(), HttpStatus.CONFLICT, rejection);
         }
-
-        long resultingQuantity = (long) product.getStockQuantity() + request.getDelta();
-        if (resultingQuantity < 0) {
-            throw conflict("Insufficient stock");
+        if (movement.ledgerVersion() != null && movement.quantityAfter() != null) {
+            projection.apply(productId, movement.quantityAfter(), movement.ledgerVersion());
         }
-        if (resultingQuantity > Integer.MAX_VALUE) {
-            throw conflict("Inventory quantity exceeds supported maximum");
-        }
-
-        int previousQuantity = product.getStockQuantity();
-        product.setStockQuantity((int) resultingQuantity);
-        productRepository.save(product);
-        publishIfReplenished(product, previousQuantity);
-        return toMovementDto(movementRepository.save(InventoryMovementEntity.builder()
-                .product(product)
-                .type(InventoryMovementType.ADMIN_ADJUSTMENT)
-                .delta(request.getDelta())
-                .quantityAfter((int) resultingQuantity)
-                .actor(actor)
-                .reason(request.getReason())
-                .requestId(request.getRequestId())
-                .build()));
+        return movement.toMovement();
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * A product's movement history from warehouse-service's ledger, newest first. 404 when the
+     * product does not exist here. Must be called with no transaction open.
+     */
     public Page<InventoryMovementDto> movements(Long productId, Pageable pageable) {
         if (!productRepository.existsById(productId)) {
             throw productNotFound();
         }
-        return movementRepository.findByProductIdOrderByCreatedAtDescIdDesc(productId, pageable)
-                .map(this::toMovementDto);
-    }
-
-    @Transactional
-    public InventoryMovementEntity initial(ProductEntity product, String actor) {
-        if (product.getStockQuantity() == 0) {
-            return null;
-        }
-        return movementRepository.save(InventoryMovementEntity.builder()
-                .product(product)
-                .type(InventoryMovementType.INITIAL_STOCK)
-                .delta(product.getStockQuantity())
-                .quantityAfter(product.getStockQuantity())
-                .actor(actor)
-                .reason("Initial stock")
-                .build());
-    }
-
-    @Transactional
-    public InventoryMovementEntity deduct(
-            ProductEntity product,
-            int quantity,
-            OrderEntity order) {
-        int resultingQuantity = product.getStockQuantity() - quantity;
-        if (resultingQuantity < 0) {
-            throw conflict("Insufficient stock for product " + product.getId());
-        }
-        product.setStockQuantity(resultingQuantity);
-        productRepository.save(product);
-        return movementRepository.save(InventoryMovementEntity.builder()
-                .product(product)
-                .order(order)
-                .type(InventoryMovementType.ORDER_DEDUCTED)
-                .delta(-quantity)
-                .quantityAfter(resultingQuantity)
-                .actor(order.getUsername())
-                .reason("Order deduction")
-                .build());
-    }
-
-    @Transactional
-    public InventoryMovementEntity restore(
-            ProductEntity product,
-            int quantity,
-            OrderEntity order) {
-        return restore(product, quantity, order, order.getUsername());
-    }
-
-    /** Same as {@link #restore(ProductEntity, int, OrderEntity)} with {@code actor} on the movement. */
-    @Transactional
-    public InventoryMovementEntity restore(
-            ProductEntity product,
-            int quantity,
-            OrderEntity order,
-            String actor) {
-        int previousQuantity = product.getStockQuantity();
-        int resultingQuantity = Math.addExact(previousQuantity, quantity);
-        product.setStockQuantity(resultingQuantity);
-        productRepository.save(product);
-        publishIfReplenished(product, previousQuantity);
-        return movementRepository.save(InventoryMovementEntity.builder()
-                .product(product)
-                .order(order)
-                .type(InventoryMovementType.ORDER_RESTORED)
-                .delta(quantity)
-                .quantityAfter(resultingQuantity)
-                .actor(actor)
-                .reason("Order cancellation")
-                .build());
-    }
-
-    /**
-     * Adds received goods (purchase receipts and resellable returns) to a
-     * product that the caller has already locked.
-     */
-    @Transactional
-    public InventoryMovementEntity receive(
-            ProductEntity product,
-            int quantity,
-            InventoryMovementType type,
-            OrderEntity order,
-            String actor,
-            String reason) {
-        return receive(product, quantity, type, order, actor, reason, null);
-    }
-
-    /**
-     * Same as {@link #receive(ProductEntity, int, InventoryMovementType, OrderEntity, String, String)}
-     * and tags the movement with the caller's request id so a retried receipt
-     * can be recognised and replayed.
-     */
-    @Transactional
-    public InventoryMovementEntity receive(
-            ProductEntity product,
-            int quantity,
-            InventoryMovementType type,
-            OrderEntity order,
-            String actor,
-            String reason,
-            UUID requestId) {
-        if (quantity <= 0) {
-            throw new CustomException("Received quantity must be positive", HttpStatus.BAD_REQUEST);
-        }
-        if (type != InventoryMovementType.PURCHASE_RECEIVED && type != InventoryMovementType.RETURN_RESTOCKED) {
-            throw new IllegalArgumentException("Unsupported receipt movement type: " + type);
-        }
-        int previousQuantity = product.getStockQuantity();
-        int resultingQuantity;
         try {
-            resultingQuantity = Math.addExact(previousQuantity, quantity);
-        } catch (ArithmeticException e) {
-            throw new CustomException("Inventory quantity exceeds supported maximum", HttpStatus.CONFLICT, e);
-        }
-        product.setStockQuantity(resultingQuantity);
-        productRepository.save(product);
-        publishIfReplenished(product, previousQuantity);
-        return movementRepository.save(InventoryMovementEntity.builder()
-                .product(product)
-                .order(order)
-                .type(type)
-                .delta(quantity)
-                .quantityAfter(resultingQuantity)
-                .actor(actor)
-                .reason(reason)
-                .requestId(requestId)
-                .build());
-    }
-
-    private void publishIfReplenished(ProductEntity product, int previousQuantity) {
-        if (previousQuantity == 0 && product.getStockQuantity() > 0) {
-            eventPublisher.publishEvent(new StockReplenishedEvent(product.getId()));
+            return stockLedger.movements(productId, pageable.getPageNumber(), pageable.getPageSize());
+        } catch (StockLedgerRejection rejection) {
+            // The product exists but warehouse-service has no stock item yet (its initial stock
+            // command is still in the outbox): no movements so far.
+            if (rejection.isNotFound()) {
+                return Page.empty(pageable);
+            }
+            throw new CustomException(rejection.getMessage(), HttpStatus.CONFLICT, rejection);
         }
     }
 
@@ -299,21 +169,6 @@ public class InventoryService {
             return StockStatus.OUT_OF_STOCK;
         }
         return quantity <= threshold ? StockStatus.LOW_STOCK : StockStatus.IN_STOCK;
-    }
-
-    private InventoryMovementDto toMovementDto(InventoryMovementEntity movement) {
-        return InventoryMovementDto.builder()
-                .id(movement.getId())
-                .productId(movement.getProduct().getId())
-                .orderId(movement.getOrder() == null ? null : movement.getOrder().getId())
-                .type(movement.getType())
-                .delta(movement.getDelta())
-                .quantityAfter(movement.getQuantityAfter())
-                .actor(movement.getActor())
-                .reason(movement.getReason())
-                .requestId(movement.getRequestId())
-                .createdAt(movement.getCreatedAt())
-                .build();
     }
 
     private void validateThreshold(int threshold) {

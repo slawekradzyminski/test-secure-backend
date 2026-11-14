@@ -49,6 +49,10 @@ class CommerceMutationsTest extends AbstractCommerceGraphQlTest {
         assertThat(cartAfterCheckout.getTotalItems()).isZero();
         assertThat(cancelled.at("/cancelOrder/status").asString()).isEqualTo("CANCELLED");
         assertError(repeated, "BAD_REQUEST");
+        // warehouse-service restores the stock from order.cancelled once, a few seconds later.
+        assertThat(productRepository.findById(product.getId()).orElseThrow().getStockQuantity()).isEqualTo(8);
+        assertThat(warehouseSimulator.restoreCancelledStock(checkout.path("id").asLong())).isOne();
+        assertThat(warehouseSimulator.restoreCancelledStock(checkout.path("id").asLong())).isZero();
         assertThat(productRepository.findById(product.getId()).orElseThrow().getStockQuantity()).isEqualTo(10);
         assertThat(orderService.getOrder(customer.username(), checkout.path("id").asLong()).getTotalAmount())
                 .isEqualByComparingTo("39.98");
@@ -101,6 +105,8 @@ class CommerceMutationsTest extends AbstractCommerceGraphQlTest {
                                 Map.of())
                         .path("createProduct");
         String id = created.path("id").asString();
+        // The INITIAL_STOCK command reaches warehouse-service from the outbox after commit.
+        stockCommandDispatcher.dispatchDue();
         String requestId = UUID.randomUUID().toString();
         String adjustment =
                 """
@@ -243,6 +249,7 @@ class CommerceMutationsTest extends AbstractCommerceGraphQlTest {
         assertThat(reopened.at("/errors/0/message").asString())
                 .isEqualTo("Cannot change order status from CANCELLED to PAID");
         assertThat(orderService.getOrderById(order.getId()).getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        warehouseSimulator.restoreCancelledStock(order.getId());
         assertThat(productRepository.findById(product.getId()).orElseThrow().getStockQuantity()).isEqualTo(10);
     }
 }
