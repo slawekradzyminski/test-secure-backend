@@ -48,7 +48,7 @@ import static org.awaitility.Awaitility.await;
 /**
  * {@code TRACING_ENABLED=true}: real spans, recorded by an in-memory exporter. The server span is
  * the child of the incoming W3C {@code traceparent}, the logged and stored trace and span ids are
- * the tracer's, and the instrumented Ollama {@code WebClient} propagates its client span.
+ * the server span's, and the instrumented Ollama {@code WebClient} propagates its client span.
  */
 @EnableWireMock(@ConfigureWireMock(port = 0, portProperties = "wiremock.server.port",
         baseUrlProperties = "wiremock.server.baseUrl"))
@@ -123,7 +123,7 @@ class TracingEnabledTest extends AbstractPaymentFlowTest {
         assertThat(event.get("requestId").asString()).isEqualTo("traced-" + before);
         assertThat(event.get("traceId").asString()).isEqualTo(traceId);
         String spanId = event.get("spanId").asString();
-        assertThat(spanIdsOf(traceId)).as("the stored span id is a real span of the trace").contains(spanId);
+        assertThat(spanId).as("the stored span is the server span").isEqualTo(server.getSpanId());
         assertThat(recorderLog.list).filteredOn(line -> line.getFormattedMessage().contains("order " + checkout.getBody().getId()))
                 .singleElement().satisfies(line -> assertThat(line.getMDCPropertyMap())
                         .containsEntry("requestId", "traced-" + before)
@@ -147,7 +147,7 @@ class TracingEnabledTest extends AbstractPaymentFlowTest {
         String traceId = event.get("traceId").asString();
         SpanData server = awaitServerSpan(traceId);
         assertThat(server.getParentSpanId()).isEqualTo(INVALID_PARENT);
-        assertThat(spanIdsOf(traceId)).contains(event.get("spanId").asString());
+        assertThat(event.get("spanId").asString()).isEqualTo(server.getSpanId());
     }
 
     @Test

@@ -311,7 +311,7 @@ springdoc:
 # outbox there is no broker, so broker reachability is not part of application health.
 management:
   # Distributed tracing (docs/TRACING.md). The beans always exist (native image); app.tracing.enabled
-  # (TRACING_ENABLED) switches sampling, W3C propagation, export and the tracer's MDC entries at runtime.
+  # (TRACING_ENABLED) switches sampling, W3C propagation, export and the server-span MDC ids at runtime.
   tracing:
     sampling:
       # Used only while tracing is on; root spans only, children follow their parent's decision.

@@ -244,7 +244,7 @@ Password sign-in is the only login method. The OIDC/Keycloak single sign-on brid
 - Distributed tracing (OpenTelemetry spans exported over OTLP/HTTP) is off by default:
   `TRACING_ENABLED`, `TRACING_OTLP_ENDPOINT`, `TRACING_SAMPLING_PROBABILITY`. With it on,
   the server span continues the incoming `traceparent`, the MDC trace and span ids are the
-  tracer's, the Ollama client propagates its own span and outbox sends run in spans parented
+  server span's, the Ollama client propagates its own span and outbox sends run in spans parented
   by the stored trace. See [docs/TRACING.md](docs/TRACING.md).
 
 ## Testing & Coverage

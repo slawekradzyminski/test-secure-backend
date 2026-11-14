@@ -1,6 +1,7 @@
 package com.awesome.testing.service.email;
 
 import com.awesome.testing.correlation.CorrelationIds;
+import com.awesome.testing.correlation.CorrelationTracing;
 import com.awesome.testing.dto.email.EmailDeliveryStatus;
 import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.dto.email.EmailEventDto;
@@ -39,6 +40,7 @@ public class EmailEventService {
     private final EmailEventRepository emailEventRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final CorrelationTracing correlationTracing;
     private final Clock emailClock = Clock.systemUTC();
 
     /** A claimed event to send again, with the correlation ids of the request that queued it. */
@@ -68,7 +70,7 @@ public class EmailEventService {
                 .payload(objectMapper.writeValueAsString(emailDto))
                 .requestId(requestId)
                 .correlationRequestId(CorrelationIds.currentRequestId())
-                .traceparent(CorrelationIds.currentTraceparent())
+                .traceparent(correlationTracing.currentTraceparent())
                 .createdAt(now)
                 .updatedAt(now)
                 .build();

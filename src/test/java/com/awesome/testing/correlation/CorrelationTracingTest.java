@@ -25,6 +25,7 @@ import org.slf4j.MDC;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -135,6 +136,43 @@ class CorrelationTracingTest {
 
         // then
         assertThat(outgoing).matches("00-" + TRACE_ID + "-[0-9a-f]{16}-01").doesNotContain(PARENT_ID);
+    }
+
+    @Test
+    void insideASpanTheRequestIdsAndTheStoredTraceparentAreTheSpans() {
+        // given
+        CorrelationIds provisional = new CorrelationIds("req-1", "1".repeat(32), "2".repeat(16));
+        Optional<CorrelationIds> traced;
+        String stored;
+
+        // when
+        try (CorrelationIds.Scope ignored = tracing.resume(CorrelationTracing.EMAIL_SPAN, "r", STORED)) {
+            traced = tracing.forServerSpan(provisional);
+            stored = tracing.currentTraceparent();
+        }
+
+        // then
+        SpanData span = exporter.getFinishedSpanItems().getFirst();
+        assertThat(traced).contains(new CorrelationIds("req-1", TRACE_ID, span.getSpanId()));
+        assertThat(stored).isEqualTo("00-" + TRACE_ID + "-" + span.getSpanId() + "-01");
+        assertThat(tracing.forServerSpan(provisional)).as("outside a span").isEmpty();
+    }
+
+    @Test
+    void disabledTracingKeepsTheProvisionalIdsAndStoresTheMdcTraceparent() {
+        // given
+        CorrelationIds ids = new CorrelationIds("req-1", TRACE_ID, PARENT_ID);
+
+        // when
+        String stored;
+        try (CorrelationIds.Scope ignored = ids.open()) {
+            stored = CorrelationTracing.disabled().currentTraceparent();
+        }
+
+        // then
+        assertThat(CorrelationTracing.disabled().forServerSpan(ids)).isEmpty();
+        assertThat(stored).isEqualTo(STORED);
+        assertThat(tracing.currentTraceparent()).as("no span and no MDC").isNull();
     }
 
     @Test

@@ -229,29 +229,15 @@
         </dependency>
 
         <!-- Distributed tracing (docs/TRACING.md): Micrometer Tracing with the OpenTelemetry bridge and
-             the OTLP HTTP span exporter. Always compiled in (the native image fixes the bean graph at
-             build time); TRACING_ENABLED switches sampling and export at runtime. Metrics stay on
-             Prometheus, so the OTLP metrics registry is left out, and spans are sent with the JDK
-             HttpClient instead of OkHttp (no Kotlin runtime in the native image). -->
+             the OTLP HTTP span exporter, the same set as warehouse-service and payment-service. These are
+             the tracing parts of spring-boot-starter-opentelemetry without its OTLP metrics registry
+             (metrics stay on Prometheus); spans are sent with the JDK HttpClient instead of OkHttp (no
+             Kotlin runtime in the native image). Always compiled in (the native image fixes the bean
+             graph at build time); TRACING_ENABLED switches tracing at runtime (TracingConfiguration). -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-opentelemetry</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.micrometer</groupId>
-                    <artifactId>micrometer-registry-otlp</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.opentelemetry</groupId>
-                    <artifactId>opentelemetry-exporter-sender-okhttp</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>spring-boot-micrometer-tracing-opentelemetry</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-sender-jdk</artifactId>
-        </dependency>
-        <!-- Compile scope: TracingConfiguration builds the exporter and the MDC listener itself. -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-tracing-bridge-otel</artifactId>
@@ -265,6 +251,10 @@
                     <artifactId>opentelemetry-exporter-sender-okhttp</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-sender-jdk</artifactId>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>

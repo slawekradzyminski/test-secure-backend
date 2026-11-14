@@ -27,9 +27,9 @@ import java.util.Locale;
  * <p>The GraalVM native image fixes the bean graph at build time, so nothing here is conditional:
  * these beans replace Spring Boot's auto-configured ones of the same type and decide inside their
  * factory methods. Tracing off means the sampler records nothing, propagation is a no-op (no
- * {@code traceparent} is read or injected by instrumentation), no exporter or HTTP client exists,
- * and the tracer never touches the MDC, so {@link CorrelationFilter} and {@link CorrelationIds}
- * behave exactly as without a tracer. Spring Boot's own OTLP exporter is switched off in
+ * {@code traceparent} is read or injected by instrumentation) and no exporter or HTTP client exists,
+ * so {@link CorrelationFilter} and {@link CorrelationIds} behave exactly as without a tracer. The
+ * tracer never writes the MDC, on or off. Spring Boot's own OTLP exporter is switched off in
  * application.yml ({@code management.tracing.export.otlp.enabled=false}) because it would build its
  * HTTP client eagerly; {@link #otlpSpanExporter} reads the same {@code management.opentelemetry.tracing.export.otlp.*}
  * properties.
@@ -78,17 +78,16 @@ public class TracingConfiguration {
     }
 
     /**
-     * Micrometer's MDC listener (trace and span id of the span in scope), active only while tracing
-     * is on. Off, the MDC belongs to {@link CorrelationIds} alone.
+     * Micrometer's MDC listener, silenced: the trace and span ids in the MDC are always set by the
+     * correlation code ({@link CorrelationFilter}, {@link ServerSpanCorrelationFilter},
+     * {@link CorrelationTracing#resume}), with tracing on from the server or work span.
      */
     @Bean
     Slf4JEventListener tracingMdcListener() {
-        return new Slf4JEventListener(CorrelationIds.MDC_TRACE_ID, CorrelationIds.MDC_SPAN_ID) {
+        return new Slf4JEventListener() {
             @Override
             public void onEvent(Object event) {
-                if (enabled) {
-                    super.onEvent(event);
-                }
+                // The MDC belongs to CorrelationIds.
             }
         };
     }
