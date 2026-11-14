@@ -61,4 +61,8 @@ public class DomainEventEntity {
     /** W3C trace id of the writing request; null like {@link #requestId}. */
     @Column(name = "trace_id", length = 32)
     private String traceId;
+
+    /** Span id of the writing request (the MDC spanId); null like {@link #traceId}. */
+    @Column(name = "span_id", length = 16)
+    private String spanId;
 }

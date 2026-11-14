@@ -72,9 +72,10 @@ class EventFeedEndpointTest extends AbstractPaymentFlowTest {
         JsonNode created = events.getFirst();
         assertThat(fieldNames(created))
                 .containsExactly("sequence", "id", "type", "occurredAt", "orderId", "username", "data", "requestId",
-                        "traceId");
+                        "traceId", "spanId");
         assertThat(created.get("requestId").asString()).matches("[0-9a-f-]{36}");
         assertThat(created.get("traceId").asString()).matches("[0-9a-f]{32}");
+        assertThat(created.get("spanId").asString()).matches("[0-9a-f]{16}");
         DomainEventEntity row = eventRepository.findByOrderIdOrderBySequenceAsc(order.getId()).getFirst();
         assertThat(created.get("sequence").asLong()).isEqualTo(row.getSequence()).isGreaterThan(before);
         assertThat(created.get("id").asString()).isEqualTo(row.getEventId().toString());
@@ -107,6 +108,8 @@ class EventFeedEndpointTest extends AbstractPaymentFlowTest {
             assertThat(event.get("type").asString()).isEqualTo("order.created");
             assertThat(event.get("requestId").asString()).isEqualTo("checkout-" + before);
             assertThat(event.get("traceId").asString()).isEqualTo("0af7651916cd43dd8448eb211c80319c");
+            // Tracing off: the hand-written span id of this hop, never the caller's parent id.
+            assertThat(event.get("spanId").asString()).matches("[0-9a-f]{16}").isNotEqualTo("b7ad6b7169203331");
         });
     }
 
@@ -127,6 +130,7 @@ class EventFeedEndpointTest extends AbstractPaymentFlowTest {
             assertThat(event.get("username").asString()).isEqualTo("job");
             assertThat(event.get("requestId").isNull()).isTrue();
             assertThat(event.get("traceId").isNull()).isTrue();
+            assertThat(event.get("spanId").isNull()).isTrue();
         });
     }
 

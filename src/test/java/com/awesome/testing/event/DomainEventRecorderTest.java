@@ -96,7 +96,7 @@ class DomainEventRecorderTest {
     }
 
     @Test
-    void recordsTheRequestIdAndTraceIdOfTheWritingRequest() {
+    void recordsTheRequestIdTraceIdAndSpanIdOfTheWritingRequest() {
         CommerceEvent event = new CommerceEvent(UUID.randomUUID(), CommerceEventType.ORDER_PAID, "buyer", 3L, NOW, Map.of());
 
         try (var ignored = new CorrelationIds("pay-req-1",
@@ -109,8 +109,10 @@ class DomainEventRecorderTest {
         verify(repository, org.mockito.Mockito.times(2)).save(saved.capture());
         assertThat(saved.getAllValues().get(0).getRequestId()).isEqualTo("pay-req-1");
         assertThat(saved.getAllValues().get(0).getTraceId()).isEqualTo("4bf92f3577b34da6a3ce929d0e0e4736");
+        assertThat(saved.getAllValues().get(0).getSpanId()).isEqualTo("00f067aa0ba902b7");
         assertThat(saved.getAllValues().get(1).getRequestId()).as("scheduled work without a request").isNull();
         assertThat(saved.getAllValues().get(1).getTraceId()).isNull();
+        assertThat(saved.getAllValues().get(1).getSpanId()).isNull();
     }
 
     @Test

@@ -92,11 +92,12 @@ class EventFeedServiceTest {
         UUID id = UUID.fromString("00000000-0000-0000-0000-0000000000c1");
         DomainEventEntity row = DomainEventEntity.builder().sequence(3L).eventId(id).type("order.paid").orderId(8L)
                 .username("buyer").occurredAt(Instant.parse("2026-11-10T11:00:00.120Z")).recordedAt(NOW)
-                .payload("{\"orderId\":8}").requestId("req-8").traceId("4bf92f3577b34da6a3ce929d0e0e4736").build();
+                .payload("{\"orderId\":8}").requestId("req-8").traceId("4bf92f3577b34da6a3ce929d0e0e4736")
+                .spanId("00f067aa0ba902b7").build();
 
         assertThat(EventFeedService.toDto(row)).isEqualTo(new FeedEventDto(3L, id, "order.paid",
                 "2026-11-10T11:00:00.120Z", 8L, "buyer", "{\"orderId\":8}", "req-8",
-                "4bf92f3577b34da6a3ce929d0e0e4736"));
+                "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7"));
     }
 
     @Test

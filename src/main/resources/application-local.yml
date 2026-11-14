@@ -59,6 +59,7 @@ warehouse:
 internal:
   service-tokens:
     payment: ${PAYMENT_SERVICE_TOKEN:local-payment-token}
+    notification: ${NOTIFICATION_SERVICE_TOKEN:local-notification-token}
 
 payment:
   webhook-secret: ${PAYMENT_WEBHOOK_SECRET:local-payment-webhook-secret}

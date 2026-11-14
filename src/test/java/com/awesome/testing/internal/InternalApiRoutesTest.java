@@ -5,11 +5,15 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
+import static com.awesome.testing.internal.security.ServiceCaller.NOTIFICATION;
 import static com.awesome.testing.internal.security.ServiceCaller.PAYMENT;
 import static com.awesome.testing.internal.security.ServiceCaller.WAREHOUSE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** The production route table: payment-service gets its result endpoint, order reads and the JWKS only. */
+/**
+ * The production route table: payment-service gets its result endpoint, order reads, the JWKS and the
+ * feed; notification-service gets the JWKS, the feed and the webhook export only.
+ */
 class InternalApiRoutesTest {
 
     private final InternalRoutes routes = new InternalApiConfig().internalRoutes();
@@ -20,15 +24,22 @@ class InternalApiRoutesTest {
     }
 
     @Test
-    void orderReadsAndTheJwksAcceptBothCallers() {
+    void orderReadsAcceptWarehouseAndPaymentAndTheJwksAcceptsEveryCaller() {
         assertThat(routes.callersFor("/internal/v1/orders/42")).isEqualTo(Set.of(WAREHOUSE, PAYMENT));
-        assertThat(routes.callersFor("/internal/v1/jwks.json")).isEqualTo(Set.of(WAREHOUSE, PAYMENT));
+        assertThat(routes.callersFor("/internal/v1/jwks.json")).isEqualTo(Set.of(WAREHOUSE, PAYMENT, NOTIFICATION));
     }
 
     @Test
-    void theEventFeedAcceptsBothCallers() {
-        assertThat(routes.callersFor("/internal/v1/events")).isEqualTo(Set.of(WAREHOUSE, PAYMENT));
+    void theEventFeedAcceptsEveryCaller() {
+        assertThat(routes.callersFor("/internal/v1/events")).isEqualTo(Set.of(WAREHOUSE, PAYMENT, NOTIFICATION));
         assertThat(routes.callersFor("/internal/v1/events/1")).isEqualTo(Set.of(WAREHOUSE));
+    }
+
+    @Test
+    void theWebhookExportAcceptsOnlyTheNotificationCaller() {
+        assertThat(routes.callersFor("/internal/v1/webhooks/export")).isEqualTo(Set.of(NOTIFICATION));
+        assertThat(routes.callersFor("/internal/v1/webhooks/export/1")).isEqualTo(Set.of(WAREHOUSE));
+        assertThat(routes.callersFor("/internal/v1/webhooks")).isEqualTo(Set.of(WAREHOUSE));
     }
 
     @Test

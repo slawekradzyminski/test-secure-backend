@@ -18,7 +18,8 @@ class WebhookEventListenerTest {
 
     private final WebhookDeliveryLog deliveryLog = mock(WebhookDeliveryLog.class);
     private final WebhookDispatcher dispatcher = mock(WebhookDispatcher.class);
-    private final WebhookEventListener listener = new WebhookEventListener(deliveryLog, dispatcher);
+    private final WebhookProperties properties = new WebhookProperties();
+    private final WebhookEventListener listener = new WebhookEventListener(deliveryLog, dispatcher, properties);
 
     @Test
     void publicEventsAreFannedOut() {
@@ -34,6 +35,22 @@ class WebhookEventListenerTest {
     @Test
     void cardRefundRequestsNeverReachUserWebhooks() {
         listener.onCommerceEvent(event(CommerceEventType.CARD_REFUND_REQUESTED));
+
+        verifyNoInteractions(deliveryLog, dispatcher);
+    }
+
+    @Test
+    void notificationRequestsNeverReachUserWebhooks() {
+        listener.onCommerceEvent(event(CommerceEventType.NOTIFICATION_REQUESTED));
+
+        verifyNoInteractions(deliveryLog, dispatcher);
+    }
+
+    @Test
+    void nothingIsRecordedOrSentWhileWebhooksAreDisabled() {
+        properties.setEnabled(false);
+
+        listener.onCommerceEvent(event(CommerceEventType.ORDER_CREATED));
 
         verifyNoInteractions(deliveryLog, dispatcher);
     }

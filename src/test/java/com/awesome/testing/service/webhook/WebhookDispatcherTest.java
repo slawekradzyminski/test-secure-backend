@@ -1,5 +1,6 @@
 package com.awesome.testing.service.webhook;
 
+import com.awesome.testing.correlation.CorrelationTracing;
 import com.awesome.testing.entity.webhook.WebhookDeliveryEntity;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,7 +50,7 @@ class WebhookDispatcherTest {
         properties.setAsyncDispatch(false);
         dns.register("hooks.example.com", "93.184.215.14");
         dispatcher = new WebhookDispatcher(deliveryLog, new WebhookUrlPolicy(properties, dns), sender, inboxes,
-                properties, Clock.fixed(NOW, ZoneOffset.UTC));
+                properties, Clock.fixed(NOW, ZoneOffset.UTC), CorrelationTracing.disabled());
     }
 
     @AfterEach

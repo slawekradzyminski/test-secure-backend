@@ -37,6 +37,8 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  *   <li>Hibernate Validator creates custom constraint validators reflectively.</li>
  *   <li>{@code @PreAuthorize} SpEL calls {@code @userService.exists(...)} and reads
  *       {@code authentication.principal.username} reflectively.</li>
+ *   <li>grpc-core's server call tracer creates {@code LongAdder} and calls {@code add}/{@code sum}
+ *       reflectively.</li>
  *   <li>Caffeine selects generated cache and node classes by name and builds them through method
  *       handles and var handles (the rate-limit cache uses maximum size plus expire-after-access).</li>
  * </ul>
@@ -52,6 +54,10 @@ public class NativeRuntimeHints {
             hints.resources().registerPattern("bootstrap/products.json");
             hints.reflection().registerType(TypeReference.of("java.util.Calendar[]"),
                     MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS);
+            // grpc-core's ReflectionLongAdderCounter (server call tracer) creates LongAdder and calls add/sum
+            // reflectively; with the tracing classpath the reachability metadata no longer covers it.
+            hints.reflection().registerType(TypeReference.of("java.util.concurrent.atomic.LongAdder"),
+                    MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS, MemberCategory.INVOKE_PUBLIC_METHODS);
             // Hibernate's multi-id loader instantiates arrays of UUID identifiers
             // (payments, webhook deliveries, refunds).
             hints.reflection().registerType(TypeReference.of("java.util.UUID[]"),

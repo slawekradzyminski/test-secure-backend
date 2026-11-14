@@ -4,7 +4,7 @@
 
     <groupId>murraco</groupId>
     <artifactId>jwt-auth-service</artifactId>
-    <version>3.20.1</version>
+    <version>3.21.0</version>
     <packaging>jar</packaging>
 
     <name>spring-boot-jwt</name>
@@ -226,6 +226,40 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webclient</artifactId>
+        </dependency>
+
+        <!-- Distributed tracing (docs/TRACING.md): Micrometer Tracing with the OpenTelemetry bridge and
+             the OTLP HTTP span exporter, the same set as warehouse-service and payment-service. These are
+             the tracing parts of spring-boot-starter-opentelemetry without its OTLP metrics registry
+             (metrics stay on Prometheus); spans are sent with the JDK HttpClient instead of OkHttp (no
+             Kotlin runtime in the native image). Always compiled in (the native image fixes the bean
+             graph at build time); TRACING_ENABLED switches tracing at runtime (TracingConfiguration). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-micrometer-tracing-opentelemetry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.opentelemetry</groupId>
+                    <artifactId>opentelemetry-exporter-sender-okhttp</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-sender-jdk</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-testing</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <!-- WebSocket -->
@@ -571,6 +605,8 @@
                                 <param>com.awesome.testing.service.tender.*</param>
                                 <param>com.awesome.testing.correlation.*</param>
                                 <param>com.awesome.testing.config.CorrelationOpenApiCustomizer</param>
+                                <param>com.awesome.testing.service.reservation.*</param>
+                                <param>com.awesome.testing.dto.order.UtcMillis</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -623,6 +659,9 @@
                                 <param>com.awesome.testing.service.tender.*Test</param>
                                 <param>com.awesome.testing.correlation.*Test</param>
                                 <param>com.awesome.testing.config.CorrelationOpenApiCustomizerTest</param>
+                                <param>com.awesome.testing.service.reservation.*Test</param>
+                                <param>com.awesome.testing.service.OrderServiceReservationTest</param>
+                                <param>com.awesome.testing.dto.order.UtcMillisTest</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>

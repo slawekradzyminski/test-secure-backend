@@ -194,7 +194,10 @@ uncertain response.
 - Money uses exact decimal strings, such as `"39.98"`. Counts and quantities
   use GraphQL integers.
 - Dates are ISO-formatted server-local date-times without an offset, matching
-  the existing domain timestamp semantics.
+  the existing domain timestamp semantics. The exception is
+  `Order.reservationExpiresAt` (3.21.0), an ISO-8601 UTC instant with three
+  fraction digits, identical to the REST field; it is `null` for orders created
+  without a reservation.
 - Catalog pagination uses zero-based `offset` and `limit`. Other lists use
   zero-based `page` and `size`. All page sizes must be between 1 and 100.
 - Request bodies are limited to 64 KiB, including requests without a declared

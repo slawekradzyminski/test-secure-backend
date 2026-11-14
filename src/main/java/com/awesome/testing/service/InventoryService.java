@@ -188,6 +188,16 @@ public class InventoryService {
             ProductEntity product,
             int quantity,
             OrderEntity order) {
+        return restore(product, quantity, order, order.getUsername());
+    }
+
+    /** Same as {@link #restore(ProductEntity, int, OrderEntity)} with {@code actor} on the movement. */
+    @Transactional
+    public InventoryMovementEntity restore(
+            ProductEntity product,
+            int quantity,
+            OrderEntity order,
+            String actor) {
         int previousQuantity = product.getStockQuantity();
         int resultingQuantity = Math.addExact(previousQuantity, quantity);
         product.setStockQuantity(resultingQuantity);
@@ -199,7 +209,7 @@ public class InventoryService {
                 .type(InventoryMovementType.ORDER_RESTORED)
                 .delta(quantity)
                 .quantityAfter(resultingQuantity)
-                .actor(order.getUsername())
+                .actor(actor)
                 .reason("Order cancellation")
                 .build());
     }

@@ -1,6 +1,8 @@
 package com.awesome.testing.config;
 
 import com.awesome.testing.correlation.CorrelationExchangeFilter;
+import com.awesome.testing.correlation.CorrelationTracing;
+import io.micrometer.observation.ObservationRegistry;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
@@ -21,8 +23,13 @@ import java.util.concurrent.TimeUnit;
 public class OllamaConfig {
     private final OllamaProperties properties;
 
+    /**
+     * With tracing on the client is instrumented (client span, W3C {@code traceparent} of that span)
+     * and the correlation filter only adds {@code X-Request-Id}; with tracing off it is the plain
+     * client of before, with the hand-written child {@code traceparent}.
+     */
     @Bean
-    public WebClient ollamaWebClient() {
+    public WebClient ollamaWebClient(CorrelationTracing tracing, ObservationRegistry observationRegistry) {
         HttpClient httpClient = HttpClient.create()
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
             .responseTimeout(Duration.ofMinutes(5))
@@ -31,10 +38,13 @@ public class OllamaConfig {
                     .addHandlerLast(new WriteTimeoutHandler(5, TimeUnit.MINUTES))
             );
 
-        return WebClient.builder()
+        WebClient.Builder builder = WebClient.builder()
             .clientConnector(new ReactorClientHttpConnector(httpClient))
             .baseUrl(properties.getBaseUrl())
-            .filter(new CorrelationExchangeFilter())
-            .build();
+            .filter(new CorrelationExchangeFilter(!tracing.enabled()));
+        if (tracing.enabled()) {
+            builder.observationRegistry(observationRegistry);
+        }
+        return builder.build();
     }
 } 

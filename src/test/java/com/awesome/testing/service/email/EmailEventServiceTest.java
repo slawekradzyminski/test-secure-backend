@@ -1,5 +1,6 @@
 package com.awesome.testing.service.email;
 
+import com.awesome.testing.correlation.CorrelationTracing;
 import com.awesome.testing.dto.email.EmailDeliveryStatus;
 import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.dto.email.EmailTemplate;
@@ -33,6 +34,11 @@ class EmailEventServiceTest {
         @Bean
         ObjectMapper objectMapper() {
             return JsonMapper.builder().build();
+        }
+
+        @Bean
+        CorrelationTracing correlationTracing() {
+            return CorrelationTracing.disabled();
         }
     }
 

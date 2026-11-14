@@ -5,6 +5,7 @@ import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.entity.OrderEntity;
 
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -13,9 +14,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +36,26 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long>, JpaSp
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select o from OrderEntity o where o.username = :username order by o.id")
     List<OrderEntity> findByUsernameForUpdate(@Param("username") String username);
+
+    /**
+     * Ids of orders in {@code status} whose reservation ended at or before {@code now}, earliest first
+     * (served by idx_orders_pending_reservation_expiry); orders without a reservation are never returned.
+     */
+    @Query("select o.id from OrderEntity o where o.status = :status and o.reservationExpiresAt <= :now "
+            + "order by o.reservationExpiresAt asc, o.id asc")
+    List<Long> findExpiredReservationIds(
+            @Param("status") OrderStatus status, @Param("now") Instant now, Pageable pageable);
+
+    /**
+     * Locks the order when it is still in {@code status} with a reservation ended at or before {@code now};
+     * {@code FOR UPDATE SKIP LOCKED}, so an order locked by another transaction comes back empty instead
+     * of waiting (lock timeout -2 is Hibernate's SKIP_LOCKED).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
+    @Query("select o from OrderEntity o where o.id = :id and o.status = :status and o.reservationExpiresAt <= :now")
+    Optional<OrderEntity> findExpiredReservationForUpdate(
+            @Param("id") Long id, @Param("status") OrderStatus status, @Param("now") Instant now);
 
     void deleteByUsername(String username);
 

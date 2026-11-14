@@ -1,6 +1,7 @@
 package com.awesome.testing.service.webhook;
 
 import com.awesome.testing.correlation.CorrelationIds;
+import com.awesome.testing.correlation.CorrelationTracing;
 import com.awesome.testing.dto.webhook.WebhookDeliveryStatus;
 import com.awesome.testing.entity.webhook.WebhookDeliveryEntity;
 import com.awesome.testing.entity.webhook.WebhookSubscriptionEntity;
@@ -40,6 +41,7 @@ public class WebhookDeliveryLog {
     private final WebhookSecrets secrets;
     private final WebhookProperties properties;
     private final Clock clock;
+    private final CorrelationTracing correlationTracing;
 
     /** Everything one attempt needs, read in the claiming transaction. */
     public record Attempt(UUID deliveryId, Long subscriptionId, String username, String url, String secret,
@@ -47,7 +49,9 @@ public class WebhookDeliveryLog {
     }
 
     public WebhookDeliveryLog(WebhookDeliveryRepository deliveries, WebhookSubscriptionRepository subscriptions,
-                              WebhookSecrets secrets, WebhookProperties properties, Clock clock) {
+                              WebhookSecrets secrets, WebhookProperties properties, Clock clock,
+                              CorrelationTracing correlationTracing) {
+        this.correlationTracing = correlationTracing;
         this.deliveries = deliveries;
         this.subscriptions = subscriptions;
         this.secrets = secrets;
@@ -102,7 +106,7 @@ public class WebhookDeliveryLog {
                 .nextAttemptAt(now)
                 .createdAt(now)
                 .requestId(CorrelationIds.currentRequestId())
-                .traceparent(CorrelationIds.currentTraceparent())
+                .traceparent(correlationTracing.currentTraceparent())
                 .build());
     }
 

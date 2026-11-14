@@ -2,6 +2,7 @@ package com.awesome.testing.graphql;
 
 import com.awesome.testing.dto.order.AddressDto;
 import com.awesome.testing.dto.order.OrderDto;
+import com.awesome.testing.dto.order.UtcMillis;
 import com.awesome.testing.dto.order.OrderItemDto;
 import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.dto.product.ProductDto;
@@ -89,7 +90,8 @@ public final class CommerceViews {
             OrderStatus status,
             AddressDto shippingAddress,
             String createdAt,
-            String updatedAt) {
+            String updatedAt,
+            String reservationExpiresAt) {
         public static Order summary(OrderEntity entity) {
             return new Order(
                     entity.getId(),
@@ -99,7 +101,8 @@ public final class CommerceViews {
                     entity.getStatus(),
                     AddressDto.from(entity.getShippingAddress()),
                     entity.getCreatedAt().toString(),
-                    entity.getUpdatedAt().toString());
+                    entity.getUpdatedAt().toString(),
+                    UtcMillis.format(entity.getReservationExpiresAt()));
         }
 
         public static Order from(OrderDto dto) {
@@ -111,7 +114,8 @@ public final class CommerceViews {
                     dto.getStatus(),
                     dto.getShippingAddress(),
                     dto.getCreatedAt().toString(),
-                    dto.getUpdatedAt().toString());
+                    dto.getUpdatedAt().toString(),
+                    dto.getReservationExpiresAt());
         }
     }
 

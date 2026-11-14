@@ -12,6 +12,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -103,6 +104,14 @@ public class OrderEntity {
     @Column(name = "fulfilment_state", nullable = false, length = 16)
     @Builder.Default
     private FulfilmentState fulfilmentState = FulfilmentState.NONE;
+
+    /**
+     * End of the stock hold taken at checkout; a PENDING order past it is cancelled by
+     * {@link com.awesome.testing.service.reservation.ReservationExpiryJob}. Null for orders created
+     * before reservations existed or with {@code orders.reservation.enabled=false}; those never expire.
+     */
+    @Column(name = "reservation_expires_at")
+    private Instant reservationExpiresAt;
 
     @Embedded
     private AddressEntity shippingAddress;

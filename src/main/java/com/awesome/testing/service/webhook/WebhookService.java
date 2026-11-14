@@ -33,6 +33,7 @@ import java.util.UUID;
 public class WebhookService {
 
     private static final int MAX_PAGE_SIZE = 100;
+    static final String DELIVERY_DISABLED = "Webhook delivery is disabled on this backend";
 
     private final WebhookSubscriptionRepository subscriptions;
     private final WebhookDeliveryRepository deliveryRepository;
@@ -136,6 +137,7 @@ public class WebhookService {
     /** Sends a {@code webhook.ping} now and returns the recorded delivery. */
     public WebhookDeliveryDto test(String username, Long id) {
         WebhookSubscriptionEntity subscription = activeOwned(username, id);
+        requireDeliveryEnabled();
         return sendNow(deliveryLog.recordPing(subscription));
     }
 
@@ -143,6 +145,7 @@ public class WebhookService {
     public WebhookDeliveryDto redeliver(String username, Long id, UUID deliveryId) {
         activeOwned(username, id);
         WebhookDeliveryEntity original = ownedDelivery(id, deliveryId);
+        requireDeliveryEnabled();
         return sendNow(deliveryLog.recordRedelivery(original));
     }
 
@@ -184,6 +187,13 @@ public class WebhookService {
         if (!userInboxes.isEmpty()) {
             inboxRequests.deleteByInboxIds(userInboxes.stream().map(WebhookInboxEntity::getId).toList());
             inboxes.deleteAll(userInboxes);
+        }
+    }
+
+    /** With {@code webhooks.enabled=false} this backend records and sends no deliveries at all. */
+    private void requireDeliveryEnabled() {
+        if (!properties.isEnabled()) {
+            throw new CustomException(DELIVERY_DISABLED, HttpStatus.CONFLICT);
         }
     }
 

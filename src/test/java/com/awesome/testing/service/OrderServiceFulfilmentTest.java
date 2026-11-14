@@ -1,5 +1,7 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.service.reservation.OrderReservations;
+
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.order.FulfilmentState;
 import com.awesome.testing.dto.order.OrderStatus;
@@ -26,6 +28,7 @@ import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Optional;
 
@@ -57,7 +60,8 @@ class OrderServiceFulfilmentTest {
     @BeforeEach
     void setUp() {
         service = new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
-                idempotencyKeyRepository, Clock.systemUTC(), CheckoutContributors.none(), commerceEvents);
+                idempotencyKeyRepository, Clock.systemUTC(), CheckoutContributors.none(), commerceEvents,
+                new OrderReservations(true, Duration.ofMinutes(30)));
         product = ProductEntity.builder().id(4L).name("Phone").price(BigDecimal.TEN).stockQuantity(0).build();
         order = OrderEntity.builder().id(7L).username("buyer").status(OrderStatus.PAID)
                 .shippingAddress(new AddressEntity()).totalAmount(BigDecimal.TEN)
@@ -80,7 +84,7 @@ class OrderServiceFulfilmentTest {
                 .as("only orders the warehouse holds become CANCELLED; untouched ones stay NONE")
                 .isEqualTo(state == FulfilmentState.NONE ? FulfilmentState.NONE : FulfilmentState.CANCELLED);
         assertThat(order.getInventoryState()).isEqualTo(InventoryState.RESTORED);
-        verify(inventoryService).restore(product, 2, order);
+        verify(inventoryService).restore(product, 2, order, order.getUsername());
         verify(couponService).releaseRedemption(order);
     }
 
@@ -93,7 +97,7 @@ class OrderServiceFulfilmentTest {
         assertConflict(() -> service.cancelOrder(7L, "admin", true));
         assertConflict(() -> service.updateOrderStatus(7L, OrderStatus.CANCELLED));
         verify(couponService, never()).releaseRedemption(any());
-        verify(inventoryService, never()).restore(any(), anyInt(), any());
+        verify(inventoryService, never()).restore(any(), anyInt(), any(), any());
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
     }
 
@@ -203,7 +207,7 @@ class OrderServiceFulfilmentTest {
         assertThat(order.getFulfilmentState())
                 .as("only orders the warehouse holds become CANCELLED; untouched ones stay NONE")
                 .isEqualTo(state == FulfilmentState.NONE ? FulfilmentState.NONE : FulfilmentState.CANCELLED);
-        verify(inventoryService).restore(product, 2, order);
+        verify(inventoryService).restore(product, 2, order, order.getUsername());
         verify(couponService).releaseRedemption(order);
     }
 
@@ -213,7 +217,7 @@ class OrderServiceFulfilmentTest {
         order.setFulfilmentState(state);
 
         assertConflict(() -> service.cancelForWarehouse(7L));
-        verify(inventoryService, never()).restore(any(), anyInt(), any());
+        verify(inventoryService, never()).restore(any(), anyInt(), any(), any());
     }
 
     @Test

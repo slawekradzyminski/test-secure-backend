@@ -11,7 +11,8 @@ import org.springframework.test.context.TestPropertySource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Without service tokens the internal API does not exist, whatever token is sent. */
-@TestPropertySource(properties = {"warehouse.service-token=", "internal.service-tokens.payment="})
+@TestPropertySource(properties = {"warehouse.service-token=", "internal.service-tokens.payment=",
+        "internal.service-tokens.notification="})
 class InternalApiDisabledTest extends HttpHelper {
 
     @Test
@@ -30,14 +31,20 @@ class InternalApiDisabledTest extends HttpHelper {
     }
 
     @Test
-    void eventFeedRespondsNotFoundWhenThePaymentAndWarehouseTokensAreBlank() {
+    void eventFeedJwksAndExportRespondNotFoundWhenEveryCallerTokenIsBlank() {
         HttpHeaders paymentToken = getJsonOnlyHeaders();
         paymentToken.add("X-Service-Token", "test-payment-token");
+        HttpHeaders notificationToken = getJsonOnlyHeaders();
+        notificationToken.add("X-Service-Token", "test-notification-token");
 
         ResponseEntity<ErrorDto> feed = executeGet("/internal/v1/events?after=0", paymentToken, ErrorDto.class);
+        ResponseEntity<ErrorDto> jwks = executeGet("/internal/v1/jwks.json", notificationToken, ErrorDto.class);
+        ResponseEntity<ErrorDto> export = executeGet("/internal/v1/webhooks/export", notificationToken, ErrorDto.class);
 
         assertThat(feed.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(feed.getBody().getMessage()).isEqualTo("Not found");
+        assertThat(jwks.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(export.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     private HttpHeaders blank() {

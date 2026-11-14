@@ -70,6 +70,8 @@ type Order {
   shippingAddress: Address!
   createdAt: String!
   updatedAt: String!
+  """When the stock reservation of a PENDING order ends (ISO-8601 UTC, milliseconds); null for orders without one."""
+  reservationExpiresAt: String
 }
 
 type OrderItem {
