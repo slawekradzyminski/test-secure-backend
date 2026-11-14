@@ -173,4 +173,40 @@ bad=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/intern
 [[ "$bad" == 400* ]] || fail "event feed must reject limit=0: $bad"
 echo "event feed: ok"
 
+echo "== notification-service split (local profile, NOTIFICATIONS_DELIVERY=feed, WEBHOOKS_ENABLED=false)"
+start_backend \
+  -e SPRING_PROFILES_ACTIVE=local -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/testdb \
+  -e SPRING_DATASOURCE_USERNAME=postgres -e SPRING_DATASOURCE_PASSWORD=postgres \
+  -e NOTIFICATIONS_DELIVERY=feed -e WEBHOOKS_ENABLED=false
+
+signin=$(call -H 'Content-Type: application/json' -d '{"username":"admin","password":"LocalDemoAdmin123!"}' http://backend:4001/api/v1/users/signin)
+[[ "$signin" == 200* ]] || fail "seeded admin sign-in (feed mode): $signin"
+token=$(sed -E 's/.*"token" *: *"([^"]+)".*/\1/' <<< "${signin#* }")
+inbox=$(call -X POST -H "Authorization: Bearer $token" http://backend:4001/api/v1/webhook-inboxes | tr -d ' ')
+[[ "$inbox" == 201* ]] || fail "create inbox: $inbox"
+inbox_url=$(sed -E 's/.*"url":"([^"]+)".*/\1/' <<< "${inbox#* }")
+hook=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d "{\"url\":\"$inbox_url\",\"events\":[\"order.created\"]}" http://backend:4001/api/v1/webhooks | tr -d ' ')
+[[ "$hook" == 201* ]] || fail "create webhook: $hook"
+hook_id=$(sed -E 's/.*"id":([0-9]+).*/\1/' <<< "${hook#* }")
+secret=$(sed -E 's/.*"secret":"([^"]+)".*/\1/' <<< "${hook#* }")
+exported=$(call -H 'X-Service-Token: local-notification-token' http://backend:4001/internal/v1/webhooks/export | tr -d ' ')
+[[ "$exported" == 200* && "$exported" == *"\"secret\":\"$secret\""* && "$exported" == *'"inboxes":[{"token":'* ]] \
+  || fail "webhook export: $exported"
+foreign=$(call -H 'X-Service-Token: local-payment-token' http://backend:4001/internal/v1/webhooks/export)
+[[ "$foreign" == 401* ]] || fail "webhook export must reject the payment token: $foreign"
+ping=$(call -X POST -H "Authorization: Bearer $token" "http://backend:4001/api/v1/webhooks/$hook_id/test")
+[[ "$ping" == 409* ]] || fail "test ping must be refused while webhooks are disabled: $ping"
+echo "webhook export and disabled delivery: ok"
+
+card=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d '{"amount":10,"recipientUsername":"admin"}' http://backend:4001/api/v1/admin/gift-cards)
+[[ "$card" == 201* ]] || fail "issue gift card: $card"
+sleep 4
+feed=$(call -H 'X-Service-Token: local-notification-token' \
+  'http://backend:4001/internal/v1/events?types=notification.requested&limit=50' | tr -d ' ')
+[[ "$feed" == 200* && "$feed" == *'"type":"notification.requested"'* && "$feed" == *'"template":"GIFT_CARD_ISSUED"'* ]] \
+  || fail "notification.requested feed: $feed"
+echo "notification.requested feed: ok"
+
 echo "native smoke test passed"
