@@ -61,6 +61,7 @@ public final class WebhookEventTypes {
             case ORDER_DELIVERED -> "An order was delivered";
             case REFUND_BOOKED -> "A refund was booked for an order";
             case PAYMENT_FAILED -> "A payment attempt failed";
+            case ORDER_RESERVATION_EXPIRED -> "A pending order's stock reservation expired and the order was cancelled";
             case CARD_REFUND_REQUESTED -> throw new IllegalArgumentException(type + " is not offered to webhooks");
         };
     }

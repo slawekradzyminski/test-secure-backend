@@ -163,6 +163,9 @@ class OpenApiContractTest extends HttpHelper {
         });
         assertThat(schemas.path("ProductCreateDto").path("properties").path("description").path("minLength").asInt())
                 .isEqualTo(1);
+        JsonNode reservation = schemas.path("OrderDto").path("properties").path("reservationExpiresAt");
+        assertThat(reservation.path("type").toString()).contains("\"string\"", "\"null\"");
+        assertThat(reservation.path("format").asText()).isEqualTo("date-time");
     }
 
     @Test
@@ -290,6 +293,8 @@ class OpenApiContractTest extends HttpHelper {
         assertOperationResponsesContain(spec, "/api/v1/orders/{id}/status", "put", List.of("200", "400", "401", "403", "404"));
         assertOperationResponsesContain(spec, "/api/v1/orders/{id}/cancel", "post", List.of("200", "400", "401", "403", "404"));
         assertOperationResponsesContain(spec, "/api/v1/orders/admin", "get", List.of("200", "400", "401", "403"));
+        assertOperationResponsesContain(spec, "/api/v1/admin/orders/{id}/expire-reservation", "post",
+                List.of("200", "401", "403", "404", "409"));
 
         assertOperationResponsesContain(spec, "/api/v1/users/signup", "post", List.of("201", "400"));
         assertOperationResponsesContain(spec, "/api/v1/users/signin", "post", List.of("200", "400", "422"));

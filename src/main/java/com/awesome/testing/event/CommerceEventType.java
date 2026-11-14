@@ -20,7 +20,13 @@ public enum CommerceEventType {
      * Internal: payment-service should refund {@code amount} on the order's captured card payment.
      * {@code data} is exactly {@code requestId}, {@code orderId}, {@code amount}, {@code reason}.
      */
-    CARD_REFUND_REQUESTED("card-refund.requested", false);
+    CARD_REFUND_REQUESTED("card-refund.requested", false),
+    /**
+     * A PENDING order's stock reservation ran out and the order was cancelled (published together with
+     * {@link #ORDER_CANCELLED} whose {@code reason} is {@code RESERVATION_EXPIRED}).
+     * {@code data} is exactly {@code orderId}, {@code expiredAt}, {@code totalAmount}.
+     */
+    ORDER_RESERVATION_EXPIRED("order.reservation-expired", true);
 
     private final String wire;
     private final boolean webhookVisible;

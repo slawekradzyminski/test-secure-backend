@@ -1,5 +1,7 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.service.reservation.OrderReservations;
+
 import com.awesome.testing.repository.OrderIdempotencyKeyRepository;
 import com.awesome.testing.event.CommerceEvents;
 import com.awesome.testing.service.checkout.CheckoutContributors;
@@ -18,12 +20,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,6 +65,12 @@ class OrderServiceTest {
 
     @Mock
     private CommerceEvents commerceEvents;
+
+    @Spy
+    private Clock commerceClock = Clock.systemUTC();
+
+    @Spy
+    private OrderReservations orderReservations = new OrderReservations(true, Duration.ofMinutes(30));
 
     @InjectMocks
     private OrderService orderService;
@@ -216,12 +227,12 @@ class OrderServiceTest {
 
         assertThat(cancelled.getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(entity.getInventoryState()).isEqualTo(InventoryState.RESTORED);
-        verify(inventoryService).restore(product, 2, entity);
+        verify(inventoryService).restore(product, 2, entity, USERNAME);
 
         assertThatThrownBy(() -> orderService.cancelOrder(14L, USERNAME, false))
                 .isInstanceOf(CustomException.class)
                 .hasMessage("Order cannot be cancelled in current status");
-        verify(inventoryService).restore(product, 2, entity);
+        verify(inventoryService).restore(product, 2, entity, USERNAME);
     }
 
     @Test
@@ -244,7 +255,7 @@ class OrderServiceTest {
 
         assertThat(entity.getStatus()).isEqualTo(OrderStatus.PENDING);
         assertThat(entity.getInventoryState()).isEqualTo(InventoryState.DEDUCTED);
-        verify(inventoryService, never()).restore(any(), anyInt(), any());
+        verify(inventoryService, never()).restore(any(), anyInt(), any(), any());
     }
 
     @Test

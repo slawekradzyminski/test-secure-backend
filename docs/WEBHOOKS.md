@@ -49,9 +49,12 @@ responseSnippet (first 500 characters), durationMs, payload, createdAt, delivere
 ## Events and payload
 
 Subscriptions name event wire names: `order.created`, `order.paid`, `order.cancelled`,
-`shipment.shipped`, `shipment.delivered`, `refund.booked`, `payment.failed` (the commerce
-domain events, see [COMMERCE_AND_FULFILMENT.md](COMMERCE_AND_FULFILMENT.md#domain-events)),
-plus `webhook.ping`. Each committed event creates one delivery per active subscription of
+`shipment.shipped`, `shipment.delivered`, `refund.booked`, `payment.failed`,
+`order.reservation-expired` (3.21.0; the commerce domain events, see
+[COMMERCE_AND_FULFILMENT.md](COMMERCE_AND_FULFILMENT.md#domain-events)), plus `webhook.ping`.
+`order.cancelled` data carries `reason` (`CUSTOMER`, `ADMIN`, `RESERVATION_EXPIRED`,
+`WAREHOUSE` or `ACCOUNT_ERASURE`); an expired reservation sends both `order.cancelled` and
+`order.reservation-expired` with data `{orderId, expiredAt, totalAmount}`. Each committed event creates one delivery per active subscription of
 the order's owner that lists its type.
 
 ```json

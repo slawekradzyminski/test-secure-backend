@@ -24,7 +24,8 @@ class CommerceEventTypeTest {
                 CommerceEventType.ORDER_DELIVERED, "shipment.delivered",
                 CommerceEventType.REFUND_BOOKED, "refund.booked",
                 CommerceEventType.PAYMENT_FAILED, "payment.failed",
-                CommerceEventType.CARD_REFUND_REQUESTED, "card-refund.requested"));
+                CommerceEventType.CARD_REFUND_REQUESTED, "card-refund.requested",
+                CommerceEventType.ORDER_RESERVATION_EXPIRED, "order.reservation-expired"));
     }
 
     @Test

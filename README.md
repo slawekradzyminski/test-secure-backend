@@ -219,7 +219,7 @@ Password sign-in is the only login method. The OIDC/Keycloak single sign-on brid
 - Ollama integration for AI text generation and chat
 - Product management
 - Shopping cart functionality
-- Order management
+- Order management, with stock reservations that expire (`ORDERS_RESERVATION_TTL`, default 30 minutes; see [docs/COMMERCE_AND_FULFILMENT.md](docs/COMMERCE_AND_FULFILMENT.md#stock-reservations-with-a-time-limit))
 - Swagger/OpenAPI documentation
 - Comprehensive test coverage
 
@@ -320,6 +320,9 @@ is not a string; decimal amounts may be sent as numbers or strings.
 - GET `/api/v1/orders/{id}` - Get order by ID
 - PUT `/api/v1/orders/{id}/status` - Update order status (ADMIN only)
 - POST `/api/v1/orders/{id}/cancel` - Cancel order
+- POST `/api/v1/admin/orders/{id}/expire-reservation` - Expire a PENDING order's stock reservation now (ADMIN only, time control for tests)
+
+New orders carry `reservationExpiresAt` (ISO-8601 UTC, milliseconds) in every order body; a PENDING order that is not paid by then is cancelled and its stock restored.
 
 ### QR Code
 

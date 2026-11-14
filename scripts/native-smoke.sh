@@ -138,9 +138,12 @@ echo "logout revokes access token: ok"
 
 echo "== local profile (local email outbox, demo seed)"
 docker exec "$RUN_ID-postgres" psql -U postgres -c 'drop database testdb with (force)' -c 'create database testdb' >/dev/null
+# Short reservations so the expiry job (scheduled, FOR UPDATE SKIP LOCKED) runs inside the smoke test.
 start_backend \
   -e SPRING_PROFILES_ACTIVE=local -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/testdb \
-  -e SPRING_DATASOURCE_USERNAME=postgres -e SPRING_DATASOURCE_PASSWORD=postgres
+  -e SPRING_DATASOURCE_USERNAME=postgres -e SPRING_DATASOURCE_PASSWORD=postgres \
+  -e ORDERS_RESERVATION_TTL=PT8S -e ORDERS_RESERVATION_EXPIRY_JOB_INTERVAL=PT1S \
+  -e ORDERS_RESERVATION_EXPIRY_JOB_INITIAL_DELAY=PT1S
 
 signin=$(call -H 'Content-Type: application/json' -d '{"username":"admin","password":"LocalDemoAdmin123!"}' http://backend:4001/api/v1/users/signin)
 [[ "$signin" == 200* ]] || fail "seeded admin sign-in: $signin"
@@ -172,5 +175,39 @@ feed=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/inter
 bad=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?limit=0')
 [[ "$bad" == 400* ]] || fail "event feed must reject limit=0: $bad"
 echo "event feed: ok"
+
+# Reservations (3.21.0): orders carry reservationExpiresAt; the admin time control expires one order at once
+# and the scheduled job expires the first order after its 8-second reservation; both record
+# order.reservation-expired in the feed.
+first_order=$(tr -d ' ' <<< "${order#* }")
+first_id=$(grep -oE '"id":[0-9]+' <<< "$first_order" | head -1 | grep -oE '[0-9]+$')
+grep -qE '"reservationExpiresAt":"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}\.[0-9]{3}Z"' <<< "$first_order" \
+  || fail "order without reservationExpiresAt: $order"
+cart=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d "{\"productId\":$product_id,\"quantity\":1}" http://backend:4001/api/v1/cart/items)
+[[ "$cart" == 200* ]] || fail "add to cart: $cart"
+second=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d '{"street":"1 Smoke Street","city":"Smoke City","state":"SC","zipCode":"12345","country":"USA"}' \
+  http://backend:4001/api/v1/orders | tr -d ' ')
+[[ "$second" == 201* ]] || fail "second checkout: $second"
+second_id=$(grep -oE '"id":[0-9]+' <<< "${second#* }" | head -1 | grep -oE '[0-9]+$')
+expired=$(call -X POST -H "Authorization: Bearer $token" "http://backend:4001/api/v1/admin/orders/$second_id/expire-reservation" | tr -d ' ')
+[[ "$expired" == 200* && "$expired" == *'"status":"CANCELLED"'* ]] || fail "admin expire-reservation: $expired"
+again=$(call -X POST -H "Authorization: Bearer $token" "http://backend:4001/api/v1/admin/orders/$second_id/expire-reservation")
+[[ "$again" == 409* ]] || fail "expire-reservation of a cancelled order must be 409: $again"
+for _ in $(seq 1 30); do
+  first_now=$(call -H "Authorization: Bearer $token" "http://backend:4001/api/v1/orders/$first_id" | tr -d ' ')
+  [[ "$first_now" == *'"status":"CANCELLED"'* ]] && break
+  sleep 1
+done
+[[ "$first_now" == *'"status":"CANCELLED"'* ]] || fail "expiry job did not cancel order $first_id: $first_now"
+for _ in $(seq 1 10); do
+  feed=$(call -H 'X-Service-Token: local-payment-token' 'http://backend:4001/internal/v1/events?types=order.reservation-expired&limit=10' | tr -d ' ')
+  [[ "$feed" == *"\"orderId\":$first_id,"* && "$feed" == *"\"orderId\":$second_id,"* ]] && break
+  sleep 1
+done
+[[ "$feed" == *"\"orderId\":$first_id,"* && "$feed" == *"\"orderId\":$second_id,"* ]] || fail "reservation-expired feed: $feed"
+docker logs "$RUN_ID-backend" 2>&1 | grep -q 'Could not expire the reservation' && fail "expiry job failed in the native image"
+echo "reservations (admin time control, expiry job, feed): ok"
 
 echo "native smoke test passed"

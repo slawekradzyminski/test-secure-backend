@@ -97,6 +97,13 @@ public class OrderDto {
             example = "1969.98")
     private BigDecimal amountDue;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(types = {"string", "null"}, format = "date-time",
+            description = "When the stock reservation of a PENDING order ends (ISO-8601 UTC, milliseconds); the order "
+                    + "is cancelled if it is not paid by then. Omitted for orders created without a reservation",
+            example = "2026-11-14T10:30:00.000Z")
+    private String reservationExpiresAt;
+
     @Valid
     @NotNull(message = "Shipping address is required")
     @Schema(description = "Shipping address")
@@ -129,6 +136,7 @@ public class OrderDto {
                 .pointsRedeemed(order.getPointsRedeemed())
                 .pointsAmount(order.getPointsAmount())
                 .amountDue(OrderAmounts.hasTenders(order) ? OrderAmounts.amountDue(order) : null)
+                .reservationExpiresAt(UtcMillis.format(order.getReservationExpiresAt()))
                 .shippingAddress(AddressDto.from(order.getShippingAddress()))
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())

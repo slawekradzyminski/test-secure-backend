@@ -60,6 +60,12 @@ internal:
 payment:
   webhook-secret: test-payment-webhook-secret
 
+orders:
+  reservation:
+    # Tests expire reservations through ReservationExpiryJob#expireDue or the admin endpoint.
+    expiry-job:
+      enabled: false
+
 events:
   # Tests read the feed right after the change; the settle delay is covered by its own tests.
   settle-delay: PT0S

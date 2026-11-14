@@ -571,6 +571,8 @@
                                 <param>com.awesome.testing.service.tender.*</param>
                                 <param>com.awesome.testing.correlation.*</param>
                                 <param>com.awesome.testing.config.CorrelationOpenApiCustomizer</param>
+                                <param>com.awesome.testing.service.reservation.*</param>
+                                <param>com.awesome.testing.dto.order.UtcMillis</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.awesome.testing.traffic.protocol.*Test</param>
@@ -623,6 +625,9 @@
                                 <param>com.awesome.testing.service.tender.*Test</param>
                                 <param>com.awesome.testing.correlation.*Test</param>
                                 <param>com.awesome.testing.config.CorrelationOpenApiCustomizerTest</param>
+                                <param>com.awesome.testing.service.reservation.*Test</param>
+                                <param>com.awesome.testing.service.OrderServiceReservationTest</param>
+                                <param>com.awesome.testing.dto.order.UtcMillisTest</param>
                             </targetTests>
                             <threads>4</threads>
                             <timestampedReports>false</timestampedReports>

@@ -1,5 +1,7 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.service.reservation.OrderReservations;
+
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.dto.order.AddressDto;
 import com.awesome.testing.dto.order.OrderStatus;
@@ -28,6 +30,7 @@ import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -66,7 +69,8 @@ class OrderServiceCommerceTest {
     void setUp() {
         service = new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
                 idempotencyKeyRepository, Clock.fixed(NOW.toInstant(ZoneOffset.UTC), ZoneOffset.UTC),
-                CheckoutContributors.none(), commerceEvents);
+                CheckoutContributors.none(), commerceEvents,
+                new OrderReservations(true, Duration.ofMinutes(30)));
         product = ProductEntity.builder().id(1L).name("Phone").price(new BigDecimal("40.00")).stockQuantity(10).build();
         address = AddressDto.builder().street("Main 1").city("Warsaw").state("MZ").zipCode("00-001").country("PL").build();
         lenient().when(cartItemRepository.findByUsernameForUpdate(USER)).thenReturn(List.of(CartItemEntity.builder()

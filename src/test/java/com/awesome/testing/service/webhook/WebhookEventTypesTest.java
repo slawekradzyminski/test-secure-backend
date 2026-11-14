@@ -14,9 +14,9 @@ class WebhookEventTypesTest {
     void listsEveryCommerceWireNameAndPing() {
         assertThat(WebhookEventTypes.all()).extracting(WebhookEventTypeDto::name).containsExactly(
                 "order.created", "order.paid", "order.cancelled", "shipment.shipped", "shipment.delivered",
-                "refund.booked", "payment.failed", "webhook.ping");
+                "refund.booked", "payment.failed", "order.reservation-expired", "webhook.ping");
         assertThat(WebhookEventTypes.all()).allSatisfy(type -> assertThat(type.description()).isNotBlank());
-        assertThat(WebhookEventTypes.wireNames()).hasSize(7).doesNotContain("card-refund.requested");
+        assertThat(WebhookEventTypes.wireNames()).hasSize(8).doesNotContain("card-refund.requested");
     }
 
     @Test

@@ -236,6 +236,18 @@ JmsSender:
 ollama:
   base-url: http://localhost:11434
 
+# Stock reservations with a time limit (docs/COMMERCE_AND_FULFILMENT.md). Stock is deducted at checkout;
+# a PENDING order not paid within ttl is cancelled by ReservationExpiryJob and its stock restored.
+orders:
+  reservation:
+    # false: new orders get no reservationExpiresAt and never expire (existing reservations still do).
+    enabled: ${ORDERS_RESERVATION_ENABLED:true}
+    ttl: ${ORDERS_RESERVATION_TTL:PT30M}
+    expiry-job:
+      enabled: ${ORDERS_RESERVATION_EXPIRY_JOB_ENABLED:true}
+      interval: ${ORDERS_RESERVATION_EXPIRY_JOB_INTERVAL:PT15S}
+      initial-delay: ${ORDERS_RESERVATION_EXPIRY_JOB_INITIAL_DELAY:PT15S}
+
 # User webhook subscriptions (docs/WEBHOOKS.md). Targets always pass the SSRF guard.
 webhooks:
   allow-http: ${WEBHOOKS_ALLOW_HTTP:true}

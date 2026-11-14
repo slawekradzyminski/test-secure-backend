@@ -179,6 +179,56 @@ with the same address returns the original order with 201 and
 `Idempotent-Replayed: true`; a different address returns 409. Keys are scoped
 per user.
 
+### Stock reservations with a time limit
+
+Stock is still deducted from `products.stock_quantity` when the order is
+created (`ORDER_DEDUCTED`); that deduction is the hold. Since 3.21.0 the hold
+expires: every new order stores `orders.reservation_expires_at` (V23) =
+creation time + `orders.reservation.ttl`, truncated to milliseconds. Orders
+created before 3.21.0 or with `orders.reservation.enabled=false` keep null and
+never expire.
+
+- Every order representation carries the stored value as
+  `reservationExpiresAt` (ISO-8601 UTC with exactly three fraction digits, for
+  example `2026-11-14T10:30:00.000Z`): the create response, `GET
+  /api/v1/orders/{id}`, both order lists, the internal order snapshot and
+  GraphQL `Order.reservationExpiresAt`. It is identical in every read and is
+  **omitted when null** (GraphQL answers `null`). No other order field,
+  `OrderStatus`, the GraphQL enums or the inventory bodies changed.
+- `ReservationExpiryJob` runs every `orders.reservation.expiry-job.interval`.
+  Each run reads up to 50 `PENDING` orders whose reservation ended
+  (`reservation_expires_at <= now()`, earliest first, partial index
+  `idx_orders_pending_reservation_expiry`) and expires each in its own
+  transaction. The order row is re-read with `FOR UPDATE SKIP LOCKED` and
+  `status = 'PENDING'`, so several backend instances can run the job, an order
+  held by a capture or a customer cancel is skipped and looked at again on the
+  next run, and an order is never expired twice. A failing order is logged and
+  does not stop the batch.
+- Expiry goes through the normal cancellation path: the coupon redemption is
+  released, stock is restored (`ORDER_RESTORED`, actor `system`), gift-card
+  and points tenders are returned and earned points revoked, exactly as for a
+  customer cancel. It publishes `order.cancelled` with
+  `data.reason = "RESERVATION_EXPIRED"` and then `order.reservation-expired`
+  with `data` exactly `{orderId, expiredAt, totalAmount}` (`expiredAt` is the
+  stored reservation end), both in the same transaction.
+- Time control: `POST /api/v1/admin/orders/{id}/expire-reservation`
+  (`ROLE_ADMIN`) sets `reservation_expires_at` to now and expires the order at
+  once. 200 with the cancelled order, 401, 403, 404 for an unknown order and 409
+  `Only PENDING orders hold a reservation; order is <STATUS>` otherwise. It
+  waits for the order's row lock.
+- Race with payment: the order row lock decides and there is no grace period.
+  A capture reaching `POST /internal/v1/orders/{id}/payment` after the order
+  expired answers 409 `Order is not payable` and payment-service voids it; a
+  capture that locks the order first pays it and the job then skips it.
+
+| Property | Environment variable | Default |
+| --- | --- | --- |
+| `orders.reservation.enabled` | `ORDERS_RESERVATION_ENABLED` | `true` |
+| `orders.reservation.ttl` | `ORDERS_RESERVATION_TTL` | `PT30M` (must be positive) |
+| `orders.reservation.expiry-job.enabled` | `ORDERS_RESERVATION_EXPIRY_JOB_ENABLED` | `true` (off in tests) |
+| `orders.reservation.expiry-job.interval` | `ORDERS_RESERVATION_EXPIRY_JOB_INTERVAL` | `PT15S` |
+| `orders.reservation.expiry-job.initial-delay` | `ORDERS_RESERVATION_EXPIRY_JOB_INITIAL_DELAY` | `PT15S` |
+
 ### Conditional product requests
 
 - `GET /api/v1/products/{id}` returns `ETag: "<version>"` and honours
@@ -343,12 +393,13 @@ transaction that changed the order; consumers use
 | --- | --- | --- |
 | `ORDER_CREATED` | `order.created` | Checkout creates an order (not on an idempotent replay) |
 | `ORDER_PAID` | `order.paid` | Admin status change to `PAID`, or a captured card payment (`data` adds `paymentId`) |
-| `ORDER_CANCELLED` | `order.cancelled` | Any cancellation: customer, admin, or warehouse |
+| `ORDER_CANCELLED` | `order.cancelled` | Any cancellation (`data` adds `reason`: `CUSTOMER`, `ADMIN`, `RESERVATION_EXPIRED`, `WAREHOUSE` or `ACCOUNT_ERASURE`) |
 | `ORDER_SHIPPED` | `shipment.shipped` | Admin status change to `SHIPPED` or fulfilment reaching `SHIPPED` |
 | `ORDER_DELIVERED` | `shipment.delivered` | Admin status change to `DELIVERED` or fulfilment reaching `DELIVERED` |
 | `REFUND_BOOKED` | `refund.booked` | A new refund is booked (`data` adds `amount` and `requestId`) |
 | `PAYMENT_FAILED` | `payment.failed` | payment-service reports a failed payment for a `PENDING` order (`data` adds `paymentId`, `failureCode`) |
 | `CARD_REFUND_REQUESTED` | `card-refund.requested` | A booked refund or a cancellation needs money back on the captured card (internal; `data` is exactly `requestId`, `orderId`, `amount`, `reason`) |
+| `ORDER_RESERVATION_EXPIRED` | `order.reservation-expired` | A `PENDING` order's reservation ran out and it was cancelled, right after its `order.cancelled` (`data` is exactly `orderId`, `expiredAt`, `totalAmount`) |
 
 Repeating the current status or fulfilment state, replays, and rejected
 changes publish nothing.
@@ -404,7 +455,7 @@ response `{orderId, orderStatus}`.
 | `CAPTURED` for a `PENDING` order, amount equal to `amountDue` | 200 `PAID`; publishes `ORDER_PAID`, emails `PAYMENT_RECEIVED` |
 | `CAPTURED` with another amount | 422, order unchanged |
 | `CAPTURED` again for the payment that already paid the order (new `requestId`) | 200 with the current status |
-| `CAPTURED` for a cancelled order, an order paid by another payment or by an admin | 409 `Order is not payable` (payment-service voids the capture) |
+| `CAPTURED` for a cancelled order (including one whose reservation expired), an order paid by another payment or by an admin | 409 `Order is not payable` (payment-service voids the capture) |
 | `FAILED` | 200 with the unchanged status; for a `PENDING` order publishes `PAYMENT_FAILED` and emails `PAYMENT_FAILED` |
 
 Final results are stored per order in `order_payments` (at most one
