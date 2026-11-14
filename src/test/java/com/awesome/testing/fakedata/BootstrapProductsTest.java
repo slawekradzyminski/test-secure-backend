@@ -63,7 +63,7 @@ class BootstrapProductsTest {
         assertThat(saved.getFirst().getCategory()).isEqualTo("Demo");
         assertThat(saved.getFirst().getImageUrl()).isEqualTo("/images/demo.png");
         // Its stock item is created in warehouse-service after commit, as the seed actor.
-        verify(stockCommands).initialStock(saved.getFirst(), "system");
+        verify(stockCommands).initialStockAfterCommit(saved.getFirst(), "system");
     }
 
     @Test

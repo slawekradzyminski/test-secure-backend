@@ -58,7 +58,9 @@ public class ProductEntity {
      * warehouse-service reports a level. A level is applied only when its version is greater
      * ({@link com.awesome.testing.service.stock.StockProjection}).
      */
-    @Column(name = "stock_ledger_version", nullable = false)
+    // Not updatable through the entity: StockProjection advances it with a bulk UPDATE, so a level
+    // that leaves the quantity unchanged moves neither updatedAt nor the version (ETag).
+    @Column(name = "stock_ledger_version", nullable = false, updatable = false)
     @Builder.Default
     private Long stockLedgerVersion = 0L;
 

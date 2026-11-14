@@ -80,6 +80,7 @@ public class CommerceMutationService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Product createProduct(ProductCreateDto input) {
         return Product.from(productService.createProduct(validated(input)));
     }

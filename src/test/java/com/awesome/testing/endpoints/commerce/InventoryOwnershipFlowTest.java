@@ -325,26 +325,20 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
     }
 
     @Test
-    void productCreateAndDeleteReachWarehouseServiceThroughTheOutbox() {
+    void productCreateSendsTheInitialStockBeforeTheResponseAndDeleteGoesThroughTheOutbox() {
         ProductCreateDto create = ProductCreateDto.builder().name("Outbox product " + System.nanoTime())
                 .description("Created through the API").price(new BigDecimal("3.50")).stockQuantity(6)
                 .category("Tests").build();
         ResponseEntity<ProductDto> created = executePost(PRODUCTS_ENDPOINT, create, getHeadersWith(adminToken),
                 ProductDto.class);
         Long id = created.getBody().getId();
-        StockCommandEntity pending = commands.findAll().stream()
-                .filter(command -> command.getProductId().equals(id)).findFirst().orElseThrow();
+        StockCommandEntity initial = initialStockOf(id);
 
         assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(pending.getCommand()).isEqualTo(StockCommandEntity.Command.INITIAL_STOCK);
-        assertThat(pending.getStatus()).isEqualTo(StockCommandEntity.Status.PENDING);
-        assertThat(pending.getInitialQuantity()).isEqualTo(6);
-        assertThat(pending.getActor()).isEqualTo("admin");
-        assertThat(productRepository.findById(id).orElseThrow().getStockLedgerVersion()).isZero();
-
-        assertThat(dispatcher.dispatchDue()).isPositive();
-
-        assertThat(commands.findById(pending.getId()).orElseThrow().getStatus()).isEqualTo(StockCommandEntity.Status.DONE);
+        assertThat(initial.getStatus()).as("sent before the response").isEqualTo(StockCommandEntity.Status.DONE);
+        assertThat(initial.getAttempts()).isOne();
+        assertThat(initial.getInitialQuantity()).isEqualTo(6);
+        assertThat(initial.getActor()).isEqualTo("admin");
         assertThat(FakeWarehouse.ledger().movements(id)).singleElement().satisfies(movement -> {
             assertThat(movement.type()).isEqualTo("INITIAL_STOCK");
             assertThat(movement.delta()).isEqualTo(6);
@@ -353,7 +347,8 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         assertThat(productRepository.findById(id).orElseThrow().getStockLedgerVersion()).isEqualTo(1L);
         assertThat(FakeWarehouse.requests(WireMock.putRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/items/" + id))
                 .withRequestBody(WireMock.equalToJson("{\"initialQuantity\":6,\"actor\":\"admin\",\"requestId\":\""
-                        + pending.getRequestId() + "\"}")))).hasSize(1);
+                        + initial.getRequestId() + "\"}")))).hasSize(1);
+        assertThat(dispatcher.dispatchDue()).as("nothing left to send").isZero();
 
         executeDelete(PRODUCTS_ENDPOINT + "/" + id, getHeadersWith(adminToken), String.class);
         dispatcher.dispatchDue();
@@ -367,26 +362,81 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
     }
 
     @Test
-    void aFailedStockCommandStaysPendingAndIsRetriedOnceWarehouseServiceRecovers() {
-        ResponseEntity<ProductDto> created = executePost(PRODUCTS_ENDPOINT, ProductCreateDto.builder()
-                .name("Retried product " + System.nanoTime()).description("Created while warehouse is down")
-                .price(new BigDecimal("3.50")).stockQuantity(2).category("Tests").build(),
-                getHeadersWith(adminToken), ProductDto.class);
-        Long id = created.getBody().getId();
-        FakeWarehouse.ledger().fail(id, Injected.status(503, Operation.ITEMS));
-        faulty.add(id);
+    void aProductCanBeOrderedAsSoonAsItsCreateResponseArrives() {
+        Long id = createProduct(4);
+        FakeWarehouse.ledger().requireCreatedItem(id);
+        ProductEntity product = productRepository.findById(id).orElseThrow();
 
-        dispatcher.dispatchDue();
-        StockCommandEntity failed = commands.findAll().stream()
-                .filter(command -> command.getProductId().equals(id)).findFirst().orElseThrow();
-        assertThat(created.getStatusCode()).as("the response does not wait for warehouse-service")
-                .isEqualTo(HttpStatus.CREATED);
-        assertThat(failed.getStatus()).isEqualTo(StockCommandEntity.Status.PENDING);
-        assertThat(failed.getAttempts()).isEqualTo(1);
-        assertThat(failed.getLastError()).isEqualTo(UNAVAILABLE);
-        assertThat(failed.getNextAttemptAt()).isAfter(failed.getCreatedAt());
+        OrderDto order = order(clientToken, product, 2);
 
-        FakeWarehouse.ledger().heal(id);
+        assertThat(order.getStatus().name()).isEqualTo("PENDING");
+        assertThat(stockOf(product)).isEqualTo(2);
+        UUID reservation = orderRepository.findById(order.getId()).orElseThrow().getStockReservationId();
+        assertThat(FakeWarehouse.requests(WireMock.postRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/reservations"))
+                .withRequestBody(WireMock.containing(reservation.toString()))))
+                .as("no 404 and no retry").hasSize(1);
+    }
+
+    @Test
+    void aReservationOfAProductWarehouseDoesNotKnowYetSendsItsPendingInitialStockAndRetriesOnce() {
+        int quantity = 7_000_000 + (int) (System.nanoTime() % 1_000_000);
+        FakeWarehouse.ledger().failInitialQuantity(quantity, Injected.status(503, Operation.ITEMS));
+        Long id;
+        try {
+            id = createProduct(quantity);
+        } finally {
+            FakeWarehouse.ledger().healInitialQuantity(quantity);
+        }
+        FakeWarehouse.ledger().requireCreatedItem(id);
+        StockCommandEntity pending = initialStockOf(id);
+        assertThat(pending.getStatus()).as("the create still answered 201").isEqualTo(StockCommandEntity.Status.PENDING);
+        assertThat(pending.getNextAttemptAt()).as("waits for the scheduled retry").isAfter(pending.getCreatedAt());
+
+        OrderDto order = order(clientToken, productRepository.findById(id).orElseThrow(), 1);
+
+        assertThat(order.getId()).isNotNull();
+        assertThat(initialStockOf(id).getStatus()).isEqualTo(StockCommandEntity.Status.DONE);
+        String reservation = "\"reservationId\":\""
+                + orderRepository.findById(order.getId()).orElseThrow().getStockReservationId() + "\"";
+        assertThat(FakeWarehouse.requests(WireMock.postRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/reservations"))
+                .withRequestBody(WireMock.containing(reservation))))
+                .as("the 404 and the retry, with the same reservation id").hasSize(2);
+        assertThat(FakeWarehouse.requests(WireMock.putRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/items/" + id))
+                .withRequestBody(WireMock.containing("\"initialQuantity\":" + quantity)))).hasSize(2);
+    }
+
+    @Test
+    void aReservationOfAProductWarehouseDoesNotKnowWithoutAPendingCommandIsNotFoundAfterOneCall() {
+        ProductEntity product = product("10.00", 5);
+        FakeWarehouse.ledger().requireCreatedItem(product.getId());
+        addToCart(clientToken, product, 1);
+
+        ResponseEntity<ErrorDto> response = executePost(ORDERS_ENDPOINT, getRandomAddress(),
+                getHeadersWith(clientToken), ErrorDto.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody().getMessage()).isEqualTo("Product not found");
+        assertThat(orderRepository.countByUsername(client.getUsername())).isZero();
+        assertThat(commands.findAll()).noneMatch(command -> command.getProductId().equals(product.getId()));
+    }
+
+    @Test
+    void aFailedInitialStockKeepsTheCreateAt201AndIsRetriedOnceWarehouseServiceRecovers() {
+        int quantity = 8_000_000 + (int) (System.nanoTime() % 1_000_000);
+        FakeWarehouse.ledger().failInitialQuantity(quantity, Injected.status(503, Operation.ITEMS));
+        Long id;
+        try {
+            id = createProduct(quantity);
+            StockCommandEntity failed = initialStockOf(id);
+            assertThat(failed.getStatus()).isEqualTo(StockCommandEntity.Status.PENDING);
+            assertThat(failed.getAttempts()).isEqualTo(1);
+            assertThat(failed.getLastError()).isEqualTo(UNAVAILABLE);
+            assertThat(failed.getNextAttemptAt()).isAfter(failed.getCreatedAt());
+        } finally {
+            FakeWarehouse.ledger().healInitialQuantity(quantity);
+        }
+
+        StockCommandEntity failed = initialStockOf(id);
         failed.setNextAttemptAt(failed.getCreatedAt());
         commands.save(failed);
         dispatcher.dispatchDue();
@@ -399,20 +449,162 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
     }
 
     @Test
-    void anInitialStockCommandOfADeletedProductCompletesWithoutACall() {
-        ResponseEntity<ProductDto> created = executePost(PRODUCTS_ENDPOINT, ProductCreateDto.builder()
-                .name("Short-lived product " + System.nanoTime()).description("Deleted before dispatch")
-                .price(new BigDecimal("3.50")).stockQuantity(2).category("Tests").build(),
-                getHeadersWith(adminToken), ProductDto.class);
-        Long id = created.getBody().getId();
-        executeDelete(PRODUCTS_ENDPOINT + "/" + id, getHeadersWith(adminToken), String.class);
+    void anEqualLevelAdvancesOnlyTheLedgerVersionWhileAChangedOneMovesUpdatedAtAndTheEtag() {
+        ProductDto created = executePost(PRODUCTS_ENDPOINT, ProductCreateDto.builder()
+                .name("Stable product " + System.nanoTime()).description("Read back after create")
+                .price(new BigDecimal("3.50")).stockQuantity(6).category("Tests").build(),
+                getHeadersWith(adminToken), ProductDto.class).getBody();
+        ResponseEntity<String> before = executeGet(PRODUCTS_ENDPOINT + "/" + created.getId(),
+                getHeadersWith(clientToken), String.class);
 
+        ResponseEntity<StockLevelsResultDto> equal = levels(List.of(new StockLevelDto(created.getId(), 6, 2L)),
+                StockLevelsResultDto.class);
+        ResponseEntity<String> after = executeGet(PRODUCTS_ENDPOINT + "/" + created.getId(),
+                getHeadersWith(clientToken), String.class);
+
+        assertThat(equal.getBody()).isEqualTo(new StockLevelsResultDto(1, 0));
+        assertThat(productRepository.findById(created.getId()).orElseThrow().getStockLedgerVersion()).isEqualTo(2L);
+        assertThat(after.getHeaders().getETag()).isEqualTo(before.getHeaders().getETag());
+        assertThat(after.getBody()).isEqualTo(before.getBody());
+        ProductDto read = executeGet(PRODUCTS_ENDPOINT + "/" + created.getId(), getHeadersWith(clientToken),
+                ProductDto.class).getBody();
+        assertThat(read.getUpdatedAt()).as("the initial-stock reply and the push left it alone")
+                .isEqualTo(created.getUpdatedAt());
+
+        levels(List.of(new StockLevelDto(created.getId(), 4, 3L)), StockLevelsResultDto.class);
+        ResponseEntity<ProductDto> changed = executeGet(PRODUCTS_ENDPOINT + "/" + created.getId(),
+                getHeadersWith(clientToken), ProductDto.class);
+
+        assertThat(changed.getBody().getStockQuantity()).isEqualTo(4);
+        assertThat(changed.getHeaders().getETag()).isNotEqualTo(before.getHeaders().getETag());
+        assertThat(changed.getBody().getUpdatedAt()).isAfter(created.getUpdatedAt());
+    }
+
+    @Test
+    void createThenImmediateDeleteAnswers204AndWarehouseEndsWithoutTheItem() {
+        Long id = createProduct(2);
+
+        ResponseEntity<String> deleted = executeDelete(PRODUCTS_ENDPOINT + "/" + id, getHeadersWith(adminToken),
+                String.class);
+        dispatcher.dispatchDue();
+
+        assertThat(deleted.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(commands.findAll()).filteredOn(command -> command.getProductId().equals(id))
+                .extracting(StockCommandEntity::getStatus).containsOnly(StockCommandEntity.Status.DONE);
+        assertThat(FakeWarehouse.ledger().item(id)).isEmpty();
+    }
+
+    @Test
+    void aDeleteWinsOverAnInFlightInitialStockAndWarehouseEndsWithoutTheItem() throws Exception {
+        // A seeded product: its initial stock is sent by the background dispatcher, not by the request.
+        ProductEntity product = product("10.00", 2);
+        Long id = product.getId();
+        StockCommandEntity seeded = pendingInitialStock(product);
+        // A different ledger quantity makes the reply write the product: the race the 500 came from.
+        FakeWarehouse.ledger().set(id, 9);
+        faulty.add(id);
+        FakeWarehouse.ledger().fail(id, Injected.slowItems(java.time.Duration.ofMillis(600)));
+
+        ResponseEntity<String> deleted;
+        try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            var dispatch = executor.submit(dispatcher::dispatchDue);
+            long deadline = System.nanoTime() + java.time.Duration.ofSeconds(5).toNanos();
+            while (!FakeWarehouse.ledger().isHoldingItemRequest(id) && System.nanoTime() < deadline) {
+                Thread.onSpinWait();
+            }
+            assertThat(FakeWarehouse.ledger().isHoldingItemRequest(id)).as("the PUT is in flight").isTrue();
+            deleted = executeDelete(PRODUCTS_ENDPOINT + "/" + id, getHeadersWith(adminToken), String.class);
+            dispatch.get(10, java.util.concurrent.TimeUnit.SECONDS);
+        }
+        dispatcher.dispatchDue();
+
+        assertThat(deleted.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(productRepository.existsById(id)).isFalse();
+        assertThat(commands.findById(seeded.getId()).orElseThrow().getStatus()).isEqualTo(StockCommandEntity.Status.DONE);
+        assertThat(commands.findAll()).filteredOn(command -> command.getProductId().equals(id)
+                        && command.getCommand() == StockCommandEntity.Command.DELETE)
+                .singleElement().extracting(StockCommandEntity::getStatus).isEqualTo(StockCommandEntity.Status.DONE);
+        List<LoggedRequest> put = FakeWarehouse.requests(WireMock.putRequestedFor(
+                WireMock.urlEqualTo("/internal/v1/stock/items/" + id)));
+        List<LoggedRequest> delete = FakeWarehouse.requests(WireMock.deleteRequestedFor(
+                WireMock.urlEqualTo("/internal/v1/stock/items/" + id)));
+        assertThat(put).hasSize(1);
+        assertThat(delete).singleElement().satisfies(request ->
+                assertThat(request.getLoggedDate()).isAfterOrEqualTo(put.getFirst().getLoggedDate()));
+        assertThat(FakeWarehouse.ledger().item(id)).as("warehouse ends without the item").isEmpty();
+    }
+
+    @Test
+    void aDeleteWaitsForAnOlderPendingInitialStockWhichIsThenCompletedWithoutACall() {
+        int quantity = 9_000_000 + (int) (System.nanoTime() % 1_000_000);
+        FakeWarehouse.ledger().failInitialQuantity(quantity, Injected.status(503, Operation.ITEMS));
+        Long id;
+        try {
+            id = createProduct(quantity);
+        } finally {
+            FakeWarehouse.ledger().healInitialQuantity(quantity);
+        }
+
+        executeDelete(PRODUCTS_ENDPOINT + "/" + id, getHeadersWith(adminToken), String.class);
+        dispatcher.dispatchDue();
+        assertThat(FakeWarehouse.requests(WireMock.deleteRequestedFor(
+                WireMock.urlEqualTo("/internal/v1/stock/items/" + id)))).as("waits for the older command").isEmpty();
+
+        StockCommandEntity initial = initialStockOf(id);
+        assertThat(initial.getStatus()).as("already sent once, so not superseded")
+                .isEqualTo(StockCommandEntity.Status.PENDING);
+        initial.setNextAttemptAt(initial.getCreatedAt());
+        commands.save(initial);
         dispatcher.dispatchDue();
 
         assertThat(commands.findAll()).filteredOn(command -> command.getProductId().equals(id))
                 .extracting(StockCommandEntity::getStatus).containsOnly(StockCommandEntity.Status.DONE);
+        assertThat(FakeWarehouse.requests(WireMock.putRequestedFor(
+                WireMock.urlEqualTo("/internal/v1/stock/items/" + id)))).as("only the failed attempt").hasSize(1);
+        assertThat(FakeWarehouse.requests(WireMock.deleteRequestedFor(
+                WireMock.urlEqualTo("/internal/v1/stock/items/" + id)))).hasSize(1);
+    }
+
+    @Test
+    void aDeleteSupersedesAnInitialStockThatWasNeverSent() {
+        ProductEntity product = product("10.00", 2);
+        Long id = product.getId();
+        StockCommandEntity seeded = pendingInitialStock(product);
+
+        executeDelete(PRODUCTS_ENDPOINT + "/" + id, getHeadersWith(adminToken), String.class);
+        dispatcher.dispatchDue();
+
+        StockCommandEntity superseded = commands.findById(seeded.getId()).orElseThrow();
+        assertThat(superseded.getStatus()).isEqualTo(StockCommandEntity.Status.DONE);
+        assertThat(superseded.getLastError()).isEqualTo("Superseded by DELETE");
+        assertThat(superseded.getAttempts()).isZero();
         assertThat(FakeWarehouse.requests(WireMock.putRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/items/" + id))))
                 .isEmpty();
+        assertThat(FakeWarehouse.requests(WireMock.deleteRequestedFor(
+                WireMock.urlEqualTo("/internal/v1/stock/items/" + id)))).hasSize(1);
+    }
+
+    private Long createProduct(int stock) {
+        ResponseEntity<ProductDto> created = executePost(PRODUCTS_ENDPOINT, ProductCreateDto.builder()
+                .name("API product " + System.nanoTime()).description("Created through the API")
+                .price(new BigDecimal("3.50")).stockQuantity(stock).category("Tests").build(),
+                getHeadersWith(adminToken), ProductDto.class);
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return created.getBody().getId();
+    }
+
+    private StockCommandEntity initialStockOf(Long productId) {
+        return commands.findAll().stream().filter(command -> command.getProductId().equals(productId)
+                && command.getCommand() == StockCommandEntity.Command.INITIAL_STOCK).findFirst().orElseThrow();
+    }
+
+    /** An INITIAL_STOCK row as seeding writes it: pending, never sent, due now. */
+    private StockCommandEntity pendingInitialStock(ProductEntity product) {
+        java.time.Instant now = java.time.Instant.now();
+        return commands.save(StockCommandEntity.builder().command(StockCommandEntity.Command.INITIAL_STOCK)
+                .productId(product.getId()).initialQuantity(product.getStockQuantity()).actor("system")
+                .requestId(UUID.randomUUID()).status(StockCommandEntity.Status.PENDING).attempts(0)
+                .nextAttemptAt(now).createdAt(now).build());
     }
 
     @Test

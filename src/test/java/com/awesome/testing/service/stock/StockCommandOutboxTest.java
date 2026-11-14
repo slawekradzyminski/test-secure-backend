@@ -83,8 +83,22 @@ class StockCommandOutboxTest {
 
         assertThat(row.getCommand()).isEqualTo(StockCommandEntity.Command.DELETE);
         assertThat(row.getProductId()).isEqualTo(6L);
+        verify(repository).completeUnsent(6L, StockCommandEntity.Command.INITIAL_STOCK, StockCommandEntity.Status.PENDING,
+                StockCommandEntity.Status.DONE, NOW, "Superseded by DELETE");
         assertThat(row.getInitialQuantity()).isNull();
         assertThat(row.getActor()).isNull();
+    }
+
+    @Test
+    void anInitialStockOfARequestIsLeftToTheCallerWhileSeedingAsksForADispatchAfterCommit() {
+        ProductEntity product = ProductEntity.builder().id(5L).stockQuantity(10).build();
+
+        outbox.initialStock(product, "admin");
+        assertThat(TransactionSynchronizationManager.getSynchronizations()).isEmpty();
+
+        StockCommandEntity seeded = outbox.initialStockAfterCommit(product, "system");
+        assertThat(seeded.getActor()).isEqualTo("system");
+        assertThat(TransactionSynchronizationManager.getSynchronizations()).hasSize(1);
     }
 
     @Test

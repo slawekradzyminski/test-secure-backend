@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -39,6 +40,7 @@ import java.util.UUID;
 public class StockCommandDispatcher {
 
     static final int BATCH_SIZE = 50;
+    static final int MAX_ROUNDS = 10;
     static final Duration CLAIM_LEASE = Duration.ofMinutes(1);
     static final String SPAN = "send stock command";
 
@@ -103,29 +105,68 @@ public class StockCommandDispatcher {
         }
     }
 
-    /** Sends one batch of due rows in the calling thread; returns how many warehouse-service accepted. */
+    /**
+     * Sends due rows in the calling thread, batch after batch, so a command that waited for an older
+     * command of the same product goes out as soon as that one completes; returns how many rows were
+     * completed. Failed rows move to their next attempt, so the rounds end.
+     */
     public int dispatchDue() {
-        List<Claimed> claimed = Objects.requireNonNull(transactions.execute(status -> claim()));
         int done = 0;
-        for (Claimed command : claimed) {
-            if (send(command)) {
-                done++;
+        for (int round = 0; round < MAX_ROUNDS; round++) {
+            List<Claimed> claimed = Objects.requireNonNull(transactions.execute(status -> claim()));
+            if (claimed.isEmpty()) {
+                break;
+            }
+            for (Claimed command : claimed) {
+                if (send(command)) {
+                    done++;
+                }
             }
         }
         return done;
+    }
+
+    /**
+     * Sends one pending row now in the calling thread (contract section 4.3: the initial stock of a
+     * new product goes out before the create response). The row is claimed like in a scheduled run;
+     * a row another dispatcher holds, or one already done, is left alone. A failure keeps the row for
+     * the scheduled retry and is not thrown. Must be called with no transaction open.
+     *
+     * @return true when warehouse-service accepted the command
+     */
+    public boolean sendNow(long commandId) {
+        Optional<Claimed> claimed = Objects.requireNonNull(transactions.execute(status ->
+                repository.findPendingForUpdate(commandId, StockCommandEntity.Status.PENDING)
+                        .map(row -> lease(row, commerceClock.instant()))));
+        return claimed.isPresent() && send(claimed.get());
+    }
+
+    /**
+     * Safety net of checkout (contract section 4.3): sends the pending INITIAL_STOCK of a product
+     * now, when warehouse-service does not know the product yet.
+     *
+     * @return true when such a command was pending and warehouse-service accepted it
+     */
+    public boolean sendPendingInitialStock(long productId) {
+        return repository.findFirstByProductIdAndCommandAndStatusOrderByIdAsc(productId,
+                        StockCommandEntity.Command.INITIAL_STOCK, StockCommandEntity.Status.PENDING)
+                .map(row -> sendNow(row.getId()))
+                .orElse(false);
     }
 
     private List<Claimed> claim() {
         Instant now = commerceClock.instant();
         return repository.findDueForUpdate(StockCommandEntity.Status.PENDING, now, PageRequest.of(0, BATCH_SIZE))
                 .stream()
-                .map(row -> {
-                    row.setAttempts(row.getAttempts() + 1);
-                    row.setNextAttemptAt(now.plus(CLAIM_LEASE));
-                    return new Claimed(row.getId(), row.getCommand(), row.getProductId(), row.getInitialQuantity(),
-                            row.getActor(), row.getRequestId(), row.getCorrelationRequestId(), row.getTraceparent());
-                })
+                .map(row -> lease(row, now))
                 .toList();
+    }
+
+    private Claimed lease(StockCommandEntity row, Instant now) {
+        row.setAttempts(row.getAttempts() + 1);
+        row.setNextAttemptAt(now.plus(CLAIM_LEASE));
+        return new Claimed(row.getId(), row.getCommand(), row.getProductId(), row.getInitialQuantity(),
+                row.getActor(), row.getRequestId(), row.getCorrelationRequestId(), row.getTraceparent());
     }
 
     private boolean send(Claimed command) {

@@ -14,8 +14,8 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Plays warehouse-service's side of a cancellation in tests: it keeps the {@code stockRestore} of
- * every committed {@code order.cancelled} event and, when a test asks, restores the stock in the
+ * Plays warehouse-service's side of a cancellation in tests: it keeps every committed
+ * {@code stock.restore-requested} event and, when a test asks, restores the stock in the
  * fake ledger and pushes the new levels into the projection, as warehouse-service does a few
  * seconds after the cancel (contract section 3.1).
  */
@@ -30,7 +30,7 @@ public class WarehouseSimulator {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     void record(CommerceEvent event) {
-        if (event.type() == CommerceEventType.ORDER_CANCELLED && event.data().get("stockRestore") != null) {
+        if (event.type() == CommerceEventType.STOCK_RESTORE_REQUESTED) {
             pending.put(event.orderId(), event);
         }
     }
@@ -48,10 +48,10 @@ public class WarehouseSimulator {
         return pending.containsKey(orderId);
     }
 
-    /** The {@code stockRestore} data of the cancel of {@code orderId}, or null. */
+    /** The data of the {@code stock.restore-requested} event of {@code orderId}, or null. */
     public Object pendingRestore(Long orderId) {
         CommerceEvent event = pending.get(orderId);
-        return event == null ? null : event.data().get("stockRestore");
+        return event == null ? null : event.data();
     }
 
     /** Restores the stock of the cancelled orders and pushes the levels; returns how many orders. */
@@ -62,7 +62,7 @@ public class WarehouseSimulator {
             if (event == null) {
                 continue;
             }
-            Map<?, ?> restore = (Map<?, ?>) event.data().get("stockRestore");
+            Map<?, ?> restore = event.data();
             Map<Long, Integer> lines = new TreeMap<>();
             for (Object line : (List<?>) restore.get("lines")) {
                 Map<?, ?> values = (Map<?, ?>) line;

@@ -48,6 +48,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.inOrder;
@@ -74,6 +75,7 @@ class OrderServiceReservationTest {
     @Mock private CommerceEvents commerceEvents;
     @Mock private StockLedgerClient stockLedger;
     @Mock private StockProjection stockProjection;
+    @Mock private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
     @Mock private PlatformTransactionManager transactionManager;
 
     private OrderEntity order;
@@ -105,7 +107,7 @@ class OrderServiceReservationTest {
         return new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
                 idempotencyKeyRepository, Clock.fixed(NOW, ZoneOffset.UTC), CheckoutContributors.none(), commerceEvents,
                 new OrderReservations(reservations, Duration.ofMinutes(30)),
-                stockLedger, stockProjection, transactionManager);
+                stockLedger, stockProjection, stockCommandDispatcher, transactionManager);
     }
 
     @Test
@@ -147,7 +149,9 @@ class OrderServiceReservationTest {
         verify(couponService).releaseRedemption(order);
         InOrder events = inOrder(commerceEvents, orderRepository);
         events.verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, order,
-                Map.of("reason", "RESERVATION_EXPIRED", "stockRestore", restoreOf("system")));
+                Map.of("reason", "RESERVATION_EXPIRED"));
+        events.verify(commerceEvents).publishData(CommerceEventType.STOCK_RESTORE_REQUESTED, USER, 7L,
+                restoreOf("system"));
         events.verify(commerceEvents).publishData(CommerceEventType.ORDER_RESERVATION_EXPIRED, USER, 7L,
                 expiredData("2026-11-14T09:59:00.000Z"));
         events.verify(orderRepository).flush();
@@ -174,9 +178,10 @@ class OrderServiceReservationTest {
         assertThat(expired.getReservationExpiresAt()).isEqualTo("2026-11-14T10:00:00.123Z");
         assertThat(order.getReservationExpiresAt()).isEqualTo(NOW_MILLIS);
         verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, order,
-                Map.of("reason", "RESERVATION_EXPIRED", "stockRestore", restoreOf("system")));
+                Map.of("reason", "RESERVATION_EXPIRED"));
         verify(commerceEvents).publishData(CommerceEventType.ORDER_RESERVATION_EXPIRED, USER, 7L,
                 expiredData("2026-11-14T10:00:00.123Z"));
+        verifyRestoreRequested("system", 1);
     }
 
     @ParameterizedTest
@@ -211,20 +216,22 @@ class OrderServiceReservationTest {
 
         service.cancelOrder(7L, USER, false);
         verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, order,
-                Map.of("reason", "CUSTOMER", "stockRestore", restoreOf(USER)));
+                Map.of("reason", "CUSTOMER"));
 
         reopen();
         service.cancelOrder(7L, "admin", true);
-        // An admin cancellation restores the stock in the customer's name, as before.
         verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, order,
-                Map.of("reason", "ADMIN", "stockRestore", restoreOf(USER)));
+                Map.of("reason", "ADMIN"));
 
         reopen();
         service.updateOrderStatus(7L, OrderStatus.CANCELLED);
         verify(commerceEvents, org.mockito.Mockito.times(2))
                 .publish(CommerceEventType.ORDER_CANCELLED, order,
-                        Map.of("reason", "ADMIN", "stockRestore", restoreOf(USER)));
-        verify(commerceEvents, never()).publishData(any(), anyString(), any(), any());
+                        Map.of("reason", "ADMIN"));
+        // An admin cancellation restores the stock in the customer's name, as before.
+        verifyRestoreRequested(USER, 3);
+        verify(commerceEvents, never()).publishData(eq(CommerceEventType.ORDER_RESERVATION_EXPIRED), anyString(),
+                any(), any());
     }
 
     @Test
@@ -234,7 +241,8 @@ class OrderServiceReservationTest {
         service(true).cancelOpenOrdersForErasure(USER);
 
         verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, order,
-                Map.of("reason", "ACCOUNT_ERASURE", "stockRestore", restoreOf(USER)));
+                Map.of("reason", "ACCOUNT_ERASURE"));
+        verifyRestoreRequested(USER, 1);
         assertThat(order.getInventoryState()).isEqualTo(InventoryState.RESTORED);
     }
 
@@ -246,6 +254,7 @@ class OrderServiceReservationTest {
         assertThat(service(true).expireIfDue(7L)).isTrue();
 
         verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, order, Map.of("reason", "RESERVATION_EXPIRED"));
+        verify(commerceEvents, never()).publishData(eq(CommerceEventType.STOCK_RESTORE_REQUESTED), any(), any(), any());
         assertThat(order.getInventoryState()).isEqualTo(InventoryState.LEGACY_UNTRACKED);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
     }
@@ -264,7 +273,12 @@ class OrderServiceReservationTest {
     }
 
     private static Map<String, Object> restoreOf(String actor) {
-        return Map.of("actor", actor, "lines", List.of(Map.of("productId", 4L, "quantity", 2)));
+        return Map.of("orderId", 7L, "actor", actor, "lines", List.of(Map.of("productId", 4L, "quantity", 2)));
+    }
+
+    private void verifyRestoreRequested(String actor, int times) {
+        verify(commerceEvents, org.mockito.Mockito.times(times))
+                .publishData(CommerceEventType.STOCK_RESTORE_REQUESTED, USER, 7L, restoreOf(actor));
     }
 
     private void givenCart() {

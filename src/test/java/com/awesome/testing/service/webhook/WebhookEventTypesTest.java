@@ -17,7 +17,7 @@ class WebhookEventTypesTest {
                 "refund.booked", "payment.failed", "order.reservation-expired", "webhook.ping");
         assertThat(WebhookEventTypes.all()).allSatisfy(type -> assertThat(type.description()).isNotBlank());
         assertThat(WebhookEventTypes.wireNames()).hasSize(8)
-                .doesNotContain("card-refund.requested", "notification.requested");
+                .doesNotContain("card-refund.requested", "notification.requested", "stock.restore-requested");
     }
 
     @Test
@@ -28,6 +28,9 @@ class WebhookEventTypesTest {
         assertThatThrownBy(() -> WebhookEventTypes.normalize(List.of("notification.requested")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageStartingWith("Unknown event type 'notification.requested'");
+        assertThatThrownBy(() -> WebhookEventTypes.normalize(List.of("stock.restore-requested")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageStartingWith("Unknown event type 'stock.restore-requested'");
     }
 
     @Test

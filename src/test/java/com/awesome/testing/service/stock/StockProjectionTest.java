@@ -19,6 +19,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -45,6 +46,28 @@ class StockProjectionTest {
     void setUp() {
         product = ProductEntity.builder().id(1L).stockQuantity(5).stockLedgerVersion(10L).build();
         lenient().when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
+        lenient().when(productRepository.advanceLedgerVersion(any(), anyLong())).thenReturn(1);
+    }
+
+    @Test
+    void anEqualQuantityAdvancesOnlyTheLedgerVersionWithoutWritingTheEntity() {
+        assertThat(projection.apply(product, 5, 11L)).isTrue();
+
+        verify(productRepository).advanceLedgerVersion(1L, 11L);
+        verify(productRepository, never()).save(any());
+        assertThat(product.getStockLedgerVersion()).isEqualTo(11L);
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void theSqlGuardRejectsAVersionAnotherTransactionAlreadyApplied() {
+        when(productRepository.advanceLedgerVersion(1L, 11L)).thenReturn(0);
+
+        assertThat(projection.apply(product, 3, 11L)).isFalse();
+
+        assertThat(product.getStockQuantity()).isEqualTo(5);
+        assertThat(product.getStockLedgerVersion()).isEqualTo(10L);
+        verify(productRepository, never()).save(any());
     }
 
     @Test
@@ -65,6 +88,7 @@ class StockProjectionTest {
         assertThat(product.getStockQuantity()).isEqualTo(5);
         assertThat(product.getStockLedgerVersion()).isEqualTo(10L);
         verify(productRepository, never()).save(any());
+        verify(productRepository, never()).advanceLedgerVersion(any(), anyLong());
     }
 
     @Test

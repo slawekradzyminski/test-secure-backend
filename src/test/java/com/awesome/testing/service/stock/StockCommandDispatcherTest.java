@@ -77,7 +77,7 @@ class StockCommandDispatcherTest {
     void anInitialStockRowCreatesTheItemAppliesItsLevelAndIsDone() {
         StockCommandEntity row = row(1L, StockCommandEntity.Command.INITIAL_STOCK, 5L);
         when(repository.findDueForUpdate(StockCommandEntity.Status.PENDING, NOW,
-                PageRequest.of(0, StockCommandDispatcher.BATCH_SIZE))).thenReturn(List.of(row));
+                PageRequest.of(0, StockCommandDispatcher.BATCH_SIZE))).thenReturn(List.of(row), List.of());
         when(productRepository.existsById(5L)).thenReturn(true);
         when(client.createItem(5L, new CreateStockItemRequestDto(10, "admin", REQUEST)))
                 .thenReturn(new StockLevelDto(5L, 10, 1L));
@@ -96,7 +96,7 @@ class StockCommandDispatcherTest {
         StockCommandEntity row = row(8L, StockCommandEntity.Command.DELETE, 12L);
         row.setAttempts(3);
         row.setLastError("Inventory service unavailable");
-        when(repository.findDueForUpdate(any(), any(), any())).thenReturn(List.of(row));
+        when(repository.findDueForUpdate(any(), any(), any())).thenReturn(List.of(row), List.of());
 
         dispatcher.dispatchDue();
 
@@ -106,9 +106,31 @@ class StockCommandDispatcherTest {
     }
 
     @Test
+    void rowsReleasedByACompletedRowGoOutInTheSameRunUpToTheRoundLimit() {
+        StockCommandEntity initial = row(9L, StockCommandEntity.Command.INITIAL_STOCK, 13L);
+        StockCommandEntity delete = row(10L, StockCommandEntity.Command.DELETE, 13L);
+        when(repository.findDueForUpdate(any(), any(), any())).thenReturn(List.of(initial), List.of(delete), List.of());
+        when(productRepository.existsById(13L)).thenReturn(false);
+
+        assertThat(dispatcher.dispatchDue()).isEqualTo(2);
+
+        verify(client, never()).createItem(anyLong(), any());
+        verify(client).deleteItem(13L);
+        verify(repository, org.mockito.Mockito.times(3)).findDueForUpdate(any(), any(), any());
+    }
+
+    @Test
+    void aRunStopsAfterTheRoundLimitEvenWhenRowsKeepComingDue() {
+        when(repository.findDueForUpdate(any(), any(), any())).thenAnswer(invocation ->
+                List.of(row(11L, StockCommandEntity.Command.DELETE, 14L)));
+
+        assertThat(dispatcher.dispatchDue()).isEqualTo(StockCommandDispatcher.MAX_ROUNDS);
+    }
+
+    @Test
     void aDeleteRowDeletesTheItem() {
         StockCommandEntity row = row(2L, StockCommandEntity.Command.DELETE, 6L);
-        when(repository.findDueForUpdate(any(), any(), any())).thenReturn(List.of(row));
+        when(repository.findDueForUpdate(any(), any(), any())).thenReturn(List.of(row), List.of());
 
         assertThat(dispatcher.dispatchDue()).isOne();
 
@@ -120,7 +142,7 @@ class StockCommandDispatcherTest {
     @Test
     void theInitialStockOfADeletedProductCompletesWithoutACall() {
         StockCommandEntity row = row(3L, StockCommandEntity.Command.INITIAL_STOCK, 7L);
-        when(repository.findDueForUpdate(any(), any(), any())).thenReturn(List.of(row));
+        when(repository.findDueForUpdate(any(), any(), any())).thenReturn(List.of(row), List.of());
         when(productRepository.existsById(7L)).thenReturn(false);
 
         assertThat(dispatcher.dispatchDue()).isOne();
@@ -133,7 +155,7 @@ class StockCommandDispatcherTest {
     void aFailedRowStaysPendingUntilTheRetryIntervalAndOtherRowsStillGo() {
         StockCommandEntity failing = row(4L, StockCommandEntity.Command.DELETE, 8L);
         StockCommandEntity next = row(5L, StockCommandEntity.Command.DELETE, 9L);
-        when(repository.findDueForUpdate(any(), any(), any())).thenReturn(List.of(failing, next));
+        when(repository.findDueForUpdate(any(), any(), any())).thenReturn(List.of(failing, next), List.of());
         doThrow(new CustomException(StockLedgerClient.UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE))
                 .when(client).deleteItem(8L);
 
@@ -149,7 +171,7 @@ class StockCommandDispatcherTest {
     @Test
     void aClaimedRowIsLeasedSoAnotherDispatcherSkipsIt() {
         StockCommandEntity row = row(6L, StockCommandEntity.Command.DELETE, 10L);
-        when(repository.findDueForUpdate(any(), any(), any())).thenReturn(List.of(row));
+        when(repository.findDueForUpdate(any(), any(), any())).thenReturn(List.of(row), List.of());
         doThrow(new IllegalStateException("x".repeat(600))).when(client).deleteItem(10L);
         when(repository.findById(6L)).thenAnswer(invocation -> {
             assertThat(row.getNextAttemptAt()).isEqualTo(NOW.plus(StockCommandDispatcher.CLAIM_LEASE));
@@ -164,7 +186,7 @@ class StockCommandDispatcherTest {
     @Test
     void anErrorWithoutAMessageIsRecordedByItsType() {
         StockCommandEntity row = row(7L, StockCommandEntity.Command.DELETE, 11L);
-        when(repository.findDueForUpdate(any(), any(), any())).thenReturn(List.of(row));
+        when(repository.findDueForUpdate(any(), any(), any())).thenReturn(List.of(row), List.of());
         doThrow(new IllegalStateException()).when(client).deleteItem(11L);
 
         dispatcher.dispatchDue();

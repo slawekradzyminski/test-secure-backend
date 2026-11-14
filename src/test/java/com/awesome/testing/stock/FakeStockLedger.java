@@ -68,7 +68,14 @@ public class FakeStockLedger implements ResponseDefinitionTransformerV2 {
         public static Injected reset(Operation first, Operation... more) {
             return new Injected(0, null, true, EnumSet.of(first, more));
         }
+
+        /** Stock item requests wait {@code delay} (below the read timeout) and then succeed. */
+        public static Injected slowItems(Duration delay) {
+            return new Injected(SLOW, delay, false, EnumSet.of(Operation.ITEMS));
+        }
     }
+
+    private static final int SLOW = -1;
 
     /**
      * The backend's projection of a product: {quantity, ledger version, creation time in epoch
@@ -104,6 +111,10 @@ public class FakeStockLedger implements ResponseDefinitionTransformerV2 {
     private final Map<UUID, Reservation> reservations = new HashMap<>();
     private final List<Movement> movements = new ArrayList<>();
     private final Map<Long, Injected> faults = new ConcurrentHashMap<>();
+    private final Set<Long> waiting = ConcurrentHashMap.newKeySet();
+    private final Map<Integer, Injected> initialQuantityFaults = new ConcurrentHashMap<>();
+    /** Product id to its creation time: ids are reused across test contexts, so both identify it. */
+    private final Map<Long, Long> unseeded = new ConcurrentHashMap<>();
     private volatile ProjectionLookup projection = productId -> Optional.empty();
 
     @Override
@@ -118,6 +129,28 @@ public class FakeStockLedger implements ResponseDefinitionTransformerV2 {
     /** Commands of {@code fault.operations()} that touch {@code productId} get {@code fault}. */
     public void fail(long productId, Injected fault) {
         faults.put(productId, fault);
+    }
+
+    /**
+     * {@code PUT /items/{id}} with this {@code initialQuantity} gets {@code fault}: for products
+     * created through the API, whose id is unknown until the response.
+     */
+    public void failInitialQuantity(int initialQuantity, Injected fault) {
+        initialQuantityFaults.put(initialQuantity, fault);
+    }
+
+    public void healInitialQuantity(int initialQuantity) {
+        initialQuantityFaults.remove(initialQuantity);
+    }
+
+    /** The product exists in the ledger only once a PUT created it (no seeding from the projection). */
+    public void requireCreatedItem(long productId) {
+        unseeded.put(productId, projection.find(productId).map(row -> row.length > 2 ? row[2] : 0L).orElse(0L));
+    }
+
+    /** True while a slow stock item request of the product is being held. */
+    public boolean isHoldingItemRequest(long productId) {
+        return waiting.contains(productId);
     }
 
     public void heal(long productId) {
@@ -143,7 +176,7 @@ public class FakeStockLedger implements ResponseDefinitionTransformerV2 {
     }
 
     /**
-     * What warehouse-service does with an {@code order.cancelled} event carrying {@code stockRestore}:
+     * What warehouse-service does with a {@code stock.restore-requested} event:
      * one ORDER_RESTORED movement per line with reason "Order cancellation". Returns the new levels
      * (product id to item), which the caller pushes to the backend.
      */
@@ -184,6 +217,16 @@ public class FakeStockLedger implements ResponseDefinitionTransformerV2 {
             Matcher item = ITEM.matcher(path);
             if (item.matches()) {
                 long productId = Long.parseLong(item.group(1));
+                Injected slow = faults.get(productId);
+                if (slow != null && slow.status() == SLOW) {
+                    // Outside the ledger lock, so other requests go on meanwhile.
+                    waiting.add(productId);
+                    try {
+                        Thread.sleep(slow.delay().toMillis());
+                    } finally {
+                        waiting.remove(productId);
+                    }
+                }
                 return switch (method) {
                     case "PUT" -> createItem(productId, json.readTree(request.getBodyAsString()));
                     case "DELETE" -> deleteItem(productId);
@@ -198,6 +241,9 @@ public class FakeStockLedger implements ResponseDefinitionTransformerV2 {
                         Integer.parseInt(query.getOrDefault("size", "20")));
             }
             return respond(404, Map.of("message", "Not found"));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return respond(500, Map.of("message", "interrupted"));
         } catch (RuntimeException e) {
             return respond(500, Map.of("message", String.valueOf(e)));
         }
@@ -325,6 +371,10 @@ public class FakeStockLedger implements ResponseDefinitionTransformerV2 {
         if (fault.isPresent()) {
             return fault.get();
         }
+        Injected quantityFault = initialQuantityFaults.get(body.path("initialQuantity").asInt());
+        if (quantityFault != null) {
+            return respond(quantityFault.status(), Map.of("message", "Injected failure"));
+        }
         Optional<long[]> projected = projection.find(productId);
         Item existing = items.get(productId);
         long createdAt = projected.map(row -> row.length > 2 ? row[2] : 0L).orElse(0L);
@@ -394,7 +444,11 @@ public class FakeStockLedger implements ResponseDefinitionTransformerV2 {
         if (current != null && current.createdAt() != createdAt) {
             // Another product with a reused id: forget the old one.
             movements.removeIf(movement -> movement.productId() == productId);
+            items.remove(productId);
             current = null;
+        }
+        if (Long.valueOf(createdAt).equals(unseeded.get(productId))) {
+            return current;
         }
         if (current == null || version > current.version()
                 || (version == current.version() && quantity != current.quantity())) {
@@ -427,7 +481,7 @@ public class FakeStockLedger implements ResponseDefinitionTransformerV2 {
     private Optional<ResponseDefinition> fault(Set<Long> productIds, Operation operation) {
         for (Long productId : productIds) {
             Injected fault = faults.get(productId);
-            if (fault != null && fault.operations().contains(operation)) {
+            if (fault != null && fault.status() != SLOW && fault.operations().contains(operation)) {
                 if (fault.reset()) {
                     return Optional.of(responseDefinition().withFault(Fault.CONNECTION_RESET_BY_PEER).build());
                 }

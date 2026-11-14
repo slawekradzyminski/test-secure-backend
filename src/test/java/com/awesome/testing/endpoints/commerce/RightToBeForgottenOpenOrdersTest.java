@@ -45,13 +45,13 @@ class RightToBeForgottenOpenOrdersTest extends AbstractPaymentFlowTest {
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        // The order.cancelled feed events outlive the erased orders; warehouse-service restores from them.
+        // The stock.restore-requested feed events outlive the erased orders; warehouse-service restores from them.
         assertThat(eventRepository.findByOrderIdOrderBySequenceAsc(pending.getId()))
-                .filteredOn(event -> "order.cancelled".equals(event.getType()))
+                .filteredOn(event -> "stock.restore-requested".equals(event.getType()))
                 .singleElement()
                 .extracting(DomainEventEntity::getPayload).asString()
-                .contains("\"stockRestore\":{\"actor\":\"" + client.getUsername() + "\",\"lines\":[{\"productId\":"
-                        + pendingProduct.getId() + ",\"quantity\":2}]}");
+                .isEqualTo("{\"actor\":\"" + client.getUsername() + "\",\"lines\":[{\"productId\":"
+                        + pendingProduct.getId() + ",\"quantity\":2}],\"orderId\":" + pending.getId() + "}");
         assertThat(stockOf(pendingProduct)).as("until warehouse-service restores it").isEqualTo(3);
         assertThat(warehouseSimulator.restoreCancelledStock(pending.getId(), paid.getId(), delivered.getId()))
                 .isEqualTo(2);
@@ -59,8 +59,10 @@ class RightToBeForgottenOpenOrdersTest extends AbstractPaymentFlowTest {
         assertThat(stockOf(paidProduct)).isEqualTo(5);
         assertThat(stockOf(deliveredProduct)).isEqualTo(4);
         assertThat(orderRepository.countByUsername(client.getUsername())).isZero();
-        assertThat(eventTypes(pending.getId())).containsExactly("order.created", "order.cancelled");
-        assertThat(eventTypes(paid.getId())).containsExactly("order.created", "order.paid", "order.cancelled");
+        assertThat(eventTypes(pending.getId())).containsExactly("order.created", "order.cancelled",
+                "stock.restore-requested");
+        assertThat(eventTypes(paid.getId())).containsExactly("order.created", "order.paid", "order.cancelled",
+                "stock.restore-requested");
         assertThat(eventTypes(delivered.getId())).doesNotContain("order.cancelled");
     }
 

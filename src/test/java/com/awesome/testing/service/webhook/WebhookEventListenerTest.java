@@ -47,6 +47,13 @@ class WebhookEventListenerTest {
     }
 
     @Test
+    void stockRestoreRequestsNeverReachUserWebhooks() {
+        listener.onCommerceEvent(event(CommerceEventType.STOCK_RESTORE_REQUESTED));
+
+        verifyNoInteractions(deliveryLog, dispatcher);
+    }
+
+    @Test
     void nothingIsRecordedOrSentWhileWebhooksAreDisabled() {
         properties.setEnabled(false);
 

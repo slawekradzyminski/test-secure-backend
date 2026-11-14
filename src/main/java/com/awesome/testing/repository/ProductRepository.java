@@ -19,6 +19,17 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long>, J
     @Query("select p from ProductEntity p where p.id > :afterId order by p.id")
     java.util.List<ProductEntity> findAfterId(@Param("afterId") long afterId, org.springframework.data.domain.Pageable pageable);
 
+    /**
+     * Advances the projection's ledger version when {@code ledgerVersion} is newer. A bulk update:
+     * it bypasses the entity, so neither {@code updated_at} nor the optimistic-lock version moves.
+     *
+     * @return 1 when the version was advanced, 0 for an unknown product or a stale version
+     */
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("update ProductEntity p set p.stockLedgerVersion = :ledgerVersion"
+            + " where p.id = :id and p.stockLedgerVersion < :ledgerVersion")
+    int advanceLedgerVersion(@Param("id") Long id, @Param("ledgerVersion") long ledgerVersion);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from ProductEntity p where p.id = :id")
     Optional<ProductEntity> findByIdForUpdate(@Param("id") Long id);

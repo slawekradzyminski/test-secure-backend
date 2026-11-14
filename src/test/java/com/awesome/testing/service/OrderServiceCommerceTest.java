@@ -65,6 +65,7 @@ class OrderServiceCommerceTest {
     @Mock private CommerceEvents commerceEvents;
     @Mock private StockLedgerClient stockLedger;
     @Mock private StockProjection stockProjection;
+    @Mock private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
     @Mock private PlatformTransactionManager transactionManager;
 
     private OrderService service;
@@ -77,7 +78,7 @@ class OrderServiceCommerceTest {
                 idempotencyKeyRepository, Clock.fixed(NOW.toInstant(ZoneOffset.UTC), ZoneOffset.UTC),
                 CheckoutContributors.none(), commerceEvents,
                 new OrderReservations(true, Duration.ofMinutes(30)),
-                stockLedger, stockProjection, transactionManager);
+                stockLedger, stockProjection, stockCommandDispatcher, transactionManager);
         product = ProductEntity.builder().id(1L).name("Phone").price(new BigDecimal("40.00")).stockQuantity(10).build();
         address = AddressDto.builder().street("Main 1").city("Warsaw").state("MZ").zipCode("00-001").country("PL").build();
         List<CartItemEntity> cart = List.of(CartItemEntity.builder()

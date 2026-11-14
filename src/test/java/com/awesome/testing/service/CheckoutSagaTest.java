@@ -75,6 +75,7 @@ class CheckoutSagaTest {
     @Mock private CommerceEvents commerceEvents;
     @Mock private StockLedgerClient stockLedger;
     @Mock private StockProjection stockProjection;
+    @Mock private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
     @Mock private PlatformTransactionManager transactionManager;
 
     private OrderService service;
@@ -87,7 +88,7 @@ class CheckoutSagaTest {
         service = new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService,
                 couponService, idempotencyKeyRepository, Clock.systemUTC(), CheckoutContributors.none(),
                 commerceEvents, new OrderReservations(true, Duration.ofMinutes(30)), stockLedger, stockProjection,
-                transactionManager);
+                stockCommandDispatcher, transactionManager);
         phone = ProductEntity.builder().id(2L).name("Phone").price(new BigDecimal("40.00")).stockQuantity(10).build();
         cable = ProductEntity.builder().id(1L).name("Cable").price(new BigDecimal("5.00")).stockQuantity(10).build();
         address = AddressDto.builder().street("Main 1").city("Warsaw").state("MZ").zipCode("00-001").country("PL").build();

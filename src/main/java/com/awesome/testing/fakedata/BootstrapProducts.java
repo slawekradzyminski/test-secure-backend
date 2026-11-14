@@ -60,7 +60,7 @@ public class BootstrapProducts implements CommandLineRunner {
                         .imageUrl(product.imageUrl())
                         .build())
                 .toList())
-                .forEach(product -> stockCommands.initialStock(product, SetupProducts.SEED_ACTOR));
+                .forEach(product -> stockCommands.initialStockAfterCommit(product, SetupProducts.SEED_ACTOR));
 
         log.info("Bootstrapped {} products into an empty catalog", products.size());
     }

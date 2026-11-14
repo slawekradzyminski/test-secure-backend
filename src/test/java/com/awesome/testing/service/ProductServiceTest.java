@@ -50,6 +50,9 @@ class ProductServiceTest {
     private StockCommandOutbox stockCommands;
 
     @Mock
+    private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
+
+    @Mock
     private PlatformTransactionManager transactionManager;
 
     @InjectMocks
@@ -133,6 +136,9 @@ class ProductServiceTest {
                     return saved;
                 });
 
+        when(stockCommands.initialStock(any(ProductEntity.class), eq("admin")))
+                .thenReturn(com.awesome.testing.entity.stock.StockCommandEntity.builder().id(9L).build());
+
         ProductDto result = productService.createProduct(createDto);
 
         assertThat(result.getId()).isEqualTo(2L);
@@ -141,6 +147,10 @@ class ProductServiceTest {
         // The stock item is created in warehouse-service after commit (contract section 4.3).
         verify(stockCommands).initialStock(argThat(saved -> saved.getId() == 2L && saved.getStockQuantity() == 10),
                 eq("admin"));
+        // Sent before the response, after the product's transaction (contract section 4.3).
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(transactionManager, stockCommandDispatcher);
+        order.verify(transactionManager).commit(any());
+        order.verify(stockCommandDispatcher).sendNow(9L);
     }
 
     @Test
@@ -259,7 +269,7 @@ class ProductServiceTest {
 
     @Test
     void shouldDeleteExistingProduct() {
-        when(productRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(entity));
 
         boolean deleted = productService.deleteProduct(1L);
 
@@ -270,7 +280,7 @@ class ProductServiceTest {
 
     @Test
     void referencedProductFailureIsMappedBeforeTransactionCommit() {
-        when(productRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(entity));
         doThrow(new DataIntegrityViolationException("private constraint"))
                 .when(productRepository).flush();
         assertThatThrownBy(() -> productService.deleteProduct(1L))
@@ -283,7 +293,7 @@ class ProductServiceTest {
 
     @Test
     void shouldReturnFalseWhenDeletingMissingProduct() {
-        when(productRepository.findById(5L)).thenReturn(Optional.empty());
+        when(productRepository.findByIdForUpdate(5L)).thenReturn(Optional.empty());
 
         boolean deleted = productService.deleteProduct(5L);
 

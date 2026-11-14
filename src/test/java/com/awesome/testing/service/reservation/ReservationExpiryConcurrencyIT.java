@@ -215,8 +215,8 @@ class ReservationExpiryConcurrencyIT extends DomainHelper {
             assertThat(restorations(order.getId())).isEqualTo(1);
             assertThat(events(order.getId(), "order.reservation-expired")).isEqualTo(1);
             assertThat(jdbcTemplate.queryForObject("SELECT payload FROM domain_events WHERE order_id = ? "
-                    + "AND type = 'order.cancelled'", String.class, order.getId()))
-                    .contains("\"stockRestore\":{\"actor\":\"system\"");
+                    + "AND type = 'stock.restore-requested'", String.class, order.getId()))
+                    .startsWith("{\"actor\":\"system\",\"lines\":[");
         });
         warehouseSimulator.restoreCancelledStock(orders.stream().map(OrderDto::getId).toArray(Long[]::new));
         assertThat(FakeWarehouse.ledger().movements(product.getId()))
@@ -284,10 +284,10 @@ class ReservationExpiryConcurrencyIT extends DomainHelper {
         return productRepository.findById(product.getId()).orElseThrow().getStockQuantity();
     }
 
-    /** Cancellations that handed a stock restore to warehouse-service (contract section 3.1). */
+    /** stock.restore-requested events for the order (contract section 3.1). */
     private long restorations(Long orderId) {
-        return count("SELECT count(*) FROM domain_events WHERE order_id = ? AND type = 'order.cancelled' "
-                + "AND payload LIKE '%\"stockRestore\"%'", orderId);
+        return count("SELECT count(*) FROM domain_events WHERE order_id = ? AND type = 'stock.restore-requested'",
+                orderId);
     }
 
     private long events(Long orderId, String type) {

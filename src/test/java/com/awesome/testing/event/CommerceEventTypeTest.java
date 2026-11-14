@@ -16,23 +16,25 @@ class CommerceEventTypeTest {
         Map<CommerceEventType, String> wireNames = Arrays.stream(CommerceEventType.values())
                 .collect(Collectors.toMap(type -> type, CommerceEventType::wireName));
 
-        assertThat(wireNames).containsExactlyInAnyOrderEntriesOf(Map.of(
-                CommerceEventType.ORDER_CREATED, "order.created",
-                CommerceEventType.ORDER_PAID, "order.paid",
-                CommerceEventType.ORDER_CANCELLED, "order.cancelled",
-                CommerceEventType.ORDER_SHIPPED, "shipment.shipped",
-                CommerceEventType.ORDER_DELIVERED, "shipment.delivered",
-                CommerceEventType.REFUND_BOOKED, "refund.booked",
-                CommerceEventType.PAYMENT_FAILED, "payment.failed",
-                CommerceEventType.CARD_REFUND_REQUESTED, "card-refund.requested",
-                CommerceEventType.ORDER_RESERVATION_EXPIRED, "order.reservation-expired",
-                CommerceEventType.NOTIFICATION_REQUESTED, "notification.requested"));
+        assertThat(wireNames).containsExactlyInAnyOrderEntriesOf(Map.ofEntries(
+                Map.entry(CommerceEventType.ORDER_CREATED, "order.created"),
+                Map.entry(CommerceEventType.ORDER_PAID, "order.paid"),
+                Map.entry(CommerceEventType.ORDER_CANCELLED, "order.cancelled"),
+                Map.entry(CommerceEventType.ORDER_SHIPPED, "shipment.shipped"),
+                Map.entry(CommerceEventType.ORDER_DELIVERED, "shipment.delivered"),
+                Map.entry(CommerceEventType.REFUND_BOOKED, "refund.booked"),
+                Map.entry(CommerceEventType.PAYMENT_FAILED, "payment.failed"),
+                Map.entry(CommerceEventType.CARD_REFUND_REQUESTED, "card-refund.requested"),
+                Map.entry(CommerceEventType.ORDER_RESERVATION_EXPIRED, "order.reservation-expired"),
+                Map.entry(CommerceEventType.NOTIFICATION_REQUESTED, "notification.requested"),
+                Map.entry(CommerceEventType.STOCK_RESTORE_REQUESTED, "stock.restore-requested")));
     }
 
     @Test
     void onlyTheInternalServiceEventsAreKeptFromWebhooks() {
         assertThat(Arrays.stream(CommerceEventType.values()).filter(type -> !type.offeredToWebhooks()))
-                .containsExactly(CommerceEventType.CARD_REFUND_REQUESTED, CommerceEventType.NOTIFICATION_REQUESTED);
+                .containsExactly(CommerceEventType.CARD_REFUND_REQUESTED, CommerceEventType.NOTIFICATION_REQUESTED,
+                        CommerceEventType.STOCK_RESTORE_REQUESTED);
     }
 
     @Test

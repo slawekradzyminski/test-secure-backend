@@ -14,6 +14,7 @@ import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
 import com.awesome.testing.repository.ProductSpecifications;
 import com.awesome.testing.repository.pagination.OffsetPageRequest;
+import com.awesome.testing.service.stock.StockCommandDispatcher;
 import com.awesome.testing.service.stock.StockCommandOutbox;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -34,14 +36,17 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final InventoryService inventoryService;
     private final StockCommandOutbox stockCommands;
+    private final StockCommandDispatcher stockCommandDispatcher;
     private final TransactionTemplate readTransaction;
     private final TransactionTemplate writeTransaction;
 
     public ProductService(ProductRepository productRepository, InventoryService inventoryService,
-                          StockCommandOutbox stockCommands, PlatformTransactionManager transactionManager) {
+                          StockCommandOutbox stockCommands, StockCommandDispatcher stockCommandDispatcher,
+                          PlatformTransactionManager transactionManager) {
         this.productRepository = productRepository;
         this.inventoryService = inventoryService;
         this.stockCommands = stockCommands;
+        this.stockCommandDispatcher = stockCommandDispatcher;
         this.readTransaction = new TransactionTemplate(transactionManager);
         this.readTransaction.setReadOnly(true);
         this.writeTransaction = new TransactionTemplate(transactionManager);
@@ -85,14 +90,22 @@ public class ProductService {
     }
 
     /**
-     * Stores the product with its initial stock in the projection and an INITIAL_STOCK command that
-     * creates its stock item in warehouse-service after commit (contract section 4.3).
+     * Stores the product with its initial stock in the projection and an INITIAL_STOCK command, then,
+     * after commit and with no transaction open, sends the command so the product can be ordered as
+     * soon as this returns (contract section 4.3). When warehouse-service is down the product is
+     * still created and the outbox retries the command.
      */
-    @Transactional
     public ProductDto createProduct(ProductCreateDto productCreateDto) {
-        ProductEntity product = productRepository.save(ProductEntity.from(productCreateDto));
-        stockCommands.initialStock(product, "admin");
-        return ProductDto.from(product);
+        CreatedProduct created = Objects.requireNonNull(writeTransaction.execute(status -> {
+            ProductEntity product = productRepository.save(ProductEntity.from(productCreateDto));
+            return new CreatedProduct(ProductDto.from(product),
+                    stockCommands.initialStock(product, "admin").getId());
+        }));
+        stockCommandDispatcher.sendNow(created.commandId());
+        return created.product();
+    }
+
+    private record CreatedProduct(ProductDto product, long commandId) {
     }
 
     @Transactional(readOnly = true)
@@ -158,10 +171,16 @@ public class ProductService {
         }
     }
 
+    /**
+     * Deletes the product and records a DELETE stock command. The row is locked first, so a stock
+     * level being applied concurrently (the after-commit initial-stock reply, a level push) either
+     * finishes before the delete reads the version or finds the product gone afterwards; the delete
+     * never fails on a stale optimistic-lock version.
+     */
     @Transactional
     public boolean deleteProduct(Long id) {
         return productRepository
-                .findById(id)
+                .findByIdForUpdate(id)
                 .map(
                         product -> {
                             try {

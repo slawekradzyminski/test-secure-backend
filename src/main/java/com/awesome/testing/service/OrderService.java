@@ -28,6 +28,7 @@ import com.awesome.testing.service.reservation.OrderReservations;
 import com.awesome.testing.dto.stock.ReservationDto;
 import com.awesome.testing.dto.stock.ReservedLineDto;
 import com.awesome.testing.dto.stock.StockLineDto;
+import com.awesome.testing.service.stock.StockCommandDispatcher;
 import com.awesome.testing.service.stock.StockLedgerClient;
 import com.awesome.testing.service.stock.StockLedgerRejection;
 import com.awesome.testing.service.stock.StockProjection;
@@ -71,8 +72,8 @@ import java.util.stream.Collectors;
  * 3 connections in production): a read-only transaction validates the cart, the reservation is made
  * with no transaction open, a write transaction stores the order with the reservation id and applies
  * the reserved levels to the {@code products.stock_quantity} projection, and the reservation is then
- * confirmed. A failed write releases the reservation. Cancellations no longer touch stock: the
- * {@code order.cancelled} event carries {@code stockRestore}, which warehouse-service applies.
+ * confirmed. A failed write releases the reservation. Cancellations no longer touch stock: an
+ * internal {@code stock.restore-requested} feed event tells warehouse-service what to put back.
  */
 @Slf4j
 @Service
@@ -95,6 +96,7 @@ public class OrderService {
     private final OrderReservations orderReservations;
     private final StockLedgerClient stockLedger;
     private final StockProjection stockProjection;
+    private final StockCommandDispatcher stockCommandDispatcher;
     private final TransactionTemplate readTransaction;
     private final TransactionTemplate writeTransaction;
 
@@ -110,6 +112,7 @@ public class OrderService {
                         OrderReservations orderReservations,
                         StockLedgerClient stockLedger,
                         StockProjection stockProjection,
+                        StockCommandDispatcher stockCommandDispatcher,
                         PlatformTransactionManager transactionManager) {
         this.orderRepository = orderRepository;
         this.cartItemRepository = cartItemRepository;
@@ -123,6 +126,7 @@ public class OrderService {
         this.orderReservations = orderReservations;
         this.stockLedger = stockLedger;
         this.stockProjection = stockProjection;
+        this.stockCommandDispatcher = stockCommandDispatcher;
         this.readTransaction = new TransactionTemplate(transactionManager);
         this.readTransaction.setReadOnly(true);
         this.writeTransaction = new TransactionTemplate(transactionManager);
@@ -239,13 +243,30 @@ public class OrderService {
         List<StockLineDto> lines = new ArrayList<>(quantities.size());
         quantities.forEach((productId, quantity) -> lines.add(new StockLineDto(productId, quantity)));
         try {
-            return stockLedger.reserve(reservationId, username, lines);
+            return reserveOrSendInitialStock(reservationId, username, lines);
         } catch (StockLedgerRejection rejection) {
             if (rejection.isNotFound()) {
                 throw new CustomException("Product not found", HttpStatus.NOT_FOUND, rejection);
             }
             Long shortProduct = rejection.productId() != null ? rejection.productId() : quantities.firstKey();
             throw new CustomException("Insufficient stock for product " + shortProduct, HttpStatus.CONFLICT, rejection);
+        }
+    }
+
+    /**
+     * Safety net (contract section 4.3): warehouse-service does not know a product whose
+     * INITIAL_STOCK command is still pending (its send failed or is running). That command is sent
+     * now and the reservation tried once more; nothing was reserved by the first attempt.
+     */
+    private ReservationDto reserveOrSendInitialStock(UUID reservationId, String username, List<StockLineDto> lines) {
+        try {
+            return stockLedger.reserve(reservationId, username, lines);
+        } catch (StockLedgerRejection rejection) {
+            if (rejection.isNotFound() && rejection.productId() != null
+                    && stockCommandDispatcher.sendPendingInitialStock(rejection.productId())) {
+                return stockLedger.reserve(reservationId, username, lines);
+            }
+            throw rejection;
         }
     }
 
@@ -592,16 +613,15 @@ public class OrderService {
 
     /**
      * Cancels the order. Stock is not touched here any more: when the order still holds deducted
-     * stock, the {@code order.cancelled} event carries {@code stockRestore} (the lines and the actor
-     * the restore movements get) and warehouse-service restores the stock from the event feed, after
-     * which the projection catches up through the level push.
+     * stock, an internal {@code stock.restore-requested} event (the lines and the actor the restore
+     * movements get) is recorded with {@code order.cancelled}, which stays as it was. warehouse-service
+     * restores the stock from the event feed and the projection catches up through the level push.
      */
     private OrderEntity releaseAndCancel(OrderEntity order, CancellationReason reason) {
         couponService.releaseRedemption(order);
-        Map<String, Object> extra = new LinkedHashMap<>();
-        extra.put("reason", reason.name());
+        Map<String, Object> restore = null;
         if (order.getInventoryState() == InventoryState.DEDUCTED) {
-            extra.put("stockRestore", stockRestore(order, reason.actorFor(order.getUsername())));
+            restore = stockRestore(order, reason.actorFor(order.getUsername()));
             order.setInventoryState(InventoryState.RESTORED);
         }
         order.setStatus(OrderStatus.CANCELLED);
@@ -611,12 +631,20 @@ public class OrderService {
             order.setFulfilmentState(FulfilmentState.CANCELLED);
         }
         OrderEntity saved = orderRepository.save(order);
-        commerceEvents.publish(CommerceEventType.ORDER_CANCELLED, saved, extra);
+        commerceEvents.publish(CommerceEventType.ORDER_CANCELLED, saved, Map.of("reason", reason.name()));
+        if (restore != null) {
+            commerceEvents.publishData(CommerceEventType.STOCK_RESTORE_REQUESTED, saved.getUsername(), saved.getId(),
+                    restore);
+        }
         flushBeforeMapping();
         return saved;
     }
 
-    /** {@code {"actor": ..., "lines": [{"productId": 1, "quantity": 2}]}}, lines in product id order. */
+    /**
+     * Data of {@code stock.restore-requested}:
+     * {@code {"orderId": 123, "actor": ..., "lines": [{"productId": 1, "quantity": 2}]}}, lines in
+     * product id order.
+     */
     static Map<String, Object> stockRestore(OrderEntity order, String actor) {
         Map<Long, Integer> quantities = order.getItems().stream()
                 .collect(Collectors.groupingBy(
@@ -631,6 +659,7 @@ public class OrderService {
             lines.add(line);
         });
         Map<String, Object> restore = new LinkedHashMap<>();
+        restore.put("orderId", order.getId());
         restore.put("actor", actor);
         restore.put("lines", lines);
         return restore;

@@ -72,8 +72,7 @@ class ProductCsvFlowTest extends AbstractCommerceFlowTest {
         });
         ProductEntity created = productRepository.findAll().stream()
                 .filter(product -> product.getName().equals("Imported lamp")).findFirst().orElseThrow();
-        // The new product's stock item is created in warehouse-service from the outbox after commit.
-        assertThat(stockCommandDispatcher.dispatchDue()).isPositive();
+        // The new product's stock item was created in warehouse-service before the response.
         assertThat(FakeWarehouse.ledger().movements(created.getId())).singleElement().satisfies(movement -> {
             assertThat(movement.type()).isEqualTo("INITIAL_STOCK");
             assertThat(movement.delta()).isEqualTo(7);

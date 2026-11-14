@@ -30,18 +30,26 @@ public class StockProjection {
     private final ApplicationEventPublisher eventPublisher;
 
     /**
-     * Applies a level to a product the current transaction has locked.
+     * Applies a level to a product the current transaction has locked. The ledger version is
+     * advanced with a bulk UPDATE guarded by {@code stock_ledger_version < :v}; only a level whose
+     * quantity differs writes the entity, so {@code updated_at} and the version (ETag) move exactly
+     * when the stock does, as with the local deduction and restore before 3.22.0.
      *
-     * @return true when the level was newer and changed the projection
+     * @return true when the level was newer and the ledger version advanced
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public boolean apply(ProductEntity product, int quantity, long ledgerVersion) {
-        if (ledgerVersion <= product.getStockLedgerVersion()) {
+        if (ledgerVersion <= product.getStockLedgerVersion()
+                || productRepository.advanceLedgerVersion(product.getId(), ledgerVersion) == 0) {
             return false;
         }
-        int previous = product.getStockQuantity();
-        product.setStockQuantity(quantity);
+        // Not written by the entity (the column is not updatable); kept in step for later checks.
         product.setStockLedgerVersion(ledgerVersion);
+        int previous = product.getStockQuantity();
+        if (previous == quantity) {
+            return true;
+        }
+        product.setStockQuantity(quantity);
         productRepository.save(product);
         if (previous == 0 && quantity > 0) {
             eventPublisher.publishEvent(new StockReplenishedEvent(product.getId()));

@@ -276,6 +276,34 @@ receipts=$(call -X POST -H 'X-Service-Token: local-warehouse-token' -H 'Content-
 docker logs "$RUN_ID-backend" 2>&1 | grep -qiE 'MissingReflectionRegistrationError|InvalidDefinitionException' \
   && fail "the stock ledger client hit a native reflection error"
 echo "level push, export and receipts (410): ok"
+
+# A product created through the API can be ordered at once (its stock item is created before the
+# 201) and deleted at once (204, the stub ends without the item).
+created=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d '{"name":"Smoke fresh product","description":"Created by the native smoke test","price":5.00,"stockQuantity":3,"category":"Smoke"}' \
+  http://backend:4001/api/v1/products | tr -d ' ')
+[[ "$created" == 201* ]] || fail "create product: $created"
+fresh_id=$(grep -oE '"id":[0-9]+' <<< "${created#* }" | head -1 | grep -oE '[0-9]+$')
+[[ "$(stub "items/$fresh_id")" == 200* ]] || fail "the initial stock of product $fresh_id must exist before the 201"
+cart=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d "{\"productId\":$fresh_id,\"quantity\":1}" http://backend:4001/api/v1/cart/items)
+[[ "$cart" == 200* ]] || fail "add the fresh product to the cart: $cart"
+fresh_order=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d '{"street":"1 Smoke Street","city":"Smoke City","state":"SC","zipCode":"12345","country":"USA"}' \
+  http://backend:4001/api/v1/orders)
+[[ "$fresh_order" == 201* ]] || fail "checkout right after create: $fresh_order"
+disposable=$(call -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+  -d '{"name":"Smoke disposable product","description":"Deleted at once by the smoke test","price":5.00,"stockQuantity":2,"category":"Smoke"}' \
+  http://backend:4001/api/v1/products | tr -d ' ')
+disposable_id=$(grep -oE '"id":[0-9]+' <<< "${disposable#* }" | head -1 | grep -oE '[0-9]+$')
+removed=$(call -X DELETE -H "Authorization: Bearer $token" "http://backend:4001/api/v1/products/$disposable_id")
+[[ "$removed" == 204* ]] || fail "delete right after create: $removed"
+for _ in $(seq 1 20); do
+  [[ "$(stub "items/$disposable_id")" == 404* ]] && break
+  sleep 1
+done
+[[ "$(stub "items/$disposable_id")" == 404* ]] || fail "warehouse must end without product $disposable_id"
+echo "create, order and delete at once: ok"
 rss_off=$(rss_mib)
 echo "RSS (local profile, tracing off): ${rss_off} MiB"
 
@@ -311,6 +339,15 @@ for _ in $(seq 1 10); do
   sleep 1
 done
 [[ "$feed" == *"\"orderId\":$first_id,"* && "$feed" == *"\"orderId\":$second_id,"* ]] || fail "reservation-expired feed: $feed"
+# 3.22.0: the restore goes to warehouse-service as the internal stock.restore-requested event;
+# order.cancelled keeps its 3.21 data (no stock fields).
+restores=$(call -H 'X-Service-Token: local-warehouse-token' 'http://backend:4001/internal/v1/events?types=stock.restore-requested&limit=50' | tr -d ' ')
+[[ "$restores" == 200* && "$restores" == *'"type":"stock.restore-requested"'* \
+  && "$restores" == *"\"actor\":\"system\",\"lines\":[{\"productId\":$product_id,\"quantity\":1}],\"orderId\":$second_id"* ]] \
+  || fail "stock.restore-requested feed: $restores"
+cancelled=$(call -H 'X-Service-Token: local-warehouse-token' 'http://backend:4001/internal/v1/events?types=order.cancelled&limit=50' | tr -d ' ')
+[[ "$cancelled" == 200* && "$cancelled" == *'"type":"order.cancelled"'* && "$cancelled" != *'stockRestore'* \
+  && "$cancelled" != *'"lines"'* ]] || fail "order.cancelled must keep its 3.21 data: $cancelled"
 docker logs "$RUN_ID-backend" 2>&1 | grep -q 'Could not expire the reservation' && fail "expiry job failed in the native image"
 echo "reservations (admin time control, expiry job, feed): ok"
 echo "== local profile with tracing on (OTLP/HTTP to Jaeger)"

@@ -79,7 +79,7 @@ public class SetupProducts {
             .build();
         ProductEntity saved = productRepository.save(product);
         // The stock item is created in warehouse-service after commit (contract section 4.3).
-        stockCommands.initialStock(saved, SEED_ACTOR);
+        stockCommands.initialStockAfterCommit(saved, SEED_ACTOR);
         return saved;
     }
 

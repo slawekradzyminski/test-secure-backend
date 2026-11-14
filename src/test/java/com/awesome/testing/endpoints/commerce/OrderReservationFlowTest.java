@@ -37,6 +37,7 @@ import java.util.UUID;
 import static com.awesome.testing.event.CommerceEventType.ORDER_CANCELLED;
 import static com.awesome.testing.event.CommerceEventType.ORDER_CREATED;
 import static com.awesome.testing.event.CommerceEventType.ORDER_RESERVATION_EXPIRED;
+import static com.awesome.testing.event.CommerceEventType.STOCK_RESTORE_REQUESTED;
 import static com.awesome.testing.factory.AddressFactory.getRandomAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -133,8 +134,11 @@ class OrderReservationFlowTest extends AbstractTenderFlowTest {
                 .isAfter(Instant.parse(order.getReservationExpiresAt()).minus(Duration.ofMinutes(31)));
         // warehouse-service restores the stock from the order.cancelled event, a few seconds later.
         assertThat(stockOf(product)).isEqualTo(3);
-        assertThat(warehouseSimulator.pendingRestore(order.getId())).isEqualTo(Map.of("actor", "system",
-                "lines", List.of(Map.of("productId", product.getId(), "quantity", 2))));
+        assertThat(warehouseSimulator.pendingRestore(order.getId())).isEqualTo(Map.of("orderId", order.getId(),
+                "actor", "system", "lines", List.of(Map.of("productId", product.getId(), "quantity", 2))));
+        assertThat(recorded.forOrder(order.getId())).filteredOn(event -> event.type() == ORDER_CANCELLED)
+                .singleElement().satisfies(event -> assertThat(event.data())
+                        .as("order.cancelled is unchanged").containsOnlyKeys("orderId", "status", "totalAmount", "reason"));
         assertThat(warehouseSimulator.restoreCancelledStock(order.getId())).isOne();
         assertThat(stockOf(product)).isEqualTo(5);
         assertThat(orderRepository.findById(order.getId()).orElseThrow().getInventoryState())
@@ -151,10 +155,10 @@ class OrderReservationFlowTest extends AbstractTenderFlowTest {
         assertThat(restored.orderId()).isEqualTo(order.getId());
 
         assertThat(recorded.typesForOrder(order.getId()))
-                .containsExactly(ORDER_CREATED, ORDER_CANCELLED, ORDER_RESERVATION_EXPIRED);
+                .containsExactly(ORDER_CREATED, ORDER_CANCELLED, STOCK_RESTORE_REQUESTED, ORDER_RESERVATION_EXPIRED);
         CommerceEvent cancelled = recorded.forOrder(order.getId()).get(1);
         assertThat(cancelled.data()).containsEntry("reason", "RESERVATION_EXPIRED");
-        CommerceEvent reservationExpired = recorded.forOrder(order.getId()).get(2);
+        CommerceEvent reservationExpired = recorded.forOrder(order.getId()).get(3);
         assertThat(reservationExpired.data()).containsOnlyKeys("orderId", "expiredAt", "totalAmount");
         assertThat(reservationExpired.data()).containsEntry("orderId", order.getId())
                 .containsEntry("expiredAt", body.getReservationExpiresAt());
@@ -224,9 +228,10 @@ class OrderReservationFlowTest extends AbstractTenderFlowTest {
         warehouseSimulator.restoreCancelledStock(due.getId());
         assertThat(stockOf(product)).isEqualTo(stockBefore + 1);
         assertThat(recorded.typesForOrder(due.getId()))
-                .containsExactly(ORDER_CREATED, ORDER_CANCELLED, ORDER_RESERVATION_EXPIRED);
-        assertThat(recorded.forOrder(due.getId()).get(2).data()).containsEntry("expiredAt", UtcMillis.format(past));
-        assertThat(recorded.typesForOrder(cancelled.getId())).containsExactly(ORDER_CREATED, ORDER_CANCELLED);
+                .containsExactly(ORDER_CREATED, ORDER_CANCELLED, STOCK_RESTORE_REQUESTED, ORDER_RESERVATION_EXPIRED);
+        assertThat(recorded.forOrder(due.getId()).get(3).data()).containsEntry("expiredAt", UtcMillis.format(past));
+        assertThat(recorded.typesForOrder(cancelled.getId()))
+                .containsExactly(ORDER_CREATED, ORDER_CANCELLED, STOCK_RESTORE_REQUESTED);
         assertThat(recorded.forOrder(cancelled.getId()).get(1).data()).containsEntry("reason", "CUSTOMER");
         assertThat(recorded.typesForOrder(paid.getId())).doesNotContain(ORDER_CANCELLED);
     }
@@ -243,9 +248,9 @@ class OrderReservationFlowTest extends AbstractTenderFlowTest {
         executePut(ORDERS_ENDPOINT + "/" + byStatus.getId() + "/status", OrderStatus.CANCELLED,
                 getHeadersWith(adminToken), OrderDto.class);
 
-        assertThat(recorded.forOrder(byCustomer.getId()).getLast().data()).containsEntry("reason", "CUSTOMER");
-        assertThat(recorded.forOrder(byAdmin.getId()).getLast().data()).containsEntry("reason", "ADMIN");
-        assertThat(recorded.forOrder(byStatus.getId()).getLast().data()).containsEntry("reason", "ADMIN");
+        assertThat(cancelledEvent(byCustomer).data()).containsEntry("reason", "CUSTOMER");
+        assertThat(cancelledEvent(byAdmin).data()).containsEntry("reason", "ADMIN");
+        assertThat(cancelledEvent(byStatus).data()).containsEntry("reason", "ADMIN");
         assertThat(recorded.typesForOrder(byCustomer.getId())).doesNotContain(ORDER_RESERVATION_EXPIRED);
     }
 
@@ -290,5 +295,10 @@ class OrderReservationFlowTest extends AbstractTenderFlowTest {
     private static JsonNode body(ResponseEntity<String> response) {
         assertThat(response.getStatusCode().is2xxSuccessful()).as(response.getBody()).isTrue();
         return JSON.readTree(response.getBody());
+    }
+
+    private CommerceEvent cancelledEvent(OrderDto order) {
+        return recorded.forOrder(order.getId()).stream().filter(event -> event.type() == ORDER_CANCELLED)
+                .reduce((first, second) -> second).orElseThrow();
     }
 }

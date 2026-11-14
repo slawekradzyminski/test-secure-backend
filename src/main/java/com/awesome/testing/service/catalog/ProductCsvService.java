@@ -8,6 +8,7 @@ import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
 import com.awesome.testing.service.InventoryService;
+import com.awesome.testing.service.stock.StockCommandDispatcher;
 import com.awesome.testing.service.stock.StockCommandOutbox;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -50,16 +51,18 @@ public class ProductCsvService {
     private final ProductRepository productRepository;
     private final InventoryService inventoryService;
     private final StockCommandOutbox stockCommands;
+    private final StockCommandDispatcher stockCommandDispatcher;
     private final Validator validator;
     private final TransactionTemplate readTransaction;
     private final TransactionTemplate writeTransaction;
 
     public ProductCsvService(ProductRepository productRepository, InventoryService inventoryService,
-                             StockCommandOutbox stockCommands, Validator validator,
-                             PlatformTransactionManager transactionManager) {
+                             StockCommandOutbox stockCommands, StockCommandDispatcher stockCommandDispatcher,
+                             Validator validator, PlatformTransactionManager transactionManager) {
         this.productRepository = productRepository;
         this.inventoryService = inventoryService;
         this.stockCommands = stockCommands;
+        this.stockCommandDispatcher = stockCommandDispatcher;
         this.validator = validator;
         this.readTransaction = new TransactionTemplate(transactionManager);
         this.readTransaction.setReadOnly(true);
@@ -120,22 +123,30 @@ public class ProductCsvService {
             return report;
         }
         List<AppliedAdjustment> adjusted = new ArrayList<>();
+        List<Long> initialStock;
         try {
             for (PlannedRow row : plan) {
                 if (row.action() == Action.UPDATE && row.stockDelta() != 0) {
                     adjusted.add(adjust(row.productId(), row.stockDelta(), CSV_REASON, actor));
                 }
             }
-            writeTransaction.executeWithoutResult(status -> {
+            initialStock = writeTransaction.execute(status -> {
+                List<Long> commands = new ArrayList<>();
                 for (PlannedRow row : plan) {
-                    apply(row, actor);
+                    Long command = apply(row, actor);
+                    if (command != null) {
+                        commands.add(command);
+                    }
                 }
                 productRepository.flush();
+                return commands;
             });
         } catch (RuntimeException e) {
             reverse(adjusted, actor);
             throw e;
         }
+        // The new products' stock items, before the response (contract section 4.3).
+        Objects.requireNonNull(initialStock).forEach(stockCommandDispatcher::sendNow);
         report.setApplied(true);
         return report;
     }
@@ -277,12 +288,13 @@ public class ProductCsvService {
                 dto.getStockQuantity() - existing.getStockQuantity());
     }
 
-    private void apply(PlannedRow row, String actor) {
+    /** Applies one row; returns the id of the INITIAL_STOCK command of a created product, or null. */
+    private Long apply(PlannedRow row, String actor) {
         ProductCreateDto dto = row.data();
         switch (row.action()) {
             case CREATE -> {
                 ProductEntity product = productRepository.save(ProductEntity.from(dto));
-                stockCommands.initialStock(product, actor);
+                return stockCommands.initialStock(product, actor).getId();
             }
             case UPDATE -> {
                 ProductEntity product = productRepository.findByIdForUpdate(row.productId())
@@ -298,6 +310,7 @@ public class ProductCsvService {
                 // Nothing to persist.
             }
         }
+        return null;
     }
 
     private static boolean sameAs(ProductEntity product, ProductCreateDto dto) {

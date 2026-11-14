@@ -62,6 +62,7 @@ class OrderServiceFulfilmentTest {
     @Mock private CommerceEvents commerceEvents;
     @Mock private StockLedgerClient stockLedger;
     @Mock private StockProjection stockProjection;
+    @Mock private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
     @Mock private PlatformTransactionManager transactionManager;
 
     private OrderService service;
@@ -73,7 +74,7 @@ class OrderServiceFulfilmentTest {
         service = new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
                 idempotencyKeyRepository, Clock.systemUTC(), CheckoutContributors.none(), commerceEvents,
                 new OrderReservations(true, Duration.ofMinutes(30)),
-                stockLedger, stockProjection, transactionManager);
+                stockLedger, stockProjection, stockCommandDispatcher, transactionManager);
         product = ProductEntity.builder().id(4L).name("Phone").price(BigDecimal.TEN).stockQuantity(0).build();
         order = OrderEntity.builder().id(7L).username("buyer").status(OrderStatus.PAID)
                 .shippingAddress(new AddressEntity()).totalAmount(BigDecimal.TEN)
@@ -96,9 +97,8 @@ class OrderServiceFulfilmentTest {
                 .as("only orders the warehouse holds become CANCELLED; untouched ones stay NONE")
                 .isEqualTo(state == FulfilmentState.NONE ? FulfilmentState.NONE : FulfilmentState.CANCELLED);
         assertThat(order.getInventoryState()).isEqualTo(InventoryState.RESTORED);
-        verify(commerceEvents).publish(eq(CommerceEventType.ORDER_CANCELLED), eq(order), argThat(data ->
-                data.get("stockRestore").equals(Map.of("actor", "buyer",
-                        "lines", List.of(Map.of("productId", 4L, "quantity", 2))))));
+        verify(commerceEvents).publishData(CommerceEventType.STOCK_RESTORE_REQUESTED, "buyer", 7L, Map.of(
+                "orderId", 7L, "actor", "buyer", "lines", List.of(Map.of("productId", 4L, "quantity", 2))));
         verify(couponService).releaseRedemption(order);
     }
 
@@ -222,9 +222,8 @@ class OrderServiceFulfilmentTest {
         assertThat(order.getFulfilmentState())
                 .as("only orders the warehouse holds become CANCELLED; untouched ones stay NONE")
                 .isEqualTo(state == FulfilmentState.NONE ? FulfilmentState.NONE : FulfilmentState.CANCELLED);
-        verify(commerceEvents).publish(eq(CommerceEventType.ORDER_CANCELLED), eq(order), argThat(data ->
-                data.get("stockRestore").equals(Map.of("actor", "buyer",
-                        "lines", List.of(Map.of("productId", 4L, "quantity", 2))))));
+        verify(commerceEvents).publishData(CommerceEventType.STOCK_RESTORE_REQUESTED, "buyer", 7L, Map.of(
+                "orderId", 7L, "actor", "buyer", "lines", List.of(Map.of("productId", 4L, "quantity", 2))));
         verify(couponService).releaseRedemption(order);
     }
 

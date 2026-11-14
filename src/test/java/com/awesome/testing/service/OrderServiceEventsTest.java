@@ -69,6 +69,7 @@ class OrderServiceEventsTest {
     @Mock private CommerceEvents commerceEvents;
     @Mock private StockLedgerClient stockLedger;
     @Mock private StockProjection stockProjection;
+    @Mock private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
     @Mock private PlatformTransactionManager transactionManager;
 
     private final List<CheckoutContext> contributions = new ArrayList<>();
@@ -110,7 +111,7 @@ class OrderServiceEventsTest {
         return new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
                 idempotencyKeyRepository, Clock.systemUTC(), contributors, commerceEvents,
                 new OrderReservations(true, Duration.ofMinutes(30)),
-                stockLedger, stockProjection, transactionManager);
+                stockLedger, stockProjection, stockCommandDispatcher, transactionManager);
     }
 
     @Test
@@ -185,8 +186,9 @@ class OrderServiceEventsTest {
     @Test
     void everyCancellationPathPublishesOrderCancelledOnce() {
         service.cancelOrder(7L, USER, false);
-        verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, order, Map.of("reason", "CUSTOMER",
-                "stockRestore", Map.of("actor", USER, "lines", List.of())));
+        verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, order, Map.of("reason", "CUSTOMER"));
+        verify(commerceEvents).publishData(CommerceEventType.STOCK_RESTORE_REQUESTED, USER, 7L,
+                Map.of("orderId", 7L, "actor", USER, "lines", List.of()));
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
 
         assertThatThrownBy(() -> service.updateOrderStatus(7L, OrderStatus.CANCELLED)).isInstanceOf(CustomException.class);

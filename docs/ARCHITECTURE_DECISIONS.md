@@ -43,9 +43,15 @@ with a per-product `ledgerVersion`. The backend keeps:
 - initial stock and deletes in a **transactional outbox** (`stock_command_outbox`,
   ADR 3: the backend's own small implementation), because they follow a product change
   that has already committed and must not fail the public request;
-- the restore after a cancellation as **event data**: `order.cancelled` carries
-  `stockRestore`, which warehouse-service consumes from the existing feed (ADR 1) once
-  per order.
+- the restore after a cancellation as an **internal feed event**:
+  `stock.restore-requested` (`{orderId, actor, lines}`), recorded in the cancel's
+  transaction and consumed by warehouse-service from the existing feed (ADR 1) once per
+  order. It is never offered to webhooks and `order.cancelled` stays unchanged, so no
+  staff username reaches customer webhooks;
+- the initial stock of a product created by a request is sent **synchronously after
+  commit, before the response**, so a product can be ordered as soon as it exists; the
+  outbox only retries a failed send, and a reservation that hits a product warehouse-service
+  does not know yet sends its pending initial stock and retries once.
 
 Checkout never holds a database connection during an HTTP call (the production pool has
 three connections): a read transaction validates, the reservation runs with no

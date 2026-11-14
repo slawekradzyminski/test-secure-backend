@@ -87,6 +87,11 @@ class OrderServiceTest {
     @Mock
     private StockProjection stockProjection;
 
+
+    @Mock
+
+    private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
+
     @Mock
     private PlatformTransactionManager transactionManager;
 
@@ -252,10 +257,10 @@ class OrderServiceTest {
 
         assertThat(cancelled.getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(entity.getInventoryState()).isEqualTo(InventoryState.RESTORED);
-        verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, entity, Map.of(
-                "reason", "CUSTOMER",
-                "stockRestore", Map.of("actor", USERNAME,
-                        "lines", List.of(Map.of("productId", 1L, "quantity", 2)))));
+        // order.cancelled is unchanged; the restore is a separate internal event.
+        verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, entity, Map.of("reason", "CUSTOMER"));
+        verify(commerceEvents).publishData(CommerceEventType.STOCK_RESTORE_REQUESTED, USERNAME, 14L, Map.of(
+                "orderId", 14L, "actor", USERNAME, "lines", List.of(Map.of("productId", 1L, "quantity", 2))));
 
         assertThatThrownBy(() -> orderService.cancelOrder(14L, USERNAME, false))
                 .isInstanceOf(CustomException.class)
@@ -281,6 +286,7 @@ class OrderServiceTest {
         assertThat(cancelled.getStatus()).isEqualTo(OrderStatus.CANCELLED);
         assertThat(entity.getInventoryState()).isEqualTo(InventoryState.LEGACY_UNTRACKED);
         verifyNoInteractions(productRepository, inventoryService, stockLedger);
+        verify(commerceEvents, never()).publishData(any(), any(), any(), any());
         verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, entity, Map.of("reason", "ADMIN"));
     }
 
