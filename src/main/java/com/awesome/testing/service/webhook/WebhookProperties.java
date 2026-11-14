@@ -14,6 +14,11 @@ import java.util.List;
 @Setter
 public class WebhookProperties {
 
+    /**
+     * False where the notification-service owns webhooks: no delivery rows are recorded and no
+     * delivery is sent or retried; the endpoints stay mapped. Checked at runtime (one native bean graph).
+     */
+    private boolean enabled = true;
     /** Allow plain http targets (https is always allowed). The SSRF guard applies either way. */
     private boolean allowHttp = true;
     /** Target ports allowed in addition to 80 and 443. */

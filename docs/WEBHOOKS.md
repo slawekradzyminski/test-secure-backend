@@ -151,6 +151,7 @@ only JDK socket and TLS APIs, so the native image needs no extra reflection meta
 
 | Property | Default | Meaning |
 | --- | --- | --- |
+| `webhooks.enabled` (`WEBHOOKS_ENABLED`) | `true` | `false` where the notification-service owns webhooks; see below |
 | `webhooks.allow-http` (`WEBHOOKS_ALLOW_HTTP`) | `true` | Accept `http` targets |
 | `webhooks.allowed-ports` (`WEBHOOKS_ALLOWED_PORTS`) | empty | Extra target ports, comma-separated |
 | `webhooks.timeout` (`WEBHOOKS_TIMEOUT`) | `PT5S` | Deadline of one attempt |
@@ -168,6 +169,34 @@ only JDK socket and TLS APIs, so the native image needs no extra reflection meta
 | `security.rate-limit.policies.webhook-redeliver-user` | 20 per 15 min | `POST .../redeliver` per user |
 
 Rate limits apply only when `security.rate-limit.enabled=true`, like the other policies.
+
+## Moving webhooks to the notification-service
+
+The notification-service (contract: `docs/DISTRIBUTED_LAB_CONTRACTS.md` in
+awesome-localstack) serves the same webhook API from the event feed. Two backend
+switches support the move:
+
+- `webhooks.enabled=false` (`WEBHOOKS_ENABLED`): the backend records no webhook
+  deliveries for commerce events, dispatches nothing and its retry job does no work.
+  The webhook endpoints stay mapped (the gateway sends that traffic to the
+  notification-service); `POST .../test` and `POST .../redeliver` answer 409
+  `Webhook delivery is disabled on this backend` without recording a delivery. The
+  flag is read at runtime, so the native image keeps one bean graph. The
+  compatibility stack keeps the default `true`.
+- `GET /internal/v1/webhooks/export` (notification service token only, 401 for any
+  other or missing token, 404 when `NOTIFICATION_SERVICE_TOKEN` is blank, not in
+  `/v3/api-docs`): every subscription with its decrypted secret and every inbox,
+  ordered by id, for the notification-service's one-time import. Deliveries and
+  inbox requests are not exported.
+
+```json
+{"subscriptions":[{"id":1,"username":"tMg3Os6YRx","url":"inbox://Bz3v3Ptpn9l4GdZrKzs-lqBuz1_1vMhF",
+  "events":["order.created","order.paid"],"secret":"whsec_7SPtANJCaTZhjWsU358ViF0-n4De_iFnzgOu-gCkCE8",
+  "active":true,"description":"export hook","createdAt":"2026-11-14T08:24:06.103544Z",
+  "updatedAt":"2026-11-14T08:24:06.103544Z","consecutiveFailures":3}],
+ "inboxes":[{"token":"Bz3v3Ptpn9l4GdZrKzs-lqBuz1_1vMhF","username":"tMg3Os6YRx",
+  "createdAt":"2026-11-14T08:24:06.081201Z"}]}
+```
 
 ## Storage
 

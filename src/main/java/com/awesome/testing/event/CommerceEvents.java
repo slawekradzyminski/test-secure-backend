@@ -45,8 +45,14 @@ public class CommerceEvents {
      * for internal events such as {@link CommerceEventType#CARD_REFUND_REQUESTED}.
      */
     public CommerceEvent publishData(CommerceEventType type, String username, Long orderId, Map<String, ?> data) {
+        return publishData(UUID.randomUUID(), type, username, orderId, data);
+    }
+
+    /** Like {@link #publishData(CommerceEventType, String, Long, Map)} with a caller-chosen (deterministic) event id. */
+    public CommerceEvent publishData(UUID eventId, CommerceEventType type, String username, Long orderId,
+                                     Map<String, ?> data) {
         CommerceEvent event = new CommerceEvent(
-                UUID.randomUUID(),
+                eventId,
                 type,
                 username,
                 orderId,

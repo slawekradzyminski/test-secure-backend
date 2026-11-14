@@ -26,7 +26,13 @@ public enum CommerceEventType {
      * {@link #ORDER_CANCELLED} whose {@code reason} is {@code RESERVATION_EXPIRED}).
      * {@code data} is exactly {@code orderId}, {@code expiredAt}, {@code totalAmount}.
      */
-    ORDER_RESERVATION_EXPIRED("order.reservation-expired", true);
+    ORDER_RESERVATION_EXPIRED("order.reservation-expired", true),
+    /**
+     * Internal: the notification-service should email a customer (only recorded when
+     * {@code notifications.delivery=feed}). {@code data} is exactly {@code requestId}, {@code template},
+     * {@code recipientEmail}, {@code recipientName}, {@code properties}.
+     */
+    NOTIFICATION_REQUESTED("notification.requested", false);
 
     private final String wire;
     private final boolean webhookVisible;

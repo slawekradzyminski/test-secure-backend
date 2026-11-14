@@ -80,6 +80,26 @@ attempts in total), and a send lost in a restart during the training delay is
 retried after 20 minutes. `APP_EMAIL_RETRY_ENABLED` and
 `APP_EMAIL_RETRY_INTERVAL` configure the job.
 
+#### Commerce email delivery (`notifications.delivery`)
+
+`notifications.delivery` / `NOTIFICATIONS_DELIVERY` decides who sends the
+commerce emails: payment received and failed, back in stock, the warehouse
+notifications of `POST /internal/v1/notifications`, loyalty points earned and
+gift card issued (everything that goes through `CustomerNotificationRequestedEvent`).
+
+| Value | Behaviour |
+| --- | --- |
+| `email` (default) | The backend renders and queues the email after commit, as before. Nothing is added to the event feed |
+| `feed` | No commerce email leaves the backend and none is recorded in `email_event`. Each request becomes an internal `notification.requested` [feed event](#event-feed) for the notification-service, written by `NotificationFeedRecorder` in the transaction of the change that caused it (payment result, loyalty credit, gift card issue, warehouse request; back-in-stock in the transaction that marks the watchers notified), so it exists only if that change committed |
+
+In `feed` mode the template properties are validated exactly as for an email
+(400 before anything is recorded), and a request with a `requestId` gets the
+event id `UUID.nameUUIDFromBytes("notification.requested:" + requestId)`, so a
+repeated request (a warehouse retry) records nothing new. Account emails
+(password reset requested and confirmed, `POST /api/v1/email`) and
+`GET /api/v1/users/me/email-events` never change. Every profile that runs the
+notification-service sets `feed`; the compatibility stack keeps `email`.
+
 ### Wishlist and back-in-stock notifications
 
 - `GET /api/v1/wishlist`, `PUT /api/v1/wishlist/{productId}` (201 created,
@@ -325,7 +345,8 @@ REST and GraphQL order mutations share `OrderService`, so they follow the same r
 ## Internal API for warehouse-service
 
 Base path `/internal/v1`, called by warehouse-service (and, for payment
-endpoints, payment-service) and not routed by the gateway. Every request
+endpoints, payment-service; for the feed, the JWKS and the webhook export,
+notification-service) and not routed by the gateway. Every request
 carries `X-Service-Token`, compared in constant time with the token of each
 caller the endpoint accepts:
 
@@ -333,11 +354,16 @@ caller the endpoint accepts:
 | --- | --- | --- | --- |
 | warehouse | `internal.service-tokens.warehouse` (alias `warehouse.service-token`) | `WAREHOUSE_SERVICE_TOKEN` | `local-warehouse-token` |
 | payment | `internal.service-tokens.payment` | `PAYMENT_SERVICE_TOKEN` | `local-payment-token` |
+| notification | `internal.service-tokens.notification` | `NOTIFICATION_SERVICE_TOKEN` | `local-notification-token` |
 
 `InternalApiConfig.internalRoutes()` maps path patterns to callers. The payment
 token is accepted by `POST /orders/{id}/payment` (payment token only),
-`GET /orders/{id}`, `GET /jwks.json` and `GET /events` (both tokens); every other
-endpoint below accepts only the warehouse token.
+`GET /orders/{id}` (warehouse and payment tokens), `GET /jwks.json` and
+`GET /events` (warehouse, payment and notification tokens). The notification
+token is also the only one accepted by `GET /webhooks/export`. Every other
+endpoint below accepts only the warehouse token. A blank token disables that
+caller: its own endpoints answer 404 and shared endpoints reject its old token
+with 401.
 
 | Situation | Result |
 | --- | --- |
@@ -362,6 +388,7 @@ and is absent from `/v3/api-docs`.
 | `GET /jwks.json` | The RS256 access-token verification key as a JSON Web Key Set (`kty`, `use`, `alg`, `kid`, `n`, `e`) |
 | `POST /orders/{id}/payment` | Payment result from payment-service; see [Card payments](#card-payments) |
 | `GET /events?after&limit&types` | The commerce event feed; see [Event feed](#event-feed) |
+| `GET /webhooks/export` | Notification token only. Every webhook subscription with its decrypted signing secret and every inbox, by id, for the notification-service's one-time import; see [WEBHOOKS.md](WEBHOOKS.md#moving-webhooks-to-the-notification-service). Deliveries and inbox requests are not exported |
 
 ```text
 InternalOrderDto   { id, username, status, fulfilmentState, subtotalAmount, discountAmount,
@@ -400,14 +427,15 @@ transaction that changed the order; consumers use
 | `PAYMENT_FAILED` | `payment.failed` | payment-service reports a failed payment for a `PENDING` order (`data` adds `paymentId`, `failureCode`) |
 | `CARD_REFUND_REQUESTED` | `card-refund.requested` | A booked refund or a cancellation needs money back on the captured card (internal; `data` is exactly `requestId`, `orderId`, `amount`, `reason`) |
 | `ORDER_RESERVATION_EXPIRED` | `order.reservation-expired` | A `PENDING` order's reservation ran out and it was cancelled, right after its `order.cancelled` (`data` is exactly `orderId`, `expiredAt`, `totalAmount`) |
+| `NOTIFICATION_REQUESTED` | `notification.requested` | A commerce email is requested while `notifications.delivery=feed` (internal; `orderId` is null, `username` is the recipient, `data` is exactly `requestId`, `template`, `recipientEmail`, `recipientName`, `properties`) |
 
 Repeating the current status or fulfilment state, replays, and rejected
 changes publish nothing.
 
 Every event is also recorded in the [event feed](#event-feed) in the same
 transaction. User webhook subscriptions deliver these events, except the
-internal `card-refund.requested`, to customer URLs; see [WEBHOOKS.md](WEBHOOKS.md).
-`CommerceEvents.publishData(type, username, orderId, data)` publishes an event
+internal `card-refund.requested` and `notification.requested`, to customer URLs; see [WEBHOOKS.md](WEBHOOKS.md).
+`CommerceEvents.publishData([eventId,] type, username, orderId, data)` publishes an event
 whose `data` is exactly the given map.
 
 ### Checkout and cart contributors
@@ -510,13 +538,13 @@ properties. Migration V16 turned the outbox's undelivered (`PENDING`) rows into
 
 ## Event feed
 
-warehouse-service and payment-service learn about commerce events by polling
+warehouse-service, payment-service and notification-service learn about commerce events by polling
 a durable feed; the backend never calls them. Every `CommerceEvent` is appended
 to `domain_events` by `DomainEventRecorder`, a synchronous listener, so the row
 commits or rolls back with the state change that published it (migration V16).
 
 `GET /internal/v1/events?after={sequence}&limit={n}&types={wire names}` accepts
-the warehouse and the payment service token.
+the warehouse, payment and notification service tokens.
 
 | Parameter | Rule |
 | --- | --- |
@@ -544,7 +572,7 @@ the warehouse and the payment service token.
 - Only events recorded at least `events.settle-delay` ago are served, so a
   transaction that took a lower sequence but committed later is not skipped.
 - Errors: 400 `{"message": ...}` for bad parameters, 401 for a missing or wrong
-  service token, 404 when neither service token is configured.
+  service token, 404 when no service token is configured.
 - Consumers keep their own cursor and deduplicate by event `id`. Events are
   deleted `events.retention` after they were recorded.
 
@@ -552,9 +580,30 @@ the warehouse and the payment service token.
 | --- | --- |
 | `card-refund.requested` | payment-service refunds the captured card payment |
 | `order.cancelled` | warehouse-service cancels the order's open shipment |
+| `notification.requested` | notification-service renders and sends the commerce email |
+| webhook-eligible types | notification-service delivers user webhooks (where `webhooks.enabled=false`) |
 
-`card-refund.requested` is internal: it is not listed by
-`GET /api/v1/webhooks/event-types` and never reaches user webhooks.
+`card-refund.requested` and `notification.requested` are internal: they are not
+listed by `GET /api/v1/webhooks/event-types`, cannot be subscribed (400) and
+never reach user webhooks.
+
+A `notification.requested` event (`types=notification.requested`):
+
+```json
+{"sequence":3,"id":"2b9bd5d0-5f76-3220-83bb-6ec43e2034a8","type":"notification.requested",
+ "occurredAt":"2026-11-14T08:24:04.503Z","orderId":null,"username":"ooyCjS1y1W",
+ "data":{"properties":{"amount":"25.00","currency":"USD","orderId":"1"},
+         "recipientEmail":"vyknuioxuq@slawek.com","recipientName":"avO5nNyCWR GJTc7DqDHM",
+         "requestId":"c29d3735-82d1-3756-b797-346652f995c6","template":"PAYMENT_RECEIVED"},
+ "requestId":"09491b7c-1667-4638-8da9-2a2bde57b247","traceId":"551e5e5c9b747c3d532e0248f3db6d8b"}
+```
+
+`data.requestId` is the idempotency key: the warehouse notification's
+`requestId`, the derived ids the backend already used for emails (payment
+result, loyalty credit, gift card), or the event `id` for back-in-stock.
+`data.properties` are the raw template properties (the renderer adds
+`username`, taken from the event's `username`). `recipientName` is
+"first last", or the username when the user has no name.
 
 | Property | Environment variable | Default |
 | --- | --- | --- |

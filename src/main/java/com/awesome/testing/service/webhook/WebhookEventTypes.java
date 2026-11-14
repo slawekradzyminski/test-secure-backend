@@ -12,7 +12,8 @@ import java.util.stream.Collectors;
 
 /**
  * Event types a subscription may name: the wire name of every commerce event offered to webhooks
- * (internal service events such as {@code card-refund.requested} are not) plus {@value #PING}.
+ * (internal service events such as {@code card-refund.requested} and
+ * {@code notification.requested} are not) plus {@value #PING}.
  */
 public final class WebhookEventTypes {
 
@@ -62,7 +63,7 @@ public final class WebhookEventTypes {
             case REFUND_BOOKED -> "A refund was booked for an order";
             case PAYMENT_FAILED -> "A payment attempt failed";
             case ORDER_RESERVATION_EXPIRED -> "A pending order's stock reservation expired and the order was cancelled";
-            case CARD_REFUND_REQUESTED -> throw new IllegalArgumentException(type + " is not offered to webhooks");
+            case CARD_REFUND_REQUESTED, NOTIFICATION_REQUESTED -> throw new IllegalArgumentException(type + " is not offered to webhooks");
         };
     }
 

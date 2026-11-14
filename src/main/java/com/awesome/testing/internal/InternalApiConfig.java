@@ -22,24 +22,29 @@ public class InternalApiConfig {
     @Bean
     ServiceTokenGuard serviceTokenGuard(
             @Value("${internal.service-tokens.warehouse:${warehouse.service-token:}}") String warehouseToken,
-            @Value("${internal.service-tokens.payment:}") String paymentToken) {
+            @Value("${internal.service-tokens.payment:}") String paymentToken,
+            @Value("${internal.service-tokens.notification:}") String notificationToken) {
         return new ServiceTokenGuard(Map.of(
                 ServiceCaller.WAREHOUSE, warehouseToken,
-                ServiceCaller.PAYMENT, paymentToken));
+                ServiceCaller.PAYMENT, paymentToken,
+                ServiceCaller.NOTIFICATION, notificationToken));
     }
 
     /**
      * Which caller each internal path accepts (first full match wins). payment-service posts
-     * payment results and reads single orders, the JWKS and the event feed; everything else is
-     * the warehouse-service API.
+     * payment results and reads single orders, the JWKS and the event feed; notification-service
+     * reads the JWKS, the event feed and the one-time webhook export; everything else is the
+     * warehouse-service API.
      */
     @Bean
     InternalRoutes internalRoutes() {
         return InternalRoutes.builder()
                 .route("/internal/v1/orders/\\d+/payment", ServiceCaller.PAYMENT)
                 .route("/internal/v1/orders/\\d+", ServiceCaller.WAREHOUSE, ServiceCaller.PAYMENT)
-                .route("/internal/v1/jwks\\.json", ServiceCaller.WAREHOUSE, ServiceCaller.PAYMENT)
-                .route("/internal/v1/events", ServiceCaller.WAREHOUSE, ServiceCaller.PAYMENT)
+                .route("/internal/v1/jwks\\.json", ServiceCaller.WAREHOUSE, ServiceCaller.PAYMENT,
+                        ServiceCaller.NOTIFICATION)
+                .route("/internal/v1/events", ServiceCaller.WAREHOUSE, ServiceCaller.PAYMENT, ServiceCaller.NOTIFICATION)
+                .route("/internal/v1/webhooks/export", ServiceCaller.NOTIFICATION)
                 .otherwise(ServiceCaller.WAREHOUSE)
                 .build();
     }
