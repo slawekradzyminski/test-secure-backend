@@ -154,7 +154,7 @@ public class WebhookController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "404", description = NOT_FOUND,
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
-    @ApiResponse(responseCode = "409", description = "Subscription is disabled",
+    @ApiResponse(responseCode = "409", description = "Subscription is disabled, or webhook delivery is disabled on this backend",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "429", description = "Too many requests",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
@@ -211,7 +211,7 @@ public class WebhookController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "404", description = "Subscription or delivery not found",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
-    @ApiResponse(responseCode = "409", description = "Subscription is disabled",
+    @ApiResponse(responseCode = "409", description = "Subscription is disabled, or webhook delivery is disabled on this backend",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "429", description = "Too many requests",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))

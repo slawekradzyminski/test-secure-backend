@@ -24,13 +24,14 @@ class CommerceEventTypeTest {
                 CommerceEventType.ORDER_DELIVERED, "shipment.delivered",
                 CommerceEventType.REFUND_BOOKED, "refund.booked",
                 CommerceEventType.PAYMENT_FAILED, "payment.failed",
-                CommerceEventType.CARD_REFUND_REQUESTED, "card-refund.requested"));
+                CommerceEventType.CARD_REFUND_REQUESTED, "card-refund.requested",
+                CommerceEventType.NOTIFICATION_REQUESTED, "notification.requested"));
     }
 
     @Test
-    void onlyTheCardRefundRequestIsKeptFromWebhooks() {
+    void onlyTheInternalServiceEventsAreKeptFromWebhooks() {
         assertThat(Arrays.stream(CommerceEventType.values()).filter(type -> !type.offeredToWebhooks()))
-                .containsExactly(CommerceEventType.CARD_REFUND_REQUESTED);
+                .containsExactly(CommerceEventType.CARD_REFUND_REQUESTED, CommerceEventType.NOTIFICATION_REQUESTED);
     }
 
     @Test

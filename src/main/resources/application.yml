@@ -238,6 +238,9 @@ ollama:
 
 # User webhook subscriptions (docs/WEBHOOKS.md). Targets always pass the SSRF guard.
 webhooks:
+  # false where the notification-service owns webhooks: no delivery rows, no dispatch, no retry job.
+  # The webhook endpoints stay mapped (the gateway routes that traffic to the notification-service).
+  enabled: ${WEBHOOKS_ENABLED:true}
   allow-http: ${WEBHOOKS_ALLOW_HTTP:true}
   # Ports allowed in addition to 80 and 443, comma-separated.
   allowed-ports: ${WEBHOOKS_ALLOWED_PORTS:}
@@ -255,6 +258,12 @@ webhooks:
     initial-delay: ${WEBHOOKS_RETRY_INITIAL_DELAY:PT30S}
     batch-size: 20
 
+# Commerce emails (payment received/failed, back in stock, warehouse notifications, loyalty points
+# earned, gift card issued): email = render and queue them here (default); feed = record an internal
+# notification.requested event for the notification-service instead. Account emails always stay here.
+notifications:
+  delivery: ${NOTIFICATIONS_DELIVERY:email}
+
 warehouse:
   # Alias of internal.service-tokens.warehouse, kept for existing deployments.
   service-token: ${WAREHOUSE_SERVICE_TOKEN:}
@@ -264,6 +273,7 @@ internal:
   service-tokens:
     warehouse: ${warehouse.service-token:}
     payment: ${PAYMENT_SERVICE_TOKEN:}
+    notification: ${NOTIFICATION_SERVICE_TOKEN:}
 
 payment:
   # payment-service signs its payment results with webhook-secret (X-Payment-Signature). The backend

@@ -249,6 +249,12 @@ class OpenApiContractTest extends HttpHelper {
                 .contains("/ValidationErrorsDto", "/ErrorDto");
     }
 
+    @Test
+    void theInternalServiceApiIncludingTheWebhookExportIsNotDocumented() {
+        assertThat(spec.path("paths").toString()).doesNotContain("\"/internal");
+        assertThat(spec.toString()).doesNotContain("webhooks/export").doesNotContain("WebhookExportDto");
+    }
+
     private JsonNode readApiSpec() throws Exception {
         ResponseEntity<String> response = executeGet("/v3/api-docs", getJsonOnlyHeaders(), String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

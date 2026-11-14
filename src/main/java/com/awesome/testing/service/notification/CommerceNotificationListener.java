@@ -29,6 +29,10 @@ import java.util.Map;
  * and return emails are requested by warehouse-service through the internal
  * notifications endpoint and delivered by
  * {@link #onCustomerNotificationRequested(CustomerNotificationRequestedEvent)}.
+ * With {@code notifications.delivery=feed} no commerce email is sent here:
+ * back-in-stock requests are recorded as {@code notification.requested} feed events
+ * in the transaction that marks the watchers notified, and every other request is
+ * recorded by {@link NotificationFeedRecorder} inside its business transaction.
  */
 @Slf4j
 @Component
@@ -40,6 +44,7 @@ public class CommerceNotificationListener {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final CustomerEmailRenderer renderer;
+    private final NotificationFeedRecorder feedRecorder;
     private final Clock commerceClock;
 
     @Value("${activemq.destination}")
@@ -55,10 +60,16 @@ public class CommerceNotificationListener {
         List<WishlistItemEntity> watchers = wishlistItemRepository.findByProductIdAndNotifyWhenAvailableTrue(product.getId());
         LocalDateTime now = LocalDateTime.now(commerceClock);
         for (WishlistItemEntity watcher : watchers) {
-            userRepository.findByUsername(watcher.getUsername()).ifPresent(user -> send(user,
-                    renderer.render(user, EmailTemplate.BACK_IN_STOCK, Map.of(
-                            "productId", String.valueOf(product.getId()),
-                            "productName", product.getName())), null));
+            Map<String, String> properties = Map.of(
+                    "productId", String.valueOf(product.getId()),
+                    "productName", product.getName());
+            userRepository.findByUsername(watcher.getUsername()).ifPresent(user -> {
+                if (feedRecorder.isActive()) {
+                    feedRecorder.record(user, EmailTemplate.BACK_IN_STOCK, properties, null);
+                } else {
+                    send(user, renderer.render(user, EmailTemplate.BACK_IN_STOCK, properties), null);
+                }
+            });
             watcher.setLastNotifiedAt(now);
         }
         wishlistItemRepository.saveAll(watchers);
@@ -72,6 +83,10 @@ public class CommerceNotificationListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onCustomerNotificationRequested(CustomerNotificationRequestedEvent event) {
+        if (feedRecorder.isActive()) {
+            // Recorded as a notification.requested feed event inside the publishing transaction.
+            return;
+        }
         userRepository.findByUsername(event.username()).ifPresent(user -> send(user,
                 renderer.render(user, event.template(), event.properties() == null ? Map.of() : event.properties()),
                 event.requestId()));

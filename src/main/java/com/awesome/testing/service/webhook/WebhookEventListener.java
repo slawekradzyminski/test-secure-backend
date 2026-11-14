@@ -15,7 +15,7 @@ import java.util.UUID;
  * rows are written in their own transaction first, so a crash before sending leaves them
  * PENDING for the retry job. Errors never reach the business request that committed.
  * Internal service events (not {@link com.awesome.testing.event.CommerceEventType#offeredToWebhooks()})
- * are ignored.
+ * are ignored, and so is everything while {@code webhooks.enabled=false}.
  */
 @Slf4j
 @Component
@@ -24,10 +24,11 @@ public class WebhookEventListener {
 
     private final WebhookDeliveryLog deliveryLog;
     private final WebhookDispatcher dispatcher;
+    private final WebhookProperties properties;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onCommerceEvent(CommerceEvent event) {
-        if (!event.type().offeredToWebhooks()) {
+        if (!properties.isEnabled() || !event.type().offeredToWebhooks()) {
             return;
         }
         try {

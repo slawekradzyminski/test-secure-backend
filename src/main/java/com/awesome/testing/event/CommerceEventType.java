@@ -20,7 +20,13 @@ public enum CommerceEventType {
      * Internal: payment-service should refund {@code amount} on the order's captured card payment.
      * {@code data} is exactly {@code requestId}, {@code orderId}, {@code amount}, {@code reason}.
      */
-    CARD_REFUND_REQUESTED("card-refund.requested", false);
+    CARD_REFUND_REQUESTED("card-refund.requested", false),
+    /**
+     * Internal: the notification-service should email a customer (only recorded when
+     * {@code notifications.delivery=feed}). {@code data} is exactly {@code requestId}, {@code template},
+     * {@code recipientEmail}, {@code recipientName}, {@code properties}.
+     */
+    NOTIFICATION_REQUESTED("notification.requested", false);
 
     private final String wire;
     private final boolean webhookVisible;
