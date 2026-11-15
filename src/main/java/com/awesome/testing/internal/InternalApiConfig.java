@@ -33,7 +33,8 @@ public class InternalApiConfig {
     /**
      * Which caller each internal path accepts (first full match wins). payment-service posts
      * payment results and reads single orders, the JWKS and the event feed; notification-service
-     * reads the JWKS, the event feed and the one-time webhook export; everything else is the
+     * reads the JWKS, the event feed and the one-time webhook export; everything else, including
+     * the stock level push, the one-time inventory export and the reservation lookup, is the
      * warehouse-service API.
      */
     @Bean
@@ -45,6 +46,8 @@ public class InternalApiConfig {
                         ServiceCaller.NOTIFICATION)
                 .route("/internal/v1/events", ServiceCaller.WAREHOUSE, ServiceCaller.PAYMENT, ServiceCaller.NOTIFICATION)
                 .route("/internal/v1/webhooks/export", ServiceCaller.NOTIFICATION)
+                .route("/internal/v1/inventory/(levels|export)", ServiceCaller.WAREHOUSE)
+                .route("/internal/v1/orders/by-reservation/[^/]+", ServiceCaller.WAREHOUSE)
                 .otherwise(ServiceCaller.WAREHOUSE)
                 .build();
     }

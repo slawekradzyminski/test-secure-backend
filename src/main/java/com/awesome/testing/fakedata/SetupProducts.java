@@ -2,6 +2,7 @@ package com.awesome.testing.fakedata;
 
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
+import com.awesome.testing.service.stock.StockCommandOutbox;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class SetupProducts {
 
+    /** Actor of the initial stock movements of seeded products. */
+    static final String SEED_ACTOR = "system";
     private static final String IMAGE_PATH_PREFIX = "/images/";
     private static final List<String> LEGACY_IMAGE_URL_PREFIXES = List.of(
         "http://localhost:8082/images/",
@@ -24,6 +27,7 @@ public class SetupProducts {
 
     private final ProductRepository productRepository;
     private final ProductCatalogLoader productCatalogLoader;
+    private final StockCommandOutbox stockCommands;
 
     @Getter private ProductEntity iPhone;
     @Getter private ProductEntity galaxyS21;
@@ -73,7 +77,10 @@ public class SetupProducts {
             .category(definition.category())
             .imageUrl(imagePath(definition.imageUrl()))
             .build();
-        return productRepository.save(product);
+        ProductEntity saved = productRepository.save(product);
+        // The stock item is created in warehouse-service after commit (contract section 4.3).
+        stockCommands.initialStockAfterCommit(saved, SEED_ACTOR);
+        return saved;
     }
 
     private void assignDemoProductHandles(List<ProductEntity> products) {

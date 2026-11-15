@@ -70,7 +70,8 @@ class GraphQlConcurrencyIT extends AbstractCommerceGraphQlTest {
         assertThat(productRepository.findById(product.getId()).orElseThrow().getStockQuantity()).isZero();
         assertThat(orderRepository.count()).isEqualTo(1);
         assertThat(cartItemRepository.count()).isEqualTo(1);
-        assertThat(movements.count()).isEqualTo(1);
+        assertThat(stockLedger.movements(product.getId())).singleElement()
+                .satisfies(movement -> assertThat(movement.type()).isEqualTo("ORDER_DEDUCTED"));
     }
 
     @Test
@@ -91,7 +92,8 @@ class GraphQlConcurrencyIT extends AbstractCommerceGraphQlTest {
         assertThat(outcomes).allSatisfy(result -> assertThat(result.has("errors")).isFalse());
         assertThat(outcomes.getFirst().at("/data/adjustInventory")).isEqualTo(outcomes.getLast().at("/data/adjustInventory"));
         assertThat(productRepository.findById(product.getId()).orElseThrow().getStockQuantity()).isEqualTo(8);
-        assertThat(movements.count()).isEqualTo(1);
+        assertThat(stockLedger.movements(product.getId())).singleElement()
+                .satisfies(movement -> assertThat(movement.type()).isEqualTo("ADMIN_ADJUSTMENT"));
     }
 
     private List<JsonNode> concurrently(Callable<JsonNode> first, Callable<JsonNode> second) throws Exception {

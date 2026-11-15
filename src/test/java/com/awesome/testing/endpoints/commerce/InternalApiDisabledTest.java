@@ -47,6 +47,25 @@ class InternalApiDisabledTest extends HttpHelper {
         assertThat(export.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
+    @Test
+    void stockEndpointsRespondNotFoundWithoutAWarehouseToken() {
+        HttpHeaders withToken = getJsonOnlyHeaders();
+        withToken.add("X-Service-Token", "test-warehouse-token");
+
+        ResponseEntity<ErrorDto> levels = executePost("/internal/v1/inventory/levels", "{\"levels\":[]}", withToken,
+                ErrorDto.class);
+        ResponseEntity<ErrorDto> export = executeGet("/internal/v1/inventory/export", withToken, ErrorDto.class);
+        ResponseEntity<ErrorDto> byReservation = executeGet(
+                "/internal/v1/orders/by-reservation/00000000-0000-0000-0000-000000000001", withToken, ErrorDto.class);
+        ResponseEntity<ErrorDto> receipts = executePost("/internal/v1/inventory/receipts", "{}", withToken,
+                ErrorDto.class);
+
+        assertThat(java.util.List.of(levels, export, byReservation, receipts)).allSatisfy(response -> {
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThat(response.getBody().getMessage()).isEqualTo("Not found");
+        });
+    }
+
     private HttpHeaders blank() {
         HttpHeaders headers = getJsonOnlyHeaders();
         headers.add("X-Service-Token", "");

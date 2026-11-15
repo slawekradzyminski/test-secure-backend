@@ -55,6 +55,7 @@ ollama:
 
 warehouse:
   service-token: ${WAREHOUSE_SERVICE_TOKEN:local-warehouse-token}
+  backend-service-token: ${BACKEND_SERVICE_TOKEN:local-backend-token}
 
 internal:
   service-tokens:

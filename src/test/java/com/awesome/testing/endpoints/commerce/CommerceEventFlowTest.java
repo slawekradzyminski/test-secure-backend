@@ -1,5 +1,6 @@
 package com.awesome.testing.endpoints.commerce;
 
+import com.awesome.testing.event.CommerceEventType;
 import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.order.FulfilmentState;
 import com.awesome.testing.dto.order.OrderDto;
@@ -84,8 +85,9 @@ class CommerceEventFlowTest extends AbstractCommerceFlowTest {
         assertThat(cancelAgain.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(foreignCancel.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(emptyCheckout.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(recorded.typesForOrder(cancelled.getId())).containsExactly(ORDER_CREATED, ORDER_CANCELLED);
-        assertThat(recorded.forOrder(cancelled.getId()).getLast().data()).containsEntry("status", OrderStatus.CANCELLED.name());
+        assertThat(recorded.typesForOrder(cancelled.getId()))
+                .containsExactly(ORDER_CREATED, ORDER_CANCELLED, CommerceEventType.STOCK_RESTORE_REQUESTED);
+        assertThat(recorded.forOrder(cancelled.getId()).get(1).data()).containsEntry("status", OrderStatus.CANCELLED.name());
         assertThat(recorded.typesForOrder(delivered.getId())).containsExactly(ORDER_CREATED, ORDER_PAID, ORDER_DELIVERED);
     }
 

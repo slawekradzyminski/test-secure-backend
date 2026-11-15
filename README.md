@@ -329,7 +329,7 @@ is not a string; decimal amounts may be sent as numbers or strings.
 - POST `/api/v1/orders/{id}/cancel` - Cancel order
 - POST `/api/v1/admin/orders/{id}/expire-reservation` - Expire a PENDING order's stock reservation now (ADMIN only, time control for tests)
 
-New orders carry `reservationExpiresAt` (ISO-8601 UTC, milliseconds) in every order body; a PENDING order that is not paid by then is cancelled and its stock restored.
+New orders carry `reservationExpiresAt` (ISO-8601 UTC, milliseconds) in every order body; a PENDING order that is not paid by then is cancelled and its stock restored by warehouse-service, which owns the stock ledger since 3.22.0 (the backend answers 503 `Inventory service unavailable` for checkout and stock changes while warehouse-service is down).
 
 ### QR Code
 

@@ -1,5 +1,8 @@
 package com.awesome.testing.service;
 
+import com.awesome.testing.service.stock.StockLedgerClient;
+import com.awesome.testing.service.stock.StockProjection;
+import org.springframework.transaction.PlatformTransactionManager;
 import com.awesome.testing.service.reservation.OrderReservations;
 
 import com.awesome.testing.controller.exception.CustomException;
@@ -42,6 +45,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -63,6 +67,10 @@ class OrderServiceEventsTest {
     @Mock private CouponService couponService;
     @Mock private OrderIdempotencyKeyRepository idempotencyKeyRepository;
     @Mock private CommerceEvents commerceEvents;
+    @Mock private StockLedgerClient stockLedger;
+    @Mock private StockProjection stockProjection;
+    @Mock private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
+    @Mock private PlatformTransactionManager transactionManager;
 
     private final List<CheckoutContext> contributions = new ArrayList<>();
     private final List<OrderStatus> statusesSeenByContributors = new ArrayList<>();
@@ -85,8 +93,11 @@ class OrderServiceEventsTest {
                 .inventoryState(InventoryState.DEDUCTED).items(new ArrayList<>()).build();
         lenient().when(orderRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(order));
         lenient().when(productRepository.findByIdForUpdate(4L)).thenReturn(Optional.of(product));
-        lenient().when(cartItemRepository.findByUsernameForUpdate(USER)).thenReturn(List.of(CartItemEntity.builder()
-                .username(USER).product(product).quantity(3).price(product.getPrice()).build()));
+        List<CartItemEntity> cart = List.of(CartItemEntity.builder()
+                .username(USER).product(product).quantity(3).price(product.getPrice()).build());
+        lenient().when(cartItemRepository.findByUsername(USER)).thenReturn(cart);
+        lenient().when(cartItemRepository.findByUsernameForUpdate(USER)).thenReturn(cart);
+        CheckoutStubs.reserveEverything(stockLedger);
         lenient().when(orderRepository.save(any(OrderEntity.class))).thenAnswer(invocation -> {
             OrderEntity saved = invocation.getArgument(0);
             if (saved.getId() == null) {
@@ -99,7 +110,8 @@ class OrderServiceEventsTest {
     private OrderService service(CheckoutContributors contributors) {
         return new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
                 idempotencyKeyRepository, Clock.systemUTC(), contributors, commerceEvents,
-                new OrderReservations(true, Duration.ofMinutes(30)));
+                new OrderReservations(true, Duration.ofMinutes(30)),
+                stockLedger, stockProjection, stockCommandDispatcher, transactionManager);
     }
 
     @Test
@@ -132,6 +144,9 @@ class OrderServiceEventsTest {
 
         assertThatThrownBy(() -> rejecting.createOrder(USER, address, null)).hasMessage("Gift card is empty");
         verify(orderRepository, never()).save(any());
+        // The reservation made before the write is given back.
+        verify(stockLedger).release(any());
+        verify(stockLedger, never()).confirm(any(), anyLong());
         verify(cartItemRepository, never()).deleteByUsername(any());
         verifyNoInteractions(commerceEvents);
     }
@@ -144,7 +159,7 @@ class OrderServiceEventsTest {
                 OrderIdempotencyKeyEntity.builder().order(original).requestHash(OrderService.requestHash(address)).build()));
 
         assertThat(service.createOrder(USER, address, "checkout-key-1").replayed()).isTrue();
-        when(cartItemRepository.findByUsernameForUpdate("empty")).thenReturn(List.of());
+        when(cartItemRepository.findByUsername("empty")).thenReturn(List.of());
         assertThatThrownBy(() -> service.createOrder("empty", address, null)).isInstanceOf(CustomException.class);
 
         assertThat(contributions).isEmpty();
@@ -172,6 +187,8 @@ class OrderServiceEventsTest {
     void everyCancellationPathPublishesOrderCancelledOnce() {
         service.cancelOrder(7L, USER, false);
         verify(commerceEvents).publish(CommerceEventType.ORDER_CANCELLED, order, Map.of("reason", "CUSTOMER"));
+        verify(commerceEvents).publishData(CommerceEventType.STOCK_RESTORE_REQUESTED, USER, 7L,
+                Map.of("orderId", 7L, "actor", USER, "lines", List.of()));
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
 
         assertThatThrownBy(() -> service.updateOrderStatus(7L, OrderStatus.CANCELLED)).isInstanceOf(CustomException.class);

@@ -117,7 +117,8 @@ class PaymentRefundFlowTest extends AbstractPaymentFlowTest {
             assertThat(event.getUsername()).isEqualTo(client.getUsername());
         });
         assertThat(eventRepository.findByOrderIdOrderBySequenceAsc(orderId)).extracting(DomainEventEntity::getType)
-                .containsExactly("order.created", "order.paid", "order.cancelled", CARD_REFUND);
+                .containsExactly("order.created", "order.paid", "order.cancelled", CARD_REFUND,
+                        "stock.restore-requested");
     }
 
     @Test

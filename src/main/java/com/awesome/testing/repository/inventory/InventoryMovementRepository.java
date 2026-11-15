@@ -23,4 +23,9 @@ public interface InventoryMovementRepository extends JpaRepository<InventoryMove
     Page<InventoryMovementEntity> findByProductIdOrderByCreatedAtDescIdDesc(
             Long productId,
             Pageable pageable);
+
+    /** Movements of the given products in id order, with their order ids (one-time export). */
+    @Query("SELECT m FROM InventoryMovementEntity m LEFT JOIN FETCH m.order JOIN FETCH m.product p"
+            + " WHERE p.id IN :productIds ORDER BY m.id")
+    List<InventoryMovementEntity> findByProductIdsInIdOrder(@Param("productIds") java.util.Collection<Long> productIds);
 }

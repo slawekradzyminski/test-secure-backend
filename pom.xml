@@ -4,7 +4,7 @@
 
     <groupId>murraco</groupId>
     <artifactId>jwt-auth-service</artifactId>
-    <version>3.21.1</version>
+    <version>3.22.0</version>
     <packaging>jar</packaging>
 
     <name>spring-boot-jwt</name>
@@ -570,6 +570,7 @@
                                 <param>com.awesome.testing.service.CartService</param>
                                 <param>com.awesome.testing.service.OrderService</param>
                                 <param>com.awesome.testing.service.InventoryService</param>
+                                <param>com.awesome.testing.service.stock.*</param>
                                 <param>com.awesome.testing.service.token.RefreshTokenService</param>
                                 <param>com.awesome.testing.service.password.PasswordResetService</param>
                                 <param>com.awesome.testing.security.ratelimit.AuthRateLimitGuard</param>
@@ -619,6 +620,8 @@
                                 <param>com.awesome.testing.service.OrderServiceTest</param>
                                 <param>com.awesome.testing.service.OrderServiceCommerceTest</param>
                                 <param>com.awesome.testing.service.InventoryServiceTest</param>
+                                <param>com.awesome.testing.service.CheckoutSagaTest</param>
+                                <param>com.awesome.testing.service.stock.*Test</param>
                                 <param>com.awesome.testing.service.token.RefreshTokenServiceTest</param>
                                 <param>com.awesome.testing.service.password.PasswordResetServiceTest</param>
                                 <param>com.awesome.testing.security.ratelimit.AuthRateLimitGuardTest</param>

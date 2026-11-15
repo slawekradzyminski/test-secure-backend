@@ -52,6 +52,15 @@ server:
 
 warehouse:
   service-token: test-warehouse-token
+  # The fake stock ledger (com.awesome.testing.stock.FakeWarehouse) every test context talks to.
+  url: ${fake-warehouse.url:http://127.0.0.1:9}
+  backend-service-token: test-backend-token
+  connect-timeout: PT1S
+  read-timeout: PT1S
+  # Tests send the stock command outbox themselves (StockCommandDispatcher#dispatchDue), so no
+  # background send races a test's own clean-up.
+  stock-commands:
+    enabled: false
 
 internal:
   service-tokens:

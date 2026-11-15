@@ -199,10 +199,93 @@ with the same address returns the original order with 201 and
 `Idempotent-Replayed: true`; a different address returns 409. Keys are scoped
 per user.
 
+### Stock ledger (warehouse-service, 3.22.0)
+
+warehouse-service owns the stock ledger (stock items, movements and
+reservations; [ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md) ADR 6).
+The backend keeps `products.stock_quantity` as a **projection** with
+`products.stock_ledger_version` (V25) and calls warehouse-service for every
+stock-changing command through `StockLedgerClient`
+(`WAREHOUSE_URL`, default `http://warehouse-service:4003`; `Authorization: Bearer
+<BACKEND_SERVICE_TOKEN>`; `X-Request-Id` and `traceparent` on every call; connect
+timeout 2 s, read timeout 5 s). The client refuses to run while the calling
+thread holds a database transaction, because the production connection pool
+has three connections.
+
+| Situation | Public answer |
+| --- | --- |
+| warehouse-service unreachable, slower than the read timeout or answering 5xx (or an unexpected 4xx) | **503** `{"message":"Inventory service unavailable"}` (GraphQL `UNAVAILABLE`, gRPC `UNAVAILABLE`) |
+| Reservation short of stock | 409 `Insufficient stock for product <id>`, as before |
+| Adjustment conflicts | warehouse-service's message, as before (`Insufficient stock`, `requestId already used with different payload`, `Inventory quantity exceeds supported maximum`) |
+
+- **Checkout** (`POST /api/v1/orders`, GraphQL `checkout`) is a saga that never
+  holds a connection during an HTTP call: a read-only transaction validates
+  the cart (including the fast local 409 against the projection); the
+  reservation (`POST /internal/v1/stock/reservations`, one line per product)
+  runs with no transaction; a write transaction re-locks the cart, re-checks
+  the idempotency key, stores the order with `orders.stock_reservation_id`
+  (internal, never serialized) and applies the reserved levels to the
+  projection; then the reservation is confirmed with the order id. If the
+  write fails, the reservation is released and the original error answered;
+  if the confirm fails, the order stands and warehouse-service's reaper
+  confirms it after `GET /internal/v1/orders/by-reservation/{id}`. A cart that
+  changed between the two transactions releases and starts again (three
+  attempts, then 409 `Cart changed during checkout; please try again`).
+- **Cancellation** no longer touches stock. When the order still holds
+  deducted stock, the backend records an internal feed event
+  `stock.restore-requested` with `data = {"orderId", "actor", "lines":
+  [{"productId", "quantity"}]}` (actor: the customer, `system` for reservation
+  expiry) in the cancel's transaction, and the order's `inventoryState`
+  becomes `RESTORED`. `order.cancelled` is unchanged. The event is never
+  offered to webhooks. warehouse-service restores the stock from the feed and
+  pushes the new level, so stock and movements appear **eventually** after a
+  cancel (settle delay 3 s + poll 5 s + level push).
+- **Level push**: `POST /internal/v1/inventory/levels` applies a level only
+  when its `ledgerVersion` is greater than the stored one; a refill from 0
+  triggers the back-in-stock emails.
+- **Admin adjustments** (REST, GraphQL, gRPC, product update with a new
+  `stockQuantity`, CSV import) are recorded by warehouse-service and the reply
+  updates the projection. A product update whose stock change is rejected
+  leaves the product unchanged; a CSV import whose adjustment or write fails
+  reverses the adjustments it already made (reason `CSV import rollback`).
+- **Initial stock and deletes** are written to `stock_command_outbox` in the
+  product's transaction. For product create (REST, GraphQL) and CSV import the
+  initial stock is sent **synchronously after commit, before the response**,
+  with no transaction open, so the product can be ordered as soon as the 201
+  arrives; if warehouse-service is down the answer is still 201 and
+  `StockCommandDispatcher` retries every `WAREHOUSE_STOCK_COMMANDS_RETRY_INTERVAL`
+  (default `PT5S`). Seeding and deletes are sent in the background right after
+  commit. A product's commands go out in order: a DELETE waits until an older
+  INITIAL_STOCK of the product is done, and an INITIAL_STOCK never sent is
+  superseded by the DELETE. Product delete locks the row first, so a stock level
+  applied concurrently never fails it.
+- **Safety net**: when a reservation answers 404 for a product that still has
+  a pending initial-stock command, that command is sent synchronously and the
+  reservation retried once.
+- **Projection writes**: a level whose quantity equals the stored one advances
+  only `stock_ledger_version` (a bulk UPDATE guarded by
+  `stock_ledger_version < :v`); `updatedAt` and the product version (ETag) move
+  only when the quantity changes.
+- **Reads** (`GET /api/v1/admin/inventory`, `/{id}`, products, cart) use the
+  projection and keep working while warehouse-service is down. Movement
+  history is read from warehouse-service (404 for an unknown product first,
+  as before).
+- `inventory_movements` is frozen: only `GET /internal/v1/inventory/export`
+  reads it, for warehouse-service's one-time import.
+
+| Property | Environment variable | Default |
+| --- | --- | --- |
+| `warehouse.url` | `WAREHOUSE_URL` | `http://warehouse-service:4003` |
+| `warehouse.connect-timeout` / `warehouse.read-timeout` | `WAREHOUSE_CONNECT_TIMEOUT` / `WAREHOUSE_READ_TIMEOUT` | `PT2S` / `PT5S` |
+| `warehouse.backend-service-token` | `BACKEND_SERVICE_TOKEN` | none (`local-backend-token` in `local`); required wherever orders are placed |
+| `warehouse.stock-commands.enabled` | `WAREHOUSE_STOCK_COMMANDS_ENABLED` | `true` (off in tests, which dispatch explicitly) |
+| `warehouse.stock-commands.retry-interval` | `WAREHOUSE_STOCK_COMMANDS_RETRY_INTERVAL` | `PT5S` |
+
 ### Stock reservations with a time limit
 
 Stock is still deducted from `products.stock_quantity` when the order is
-created (`ORDER_DEDUCTED`); that deduction is the hold. Since 3.21.0 the hold
+created (the reservation in warehouse-service, `ORDER_DEDUCTED`); that
+deduction is the hold. Since 3.21.0 the hold
 expires: every new order stores `orders.reservation_expires_at` (V23) =
 creation time + `orders.reservation.ttl`, truncated to milliseconds. Orders
 created before 3.21.0 or with `orders.reservation.enabled=false` keep null and
@@ -225,7 +308,8 @@ never expire.
   next run, and an order is never expired twice. A failing order is logged and
   does not stop the batch.
 - Expiry goes through the normal cancellation path: the coupon redemption is
-  released, stock is restored (`ORDER_RESTORED`, actor `system`), gift-card
+  released, `stock.restore-requested` asks warehouse-service to put the stock back
+  (`ORDER_RESTORED`, actor `system`), gift-card
   and points tenders are returned and earned points revoked, exactly as for a
   customer cancel. It publishes `order.cancelled` with
   `data.reason = "RESERVATION_EXPIRED"` and then `order.reservation-expired`
@@ -310,14 +394,16 @@ Its business rules are unchanged; they are documented in that repository.
 The backend keeps what warehouse-service builds on:
 
 - `ROLE_WAREHOUSE` and the `warehouse` demo user.
-- Inventory movement types `PURCHASE_RECEIVED` and `RETURN_RESTOCKED`, written
-  by `InventoryService.receive`, which also triggers back-in-stock emails.
+- Inventory movement types `PURCHASE_RECEIVED` and `RETURN_RESTOCKED`. Since
+  3.22.0 warehouse-service writes them in its own stock ledger; the backend's
+  projection follows through the level push, which also triggers
+  back-in-stock emails.
 - Email templates `ORDER_SHIPPED`, `ORDER_DELIVERED` and `RETURN_UPDATED`.
   The backend renders them and publishes them as `GENERIC`, so older JMS
   consumers keep working.
 - The order's fulfilment state and the internal API below, which
   warehouse-service calls to read orders and products, mirror shipment
-  progress, cancel orders, receive stock and email customers.
+  progress, cancel orders, push stock levels and email customers.
 
 ### Order fulfilment state
 
@@ -335,7 +421,7 @@ NONE ─────────> AWAITING_PICK ──> PICKED ──> PACKED �
 
 | Rule | Result |
 | --- | --- |
-| Customer or admin cancellation while `NONE` or `AWAITING_PICK` | Allowed; stock restored, coupon released, state becomes `CANCELLED` |
+| Customer or admin cancellation while `NONE` or `AWAITING_PICK` | Allowed; `stock.restore-requested` recorded for warehouse-service, coupon released, state becomes `CANCELLED` |
 | Customer or admin cancellation from `PICKED` on | 409 `Order is already being packed and cannot be cancelled` |
 | Legacy `PUT /api/v1/orders/{id}/status` while `AWAITING_PICK` through `SHIPPED` | 409 |
 | Cancelling a `SHIPPED` or `DELIVERED` order | 400, as before |
@@ -381,9 +467,12 @@ and is absent from `/v3/api-docs`.
 | `GET /orders?ids=1,2` | `List<InternalOrderDto>` of the given orders in any status, by id ascending; unknown ids are omitted; more than 100 ids is 400. warehouse-service uses it to follow customer cancellations |
 | `PUT /orders/{id}/fulfilment` `{state}` | Next forward step only. `AWAITING_PICK` requires a `PAID` order in `NONE`. `SHIPPED` and `DELIVERED` also set the order status. Repeating the current state returns 200 without changes, including `AWAITING_PICK`, so a release whose response was lost can be retried (warehouse-service's unique shipment-per-order constraint prevents duplicates). Skips, backward steps and steps after `CANCELLED` are 409. `NONE` or `CANCELLED` in the body is 400 |
 | `POST /orders/{id}/refunds` `{requestId, amount, reference}` | Books a refund for returned items. Only `DELIVERED` orders (409), amount 0.01 or more with at most 2 decimals (400), and the refunds of an order may not exceed its `totalAmount` (409). Adds the amount to `orders.refunded_amount` (shown as `refundedAmount` in order responses once it is above zero). A refund that brings the order to its full total releases the coupon redemption. Repeating a `requestId` with the same order and amount returns the order unchanged; a different order or amount is 409 |
-| `POST /orders/{id}/warehouse-cancel` | Only for `PAID` orders in `AWAITING_PICK` or `PICKED` (otherwise 409); restores stock, releases the coupon, sets status and state to `CANCELLED` |
+| `POST /orders/{id}/warehouse-cancel` | Only for `PAID` orders in `AWAITING_PICK` or `PICKED` (otherwise 409); records `stock.restore-requested` for warehouse-service, releases the coupon, sets status and state to `CANCELLED` |
+| `GET /orders/by-reservation/{reservationId}` | `{"orderId": 123}` for the order a stock reservation was stored with; 404 `Order not found`; 400 for a malformed UUID. warehouse-service's reaper asks before it releases an unconfirmed reservation |
 | `GET /products[?ids=1,2]` | `List<InternalProductDto>` by id ascending; unknown ids are omitted |
-| `POST /inventory/receipts` | `{movementIds}` in request-line order. `type` must be `PURCHASE_RECEIVED` or `RETURN_RESTOCKED` (400), each product at most once (400), quantities ≥ 1, unknown product or `orderId` 404. Each movement stores the `requestId`, `reference` as its reason and actor `warehouse-service`. Repeating a `requestId` with the same type and lines returns the original ids without changing stock; different lines or type is 409 |
+| `POST /inventory/receipts` | **410** `Stock receipts are recorded by warehouse-service since backend 3.22.0`, whatever the body. Kept for one release, removed in the next |
+| `POST /inventory/levels` `{levels: [{productId, quantity, ledgerVersion}]}` | 200 `{applied, ignored}`. Applies each level in product id order when its `ledgerVersion` is greater than the product's `stock_ledger_version` (sets `stock_quantity`, touches `updated_at`, back-in-stock emails on a refill from 0); unknown products and stale versions are ignored. 400 for a missing list, more than 1000 levels, a null level, `productId` < 1, `quantity` < 0 or `ledgerVersion` < 1 |
+| `GET /inventory/export?afterProductId&limit=500` | 200 `{items: [{productId, quantity, movements: [{id, orderId, type, delta, quantityAfter, actor, reason, requestId, createdAt}]}], nextAfterProductId}`: products with an id above `afterProductId` in id order with their projected quantity and their frozen `inventory_movements` (oldest first, ids kept). `nextAfterProductId` is null on the last page. 400 for `limit` outside 1–500, a negative or non-numeric `afterProductId` |
 | `POST /notifications` | 202. `requestId` is required (400); `template` must be `ORDER_SHIPPED`, `ORDER_DELIVERED`, `RETURN_UPDATED`, `SHIPMENT_OUT_FOR_DELIVERY` or `SHIPMENT_DELIVERY_FAILED` (400) and its properties must be present (400: `orderId`, `carrier`, `trackingNumber` / `orderId` / `returnId`, `orderId`, `status`, optional `refundAmount` and `note` / `orderId`, `carrier`, `trackingNumber` for both carrier templates); unknown username 404. The backend renders the subject and body (`CustomerEmailRenderer`) and queues the email through the existing pipeline. A repeated `requestId` is accepted without a second email |
 | `GET /jwks.json` | The RS256 access-token verification key as a JSON Web Key Set (`kty`, `use`, `alg`, `kid`, `n`, `e`) |
 | `POST /orders/{id}/payment` | Payment result from payment-service; see [Card payments](#card-payments) |
@@ -397,7 +486,7 @@ InternalOrderDto   { id, username, status, fulfilmentState, subtotalAmount, disc
                      items [{productId, productName, category, quantity, unitPrice}],
                      createdAt, updatedAt }
 InternalProductDto { id, name, category, price, stockQuantity }
-receipt body       { requestId, type, orderId?, reference, lines [{productId, quantity}] }
+levels body        { levels [{productId, quantity, ledgerVersion}] }
 refund body        { requestId, amount, reference }
 notification body  { requestId, username, template, properties {string: string} }
 ```
@@ -421,6 +510,7 @@ transaction that changed the order; consumers use
 | `ORDER_CREATED` | `order.created` | Checkout creates an order (not on an idempotent replay) |
 | `ORDER_PAID` | `order.paid` | Admin status change to `PAID`, or a captured card payment (`data` adds `paymentId`) |
 | `ORDER_CANCELLED` | `order.cancelled` | Any cancellation (`data` adds `reason`: `CUSTOMER`, `ADMIN`, `RESERVATION_EXPIRED`, `WAREHOUSE` or `ACCOUNT_ERASURE`) |
+| `STOCK_RESTORE_REQUESTED` | `stock.restore-requested` | Internal, never offered to webhooks (3.22.0). Recorded with `order.cancelled` when the order still held deducted stock; `data` is exactly `orderId`, `actor`, `lines` (`[{productId, quantity}]`) |
 | `ORDER_SHIPPED` | `shipment.shipped` | Admin status change to `SHIPPED` or fulfilment reaching `SHIPPED` |
 | `ORDER_DELIVERED` | `shipment.delivered` | Admin status change to `DELIVERED` or fulfilment reaching `DELIVERED` |
 | `REFUND_BOOKED` | `refund.booked` | A new refund is booked (`data` adds `amount` and `requestId`) |
@@ -585,6 +675,7 @@ the warehouse, payment and notification service tokens.
 | --- | --- |
 | `card-refund.requested` | payment-service refunds the captured card payment |
 | `order.cancelled` | warehouse-service cancels the order's open shipment |
+| `stock.restore-requested` | warehouse-service restores the order's stock once per order (3.22.0) |
 | `notification.requested` | notification-service renders and sends the commerce email |
 | webhook-eligible types | notification-service delivers user webhooks (where `webhooks.enabled=false`) |
 

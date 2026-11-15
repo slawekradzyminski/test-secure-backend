@@ -32,7 +32,13 @@ public enum CommerceEventType {
      * {@code notifications.delivery=feed}). {@code data} is exactly {@code requestId}, {@code template},
      * {@code recipientEmail}, {@code recipientName}, {@code properties}.
      */
-    NOTIFICATION_REQUESTED("notification.requested", false);
+    NOTIFICATION_REQUESTED("notification.requested", false),
+    /**
+     * Internal: warehouse-service should put back the stock of a cancelled order that still held it
+     * (recorded with {@link #ORDER_CANCELLED}, contract section 3.1). {@code data} is exactly
+     * {@code orderId}, {@code actor}, {@code lines} ({@code [{productId, quantity}]}).
+     */
+    STOCK_RESTORE_REQUESTED("stock.restore-requested", false);
 
     private final String wire;
     private final boolean webhookVisible;

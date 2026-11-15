@@ -4,7 +4,22 @@ import com.awesome.testing.dto.email.EmailDto;
 import com.awesome.testing.dto.event.EventFeedDto;
 import com.awesome.testing.dto.event.FeedEventDto;
 import com.awesome.testing.dto.payment.PaymentResultDto;
+import com.awesome.testing.dto.stock.AdjustStockRequestDto;
+import com.awesome.testing.dto.stock.ConfirmReservationRequestDto;
+import com.awesome.testing.dto.stock.CreateStockItemRequestDto;
+import com.awesome.testing.dto.stock.LedgerMovementDto;
+import com.awesome.testing.dto.stock.ReservationDto;
+import com.awesome.testing.dto.stock.ReserveStockRequestDto;
+import com.awesome.testing.dto.stock.ReservedLineDto;
+import com.awesome.testing.dto.stock.StockLevelDto;
+import com.awesome.testing.dto.stock.StockLevelsDto;
+import com.awesome.testing.dto.stock.StockLevelsResultDto;
+import com.awesome.testing.dto.stock.StockLineDto;
 import com.awesome.testing.event.CommerceEvent;
+import com.awesome.testing.internal.dto.InventoryExportDto;
+import com.awesome.testing.internal.dto.InventoryExportItemDto;
+import com.awesome.testing.internal.dto.InventoryExportMovementDto;
+import com.awesome.testing.internal.dto.OrderReferenceDto;
 import com.awesome.testing.fakedata.ProductSeedDefinition;
 import com.awesome.testing.security.CustomPrincipal;
 import com.awesome.testing.service.UserService;
@@ -41,6 +56,18 @@ class NativeRuntimeHintsTest {
         assertThat(RuntimeHintsPredicates.reflection().onType(PaymentResultDto.class)).accepts(HINTS);
         assertThat(RuntimeHintsPredicates.reflection().onType(EventFeedDto.class)).accepts(HINTS);
         assertThat(RuntimeHintsPredicates.reflection().onType(FeedEventDto.class)).accepts(HINTS);
+    }
+
+    @Test
+    void registersJacksonBindingForWarehouseStockLedgerTypes() {
+        for (Class<?> type : new Class<?>[] {ReserveStockRequestDto.class, ReservationDto.class,
+                ReservedLineDto.class, StockLineDto.class, ConfirmReservationRequestDto.class,
+                AdjustStockRequestDto.class, LedgerMovementDto.class, CreateStockItemRequestDto.class,
+                StockLevelDto.class, StockLevelsDto.class, StockLevelsResultDto.class,
+                InventoryExportDto.class, InventoryExportItemDto.class, InventoryExportMovementDto.class,
+                OrderReferenceDto.class}) {
+            assertThat(RuntimeHintsPredicates.reflection().onType(type)).as(type.getSimpleName()).accepts(HINTS);
+        }
     }
 
     @Test

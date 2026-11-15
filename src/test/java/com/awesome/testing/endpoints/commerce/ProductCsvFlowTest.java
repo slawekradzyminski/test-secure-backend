@@ -3,8 +3,7 @@ package com.awesome.testing.endpoints.commerce;
 import com.awesome.testing.dto.catalog.ImportReportDto;
 import com.awesome.testing.dto.catalog.ImportRowErrorDto;
 import com.awesome.testing.entity.ProductEntity;
-import com.awesome.testing.entity.inventory.InventoryMovementType;
-import com.awesome.testing.repository.inventory.InventoryMovementRepository;
+import com.awesome.testing.service.stock.StockCommandDispatcher;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
@@ -25,7 +24,7 @@ class ProductCsvFlowTest extends AbstractCommerceFlowTest {
     private static final String IMPORT = "/api/v1/admin/products/import";
 
     @Autowired
-    private InventoryMovementRepository movementRepository;
+    private StockCommandDispatcher stockCommandDispatcher;
 
     @Test
     void exportQuotesSpecialCharactersAndNeutralisesFormulas() {
@@ -65,12 +64,19 @@ class ProductCsvFlowTest extends AbstractCommerceFlowTest {
         ProductEntity updated = productRepository.findById(existing.getId()).orElseThrow();
         assertThat(updated.getName()).isEqualTo("Renamed product");
         assertThat(updated.getStockQuantity()).isEqualTo(9);
-        assertThat(movementRepository.findAll()).anySatisfy(movement -> {
-            assertThat(movement.getType()).isEqualTo(InventoryMovementType.ADMIN_ADJUSTMENT);
-            assertThat(movement.getReason()).isEqualTo("CSV import");
-            assertThat(movement.getDelta()).isEqualTo(4);
+        assertThat(stockLedger.movements(existing.getId())).singleElement().satisfies(movement -> {
+            assertThat(movement.type()).isEqualTo("ADMIN_ADJUSTMENT");
+            assertThat(movement.reason()).isEqualTo("CSV import");
+            assertThat(movement.delta()).isEqualTo(4);
         });
-        assertThat(productRepository.findAll()).extracting(ProductEntity::getName).contains("Imported lamp");
+        ProductEntity created = productRepository.findAll().stream()
+                .filter(product -> product.getName().equals("Imported lamp")).findFirst().orElseThrow();
+        // The new product's stock item was created in warehouse-service before the response.
+        assertThat(stockLedger.movements(created.getId())).singleElement().satisfies(movement -> {
+            assertThat(movement.type()).isEqualTo("INITIAL_STOCK");
+            assertThat(movement.delta()).isEqualTo(7);
+            assertThat(movement.actor()).isNotBlank();
+        });
     }
 
     @Test

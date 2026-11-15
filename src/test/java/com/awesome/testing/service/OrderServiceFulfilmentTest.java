@@ -1,5 +1,11 @@
 package com.awesome.testing.service;
 
+import java.util.List;
+import java.util.Map;
+import com.awesome.testing.event.CommerceEventType;
+import com.awesome.testing.service.stock.StockLedgerClient;
+import com.awesome.testing.service.stock.StockProjection;
+import org.springframework.transaction.PlatformTransactionManager;
 import com.awesome.testing.service.reservation.OrderReservations;
 
 import com.awesome.testing.controller.exception.CustomException;
@@ -32,6 +38,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,6 +60,10 @@ class OrderServiceFulfilmentTest {
     @Mock private CouponService couponService;
     @Mock private OrderIdempotencyKeyRepository idempotencyKeyRepository;
     @Mock private CommerceEvents commerceEvents;
+    @Mock private StockLedgerClient stockLedger;
+    @Mock private StockProjection stockProjection;
+    @Mock private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
+    @Mock private PlatformTransactionManager transactionManager;
 
     private OrderService service;
     private OrderEntity order;
@@ -61,7 +73,8 @@ class OrderServiceFulfilmentTest {
     void setUp() {
         service = new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
                 idempotencyKeyRepository, Clock.systemUTC(), CheckoutContributors.none(), commerceEvents,
-                new OrderReservations(true, Duration.ofMinutes(30)));
+                new OrderReservations(true, Duration.ofMinutes(30)),
+                stockLedger, stockProjection, stockCommandDispatcher, transactionManager);
         product = ProductEntity.builder().id(4L).name("Phone").price(BigDecimal.TEN).stockQuantity(0).build();
         order = OrderEntity.builder().id(7L).username("buyer").status(OrderStatus.PAID)
                 .shippingAddress(new AddressEntity()).totalAmount(BigDecimal.TEN)
@@ -84,7 +97,8 @@ class OrderServiceFulfilmentTest {
                 .as("only orders the warehouse holds become CANCELLED; untouched ones stay NONE")
                 .isEqualTo(state == FulfilmentState.NONE ? FulfilmentState.NONE : FulfilmentState.CANCELLED);
         assertThat(order.getInventoryState()).isEqualTo(InventoryState.RESTORED);
-        verify(inventoryService).restore(product, 2, order, order.getUsername());
+        verify(commerceEvents).publishData(CommerceEventType.STOCK_RESTORE_REQUESTED, "buyer", 7L, Map.of(
+                "orderId", 7L, "actor", "buyer", "lines", List.of(Map.of("productId", 4L, "quantity", 2))));
         verify(couponService).releaseRedemption(order);
     }
 
@@ -97,7 +111,8 @@ class OrderServiceFulfilmentTest {
         assertConflict(() -> service.cancelOrder(7L, "admin", true));
         assertConflict(() -> service.updateOrderStatus(7L, OrderStatus.CANCELLED));
         verify(couponService, never()).releaseRedemption(any());
-        verify(inventoryService, never()).restore(any(), anyInt(), any(), any());
+        verify(commerceEvents, never()).publish(eq(CommerceEventType.ORDER_CANCELLED), any(), any());
+        assertThat(order.getInventoryState()).isEqualTo(InventoryState.DEDUCTED);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
     }
 
@@ -207,7 +222,8 @@ class OrderServiceFulfilmentTest {
         assertThat(order.getFulfilmentState())
                 .as("only orders the warehouse holds become CANCELLED; untouched ones stay NONE")
                 .isEqualTo(state == FulfilmentState.NONE ? FulfilmentState.NONE : FulfilmentState.CANCELLED);
-        verify(inventoryService).restore(product, 2, order, order.getUsername());
+        verify(commerceEvents).publishData(CommerceEventType.STOCK_RESTORE_REQUESTED, "buyer", 7L, Map.of(
+                "orderId", 7L, "actor", "buyer", "lines", List.of(Map.of("productId", 4L, "quantity", 2))));
         verify(couponService).releaseRedemption(order);
     }
 
@@ -217,7 +233,8 @@ class OrderServiceFulfilmentTest {
         order.setFulfilmentState(state);
 
         assertConflict(() -> service.cancelForWarehouse(7L));
-        verify(inventoryService, never()).restore(any(), anyInt(), any(), any());
+        verify(commerceEvents, never()).publish(eq(CommerceEventType.ORDER_CANCELLED), any(), any());
+        assertThat(order.getInventoryState()).isEqualTo(InventoryState.DEDUCTED);
     }
 
     @Test

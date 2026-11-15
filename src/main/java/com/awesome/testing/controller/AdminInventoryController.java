@@ -84,6 +84,8 @@ public class AdminInventoryController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "409", description = "Insufficient stock, quantity overflow, or requestId reused with different delta/reason",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "503", description = "Inventory service unavailable: warehouse-service, which owns the stock ledger, did not answer",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public ResponseEntity<InventoryMovementDto> adjust(
             @PathVariable Long productId,
             @Valid @RequestBody InventoryAdjustmentDto request,
@@ -95,6 +97,8 @@ public class AdminInventoryController {
     @GetMapping("/{productId}/movements")
     @Operation(summary = "List inventory movements", description = "Lists an inventory item's movement history newest first. Negative page is clamped to zero; size is clamped to 1–100.")
     @ApiResponse(responseCode = "200", description = "Movement history returned")
+    @ApiResponse(responseCode = "503", description = "Inventory service unavailable: the movement history is read from warehouse-service",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "404", description = "Product not found",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "400", description = "Invalid parameter",

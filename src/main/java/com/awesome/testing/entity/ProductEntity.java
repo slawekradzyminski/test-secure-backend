@@ -53,6 +53,17 @@ public class ProductEntity {
     @Column(nullable = false)
     private Long version;
 
+    /**
+     * The warehouse-service ledger version {@link #stockQuantity} was last set from; 0 until
+     * warehouse-service reports a level. A level is applied only when its version is greater
+     * ({@link com.awesome.testing.service.stock.StockProjection}).
+     */
+    // Not updatable through the entity: StockProjection advances it with a bulk UPDATE, so a level
+    // that leaves the quantity unchanged moves neither updatedAt nor the version (ETag).
+    @Column(name = "stock_ledger_version", nullable = false, updatable = false)
+    @Builder.Default
+    private Long stockLedgerVersion = 0L;
+
     @Column(nullable = false)
     private String category;
 
@@ -78,6 +89,9 @@ public class ProductEntity {
     void normalizeImageUrl() {
         if (imageUrl == null) {
             imageUrl = NO_IMAGE;
+        }
+        if (stockLedgerVersion == null) {
+            stockLedgerVersion = 0L;
         }
     }
 

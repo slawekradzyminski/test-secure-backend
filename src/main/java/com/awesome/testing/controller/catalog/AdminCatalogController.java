@@ -70,6 +70,8 @@ public class AdminCatalogController {
             content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ImportReportDto.class, ErrorDto.class})))
     @ApiResponse(responseCode = "413", description = "File larger than 1 MB",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "503", description = "Inventory service unavailable: a stockQuantity change could not be recorded; nothing was imported",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     public ResponseEntity<ImportReportDto> importCsv(
             @Parameter(hidden = true) @AuthenticationPrincipal CustomPrincipal principal,
             @Parameter(description = "CSV file") @RequestPart("file") MultipartFile file,

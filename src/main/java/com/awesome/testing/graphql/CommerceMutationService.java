@@ -18,6 +18,7 @@ import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
@@ -63,6 +64,8 @@ public class CommerceMutationService {
         return queries.cart(owner);
     }
 
+    /** No transaction: checkout and stock adjustments call warehouse-service (they open their own). */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Order checkout(AddressDto address) {
         return Order.from(orderService.createOrder(access.username(), validated(address)));
     }
@@ -77,11 +80,13 @@ public class CommerceMutationService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Product createProduct(ProductCreateDto input) {
         return Product.from(productService.createProduct(validated(input)));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Product updateProduct(Long id, ProductUpdateDto input) {
         return Product.from(productService.updateProduct(id, validated(input)));
     }
@@ -92,6 +97,7 @@ public class CommerceMutationService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public InventoryMovementDto adjustInventory(Long productId, InventoryAdjustmentDto input) {
         return inventoryService.adjust(productId, validated(input), access.username());
     }

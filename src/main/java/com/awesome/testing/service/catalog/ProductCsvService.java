@@ -8,13 +8,17 @@ import com.awesome.testing.dto.product.ProductCreateDto;
 import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.ProductRepository;
 import com.awesome.testing.service.InventoryService;
+import com.awesome.testing.service.stock.StockCommandDispatcher;
+import com.awesome.testing.service.stock.StockCommandOutbox;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -32,8 +36,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+@Slf4j
 @Service
-@RequiredArgsConstructor
 public class ProductCsvService {
 
     public static final long MAX_BYTES = 1024 * 1024;
@@ -42,10 +46,28 @@ public class ProductCsvService {
             List.of("id", "name", "description", "price", "stockQuantity", "category", "imageUrl");
     private static final Set<String> REQUIRED = Set.of("name", "description", "price", "stockQuantity", "category");
     private static final String CSV_REASON = "CSV import";
+    static final String CSV_ROLLBACK_REASON = "CSV import rollback";
 
     private final ProductRepository productRepository;
     private final InventoryService inventoryService;
+    private final StockCommandOutbox stockCommands;
+    private final StockCommandDispatcher stockCommandDispatcher;
     private final Validator validator;
+    private final TransactionTemplate readTransaction;
+    private final TransactionTemplate writeTransaction;
+
+    public ProductCsvService(ProductRepository productRepository, InventoryService inventoryService,
+                             StockCommandOutbox stockCommands, StockCommandDispatcher stockCommandDispatcher,
+                             Validator validator, PlatformTransactionManager transactionManager) {
+        this.productRepository = productRepository;
+        this.inventoryService = inventoryService;
+        this.stockCommands = stockCommands;
+        this.stockCommandDispatcher = stockCommandDispatcher;
+        this.validator = validator;
+        this.readTransaction = new TransactionTemplate(transactionManager);
+        this.readTransaction.setReadOnly(true);
+        this.writeTransaction = new TransactionTemplate(transactionManager);
+    }
 
     @Transactional(readOnly = true)
     public String export() {
@@ -66,8 +88,13 @@ public class ProductCsvService {
      * Validates every row first and only then applies changes, so the import
      * is all-or-nothing. Returns a report; {@code errors} is non-empty when
      * nothing was persisted because of invalid input.
+     *
+     * <p>Stock changes of existing products are admin adjustments of warehouse-service's ledger,
+     * made with no transaction open after the read-only planning step and before the write
+     * transaction that stores the other fields and the new products. When an adjustment or the
+     * write fails, the adjustments already made are reversed (reason {@value #CSV_ROLLBACK_REASON}),
+     * so the import stays all-or-nothing.
      */
-    @Transactional
     public ImportReportDto importCsv(byte[] content, boolean dryRun, String actor) {
         if (content.length == 0) {
             throw new CustomException("CSV file is empty", HttpStatus.BAD_REQUEST);
@@ -90,6 +117,41 @@ public class ProductCsvService {
             return report;
         }
 
+        List<PlannedRow> plan = readTransaction.execute(status -> plan(records, header, report));
+        report.getErrors().sort(Comparator.comparingInt(ImportRowErrorDto::getRow));
+        if (!report.getErrors().isEmpty() || dryRun) {
+            return report;
+        }
+        List<AppliedAdjustment> adjusted = new ArrayList<>();
+        List<Long> initialStock;
+        try {
+            for (PlannedRow row : plan) {
+                if (row.action() == Action.UPDATE && row.stockDelta() != 0) {
+                    adjusted.add(adjust(row.productId(), row.stockDelta(), CSV_REASON, actor));
+                }
+            }
+            initialStock = writeTransaction.execute(status -> {
+                List<Long> commands = new ArrayList<>();
+                for (PlannedRow row : plan) {
+                    Long command = apply(row, actor);
+                    if (command != null) {
+                        commands.add(command);
+                    }
+                }
+                productRepository.flush();
+                return commands;
+            });
+        } catch (RuntimeException e) {
+            reverse(adjusted, actor);
+            throw e;
+        }
+        // The new products' stock items, before the response (contract section 4.3).
+        Objects.requireNonNull(initialStock).forEach(stockCommandDispatcher::sendNow);
+        report.setApplied(true);
+        return report;
+    }
+
+    private List<PlannedRow> plan(List<List<String>> records, Map<String, Integer> header, ImportReportDto report) {
         List<PlannedRow> plan = new ArrayList<>();
         Set<Long> seenIds = new HashSet<>();
         for (int index = 1; index < records.size(); index++) {
@@ -114,16 +176,29 @@ public class ProductCsvService {
                 case UNCHANGED -> report.setUnchanged(report.getUnchanged() + 1);
             }
         }
-        report.getErrors().sort(Comparator.comparingInt(ImportRowErrorDto::getRow));
-        if (!report.getErrors().isEmpty() || dryRun) {
-            return report;
+        return plan;
+    }
+
+    private AppliedAdjustment adjust(long productId, int delta, String reason, String actor) {
+        inventoryService.adjust(productId, InventoryAdjustmentDto.builder()
+                .delta(delta)
+                .reason(reason)
+                .requestId(UUID.randomUUID())
+                .build(), actor);
+        return new AppliedAdjustment(productId, delta);
+    }
+
+    /** Best effort: reverses the adjustments of a failed import, newest first. */
+    private void reverse(List<AppliedAdjustment> adjusted, String actor) {
+        for (int i = adjusted.size() - 1; i >= 0; i--) {
+            AppliedAdjustment adjustment = adjusted.get(i);
+            try {
+                adjust(adjustment.productId(), -adjustment.delta(), CSV_ROLLBACK_REASON, actor);
+            } catch (RuntimeException e) {
+                log.error("Could not reverse the CSV import adjustment of {} for product {}: {}",
+                        adjustment.delta(), adjustment.productId(), e.getMessage());
+            }
         }
-        for (PlannedRow row : plan) {
-            apply(row, actor);
-        }
-        productRepository.flush();
-        report.setApplied(true);
-        return report;
     }
 
     private Map<String, Integer> readHeader(List<String> headerRecord, ImportReportDto report) {
@@ -207,40 +282,35 @@ public class ProductCsvService {
             return null;
         }
         if (existing == null) {
-            return new PlannedRow(Action.CREATE, null, dto);
+            return new PlannedRow(Action.CREATE, null, dto, 0);
         }
-        return new PlannedRow(sameAs(existing, dto) ? Action.UNCHANGED : Action.UPDATE, existing.getId(), dto);
+        return new PlannedRow(sameAs(existing, dto) ? Action.UNCHANGED : Action.UPDATE, existing.getId(), dto,
+                dto.getStockQuantity() - existing.getStockQuantity());
     }
 
-    private void apply(PlannedRow row, String actor) {
+    /** Applies one row; returns the id of the INITIAL_STOCK command of a created product, or null. */
+    private Long apply(PlannedRow row, String actor) {
         ProductCreateDto dto = row.data();
         switch (row.action()) {
             case CREATE -> {
                 ProductEntity product = productRepository.save(ProductEntity.from(dto));
-                inventoryService.initial(product, actor);
+                return stockCommands.initialStock(product, actor).getId();
             }
             case UPDATE -> {
                 ProductEntity product = productRepository.findByIdForUpdate(row.productId())
                         .orElseThrow(() -> new CustomException("Product not found: " + row.productId(), HttpStatus.CONFLICT));
-                int delta = dto.getStockQuantity() - product.getStockQuantity();
                 product.setName(dto.getName());
                 product.setDescription(dto.getDescription());
                 product.setPrice(dto.getPrice());
                 product.setCategory(dto.getCategory());
                 product.setImageUrl(dto.getImageUrl());
                 productRepository.save(product);
-                if (delta != 0) {
-                    inventoryService.adjust(product.getId(), InventoryAdjustmentDto.builder()
-                            .delta(delta)
-                            .reason(CSV_REASON)
-                            .requestId(UUID.randomUUID())
-                            .build(), actor);
-                }
             }
             case UNCHANGED -> {
                 // Nothing to persist.
             }
         }
+        return null;
     }
 
     private static boolean sameAs(ProductEntity product, ProductCreateDto dto) {
@@ -278,6 +348,10 @@ public class ProductCsvService {
 
     private enum Action { CREATE, UPDATE, UNCHANGED }
 
-    private record PlannedRow(Action action, Long productId, ProductCreateDto data) {
+    /** {@code stockDelta}: the stock change of an UPDATE against the projection at planning time. */
+    private record PlannedRow(Action action, Long productId, ProductCreateDto data, int stockDelta) {
+    }
+
+    private record AppliedAdjustment(long productId, int delta) {
     }
 }

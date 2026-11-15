@@ -1,5 +1,6 @@
 package com.awesome.testing.endpoints.commerce;
 
+import com.awesome.testing.event.CommerceEventType;
 import com.awesome.testing.dto.ErrorDto;
 import com.awesome.testing.dto.email.EmailTemplate;
 import com.awesome.testing.dto.order.OrderDto;
@@ -174,7 +175,8 @@ class InternalPaymentFlowTest extends AbstractPaymentFlowTest {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
             assertThat(response.getBody().getMessage()).isEqualTo("Order is not payable");
         });
-        assertThat(recorded.typesForOrder(cancelled.getId())).containsExactly(ORDER_CREATED, ORDER_CANCELLED);
+        assertThat(recorded.typesForOrder(cancelled.getId()))
+                .containsExactly(ORDER_CREATED, ORDER_CANCELLED, CommerceEventType.STOCK_RESTORE_REQUESTED);
         assertThat(publicOrder(cancelled.getId()).getStatus()).isEqualTo(OrderStatus.CANCELLED);
     }
 

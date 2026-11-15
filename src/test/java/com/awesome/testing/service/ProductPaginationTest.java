@@ -30,7 +30,7 @@ class ProductPaginationTest {
 
     @BeforeEach
     void seedCatalog() {
-        service = new ProductService(repository, null);
+        service = new ProductService(repository, null, null, null, null);
         for (int i = 0; i < 2000; i++) {
             ids.add(entityManager.persist(ProductEntity.builder()
                     .name("Product " + i)

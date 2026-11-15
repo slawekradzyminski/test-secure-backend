@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.awesome.testing.factory.UserFactory.getRandomUserWithRoles;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class InventoryGrpcTest extends AbstractInventoryGrpcTest {
     @Autowired
@@ -128,6 +129,31 @@ class InventoryGrpcTest extends AbstractInventoryGrpcTest {
         assertStatus(Status.Code.FAILED_PRECONDITION, () -> client.adjustStock(adjustment(product.getId(), Integer.MIN_VALUE)));
         assertThat(client.getStock(GetStockRequest.newBuilder().setProductId(product.getId()).build()).getAvailableQuantity())
                 .isEqualTo(first.getQuantityAfter());
+    }
+
+    @Test
+    void anUnavailableWarehouseIsUnavailableForWritesAndMovementsButNotForStockReads() {
+        // given
+        var product = setupProduct();
+        var client = stub(admin());
+        stockLedger.fail(product.getId(),
+                com.awesome.testing.stock.FakeStockLedger.Injected.status(503,
+                        com.awesome.testing.stock.FakeStockLedger.Operation.ADJUST,
+                        com.awesome.testing.stock.FakeStockLedger.Operation.MOVEMENTS));
+        try {
+            // when / then
+            assertThatThrownBy(() -> client.adjustStock(adjustment(product.getId(), 1)))
+                    .isInstanceOfSatisfying(io.grpc.StatusRuntimeException.class, error -> {
+                        assertThat(error.getStatus().getCode()).isEqualTo(Status.Code.UNAVAILABLE);
+                        assertThat(error.getStatus().getDescription()).isEqualTo("Inventory service unavailable");
+                    });
+            assertStatus(Status.Code.UNAVAILABLE, () -> client.listStockMovements(
+                    ListStockMovementsRequest.newBuilder().setProductId(product.getId()).build()));
+            assertThat(client.getStock(GetStockRequest.newBuilder().setProductId(product.getId()).build())
+                    .getAvailableQuantity()).isEqualTo(product.getStockQuantity());
+        } finally {
+            stockLedger.heal(product.getId());
+        }
     }
 
     @Test

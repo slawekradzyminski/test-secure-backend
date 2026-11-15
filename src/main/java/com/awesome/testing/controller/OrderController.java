@@ -46,6 +46,8 @@ public class OrderController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "409", description = "Insufficient stock, coupon no longer valid, or Idempotency-Key reused with a different address",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
+    @ApiResponse(responseCode = "503", description = "Inventory service unavailable: warehouse-service could not reserve the stock; nothing was ordered and the cart is unchanged",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "400", description = "Invalid input or empty cart",
             content = @Content(mediaType = "application/json", schema = @Schema(anyOf = {ValidationErrorsDto.class, ErrorDto.class})))
     public ResponseEntity<OrderDto> createOrder(
