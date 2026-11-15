@@ -5,6 +5,7 @@ import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
+import com.awesome.testing.stock.FakeStockLedger;
 import com.awesome.testing.stock.WarehouseSimulator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -36,6 +37,10 @@ public abstract class AbstractEcommerceTest extends DomainHelper {
     /** warehouse-service's side of cancellations: restores stock and pushes levels when asked. */
     @Autowired
     protected WarehouseSimulator warehouseSimulator;
+
+    /** This context's fake warehouse-service stock ledger. */
+    @Autowired
+    protected FakeStockLedger stockLedger;
 
     @BeforeEach
     @Transactional

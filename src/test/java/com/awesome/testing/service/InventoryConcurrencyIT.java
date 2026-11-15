@@ -27,7 +27,6 @@ import com.awesome.testing.service.reservation.OrderReservations;
 import com.awesome.testing.dto.stock.StockLevelDto;
 import com.awesome.testing.service.stock.StockProjection;
 import com.awesome.testing.stock.FakeStockLedger;
-import com.awesome.testing.stock.FakeWarehouse;
 import com.awesome.testing.stock.StockSliceConfig;
 import com.awesome.testing.service.coupon.CouponService;
 import com.awesome.testing.service.checkout.CheckoutContributors;
@@ -86,6 +85,8 @@ class InventoryConcurrencyIT {
 
     @Autowired
     private StockProjection stockProjection;
+    @Autowired
+    private com.awesome.testing.stock.FakeStockLedger stockLedger;
 
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
@@ -131,9 +132,9 @@ class InventoryConcurrencyIT {
         assertThat(orderRepository.count()).isEqualTo(1);
         assertThat(cartItemRepository.count()).isEqualTo(1);
         // warehouse-service's ledger refused the second reservation: one deduction only.
-        assertThat(FakeWarehouse.ledger().movements(product.getId())).singleElement()
+        assertThat(stockLedger.movements(product.getId())).singleElement()
                 .satisfies(movement -> assertThat(movement.type()).isEqualTo("ORDER_DEDUCTED"));
-        assertThat(FakeWarehouse.ledger().item(product.getId()).orElseThrow().quantity()).isZero();
+        assertThat(stockLedger.item(product.getId()).orElseThrow().quantity()).isZero();
     }
 
     @Test
@@ -159,9 +160,9 @@ class InventoryConcurrencyIT {
         assertThat(orderRepository.count()).isEqualTo(1);
         assertThat(cartItemRepository.count()).isZero();
         // The losing checkout either stopped at the empty cart or released its reservation.
-        FakeStockLedger.Item ledger = FakeWarehouse.ledger().item(product.getId()).orElseThrow();
+        FakeStockLedger.Item ledger = stockLedger.item(product.getId()).orElseThrow();
         assertThat(ledger.quantity()).isEqualTo(1);
-        assertThat(FakeWarehouse.ledger().movements(product.getId()).stream()
+        assertThat(stockLedger.movements(product.getId()).stream()
                 .mapToInt(FakeStockLedger.Movement::delta).sum()).as("one unit stays deducted").isEqualTo(-1);
         // warehouse-service pushes the level after a release; the projection then agrees.
         stockProjection.applyLevels(List.of(new StockLevelDto(product.getId(), ledger.quantity(), ledger.version())));
@@ -183,8 +184,8 @@ class InventoryConcurrencyIT {
         assertThat(productRepository.findById(unavailable.getId()).orElseThrow().getStockQuantity()).isZero();
         assertThat(orderRepository.count()).isZero();
         assertThat(cartItemRepository.count()).isEqualTo(2);
-        assertThat(FakeWarehouse.ledger().movements(available.getId())).isEmpty();
-        assertThat(FakeWarehouse.ledger().movements(unavailable.getId())).isEmpty();
+        assertThat(stockLedger.movements(available.getId())).isEmpty();
+        assertThat(stockLedger.movements(unavailable.getId())).isEmpty();
     }
 
     private ProductEntity createProductAndCarts(int stock, List<String> usernames) {

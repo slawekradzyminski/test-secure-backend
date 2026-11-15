@@ -26,7 +26,6 @@ import com.awesome.testing.service.stock.StockCommandDispatcher;
 import com.awesome.testing.stock.FakeStockLedger;
 import com.awesome.testing.stock.FakeStockLedger.Injected;
 import com.awesome.testing.stock.FakeStockLedger.Operation;
-import com.awesome.testing.stock.FakeWarehouse;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -48,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * warehouse-service owns the stock ledger (backend 3.22.0): the checkout saga, the 503 when
  * warehouse-service fails, the level push into the projection, the stock command outbox and the
- * internal endpoints warehouse-service calls. The fake ledger ({@link FakeWarehouse}) answers over
+ * internal endpoints warehouse-service calls. The fake ledger (com.awesome.testing.stock.FakeWarehouse) answers over
  * real HTTP; faults are injected per product.
  */
 class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
@@ -70,7 +69,7 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
 
     @AfterEach
     void heal() {
-        faulty.forEach(FakeWarehouse.ledger()::heal);
+        faulty.forEach(stockLedger::heal);
     }
 
     @Test
@@ -83,22 +82,22 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         OrderEntity stored = orderRepository.findById(order.getId()).orElseThrow();
         assertThat(stored.getStockReservationId()).isNotNull();
         assertThat(productRepository.findById(product.getId()).orElseThrow().getStockLedgerVersion()).isPositive();
-        assertThat(FakeWarehouse.ledger().movements(product.getId())).singleElement().satisfies(movement -> {
+        assertThat(stockLedger.movements(product.getId())).singleElement().satisfies(movement -> {
             assertThat(movement.type()).isEqualTo("ORDER_DEDUCTED");
             assertThat(movement.delta()).isEqualTo(-2);
             assertThat(movement.actor()).isEqualTo(client.getUsername());
             assertThat(movement.reason()).isEqualTo("Order deduction");
             assertThat(movement.orderId()).as("set by the confirm").isEqualTo(order.getId());
         });
-        List<LoggedRequest> reserve = FakeWarehouse.requests(WireMock.postRequestedFor(
+        List<LoggedRequest> reserve = stockLedger.requests(WireMock.postRequestedFor(
                 WireMock.urlEqualTo("/internal/v1/stock/reservations"))
                 .withRequestBody(WireMock.containing("\"reservationId\":\"" + stored.getStockReservationId() + "\"")));
         assertThat(reserve).singleElement().satisfies(request -> {
-            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer " + FakeStockLedger.TOKEN);
+            assertThat(request.getHeader("Authorization")).isEqualTo("Bearer " + stockLedger.token());
             assertThat(request.getBodyAsString()).contains("\"username\":\"" + client.getUsername() + "\"",
                     "\"lines\":[{\"productId\":" + product.getId() + ",\"quantity\":2}]");
         });
-        assertThat(FakeWarehouse.requests(WireMock.postRequestedFor(WireMock.urlEqualTo(
+        assertThat(stockLedger.requests(WireMock.postRequestedFor(WireMock.urlEqualTo(
                 "/internal/v1/stock/reservations/" + stored.getStockReservationId() + "/confirm"))
                 .withRequestBody(WireMock.equalToJson("{\"orderId\":" + order.getId() + "}")))).hasSize(1);
         // Course contract: the order body has no reservation id.
@@ -116,7 +115,7 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         OrderDto order = checkout(clientToken);
 
         UUID reservation = orderRepository.findById(order.getId()).orElseThrow().getStockReservationId();
-        assertThat(FakeWarehouse.requests(WireMock.postRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/reservations"))
+        assertThat(stockLedger.requests(WireMock.postRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/reservations"))
                 .withRequestBody(WireMock.containing(reservation.toString())))).singleElement()
                 .satisfies(request -> assertThat(request.getBodyAsString()).contains("\"lines\":[{\"productId\":"
                         + first.getId() + ",\"quantity\":2},{\"productId\":" + second.getId() + ",\"quantity\":1}]"));
@@ -136,7 +135,7 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         ResponseEntity<OrderDto> order = executePost(ORDERS_ENDPOINT, getRandomAddress(), headers, OrderDto.class);
 
         assertThat(order.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(FakeWarehouse.requests(WireMock.postRequestedFor(WireMock.urlPathMatching("/internal/v1/stock/.*"))
+        assertThat(stockLedger.requests(WireMock.postRequestedFor(WireMock.urlPathMatching("/internal/v1/stock/.*"))
                 .withHeader("X-Request-Id", WireMock.equalTo("stock-trace-" + product.getId()))))
                 .as("reserve and confirm").hasSize(2)
                 .allSatisfy(request -> assertThat(request.getHeader("traceparent"))
@@ -147,7 +146,7 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
     void anInsufficientLedgerAnswersTheSame409AsBeforeAndKeepsTheCart() {
         ProductEntity product = product("10.00", 5);
         addToCart(clientToken, product, 4);
-        FakeWarehouse.ledger().set(product.getId(), 3);
+        stockLedger.set(product.getId(), 3);
         assertLedgerAheadOfTheProjection(product);
 
         ResponseEntity<ErrorDto> response = executePost(ORDERS_ENDPOINT, getRandomAddress(),
@@ -256,12 +255,12 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         assertThat(cancelled.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(stockOf(product)).as("restored asynchronously").isEqualTo(3);
         UUID reservation = orderRepository.findById(order.getId()).orElseThrow().getStockReservationId();
-        assertThat(FakeWarehouse.requests(WireMock.postRequestedFor(WireMock.urlEqualTo(
+        assertThat(stockLedger.requests(WireMock.postRequestedFor(WireMock.urlEqualTo(
                 "/internal/v1/stock/reservations/" + reservation + "/release"))))
                 .as("a confirmed reservation is restored through order.cancelled, never released").isEmpty();
         assertThat(warehouseSimulator.restoreCancelledStock(order.getId())).isOne();
         assertThat(stockOf(product)).isEqualTo(5);
-        assertThat(FakeWarehouse.ledger().movements(product.getId()).getFirst()).satisfies(movement -> {
+        assertThat(stockLedger.movements(product.getId()).getFirst()).satisfies(movement -> {
             assertThat(movement.type()).isEqualTo("ORDER_RESTORED");
             assertThat(movement.orderId()).isEqualTo(order.getId());
             assertThat(movement.reason()).isEqualTo("Order cancellation");
@@ -339,13 +338,13 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         assertThat(initial.getAttempts()).isOne();
         assertThat(initial.getInitialQuantity()).isEqualTo(6);
         assertThat(initial.getActor()).isEqualTo("admin");
-        assertThat(FakeWarehouse.ledger().movements(id)).singleElement().satisfies(movement -> {
+        assertThat(stockLedger.movements(id)).singleElement().satisfies(movement -> {
             assertThat(movement.type()).isEqualTo("INITIAL_STOCK");
             assertThat(movement.delta()).isEqualTo(6);
             assertThat(movement.reason()).isEqualTo("Initial stock");
         });
         assertThat(productRepository.findById(id).orElseThrow().getStockLedgerVersion()).isEqualTo(1L);
-        assertThat(FakeWarehouse.requests(WireMock.putRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/items/" + id))
+        assertThat(stockLedger.requests(WireMock.putRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/items/" + id))
                 .withRequestBody(WireMock.equalToJson("{\"initialQuantity\":6,\"actor\":\"admin\",\"requestId\":\""
                         + initial.getRequestId() + "\"}")))).hasSize(1);
         assertThat(dispatcher.dispatchDue()).as("nothing left to send").isZero();
@@ -356,15 +355,15 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         assertThat(commands.findAll()).filteredOn(command -> command.getProductId().equals(id)
                         && command.getCommand() == StockCommandEntity.Command.DELETE)
                 .singleElement().extracting(StockCommandEntity::getStatus).isEqualTo(StockCommandEntity.Status.DONE);
-        assertThat(FakeWarehouse.ledger().movements(id)).isEmpty();
-        assertThat(FakeWarehouse.requests(WireMock.deleteRequestedFor(
+        assertThat(stockLedger.movements(id)).isEmpty();
+        assertThat(stockLedger.requests(WireMock.deleteRequestedFor(
                 WireMock.urlEqualTo("/internal/v1/stock/items/" + id)))).hasSize(1);
     }
 
     @Test
     void aProductCanBeOrderedAsSoonAsItsCreateResponseArrives() {
         Long id = createProduct(4);
-        FakeWarehouse.ledger().requireCreatedItem(id);
+        stockLedger.requireCreatedItem(id);
         ProductEntity product = productRepository.findById(id).orElseThrow();
 
         OrderDto order = order(clientToken, product, 2);
@@ -372,7 +371,7 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         assertThat(order.getStatus().name()).isEqualTo("PENDING");
         assertThat(stockOf(product)).isEqualTo(2);
         UUID reservation = orderRepository.findById(order.getId()).orElseThrow().getStockReservationId();
-        assertThat(FakeWarehouse.requests(WireMock.postRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/reservations"))
+        assertThat(stockLedger.requests(WireMock.postRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/reservations"))
                 .withRequestBody(WireMock.containing(reservation.toString()))))
                 .as("no 404 and no retry").hasSize(1);
     }
@@ -380,14 +379,14 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
     @Test
     void aReservationOfAProductWarehouseDoesNotKnowYetSendsItsPendingInitialStockAndRetriesOnce() {
         int quantity = 7_000_000 + (int) (System.nanoTime() % 1_000_000);
-        FakeWarehouse.ledger().failInitialQuantity(quantity, Injected.status(503, Operation.ITEMS));
+        stockLedger.failInitialQuantity(quantity, Injected.status(503, Operation.ITEMS));
         Long id;
         try {
             id = createProduct(quantity);
         } finally {
-            FakeWarehouse.ledger().healInitialQuantity(quantity);
+            stockLedger.healInitialQuantity(quantity);
         }
-        FakeWarehouse.ledger().requireCreatedItem(id);
+        stockLedger.requireCreatedItem(id);
         StockCommandEntity pending = initialStockOf(id);
         assertThat(pending.getStatus()).as("the create still answered 201").isEqualTo(StockCommandEntity.Status.PENDING);
         assertThat(pending.getNextAttemptAt()).as("waits for the scheduled retry").isAfter(pending.getCreatedAt());
@@ -398,17 +397,17 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         assertThat(initialStockOf(id).getStatus()).isEqualTo(StockCommandEntity.Status.DONE);
         String reservation = "\"reservationId\":\""
                 + orderRepository.findById(order.getId()).orElseThrow().getStockReservationId() + "\"";
-        assertThat(FakeWarehouse.requests(WireMock.postRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/reservations"))
+        assertThat(stockLedger.requests(WireMock.postRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/reservations"))
                 .withRequestBody(WireMock.containing(reservation))))
                 .as("the 404 and the retry, with the same reservation id").hasSize(2);
-        assertThat(FakeWarehouse.requests(WireMock.putRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/items/" + id))
+        assertThat(stockLedger.requests(WireMock.putRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/items/" + id))
                 .withRequestBody(WireMock.containing("\"initialQuantity\":" + quantity)))).hasSize(2);
     }
 
     @Test
     void aReservationOfAProductWarehouseDoesNotKnowWithoutAPendingCommandIsNotFoundAfterOneCall() {
         ProductEntity product = product("10.00", 5);
-        FakeWarehouse.ledger().requireCreatedItem(product.getId());
+        stockLedger.requireCreatedItem(product.getId());
         addToCart(clientToken, product, 1);
 
         ResponseEntity<ErrorDto> response = executePost(ORDERS_ENDPOINT, getRandomAddress(),
@@ -423,7 +422,7 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
     @Test
     void aFailedInitialStockKeepsTheCreateAt201AndIsRetriedOnceWarehouseServiceRecovers() {
         int quantity = 8_000_000 + (int) (System.nanoTime() % 1_000_000);
-        FakeWarehouse.ledger().failInitialQuantity(quantity, Injected.status(503, Operation.ITEMS));
+        stockLedger.failInitialQuantity(quantity, Injected.status(503, Operation.ITEMS));
         Long id;
         try {
             id = createProduct(quantity);
@@ -433,7 +432,7 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
             assertThat(failed.getLastError()).isEqualTo(UNAVAILABLE);
             assertThat(failed.getNextAttemptAt()).isAfter(failed.getCreatedAt());
         } finally {
-            FakeWarehouse.ledger().healInitialQuantity(quantity);
+            stockLedger.healInitialQuantity(quantity);
         }
 
         StockCommandEntity failed = initialStockOf(id);
@@ -491,7 +490,7 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         assertThat(deleted.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(commands.findAll()).filteredOn(command -> command.getProductId().equals(id))
                 .extracting(StockCommandEntity::getStatus).containsOnly(StockCommandEntity.Status.DONE);
-        assertThat(FakeWarehouse.ledger().item(id)).isEmpty();
+        assertThat(stockLedger.item(id)).isEmpty();
     }
 
     @Test
@@ -501,18 +500,18 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         Long id = product.getId();
         StockCommandEntity seeded = pendingInitialStock(product);
         // A different ledger quantity makes the reply write the product: the race the 500 came from.
-        FakeWarehouse.ledger().set(id, 9);
+        stockLedger.set(id, 9);
         faulty.add(id);
-        FakeWarehouse.ledger().fail(id, Injected.slowItems(java.time.Duration.ofMillis(600)));
+        stockLedger.fail(id, Injected.slowItems(java.time.Duration.ofMillis(600)));
 
         ResponseEntity<String> deleted;
         try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
             var dispatch = executor.submit(dispatcher::dispatchDue);
             long deadline = System.nanoTime() + java.time.Duration.ofSeconds(5).toNanos();
-            while (!FakeWarehouse.ledger().isHoldingItemRequest(id) && System.nanoTime() < deadline) {
+            while (!stockLedger.isHoldingItemRequest(id) && System.nanoTime() < deadline) {
                 Thread.onSpinWait();
             }
-            assertThat(FakeWarehouse.ledger().isHoldingItemRequest(id)).as("the PUT is in flight").isTrue();
+            assertThat(stockLedger.isHoldingItemRequest(id)).as("the PUT is in flight").isTrue();
             deleted = executeDelete(PRODUCTS_ENDPOINT + "/" + id, getHeadersWith(adminToken), String.class);
             dispatch.get(10, java.util.concurrent.TimeUnit.SECONDS);
         }
@@ -524,30 +523,30 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         assertThat(commands.findAll()).filteredOn(command -> command.getProductId().equals(id)
                         && command.getCommand() == StockCommandEntity.Command.DELETE)
                 .singleElement().extracting(StockCommandEntity::getStatus).isEqualTo(StockCommandEntity.Status.DONE);
-        List<LoggedRequest> put = FakeWarehouse.requests(WireMock.putRequestedFor(
+        List<LoggedRequest> put = stockLedger.requests(WireMock.putRequestedFor(
                 WireMock.urlEqualTo("/internal/v1/stock/items/" + id)));
-        List<LoggedRequest> delete = FakeWarehouse.requests(WireMock.deleteRequestedFor(
+        List<LoggedRequest> delete = stockLedger.requests(WireMock.deleteRequestedFor(
                 WireMock.urlEqualTo("/internal/v1/stock/items/" + id)));
         assertThat(put).hasSize(1);
         assertThat(delete).singleElement().satisfies(request ->
                 assertThat(request.getLoggedDate()).isAfterOrEqualTo(put.getFirst().getLoggedDate()));
-        assertThat(FakeWarehouse.ledger().item(id)).as("warehouse ends without the item").isEmpty();
+        assertThat(stockLedger.item(id)).as("warehouse ends without the item").isEmpty();
     }
 
     @Test
     void aDeleteWaitsForAnOlderPendingInitialStockWhichIsThenCompletedWithoutACall() {
         int quantity = 9_000_000 + (int) (System.nanoTime() % 1_000_000);
-        FakeWarehouse.ledger().failInitialQuantity(quantity, Injected.status(503, Operation.ITEMS));
+        stockLedger.failInitialQuantity(quantity, Injected.status(503, Operation.ITEMS));
         Long id;
         try {
             id = createProduct(quantity);
         } finally {
-            FakeWarehouse.ledger().healInitialQuantity(quantity);
+            stockLedger.healInitialQuantity(quantity);
         }
 
         executeDelete(PRODUCTS_ENDPOINT + "/" + id, getHeadersWith(adminToken), String.class);
         dispatcher.dispatchDue();
-        assertThat(FakeWarehouse.requests(WireMock.deleteRequestedFor(
+        assertThat(stockLedger.requests(WireMock.deleteRequestedFor(
                 WireMock.urlEqualTo("/internal/v1/stock/items/" + id)))).as("waits for the older command").isEmpty();
 
         StockCommandEntity initial = initialStockOf(id);
@@ -559,9 +558,9 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
 
         assertThat(commands.findAll()).filteredOn(command -> command.getProductId().equals(id))
                 .extracting(StockCommandEntity::getStatus).containsOnly(StockCommandEntity.Status.DONE);
-        assertThat(FakeWarehouse.requests(WireMock.putRequestedFor(
+        assertThat(stockLedger.requests(WireMock.putRequestedFor(
                 WireMock.urlEqualTo("/internal/v1/stock/items/" + id)))).as("only the failed attempt").hasSize(1);
-        assertThat(FakeWarehouse.requests(WireMock.deleteRequestedFor(
+        assertThat(stockLedger.requests(WireMock.deleteRequestedFor(
                 WireMock.urlEqualTo("/internal/v1/stock/items/" + id)))).hasSize(1);
     }
 
@@ -578,9 +577,9 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         assertThat(superseded.getStatus()).isEqualTo(StockCommandEntity.Status.DONE);
         assertThat(superseded.getLastError()).isEqualTo("Superseded by DELETE");
         assertThat(superseded.getAttempts()).isZero();
-        assertThat(FakeWarehouse.requests(WireMock.putRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/items/" + id))))
+        assertThat(stockLedger.requests(WireMock.putRequestedFor(WireMock.urlEqualTo("/internal/v1/stock/items/" + id))))
                 .isEmpty();
-        assertThat(FakeWarehouse.requests(WireMock.deleteRequestedFor(
+        assertThat(stockLedger.requests(WireMock.deleteRequestedFor(
                 WireMock.urlEqualTo("/internal/v1/stock/items/" + id)))).hasSize(1);
     }
 
@@ -701,14 +700,14 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
     }
 
     private ProductEntity faulty(ProductEntity product, Injected fault) {
-        FakeWarehouse.ledger().fail(product.getId(), fault);
+        stockLedger.fail(product.getId(), fault);
         faulty.add(product.getId());
         return product;
     }
 
     /** The projection still shows the old quantity: warehouse-service has not pushed the change yet. */
     private void assertLedgerAheadOfTheProjection(ProductEntity product) {
-        assertThat(FakeWarehouse.ledger().item(product.getId()).orElseThrow().quantity()).isEqualTo(3);
+        assertThat(stockLedger.item(product.getId()).orElseThrow().quantity()).isEqualTo(3);
     }
 
     private CartDto cart(String token) {

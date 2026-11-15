@@ -1,10 +1,8 @@
 package com.awesome.testing.stock;
 
-import com.github.tomakehurst.wiremock.extension.ResponseDefinitionTransformerV2;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.ResponseDefinition;
-import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -34,7 +32,7 @@ import static com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder.r
 
 /**
  * An in-memory stand-in for warehouse-service's stock ledger API ({@code /internal/v1/stock}),
- * served by WireMock (see {@link FakeWarehouse}) so the backend's real HTTP client is exercised in
+ * served by WireMock (see {@link FakeWarehouse}), one per Spring test context, so the backend's real HTTP client is exercised in
  * every Spring test. It implements the contract's rules for reservations, confirmations, releases,
  * adjustments, stock items and movements.
  *
@@ -47,9 +45,9 @@ import static com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder.r
  * <p>Faults are injected per product id ({@link #fail}), so concurrently running test classes,
  * which always use their own products, do not disturb each other.
  */
-public class FakeStockLedger implements ResponseDefinitionTransformerV2 {
+public class FakeStockLedger {
 
-    public static final String TOKEN = "test-backend-token";
+    private final String token;
 
     /** Which stock commands a fault applies to. */
     public enum Operation { RESERVE, CONFIRM, RELEASE, ADJUST, ITEMS, MOVEMENTS }
@@ -117,9 +115,21 @@ public class FakeStockLedger implements ResponseDefinitionTransformerV2 {
     private final Map<Long, Long> unseeded = new ConcurrentHashMap<>();
     private volatile ProjectionLookup projection = productId -> Optional.empty();
 
-    @Override
-    public String getName() {
-        return "fake-stock-ledger";
+    /** One ledger per Spring test context, told apart by the context's {@code BACKEND_SERVICE_TOKEN}. */
+    FakeStockLedger(String token) {
+        this.token = token;
+    }
+
+    /** The bearer token of the context this ledger belongs to. */
+    public String token() {
+        return token;
+    }
+
+    /** Requests of this context that match {@code pattern} (other contexts share the server). */
+    public java.util.List<com.github.tomakehurst.wiremock.verification.LoggedRequest> requests(
+            com.github.tomakehurst.wiremock.matching.RequestPatternBuilder pattern) {
+        return FakeWarehouse.requests(pattern.withHeader("Authorization",
+                com.github.tomakehurst.wiremock.client.WireMock.equalTo("Bearer " + token)));
     }
 
     public void bindProjection(ProjectionLookup lookup) {
@@ -191,12 +201,8 @@ public class FakeStockLedger implements ResponseDefinitionTransformerV2 {
         return levels;
     }
 
-    @Override
-    public ResponseDefinition transform(ServeEvent serveEvent) {
-        Request request = serveEvent.getRequest();
-        if (!("Bearer " + TOKEN).equals(request.getHeader("Authorization"))) {
-            return respond(401, Map.of("message", "Invalid service token"));
-        }
+    /** Answers one request of this context (routed here by {@link FakeWarehouse} after the token check). */
+    ResponseDefinition handle(Request request) {
         URI uri = URI.create(request.getUrl());
         String path = uri.getPath();
         String method = request.getMethod().getName();

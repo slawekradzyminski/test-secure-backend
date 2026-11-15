@@ -1,6 +1,5 @@
 package com.awesome.testing.service.reservation;
 
-import com.awesome.testing.stock.FakeWarehouse;
 import com.awesome.testing.stock.WarehouseSimulator;
 import com.awesome.testing.DomainHelper;
 import com.awesome.testing.controller.exception.CustomException;
@@ -83,6 +82,8 @@ class ReservationExpiryConcurrencyIT extends DomainHelper {
     private PlatformTransactionManager transactionManager;
     @Autowired
     private WarehouseSimulator warehouseSimulator;
+    @Autowired
+    private com.awesome.testing.stock.FakeStockLedger stockLedger;
 
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
@@ -219,7 +220,7 @@ class ReservationExpiryConcurrencyIT extends DomainHelper {
                     .startsWith("{\"actor\":\"system\",\"lines\":[");
         });
         warehouseSimulator.restoreCancelledStock(orders.stream().map(OrderDto::getId).toArray(Long[]::new));
-        assertThat(FakeWarehouse.ledger().movements(product.getId()))
+        assertThat(stockLedger.movements(product.getId()))
                 .filteredOn(movement -> movement.type().equals("ORDER_RESTORED"))
                 .hasSize(30)
                 .allSatisfy(movement -> assertThat(movement.actor()).isEqualTo("system"));

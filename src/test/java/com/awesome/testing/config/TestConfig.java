@@ -85,8 +85,9 @@ public class TestConfig {
 
     @Bean
     public com.awesome.testing.stock.WarehouseSimulator warehouseSimulator(
-            com.awesome.testing.service.stock.StockProjection stockProjection) {
-        return new com.awesome.testing.stock.WarehouseSimulator(stockProjection);
+            com.awesome.testing.service.stock.StockProjection stockProjection,
+            com.awesome.testing.stock.FakeStockLedger fakeStockLedger) {
+        return new com.awesome.testing.stock.WarehouseSimulator(stockProjection, fakeStockLedger);
     }
 
     /** Webhook DNS is stubbed so tests never depend on real resolution and can simulate rebinding. */

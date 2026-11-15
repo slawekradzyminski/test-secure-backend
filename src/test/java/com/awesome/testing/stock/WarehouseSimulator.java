@@ -22,10 +22,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WarehouseSimulator {
 
     private final StockProjection projection;
+    private final FakeStockLedger ledger;
     private final Map<Long, CommerceEvent> pending = new ConcurrentHashMap<>();
 
-    public WarehouseSimulator(StockProjection projection) {
+    public WarehouseSimulator(StockProjection projection, FakeStockLedger ledger) {
         this.projection = projection;
+        this.ledger = ledger;
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -69,7 +71,7 @@ public class WarehouseSimulator {
                 lines.merge(((Number) values.get("productId")).longValue(),
                         ((Number) values.get("quantity")).intValue(), Integer::sum);
             }
-            Map<Long, FakeStockLedger.Item> levels = FakeWarehouse.ledger().restore(orderId,
+            Map<Long, FakeStockLedger.Item> levels = ledger.restore(orderId,
                     (String) restore.get("actor"), lines);
             push(levels);
             restored++;

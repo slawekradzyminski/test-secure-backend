@@ -12,20 +12,24 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Registered in {@code META-INF/spring.factories} for every test context: provides
- * {@code fake-warehouse.url} (which application-test.yml uses as {@code warehouse.url}) and, once the
- * context is refreshed, lets the fake ledger read the backend's stock projection through the
- * context's DataSource. Tests that need another warehouse override {@code warehouse.url}.
+ * Registered in {@code META-INF/spring.factories} for every test context: gives the context its own
+ * {@link FakeStockLedger} (bean {@code fakeStockLedger}) and bearer token, provides
+ * {@code fake-warehouse.url} (application-test.yml uses it as {@code warehouse.url}) and, once the
+ * context is refreshed, lets the ledger read the stock projection from this context's DataSource.
  */
 public class FakeWarehouseInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
     @Override
     public void initialize(ConfigurableApplicationContext context) {
+        FakeStockLedger ledger = FakeWarehouse.newLedger();
+        context.getEnvironment().getPropertySources().addFirst(new MapPropertySource("fake-warehouse-token",
+                Map.of("warehouse.backend-service-token", ledger.token())));
         context.getEnvironment().getPropertySources().addLast(
                 new MapPropertySource("fake-warehouse", Map.of("fake-warehouse.url", FakeWarehouse.baseUrl())));
+        context.getBeanFactory().registerSingleton("fakeStockLedger", ledger);
         context.addApplicationListener(event -> {
             if (event instanceof ContextRefreshedEvent refreshed && refreshed.getApplicationContext() == context) {
-                bind(context);
+                bind(context, ledger);
             }
         });
     }
@@ -34,12 +38,12 @@ public class FakeWarehouseInitializer implements ApplicationContextInitializer<C
         return timestamp == null ? 0 : timestamp.getTime() * 1000 + (timestamp.getNanos() / 1000) % 1000;
     }
 
-    private static void bind(ConfigurableApplicationContext context) {
+    private static void bind(ConfigurableApplicationContext context, FakeStockLedger ledger) {
         if (context.getBeanNamesForType(DataSource.class).length == 0) {
             return;
         }
         JdbcTemplate jdbc = new JdbcTemplate(context.getBean(DataSource.class));
-        FakeWarehouse.ledger().bindProjection(productId -> {
+        ledger.bindProjection(productId -> {
             try {
                 List<long[]> rows = jdbc.query(
                         "select stock_quantity, stock_ledger_version, created_at from products where id = ?",

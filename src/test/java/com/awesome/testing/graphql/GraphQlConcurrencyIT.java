@@ -70,7 +70,7 @@ class GraphQlConcurrencyIT extends AbstractCommerceGraphQlTest {
         assertThat(productRepository.findById(product.getId()).orElseThrow().getStockQuantity()).isZero();
         assertThat(orderRepository.count()).isEqualTo(1);
         assertThat(cartItemRepository.count()).isEqualTo(1);
-        assertThat(com.awesome.testing.stock.FakeWarehouse.ledger().movements(product.getId())).singleElement()
+        assertThat(stockLedger.movements(product.getId())).singleElement()
                 .satisfies(movement -> assertThat(movement.type()).isEqualTo("ORDER_DEDUCTED"));
     }
 
@@ -92,7 +92,7 @@ class GraphQlConcurrencyIT extends AbstractCommerceGraphQlTest {
         assertThat(outcomes).allSatisfy(result -> assertThat(result.has("errors")).isFalse());
         assertThat(outcomes.getFirst().at("/data/adjustInventory")).isEqualTo(outcomes.getLast().at("/data/adjustInventory"));
         assertThat(productRepository.findById(product.getId()).orElseThrow().getStockQuantity()).isEqualTo(8);
-        assertThat(com.awesome.testing.stock.FakeWarehouse.ledger().movements(product.getId())).singleElement()
+        assertThat(stockLedger.movements(product.getId())).singleElement()
                 .satisfies(movement -> assertThat(movement.type()).isEqualTo("ADMIN_ADJUSTMENT"));
     }
 

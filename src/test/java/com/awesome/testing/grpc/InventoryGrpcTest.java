@@ -136,7 +136,7 @@ class InventoryGrpcTest extends AbstractInventoryGrpcTest {
         // given
         var product = setupProduct();
         var client = stub(admin());
-        com.awesome.testing.stock.FakeWarehouse.ledger().fail(product.getId(),
+        stockLedger.fail(product.getId(),
                 com.awesome.testing.stock.FakeStockLedger.Injected.status(503,
                         com.awesome.testing.stock.FakeStockLedger.Operation.ADJUST,
                         com.awesome.testing.stock.FakeStockLedger.Operation.MOVEMENTS));
@@ -152,7 +152,7 @@ class InventoryGrpcTest extends AbstractInventoryGrpcTest {
             assertThat(client.getStock(GetStockRequest.newBuilder().setProductId(product.getId()).build())
                     .getAvailableQuantity()).isEqualTo(product.getStockQuantity());
         } finally {
-            com.awesome.testing.stock.FakeWarehouse.ledger().heal(product.getId());
+            stockLedger.heal(product.getId());
         }
     }
 

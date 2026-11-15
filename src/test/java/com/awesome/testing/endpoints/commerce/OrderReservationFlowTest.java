@@ -14,7 +14,6 @@ import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.entity.coupon.CouponType;
 import com.awesome.testing.entity.inventory.InventoryState;
 import com.awesome.testing.stock.FakeStockLedger;
-import com.awesome.testing.stock.FakeWarehouse;
 import com.awesome.testing.event.CommerceEvent;
 import com.awesome.testing.event.RecordedCommerceEvents;
 import com.awesome.testing.service.reservation.ReservationExpiryJob;
@@ -147,7 +146,7 @@ class OrderReservationFlowTest extends AbstractTenderFlowTest {
         assertThat(loyalty(clientToken).getBalance()).isEqualTo(1_000);
         assertThat(order.getCouponCode()).isEqualTo(couponCode);
         assertThat(couponRedemptions(coupon.getId())).isZero();
-        FakeStockLedger.Movement restored = FakeWarehouse.ledger().movements(product.getId()).stream()
+        FakeStockLedger.Movement restored = stockLedger.movements(product.getId()).stream()
                 .filter(movement -> movement.type().equals("ORDER_RESTORED"))
                 .findFirst().orElseThrow();
         assertThat(restored.actor()).isEqualTo("system");
