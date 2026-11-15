@@ -4,7 +4,7 @@
 
     <groupId>murraco</groupId>
     <artifactId>jwt-auth-service</artifactId>
-    <version>3.22.0</version>
+    <version>3.22.1</version>
     <packaging>jar</packaging>
 
     <name>spring-boot-jwt</name>
@@ -481,6 +481,9 @@
                                 <buildArg>-H:+SharedArenaSupport</buildArg>
                                 <buildArg>-march=compatibility</buildArg>
                                 <buildArg>-J-Xmx${native.xmx}</buildArg>
+                                <!-- The image keeps build-time security properties: do not cache failed DNS
+                                     lookups (warehouse-service starts after the backend). -->
+                                <buildArg>-J-Djava.security.properties=${project.basedir}/config/native/java.security.override</buildArg>
                             </buildArgs>
                         </configuration>
                     </plugin>

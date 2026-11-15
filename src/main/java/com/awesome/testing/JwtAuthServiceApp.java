@@ -1,5 +1,6 @@
 package com.awesome.testing;
 
+import com.awesome.testing.config.NetworkAddressCachePolicy;
 import com.awesome.testing.fakedata.SetupData;
 
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class JwtAuthServiceApp implements CommandLineRunner {
     private SetupData setupData;
 
     public static void main(String[] args) {
+        NetworkAddressCachePolicy.disableNegativeCaching();
         cleanupLogs();
         SpringApplication.run(JwtAuthServiceApp.class, args);
     }

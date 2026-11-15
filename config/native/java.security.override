@@ -1,0 +1,4 @@
+# Read by the native-image builder (pom.xml native profile): the native image keeps the
+# security properties it was built with and ignores runtime overrides.
+# Do not cache failed host-name lookups; see NetworkAddressCachePolicy.
+networkaddress.cache.negative.ttl=0
