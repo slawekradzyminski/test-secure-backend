@@ -711,3 +711,38 @@ result, loyalty credit, gift card), or the event `id` for back-in-stock.
 | `events.retention` | `EVENTS_RETENTION` | `P30D` |
 | `events.retention-job.enabled` | `EVENTS_RETENTION_JOB_ENABLED` | `true` (off in tests) |
 | `events.retention-job.interval` | `EVENTS_RETENTION_JOB_INTERVAL` | `PT1H` |
+| `events.transport` | `EVENTS_TRANSPORT` | `feed` (or `broker`: the outbox relay below also publishes to Artemis) |
+| `events.broker.address` | `EVENTS_BROKER_ADDRESS` | `awesome.commerce.events` |
+| `events.broker.relay-interval` | `EVENTS_RELAY_INTERVAL` | `PT1S` |
+| `events.broker.max-age` | `EVENTS_RELAY_MAX_AGE` | `PT24H` |
+| `events.broker.duplicate-detection` | `EVENTS_BROKER_DUPLICATE_DETECTION` | `true` |
+
+### Broker transport (outbox relay)
+
+With `EVENTS_TRANSPORT=broker` (3.23.0) `EventRelay` also publishes every
+`domain_events` row to ActiveMQ Artemis (contract: awesome-localstack
+`docs/EVENT_BROKER_CONTRACT.md`). The feed above keeps being served either way.
+
+- Every `EVENTS_RELAY_INTERVAL` a short read-only transaction loads up to 100
+  rows with `published_at IS NULL` (V27) in `sequence` order; one transacted JMS
+  session sends them to the multicast address (a JMS topic) with no database
+  connection held; a second transaction sets `published_at`. Up to 20 batches
+  per run.
+- The body of each `TextMessage` is the event exactly as the feed serves it
+  (`EventFeedService.toDto`). Properties: `type`, `eventId`, `sequence`,
+  `orderId`, `JMSXGroupID` (`order-<id>`, or `event-<id>`), `_AMQ_DUPL_ID` (the
+  event id, unless `EVENTS_BROKER_DUPLICATE_DETECTION=false`),
+  `JMSCorrelationID` (the request id) and `traceparent` of the `publish <type>`
+  PRODUCER span, whose parent is the writing request's span.
+- Delivery is at least once: a crash after the send and before the mark sends
+  the batch again, and the broker drops the copy by `_AMQ_DUPL_ID`.
+- Rows recorded more than `EVENTS_RELAY_MAX_AGE` ago are marked without being
+  sent (warning, `events_relay_skipped_total`). V27 marks every event older than
+  one hour at migration time.
+- Broker or database unreachable: one warning per outage, backoff from 1 s to
+  30 s, `events_relay_failures_total`. Requests never wait for the broker.
+- `events_relay_pending` is the backlog the last run saw.
+
+The relay uses the Artemis connection factory of the email transport
+(`SPRING_ARTEMIS_BROKER_URL`, `_USER`, `_PASSWORD`), so a profile with the
+local email outbox can still relay events.

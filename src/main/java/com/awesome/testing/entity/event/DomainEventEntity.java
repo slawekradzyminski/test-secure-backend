@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -65,4 +66,12 @@ public class DomainEventEntity {
     /** Span id of the writing request (the MDC spanId); null like {@link #traceId}. */
     @Column(name = "span_id", length = 16)
     private String spanId;
+
+    /**
+     * When the outbox relay handed the event to the broker (V27, broker transport). Null while it waits,
+     * and for every event recorded while the backend ran with the feed transport.
+     */
+    @Setter
+    @Column(name = "published_at")
+    private Instant publishedAt;
 }

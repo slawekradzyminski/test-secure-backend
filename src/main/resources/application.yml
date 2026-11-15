@@ -319,6 +319,18 @@ events:
   retention-job:
     enabled: ${EVENTS_RETENTION_JOB_ENABLED:true}
     interval: ${EVENTS_RETENTION_JOB_INTERVAL:PT1H}
+  # feed (default): consumers only poll the feed above. broker: the outbox relay also publishes every
+  # new event to Artemis (docs/EVENT_BROKER_CONTRACT.md in awesome-localstack); the feed stays served.
+  # The relay uses the Artemis connection factory (SPRING_ARTEMIS_BROKER_URL, _USER, _PASSWORD).
+  transport: ${EVENTS_TRANSPORT:feed}
+  broker:
+    # Multicast address; every consumer has its own queue on it, declared by the broker's configuration.
+    address: ${EVENTS_BROKER_ADDRESS:awesome.commerce.events}
+    relay-interval: ${EVENTS_RELAY_INTERVAL:PT1S}
+    # Unpublished events older than this are marked published without being sent.
+    max-age: ${EVENTS_RELAY_MAX_AGE:PT24H}
+    # Sets _AMQ_DUPL_ID so the broker drops a batch sent twice; false lets the duplicates through (lab).
+    duplicate-detection: ${EVENTS_BROKER_DUPLICATE_DETECTION:true}
 
 springdoc:
   # The service-to-service API for warehouse-service is not part of the public contract.
