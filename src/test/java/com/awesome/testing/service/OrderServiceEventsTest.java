@@ -70,6 +70,7 @@ class OrderServiceEventsTest {
     @Mock private StockLedgerClient stockLedger;
     @Mock private StockProjection stockProjection;
     @Mock private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
+    @Mock private com.awesome.testing.repository.stock.StockReservationClaimRepository reservationClaims;
     @Mock private PlatformTransactionManager transactionManager;
 
     private final List<CheckoutContext> contributions = new ArrayList<>();
@@ -111,7 +112,8 @@ class OrderServiceEventsTest {
         return new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
                 idempotencyKeyRepository, Clock.systemUTC(), contributors, commerceEvents,
                 new OrderReservations(true, Duration.ofMinutes(30)),
-                stockLedger, stockProjection, stockCommandDispatcher, transactionManager);
+                stockLedger, stockProjection, stockCommandDispatcher,
+                reservationClaims, transactionManager);
     }
 
     @Test

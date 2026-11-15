@@ -6,22 +6,36 @@ import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.entity.AddressEntity;
 import com.awesome.testing.entity.OrderEntity;
 import com.awesome.testing.repository.OrderRepository;
+import com.awesome.testing.repository.stock.StockReservationClaimRepository;
 import com.awesome.testing.service.OrderService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,7 +43,47 @@ class InternalOrderServiceTest {
 
     @Mock private OrderRepository orderRepository;
     @Mock private OrderService orderService;
+    @Mock private StockReservationClaimRepository reservationClaims;
+    @Spy private Clock commerceClock = Clock.fixed(Instant.parse("2026-11-15T12:00:00Z"), ZoneOffset.UTC);
     @InjectMocks private InternalOrderService service;
+
+    @Test
+    void byReservationCommitsATombstoneBeforeItLooksForTheOrderAndDropsItWhenTheOrderExists() {
+        UUID reservation = UUID.randomUUID();
+        when(orderRepository.findIdByStockReservationId(reservation)).thenReturn(Optional.of(7L));
+
+        assertThat(service.byReservation(reservation).orderId()).isEqualTo(7L);
+
+        InOrder lookup = inOrder(reservationClaims, orderRepository);
+        lookup.verify(reservationClaims).insert(reservation, Instant.parse("2026-11-15T12:00:00Z"));
+        lookup.verify(orderRepository).findIdByStockReservationId(reservation);
+        lookup.verify(reservationClaims).deleteClaim(reservation);
+    }
+
+    @Test
+    void byReservationKeepsTheTombstoneWhenNoOrderExists() {
+        UUID reservation = UUID.randomUUID();
+        when(orderRepository.findIdByStockReservationId(reservation)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.byReservation(reservation))
+                .isInstanceOfSatisfying(CustomException.class, e -> {
+                    assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+                    assertThat(e.getMessage()).isEqualTo("Order not found");
+                });
+        verify(reservationClaims).insert(eq(reservation), any());
+        verify(reservationClaims, never()).deleteClaim(any());
+    }
+
+    @Test
+    void byReservationToleratesTheTombstoneOfAnEarlierReaperRun() {
+        UUID reservation = UUID.randomUUID();
+        doThrow(new DataIntegrityViolationException("duplicate key")).when(reservationClaims).insert(eq(reservation), any());
+        when(orderRepository.findIdByStockReservationId(reservation)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.byReservation(reservation))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getHttpStatus()).isEqualTo(HttpStatus.NOT_FOUND));
+    }
 
     @Test
     void pageSizeIsClampedBetweenOneAndOneHundredAndPageToZero() {

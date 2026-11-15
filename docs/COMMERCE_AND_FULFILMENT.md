@@ -228,7 +228,11 @@ has three connections.
   projection; then the reservation is confirmed with the order id. If the
   write fails, the reservation is released and the original error answered;
   if the confirm fails, the order stands and warehouse-service's reaper
-  confirms it after `GET /internal/v1/orders/by-reservation/{id}`. A cart that
+  confirms it after `GET /internal/v1/orders/by-reservation/{id}`. If the
+  reaper already found no order and released the reservation while the order
+  was still being saved (a write stalled for longer than its confirm timeout),
+  the order is not stored: 409 `Stock reservation expired during checkout;
+  please try again`, and the cart stays. A cart that
   changed between the two transactions releases and starts again (three
   attempts, then 409 `Cart changed during checkout; please try again`).
 - **Cancellation** no longer touches stock. When the order still holds
@@ -468,7 +472,7 @@ and is absent from `/v3/api-docs`.
 | `PUT /orders/{id}/fulfilment` `{state}` | Next forward step only. `AWAITING_PICK` requires a `PAID` order in `NONE`. `SHIPPED` and `DELIVERED` also set the order status. Repeating the current state returns 200 without changes, including `AWAITING_PICK`, so a release whose response was lost can be retried (warehouse-service's unique shipment-per-order constraint prevents duplicates). Skips, backward steps and steps after `CANCELLED` are 409. `NONE` or `CANCELLED` in the body is 400 |
 | `POST /orders/{id}/refunds` `{requestId, amount, reference}` | Books a refund for returned items. Only `DELIVERED` orders (409), amount 0.01 or more with at most 2 decimals (400), and the refunds of an order may not exceed its `totalAmount` (409). Adds the amount to `orders.refunded_amount` (shown as `refundedAmount` in order responses once it is above zero). A refund that brings the order to its full total releases the coupon redemption. Repeating a `requestId` with the same order and amount returns the order unchanged; a different order or amount is 409 |
 | `POST /orders/{id}/warehouse-cancel` | Only for `PAID` orders in `AWAITING_PICK` or `PICKED` (otherwise 409); records `stock.restore-requested` for warehouse-service, releases the coupon, sets status and state to `CANCELLED` |
-| `GET /orders/by-reservation/{reservationId}` | `{"orderId": 123}` for the order a stock reservation was stored with; 404 `Order not found`; 400 for a malformed UUID. warehouse-service's reaper asks before it releases an unconfirmed reservation |
+| `GET /orders/by-reservation/{reservationId}` | `{"orderId": 123}` for the order a stock reservation was stored with; 404 `Order not found`; 400 for a malformed UUID. warehouse-service's reaper asks before it releases an unconfirmed reservation. The lookup first commits a tombstone for the reservation (`stock_reservation_claims`): it waits for a checkout that is still saving an order for it, and after a 404 no order can be stored for it any more. The tombstone is removed when the order exists |
 | `GET /products[?ids=1,2]` | `List<InternalProductDto>` by id ascending; unknown ids are omitted |
 | `POST /inventory/receipts` | **410** `Stock receipts are recorded by warehouse-service since backend 3.22.0`, whatever the body. Kept for one release, removed in the next |
 | `POST /inventory/levels` `{levels: [{productId, quantity, ledgerVersion}]}` | 200 `{applied, ignored}`. Applies each level in product id order when its `ledgerVersion` is greater than the product's `stock_ledger_version` (sets `stock_quantity`, touches `updated_at`, back-in-stock emails on a refill from 0); unknown products and stale versions are ignored. 400 for a missing list, more than 1000 levels, a null level, `productId` < 1, `quantity` < 0 or `ledgerVersion` < 1 |

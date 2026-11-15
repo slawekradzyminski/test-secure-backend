@@ -93,6 +93,9 @@ class OrderServiceTest {
     private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
 
     @Mock
+    private com.awesome.testing.repository.stock.StockReservationClaimRepository reservationClaims;
+
+    @Mock
     private PlatformTransactionManager transactionManager;
 
     @InjectMocks
