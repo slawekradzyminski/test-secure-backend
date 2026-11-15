@@ -2,7 +2,9 @@
 
 The system-wide decision records live in awesome-localstack's
 `docs/ARCHITECTURE_DECISIONS.md` (ADR 1 to 5: the pull event feed, the fulfilment read
-model, per-service outboxes, database per service, notifications moving out). This file
+model, per-service outboxes, database per service, notifications moving out; ADR 7: the
+broker transport next to the feed, implemented here by the outbox relay `EventRelay`, V27 and
+`events.transport`). This file
 records the decisions that change how the backend itself works, with the same numbering.
 
 | ADR | Decision | Status | Since |
