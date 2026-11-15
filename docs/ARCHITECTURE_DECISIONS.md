@@ -61,6 +61,14 @@ reservation; a failed confirm is left to warehouse-service's reaper, which asks
 `GET /internal/v1/orders/by-reservation/{id}` before it releases anything. The client
 enforces the rule: it refuses to run inside a transaction.
 
+That lookup and the order transaction meet on one row (`stock_reservation_claims`, V26,
+backend 3.22.2). The order transaction inserts and deletes the reservation id first; a
+lookup inserts it as a tombstone before it reads `orders`. The primary key makes the
+later writer wait for the earlier one, so a lookup that arrives while the order is being
+saved waits and finds it, and an order that is still being saved after a lookup found
+nothing fails with 409 instead of being stored without stock. No timeout has to be
+shorter than the reaper's confirm timeout for this to hold.
+
 Alternatives considered:
 
 - **Keep the ledger in the backend** and let warehouse-service keep calling it: rejected,

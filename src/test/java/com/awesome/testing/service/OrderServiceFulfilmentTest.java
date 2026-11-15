@@ -63,6 +63,7 @@ class OrderServiceFulfilmentTest {
     @Mock private StockLedgerClient stockLedger;
     @Mock private StockProjection stockProjection;
     @Mock private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
+    @Mock private com.awesome.testing.repository.stock.StockReservationClaimRepository reservationClaims;
     @Mock private PlatformTransactionManager transactionManager;
 
     private OrderService service;
@@ -74,7 +75,8 @@ class OrderServiceFulfilmentTest {
         service = new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
                 idempotencyKeyRepository, Clock.systemUTC(), CheckoutContributors.none(), commerceEvents,
                 new OrderReservations(true, Duration.ofMinutes(30)),
-                stockLedger, stockProjection, stockCommandDispatcher, transactionManager);
+                stockLedger, stockProjection, stockCommandDispatcher,
+                reservationClaims, transactionManager);
         product = ProductEntity.builder().id(4L).name("Phone").price(BigDecimal.TEN).stockQuantity(0).build();
         order = OrderEntity.builder().id(7L).username("buyer").status(OrderStatus.PAID)
                 .shippingAddress(new AddressEntity()).totalAmount(BigDecimal.TEN)

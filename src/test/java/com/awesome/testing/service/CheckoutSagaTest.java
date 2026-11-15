@@ -76,6 +76,7 @@ class CheckoutSagaTest {
     @Mock private StockLedgerClient stockLedger;
     @Mock private StockProjection stockProjection;
     @Mock private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
+    @Mock private com.awesome.testing.repository.stock.StockReservationClaimRepository reservationClaims;
     @Mock private PlatformTransactionManager transactionManager;
 
     private OrderService service;
@@ -88,7 +89,8 @@ class CheckoutSagaTest {
         service = new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService,
                 couponService, idempotencyKeyRepository, Clock.systemUTC(), CheckoutContributors.none(),
                 commerceEvents, new OrderReservations(true, Duration.ofMinutes(30)), stockLedger, stockProjection,
-                stockCommandDispatcher, transactionManager);
+                stockCommandDispatcher,
+                reservationClaims, transactionManager);
         phone = ProductEntity.builder().id(2L).name("Phone").price(new BigDecimal("40.00")).stockQuantity(10).build();
         cable = ProductEntity.builder().id(1L).name("Cable").price(new BigDecimal("5.00")).stockQuantity(10).build();
         address = AddressDto.builder().street("Main 1").city("Warsaw").state("MZ").zipCode("00-001").country("PL").build();
@@ -151,6 +153,45 @@ class CheckoutSagaTest {
         saga.verify(transactionManager).commit(write);
         saga.verify(stockLedger).confirm(reservation.getValue(), 77L);
         verify(stockLedger, never()).release(any());
+    }
+
+    @Test
+    void theOrderTransactionClaimsTheReservationBeforeItTouchesTheCart() {
+        TransactionStatus write = mock(TransactionStatus.class);
+        lenient().when(transactionManager.getTransaction(argThat(CheckoutSagaTest::readOnly)))
+                .thenReturn(mock(TransactionStatus.class));
+        when(transactionManager.getTransaction(argThat(CheckoutSagaTest::writable))).thenReturn(write);
+        reserveSucceeds();
+
+        service.createOrder(USER, address, null);
+
+        ArgumentCaptor<UUID> reservation = ArgumentCaptor.forClass(UUID.class);
+        InOrder saga = inOrder(stockLedger, transactionManager, reservationClaims, cartItemRepository, orderRepository);
+        saga.verify(stockLedger).reserve(reservation.capture(), eq(USER), any());
+        saga.verify(transactionManager).getTransaction(argThat(CheckoutSagaTest::writable));
+        saga.verify(reservationClaims).insert(eq(reservation.getValue()), any());
+        saga.verify(reservationClaims).deleteClaim(reservation.getValue());
+        saga.verify(cartItemRepository).findByUsernameForUpdate(USER);
+        saga.verify(orderRepository).save(any(OrderEntity.class));
+        saga.verify(transactionManager).commit(write);
+    }
+
+    @Test
+    void aReservationTheReaperAlreadyGaveUpOnStoresNoOrderAndAnswersConflict() {
+        reserveSucceeds();
+        doThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate key"))
+                .when(reservationClaims).insert(any(), any());
+
+        assertThatThrownBy(() -> service.createOrder(USER, address, null))
+                .isInstanceOfSatisfying(CustomException.class, error -> {
+                    assertThat(error.getHttpStatus()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(error.getMessage()).isEqualTo("Stock reservation expired during checkout; please try again");
+                });
+        verify(cartItemRepository, never()).findByUsernameForUpdate(any());
+        verify(orderRepository, never()).save(any());
+        verify(reservationClaims, never()).deleteClaim(any());
+        verify(stockLedger).release(any());
+        verify(stockLedger, never()).confirm(any(), anyLong());
     }
 
     @Test

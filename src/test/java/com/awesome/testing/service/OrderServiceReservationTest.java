@@ -76,6 +76,7 @@ class OrderServiceReservationTest {
     @Mock private StockLedgerClient stockLedger;
     @Mock private StockProjection stockProjection;
     @Mock private com.awesome.testing.service.stock.StockCommandDispatcher stockCommandDispatcher;
+    @Mock private com.awesome.testing.repository.stock.StockReservationClaimRepository reservationClaims;
     @Mock private PlatformTransactionManager transactionManager;
 
     private OrderEntity order;
@@ -107,7 +108,8 @@ class OrderServiceReservationTest {
         return new OrderService(orderRepository, cartItemRepository, productRepository, inventoryService, couponService,
                 idempotencyKeyRepository, Clock.fixed(NOW, ZoneOffset.UTC), CheckoutContributors.none(), commerceEvents,
                 new OrderReservations(reservations, Duration.ofMinutes(30)),
-                stockLedger, stockProjection, stockCommandDispatcher, transactionManager);
+                stockLedger, stockProjection, stockCommandDispatcher,
+                reservationClaims, transactionManager);
     }
 
     @Test

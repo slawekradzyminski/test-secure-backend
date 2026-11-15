@@ -24,6 +24,7 @@ import com.awesome.testing.entity.inventory.InventoryState;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
+import com.awesome.testing.repository.stock.StockReservationClaimRepository;
 import com.awesome.testing.service.reservation.OrderReservations;
 import com.awesome.testing.dto.stock.ReservationDto;
 import com.awesome.testing.dto.stock.ReservedLineDto;
@@ -38,6 +39,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -97,6 +99,7 @@ public class OrderService {
     private final StockLedgerClient stockLedger;
     private final StockProjection stockProjection;
     private final StockCommandDispatcher stockCommandDispatcher;
+    private final StockReservationClaimRepository reservationClaims;
     private final TransactionTemplate readTransaction;
     private final TransactionTemplate writeTransaction;
 
@@ -113,6 +116,7 @@ public class OrderService {
                         StockLedgerClient stockLedger,
                         StockProjection stockProjection,
                         StockCommandDispatcher stockCommandDispatcher,
+                        StockReservationClaimRepository reservationClaims,
                         PlatformTransactionManager transactionManager) {
         this.orderRepository = orderRepository;
         this.cartItemRepository = cartItemRepository;
@@ -127,6 +131,7 @@ public class OrderService {
         this.stockLedger = stockLedger;
         this.stockProjection = stockProjection;
         this.stockCommandDispatcher = stockCommandDispatcher;
+        this.reservationClaims = reservationClaims;
         this.readTransaction = new TransactionTemplate(transactionManager);
         this.readTransaction.setReadOnly(true);
         this.writeTransaction = new TransactionTemplate(transactionManager);
@@ -272,6 +277,7 @@ public class OrderService {
 
     private Placement placeOrder(String username, AddressDto addressDto, String idempotencyKey,
                                  CheckoutPlan plan, ReservationDto reservation) {
+        claimReservation(reservation.reservationId());
         List<CartItemEntity> cartItems = cartItemRepository.findByUsernameForUpdate(username);
         String requestHash = idempotencyKey == null ? null : requestHash(addressDto);
         if (idempotencyKey != null) {
@@ -319,6 +325,24 @@ public class OrderService {
         flushBeforeMapping();
 
         return new Placement(new OrderCreation(OrderDto.from(savedOrder), false), savedOrder.getId());
+    }
+
+    /**
+     * Claims the reservation for this order transaction (V26, {@code stock_reservation_claims}). The
+     * row is inserted and deleted at once, but its key stays locked until commit, so a reaper lookup
+     * ({@code GET /internal/v1/orders/by-reservation/{id}}) that arrives meanwhile waits and then finds
+     * the order. If the lookup came first and found no order, its tombstone makes the insert fail: the
+     * reaper is releasing this stock, so no order may be stored for it. However long this transaction
+     * waits for a connection or a slow database, the order and the release can no longer both happen.
+     */
+    private void claimReservation(UUID reservationId) {
+        try {
+            reservationClaims.insert(reservationId, commerceClock.instant());
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomException(
+                    "Stock reservation expired during checkout; please try again", HttpStatus.CONFLICT, e);
+        }
+        reservationClaims.deleteClaim(reservationId);
     }
 
     /** Sets the projection to the levels the reservation left, locking the products in id order. */
