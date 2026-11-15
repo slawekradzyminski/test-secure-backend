@@ -78,6 +78,13 @@ Native-specific:
    annotations, Jackson outside controllers, Caffeine and Artemis loading classes by name.
    Each surfaced as a clear startup or request error; none was silent once
    `JwtTokenFilter` logged.
+4. **Security properties are fixed at build time** (found in 3.22.1). The image ignored
+   `Security.setProperty`, `-Djava.security.properties` and `-Dsun.net.inetaddr.negative.ttl`
+   at runtime, so failed DNS lookups stayed cached for the JDK default of 10 s. Because the
+   backend calls warehouse-service before that container exists, checkout answered 503 for a
+   few seconds after warehouse-service was ready. The builder now reads
+   `config/native/java.security.override` (`networkaddress.cache.negative.ttl=0`); any other
+   security property the image needs must go there too.
 
 ## To productionise
 
