@@ -89,9 +89,10 @@ Alternatives considered:
 - After a cancel, stock and movements change **eventually**: feed settle delay (3 s) +
   warehouse-service's poll interval (5 s) + the level push. Clients poll; teaching
   scenarios that read stock right after a cancel now wait.
-- `inventory_movements` is frozen (read only by `GET /internal/v1/inventory/export`, the
-  one-time import) and dropped in a later release, together with
-  `POST /internal/v1/inventory/receipts`, which answers 410 for one release.
+- `inventory_movements` was frozen in 3.22.0 (read only by `GET /internal/v1/inventory/export`,
+  the one-time import). Backend 3.24.0 drops it (V28) and removes
+  `POST /internal/v1/inventory/receipts`, which had answered 410 since 3.22.0. The export now
+  lists product ids and projected quantities only.
 - `BACKEND_SERVICE_TOKEN` is a new secret shared by the backend (sends it) and
   warehouse-service (expects it), per site.
 - Public REST, GraphQL and gRPC bodies and the 409 messages are unchanged; 503 is new.

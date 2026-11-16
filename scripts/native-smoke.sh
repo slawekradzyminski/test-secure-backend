@@ -268,14 +268,14 @@ pushed=$(call -H 'X-Service-Token: local-warehouse-token' -H 'Content-Type: appl
 projected=$(call -H "Authorization: Bearer $token" "http://backend:4001/api/v1/admin/inventory/$product_id" | tr -d ' ')
 [[ "$projected" == *'"availableQuantity":4242,'* ]] || fail "projection after the level push: $projected"
 exported=$(call -H 'X-Service-Token: local-warehouse-token' 'http://backend:4001/internal/v1/inventory/export?limit=1' | tr -d ' ')
-[[ "$exported" == 200* && "$exported" == *'"items":[{"productId":'* && "$exported" == *'"nextAfterProductId":'* ]] \
-  || fail "inventory export: $exported"
+[[ "$exported" == 200* && "$exported" == *'"items":[{"productId":'* && "$exported" == *'"nextAfterProductId":'* \
+  && "$exported" != *'"movements"'* ]] || fail "inventory export: $exported"
 receipts=$(call -X POST -H 'X-Service-Token: local-warehouse-token' -H 'Content-Type: application/json' -d '{}' \
   http://backend:4001/internal/v1/inventory/receipts)
-[[ "$receipts" == 410* ]] || fail "receipts must be gone: $receipts"
+[[ "$receipts" == 404* ]] || fail "the receipts endpoint must be removed: $receipts"
 docker logs "$RUN_ID-backend" 2>&1 | grep -qiE 'MissingReflectionRegistrationError|InvalidDefinitionException' \
   && fail "the stock ledger client hit a native reflection error"
-echo "level push, export and receipts (410): ok"
+echo "level push, export and no receipts endpoint: ok"
 
 # A product created through the API can be ordered at once (its stock item is created before the
 # 201) and deleted at once (204, the stub ends without the item).

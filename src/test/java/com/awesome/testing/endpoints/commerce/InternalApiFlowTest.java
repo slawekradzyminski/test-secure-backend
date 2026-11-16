@@ -11,13 +11,11 @@ import com.awesome.testing.dto.order.OrderDto;
 import com.awesome.testing.dto.order.OrderStatus;
 import com.awesome.testing.dto.order.PageDto;
 import com.awesome.testing.entity.ProductEntity;
-import com.awesome.testing.entity.inventory.InventoryMovementType;
 import com.awesome.testing.internal.dto.FulfilmentUpdateDto;
 import com.awesome.testing.internal.dto.InternalNotificationDto;
 import com.awesome.testing.internal.dto.InternalOrderDto;
 import com.awesome.testing.internal.dto.InternalProductDto;
 import com.awesome.testing.repository.EmailEventRepository;
-import com.awesome.testing.repository.inventory.InventoryMovementRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
@@ -38,9 +36,6 @@ class InternalApiFlowTest extends AbstractCommerceFlowTest {
 
     private static final String INTERNAL = "/internal/v1";
     private static final String TOKEN = "test-warehouse-token";
-
-    @Autowired
-    private InventoryMovementRepository movementRepository;
 
     @Autowired
     private EmailEventRepository emailEventRepository;
@@ -241,27 +236,16 @@ class InternalApiFlowTest extends AbstractCommerceFlowTest {
     }
 
     @Test
-    void receiptsAreGoneBecauseWarehouseServiceRecordsThemInItsOwnLedger() {
+    void receiptsNoLongerExistBecauseWarehouseServiceRecordsThemInItsOwnLedger() {
         ProductEntity product = product("10.00", 5);
         String receipt = "{\"requestId\":\"" + UUID.randomUUID() + "\",\"type\":\"PURCHASE_RECEIVED\","
                 + "\"reference\":\"PO-7\",\"lines\":[{\"productId\":" + product.getId() + ",\"quantity\":4}]}";
 
-        ResponseEntity<ErrorDto> gone = executePost(INTERNAL + "/inventory/receipts", receipt, serviceHeaders(TOKEN),
-                ErrorDto.class);
-        ResponseEntity<ErrorDto> withoutBody = executePost(INTERNAL + "/inventory/receipts", null,
+        ResponseEntity<ErrorDto> receipts = executePost(INTERNAL + "/inventory/receipts", receipt,
                 serviceHeaders(TOKEN), ErrorDto.class);
-        ResponseEntity<ErrorDto> unauthenticated = executePost(INTERNAL + "/inventory/receipts", receipt,
-                serviceHeaders("wrong-token"), ErrorDto.class);
 
-        assertThat(List.of(gone, withoutBody)).allSatisfy(response -> {
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.GONE);
-            assertThat(response.getBody().getMessage())
-                    .isEqualTo("Stock receipts are recorded by warehouse-service since backend 3.22.0");
-        });
-        assertThat(unauthenticated.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(receipts.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(stockOf(product)).isEqualTo(5);
-        assertThat(movementRepository.findAll()).noneMatch(movement ->
-                movement.getProduct().getId().equals(product.getId()));
     }
 
     @Test

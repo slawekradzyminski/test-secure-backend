@@ -36,8 +36,8 @@ class InventoryMigrationIT {
     }
 
     @Test
-    void v4CreatesTheInventorySchemaOnAPostgresFreshDatabase() throws Exception {
-        flyway(FRESH_SCHEMA, null).migrate();
+    void v4CreatesTheInventorySchemaOnAPostgresFreshDatabaseAndV28DropsTheFrozenLedger() throws Exception {
+        flyway(FRESH_SCHEMA, MigrationVersion.fromVersion("4")).migrate();
 
         try (Connection connection = DriverManager.getConnection(
                 POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
@@ -49,6 +49,15 @@ class InventoryMigrationIT {
                     .isEqualTo("CASCADE");
             assertThat(foreignKeyRule(statement, FRESH_SCHEMA, "inventory_movements", "order_id"))
                     .isEqualTo("SET NULL");
+        }
+
+        flyway(FRESH_SCHEMA, null).migrate();
+
+        try (Connection connection = DriverManager.getConnection(
+                POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+             Statement statement = connection.createStatement()) {
+            assertThat(columnExists(statement, FRESH_SCHEMA, "inventory_movements", "request_id")).isFalse();
+            assertThat(columnExists(statement, FRESH_SCHEMA, "products", "stock_quantity")).isTrue();
         }
     }
 

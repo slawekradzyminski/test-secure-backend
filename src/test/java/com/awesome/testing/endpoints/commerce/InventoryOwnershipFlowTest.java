@@ -15,12 +15,10 @@ import com.awesome.testing.dto.stock.StockLevelsDto;
 import com.awesome.testing.dto.stock.StockLevelsResultDto;
 import com.awesome.testing.entity.OrderEntity;
 import com.awesome.testing.entity.ProductEntity;
-import com.awesome.testing.entity.inventory.InventoryMovementEntity;
 import com.awesome.testing.entity.inventory.InventoryMovementType;
 import com.awesome.testing.entity.stock.StockCommandEntity;
 import com.awesome.testing.internal.dto.InventoryExportDto;
 import com.awesome.testing.internal.dto.OrderReferenceDto;
-import com.awesome.testing.repository.inventory.InventoryMovementRepository;
 import com.awesome.testing.repository.stock.StockCommandRepository;
 import com.awesome.testing.service.stock.StockCommandDispatcher;
 import com.awesome.testing.stock.FakeStockLedger;
@@ -61,9 +59,6 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
 
     @Autowired
     private StockCommandRepository commands;
-
-    @Autowired
-    private InventoryMovementRepository movementRepository;
 
     private final List<Long> faulty = new ArrayList<>();
 
@@ -662,12 +657,9 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
     }
 
     @Test
-    void exportPagesProductsWithTheirFrozenMovements() {
+    void exportPagesProductsWithTheirProjectedQuantities() {
         ProductEntity first = product("10.00", 5);
         ProductEntity second = product("10.00", 0);
-        InventoryMovementEntity movement = movementRepository.save(InventoryMovementEntity.builder()
-                .product(first).type(InventoryMovementType.INITIAL_STOCK).delta(5).quantityAfter(5)
-                .actor("admin").reason("Initial stock").build());
 
         ResponseEntity<String> raw = export("?afterProductId=" + (first.getId() - 1) + "&limit=1", String.class);
         ResponseEntity<InventoryExportDto> page = export("?afterProductId=" + (first.getId() - 1) + "&limit=1",
@@ -684,14 +676,8 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
         assertThat(page.getBody().items()).singleElement().satisfies(item -> {
             assertThat(item.productId()).isEqualTo(first.getId());
             assertThat(item.quantity()).isEqualTo(5);
-            assertThat(item.movements()).singleElement().satisfies(exported -> {
-                assertThat(exported.id()).isEqualTo(movement.getId());
-                assertThat(exported.type()).isEqualTo(InventoryMovementType.INITIAL_STOCK);
-                assertThat(exported.orderId()).isNull();
-            });
         });
-        assertThat(raw.getBody()).contains("\"requestId\":null", "\"orderId\":null")
-                .doesNotContain("\"productId\":" + first.getId() + ",\"orderId\"");
+        assertThat(raw.getBody()).doesNotContain("movements");
         assertThat(next.getBody().items()).extracting(item -> item.productId()).contains(second.getId());
         assertThat(next.getBody().nextAfterProductId()).isNull();
         assertThat(List.of(tooLarge, zero, malformed))
