@@ -17,7 +17,6 @@ import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
 import com.awesome.testing.repository.giftcard.GiftCardRepository;
 import com.awesome.testing.repository.giftcard.GiftCardTransactionRepository;
-import com.awesome.testing.repository.inventory.InventoryMovementRepository;
 import com.awesome.testing.repository.tender.CartTenderRepository;
 import com.awesome.testing.service.InventoryService;
 import com.awesome.testing.service.OrderService;
@@ -90,8 +89,6 @@ class TenderConcurrencyIT {
     private GiftCardTransactionRepository giftCardTransactionRepository;
     @Autowired
     private OrderRepository orderRepository;
-    @Autowired
-    private InventoryMovementRepository movementRepository;
     @Autowired
     private PlatformTransactionManager transactionManager;
 
@@ -180,7 +177,6 @@ class TenderConcurrencyIT {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             giftCardTransactionRepository.deleteAll();
             giftCardRepository.deleteById(card.getId());
-            movementRepository.deleteAll();
             orderRepository.deleteAll();
             productRepository.deleteAll();
         });

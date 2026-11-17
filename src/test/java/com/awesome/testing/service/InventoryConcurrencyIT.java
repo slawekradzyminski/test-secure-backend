@@ -7,7 +7,6 @@ import com.awesome.testing.entity.ProductEntity;
 import com.awesome.testing.repository.CartItemRepository;
 import com.awesome.testing.repository.OrderRepository;
 import com.awesome.testing.repository.ProductRepository;
-import com.awesome.testing.repository.inventory.InventoryMovementRepository;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,9 +77,6 @@ class InventoryConcurrencyIT {
     private OrderRepository orderRepository;
 
     @Autowired
-    private InventoryMovementRepository movementRepository;
-
-    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @Autowired
@@ -102,7 +98,6 @@ class InventoryConcurrencyIT {
 
     @BeforeEach
     void cleanDatabase() {
-        movementRepository.deleteAll();
         cartItemRepository.deleteAll();
         orderRepository.deleteAll();
         productRepository.deleteAll();

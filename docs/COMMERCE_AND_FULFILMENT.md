@@ -274,8 +274,10 @@ has three connections.
   projection and keep working while warehouse-service is down. Movement
   history is read from warehouse-service (404 for an unknown product first,
   as before).
-- `inventory_movements` is frozen: only `GET /internal/v1/inventory/export`
-  reads it, for warehouse-service's one-time import.
+- The backend keeps no movement history: V28 (3.24.0) dropped the
+  `inventory_movements` table frozen in 3.22.0. A warehouse-service with an
+  empty ledger imports product ids and projected quantities from
+  `GET /internal/v1/inventory/export`.
 
 | Property | Environment variable | Default |
 | --- | --- | --- |
@@ -474,9 +476,8 @@ and is absent from `/v3/api-docs`.
 | `POST /orders/{id}/warehouse-cancel` | Only for `PAID` orders in `AWAITING_PICK` or `PICKED` (otherwise 409); records `stock.restore-requested` for warehouse-service, releases the coupon, sets status and state to `CANCELLED` |
 | `GET /orders/by-reservation/{reservationId}` | `{"orderId": 123}` for the order a stock reservation was stored with; 404 `Order not found`; 400 for a malformed UUID. warehouse-service's reaper asks before it releases an unconfirmed reservation. The lookup first commits a tombstone for the reservation (`stock_reservation_claims`): it waits for a checkout that is still saving an order for it, and after a 404 no order can be stored for it any more. The tombstone is removed when the order exists |
 | `GET /products[?ids=1,2]` | `List<InternalProductDto>` by id ascending; unknown ids are omitted |
-| `POST /inventory/receipts` | **410** `Stock receipts are recorded by warehouse-service since backend 3.22.0`, whatever the body. Kept for one release, removed in the next |
 | `POST /inventory/levels` `{levels: [{productId, quantity, ledgerVersion}]}` | 200 `{applied, ignored}`. Applies each level in product id order when its `ledgerVersion` is greater than the product's `stock_ledger_version` (sets `stock_quantity`, touches `updated_at`, back-in-stock emails on a refill from 0); unknown products and stale versions are ignored. 400 for a missing list, more than 1000 levels, a null level, `productId` < 1, `quantity` < 0 or `ledgerVersion` < 1 |
-| `GET /inventory/export?afterProductId&limit=500` | 200 `{items: [{productId, quantity, movements: [{id, orderId, type, delta, quantityAfter, actor, reason, requestId, createdAt}]}], nextAfterProductId}`: products with an id above `afterProductId` in id order with their projected quantity and their frozen `inventory_movements` (oldest first, ids kept). `nextAfterProductId` is null on the last page. 400 for `limit` outside 1–500, a negative or non-numeric `afterProductId` |
+| `GET /inventory/export?afterProductId&limit=500` | 200 `{items: [{productId, quantity}], nextAfterProductId}`: products with an id above `afterProductId` in id order with their projected quantity. Since 3.24.0 there is no `movements` list (warehouse-service reads a missing list as empty). `POST /inventory/receipts` was removed in 3.24.0 (404). `nextAfterProductId` is null on the last page. 400 for `limit` outside 1–500, a negative or non-numeric `afterProductId` |
 | `POST /notifications` | 202. `requestId` is required (400); `template` must be `ORDER_SHIPPED`, `ORDER_DELIVERED`, `RETURN_UPDATED`, `SHIPMENT_OUT_FOR_DELIVERY` or `SHIPMENT_DELIVERY_FAILED` (400) and its properties must be present (400: `orderId`, `carrier`, `trackingNumber` / `orderId` / `returnId`, `orderId`, `status`, optional `refundAmount` and `note` / `orderId`, `carrier`, `trackingNumber` for both carrier templates); unknown username 404. The backend renders the subject and body (`CustomerEmailRenderer`) and queues the email through the existing pipeline. A repeated `requestId` is accepted without a second email |
 | `GET /jwks.json` | The RS256 access-token verification key as a JSON Web Key Set (`kty`, `use`, `alg`, `kid`, `n`, `e`) |
 | `POST /orders/{id}/payment` | Payment result from payment-service; see [Card payments](#card-payments) |

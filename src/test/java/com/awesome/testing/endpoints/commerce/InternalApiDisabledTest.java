@@ -57,10 +57,8 @@ class InternalApiDisabledTest extends HttpHelper {
         ResponseEntity<ErrorDto> export = executeGet("/internal/v1/inventory/export", withToken, ErrorDto.class);
         ResponseEntity<ErrorDto> byReservation = executeGet(
                 "/internal/v1/orders/by-reservation/00000000-0000-0000-0000-000000000001", withToken, ErrorDto.class);
-        ResponseEntity<ErrorDto> receipts = executePost("/internal/v1/inventory/receipts", "{}", withToken,
-                ErrorDto.class);
 
-        assertThat(java.util.List.of(levels, export, byReservation, receipts)).allSatisfy(response -> {
+        assertThat(java.util.List.of(levels, export, byReservation)).allSatisfy(response -> {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
             assertThat(response.getBody().getMessage()).isEqualTo("Not found");
         });

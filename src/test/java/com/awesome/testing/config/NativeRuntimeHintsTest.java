@@ -18,7 +18,6 @@ import com.awesome.testing.dto.stock.StockLineDto;
 import com.awesome.testing.event.CommerceEvent;
 import com.awesome.testing.internal.dto.InventoryExportDto;
 import com.awesome.testing.internal.dto.InventoryExportItemDto;
-import com.awesome.testing.internal.dto.InventoryExportMovementDto;
 import com.awesome.testing.internal.dto.OrderReferenceDto;
 import com.awesome.testing.fakedata.ProductSeedDefinition;
 import com.awesome.testing.security.CustomPrincipal;
@@ -64,7 +63,7 @@ class NativeRuntimeHintsTest {
                 ReservedLineDto.class, StockLineDto.class, ConfirmReservationRequestDto.class,
                 AdjustStockRequestDto.class, LedgerMovementDto.class, CreateStockItemRequestDto.class,
                 StockLevelDto.class, StockLevelsDto.class, StockLevelsResultDto.class,
-                InventoryExportDto.class, InventoryExportItemDto.class, InventoryExportMovementDto.class,
+                InventoryExportDto.class, InventoryExportItemDto.class,
                 OrderReferenceDto.class}) {
             assertThat(RuntimeHintsPredicates.reflection().onType(type)).as(type.getSimpleName()).accepts(HINTS);
         }

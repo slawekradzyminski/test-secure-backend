@@ -1,7 +1,6 @@
 package com.awesome.testing.graphql;
 
 import com.awesome.testing.dto.cart.CartItemDto;
-import com.awesome.testing.repository.inventory.InventoryMovementRepository;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +31,6 @@ class GraphQlConcurrencyIT extends AbstractCommerceGraphQlTest {
     static {
         POSTGRES.start();
     }
-
-    @Autowired
-    private InventoryMovementRepository movements;
 
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {

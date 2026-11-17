@@ -2,13 +2,10 @@ package com.awesome.testing.internal.service;
 
 import com.awesome.testing.controller.exception.CustomException;
 import com.awesome.testing.entity.ProductEntity;
-import com.awesome.testing.entity.inventory.InventoryMovementEntity;
 import com.awesome.testing.internal.dto.InternalProductDto;
 import com.awesome.testing.internal.dto.InventoryExportDto;
 import com.awesome.testing.internal.dto.InventoryExportItemDto;
-import com.awesome.testing.internal.dto.InventoryExportMovementDto;
 import com.awesome.testing.repository.ProductRepository;
-import com.awesome.testing.repository.inventory.InventoryMovementRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -16,11 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /** Product snapshots and the one-time stock ledger export for warehouse-service. */
 @Service
@@ -30,7 +24,6 @@ public class InternalInventoryService {
     static final int MAX_EXPORT_LIMIT = 500;
 
     private final ProductRepository productRepository;
-    private final InventoryMovementRepository movementRepository;
 
     @Transactional(readOnly = true)
     public List<InternalProductDto> products(List<Long> ids) {
@@ -44,8 +37,7 @@ public class InternalInventoryService {
 
     /**
      * Contract section 6: up to {@code limit} products with an id above {@code afterProductId}, each
-     * with its projected quantity and its movements from the frozen {@code inventory_movements}
-     * table (oldest first, ids kept). {@code nextAfterProductId} is null once a page is not full.
+     * with its projected quantity. {@code nextAfterProductId} is null once a page is not full.
      */
     @Transactional(readOnly = true)
     public InventoryExportDto export(Long afterProductId, int limit) {
@@ -57,17 +49,8 @@ public class InternalInventoryService {
         }
         List<ProductEntity> products = productRepository.findAfterId(
                 afterProductId == null ? 0 : afterProductId, PageRequest.of(0, limit));
-        Map<Long, List<InventoryExportMovementDto>> movements = new HashMap<>();
-        if (!products.isEmpty()) {
-            for (InventoryMovementEntity movement : movementRepository.findByProductIdsInIdOrder(
-                    products.stream().map(ProductEntity::getId).toList())) {
-                movements.computeIfAbsent(movement.getProduct().getId(), id -> new ArrayList<>())
-                        .add(InventoryExportMovementDto.from(movement));
-            }
-        }
         List<InventoryExportItemDto> items = products.stream()
-                .map(product -> new InventoryExportItemDto(product.getId(), product.getStockQuantity(),
-                        movements.getOrDefault(product.getId(), List.of())))
+                .map(product -> new InventoryExportItemDto(product.getId(), product.getStockQuantity()))
                 .toList();
         Long next = products.size() == limit ? products.getLast().getId() : null;
         return new InventoryExportDto(items, next);
