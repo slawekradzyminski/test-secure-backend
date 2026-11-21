@@ -166,24 +166,37 @@ class EventFeedEndpointTest extends AbstractPaymentFlowTest {
     }
 
     @Test
-    void eventsRecordedWithinTheSettleDelayAreHeldBack() {
-        // given
-        long before = eventRepository.maxSequence();
-        OrderDto order = order(clientToken, product("5.00", 5), 1);
-        Long sequence = eventRepository.findByOrderIdOrderBySequenceAsc(order.getId()).getFirst().getSequence();
-        jdbcTemplate.update("UPDATE domain_events SET recorded_at = ? WHERE sequence = ?",
-                Timestamp.from(Instant.now().plus(Duration.ofMinutes(5))), sequence);
+    void anEventThatCommitsLateIsServedAfterTheCursorThatPassedItsSequence() {
+        // given: a consumer has read everything
+        order(clientToken, product("5.00", 5), 1);
+        long cursor = readToTheEnd(eventRepository.maxSequence() - 1);
+        // a transaction that took a sequence below the cursor commits only now (sequence -42 stands for it)
+        UUID lateId = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO domain_events (sequence, event_id, type, username, occurred_at, recorded_at, payload)
+                VALUES (-42, ?, 'card-refund.requested', 'client', ?, ?, '{}')
+                """, lateId, Timestamp.from(Instant.now()), Timestamp.from(Instant.now()));
 
         // when
-        JsonNode held = JSON.readTree(feed("?after=" + before, PAYMENT_TOKEN).getBody());
-        jdbcTemplate.update("UPDATE domain_events SET recorded_at = ? WHERE sequence = ?",
-                Timestamp.from(Instant.now().minus(Duration.ofSeconds(1))), sequence);
-        JsonNode settled = JSON.readTree(feed("?after=" + before, PAYMENT_TOKEN).getBody());
+        JsonNode page = JSON.readTree(feed("?after=" + cursor, PAYMENT_TOKEN).getBody());
 
-        // then
-        assertThat(forOrder(held, order.getId())).isEmpty();
-        assertThat(forOrder(settled, order.getId())).singleElement()
-                .satisfies(event -> assertThat(event.get("sequence").asLong()).isEqualTo(sequence));
+        // then: served above the cursor, although its insert sequence is below it
+        assertThat(page.get("events")).singleElement().satisfies(event -> {
+            assertThat(event.get("id").asString()).isEqualTo(lateId.toString());
+            assertThat(event.get("sequence").asLong()).isEqualTo(cursor + 1);
+        });
+        assertThat(page.get("nextCursor").asLong()).isEqualTo(cursor + 1);
+        jdbcTemplate.update("DELETE FROM domain_events WHERE sequence = -42");
+    }
+
+    private long readToTheEnd(long after) {
+        long cursor = after;
+        JsonNode page;
+        do {
+            page = JSON.readTree(feed("?limit=200&after=" + cursor, PAYMENT_TOKEN).getBody());
+            cursor = page.get("nextCursor").asLong();
+        } while (page.get("hasMore").asBoolean());
+        return cursor;
     }
 
     @Test

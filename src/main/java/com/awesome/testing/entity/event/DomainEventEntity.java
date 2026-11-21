@@ -74,4 +74,13 @@ public class DomainEventEntity {
     @Setter
     @Column(name = "published_at")
     private Instant publishedAt;
+
+    /**
+     * Position in the feed (V29): null until the row has committed and {@code FeedPositions} gave
+     * it one. Positions follow commit order, so a consumer cursor never passes an event that
+     * commits later; {@link #sequence} follows insert order and cannot promise that.
+     */
+    @Setter
+    @Column(name = "feed_position", unique = true)
+    private Long feedPosition;
 }

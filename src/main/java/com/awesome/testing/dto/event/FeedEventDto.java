@@ -14,6 +14,10 @@ import java.util.UUID;
  * event so consumers can continue its trace; {@code spanId} (additive) is the writing span, the
  * parent of a consumer's {@code process <type>} span. All three are null for events written
  * without a request.
+ *
+ * <p>In the feed, {@code sequence} is the event's feed position (V29): positions follow commit
+ * order, so a cursor never passes an event that commits later. It equals the insert sequence
+ * whenever commits follow insert order. Broker messages carry the insert sequence.
  */
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @JsonPropertyOrder({"sequence", "id", "type", "occurredAt", "orderId", "username", "data", "requestId", "traceId",

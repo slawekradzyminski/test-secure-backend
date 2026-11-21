@@ -77,8 +77,6 @@ orders:
       enabled: false
 
 events:
-  # Tests read the feed right after the change; the settle delay is covered by its own tests.
-  settle-delay: PT0S
   retention-job:
     enabled: false
 
