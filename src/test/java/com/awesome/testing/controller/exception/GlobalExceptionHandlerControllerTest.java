@@ -34,6 +34,15 @@ class GlobalExceptionHandlerControllerTest {
     }
 
     @Test
+    void shouldAnswer503WhenNoDatabaseConnectionIsAvailable() {
+        ResponseEntity<ErrorDto> response = controller.handleDatabaseUnavailable(
+                new org.springframework.transaction.CannotCreateTransactionException("Could not open JPA EntityManager"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(response.getBody().getMessage()).isEqualTo("Database unavailable");
+    }
+
+    @Test
     void shouldHandleValidationExceptions() {
         BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "object");
         bindingResult.addError(new FieldError("object", "field", "must not be blank"));

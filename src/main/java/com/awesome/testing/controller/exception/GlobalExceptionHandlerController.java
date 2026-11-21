@@ -7,7 +7,9 @@ import com.awesome.testing.dto.ErrorDto;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.webmvc.error.DefaultErrorAttributes;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -83,6 +85,19 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
                 .status(HttpStatus.CONFLICT)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ErrorDto("Operation conflicts with existing data"));
+    }
+
+    /**
+     * The database cannot be reached (no pooled connection within the connection timeout, or a
+     * refused connection): 503, so callers and the gateway see a retryable outage, not a bug.
+     */
+    @ExceptionHandler({CannotCreateTransactionException.class, DataAccessResourceFailureException.class,
+            org.hibernate.exception.JDBCConnectionException.class})
+    public ResponseEntity<ErrorDto> handleDatabaseUnavailable(Exception ex) {
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorDto(DatabaseUnavailable.MESSAGE));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
