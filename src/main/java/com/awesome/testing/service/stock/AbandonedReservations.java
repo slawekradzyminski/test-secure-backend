@@ -75,6 +75,8 @@ public class AbandonedReservations implements DisposableBean {
     }
 
     @Override
+    // The pool is this bean's own executor: shut down here, not closed by a try-with-resources.
+    @SuppressWarnings("PMD.CloseResource")
     public void destroy() {
         if (executor instanceof ExecutorService service) {
             service.shutdown();
