@@ -226,8 +226,13 @@ has three connections.
   the idempotency key, stores the order with `orders.stock_reservation_id`
   (internal, never serialized) and applies the reserved levels to the
   projection; then the reservation is confirmed with the order id. If the
-  write fails, the reservation is released and the original error answered;
-  if the confirm fails, the order stands and warehouse-service's reaper
+  write fails, the reservation is released and the original error answered.
+  If the reserve call itself has an unknown outcome (read timeout, connection
+  error, 5xx: warehouse-service may have deducted the stock), the backend
+  answers 503 and releases that reservation id on a background thread; a
+  release that arrives before its reserve leaves a tombstone, so the late
+  reserve deducts nothing. A retry therefore does not hold stock twice. If
+  the confirm fails, the order stands and warehouse-service's reaper
   confirms it after `GET /internal/v1/orders/by-reservation/{id}`. If the
   reaper already found no order and released the reservation while the order
   was still being saved (a write stalled for longer than its confirm timeout),
@@ -243,7 +248,7 @@ has three connections.
   becomes `RESTORED`. `order.cancelled` is unchanged. The event is never
   offered to webhooks. warehouse-service restores the stock from the feed and
   pushes the new level, so stock and movements appear **eventually** after a
-  cancel (settle delay 3 s + poll 5 s + level push).
+  cancel (poll 5 s + level push).
 - **Level push**: `POST /internal/v1/inventory/levels` applies a level only
   when its `ledgerVersion` is greater than the stored one; a refill from 0
   triggers the back-in-stock emails.
@@ -667,10 +672,19 @@ the warehouse, payment and notification service tokens.
   (`traceparent` `00-<traceId>-<spanId>-01`), so a cancellation and the refund it
   triggers are one trace. With tracing off it is the hand-written hop span id.
 - `nextCursor` is the last returned sequence (or `after` for an empty page);
-  pass it as the next `after`. `hasMore` is true when more matching settled
-  events exist.
-- Only events recorded at least `events.settle-delay` ago are served, so a
-  transaction that took a lower sequence but committed later is not skipped.
+  pass it as the next `after`. `hasMore` is true when more matching events
+  exist.
+- The feed's `sequence` is the event's **feed position** (V29
+  `domain_events.feed_position`), not the insert sequence: every read first
+  gives committed events a position, in commit order, under the lock of the
+  single `domain_event_feed_head` row (`FeedPositions`). Each position is
+  `max(last + 1, insert sequence)`, so it equals the insert sequence whenever
+  commits follow insert order. A transaction that inserted its event early and
+  committed late gets a position above everything already served, so a cursor
+  never passes it. (Before V29 a 3 s settle delay on the insert time only
+  narrowed that window: a cancellation that committed more than 3 s after
+  inserting its events was skipped by every consumer.) Broker messages keep
+  the insert sequence.
 - Errors: 400 `{"message": ...}` for bad parameters, 401 for a missing or wrong
   service token, 404 when no service token is configured.
 - Consumers keep their own cursor and deduplicate by event `id`. Events are
@@ -708,7 +722,6 @@ result, loyalty credit, gift card), or the event `id` for back-in-stock.
 
 | Property | Environment variable | Default |
 | --- | --- | --- |
-| `events.settle-delay` | `EVENTS_SETTLE_DELAY` | `PT3S` |
 | `events.retention` | `EVENTS_RETENTION` | `P30D` |
 | `events.retention-job.enabled` | `EVENTS_RETENTION_JOB_ENABLED` | `true` (off in tests) |
 | `events.retention-job.interval` | `EVENTS_RETENTION_JOB_INTERVAL` | `PT1H` |

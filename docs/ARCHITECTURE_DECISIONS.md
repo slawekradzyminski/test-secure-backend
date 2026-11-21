@@ -86,8 +86,8 @@ Alternatives considered:
   starts, serves reads and carts without warehouse-service; checkout, admin adjustments,
   stock changes on product update and CSV import, and movement history answer 503 while
   it is down (the fault lab's `warehouse-down` scenario).
-- After a cancel, stock and movements change **eventually**: feed settle delay (3 s) +
-  warehouse-service's poll interval (5 s) + the level push. Clients poll; teaching
+- After a cancel, stock and movements change **eventually**: warehouse-service's poll
+  interval (5 s) + the level push. Clients poll; teaching
   scenarios that read stock right after a cancel now wait.
 - `inventory_movements` was frozen in 3.22.0 (read only by `GET /internal/v1/inventory/export`,
   the one-time import). Backend 3.24.0 drops it (V28) and removes
