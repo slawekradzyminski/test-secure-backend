@@ -31,6 +31,17 @@ class DatabaseUnavailableTest {
     }
 
     @Test
+    void recognisesARollbackThatFailedOnADeadConnection() {
+        // What the lab's postgres-down produced: the query hit a dead pooled connection, then the rollback failed.
+        Throwable failure = new org.springframework.orm.jpa.JpaSystemException(new RuntimeException(
+                "Unable to rollback against JDBC Connection", new org.hibernate.TransactionException(
+                        "Unable to rollback against JDBC Connection", new SQLException("Connection is closed"))));
+
+        assertThat(DatabaseUnavailable.isCause(failure)).isTrue();
+        assertThat(DatabaseUnavailable.isCause(new org.hibernate.TransactionException("no JDBC cause"))).isFalse();
+    }
+
+    @Test
     void recognisesSpringResourceFailures() {
         assertThat(DatabaseUnavailable.isCause(new DataAccessResourceFailureException("down"))).isTrue();
         assertThat(DatabaseUnavailable.isCause(new org.hibernate.exception.JDBCConnectionException(

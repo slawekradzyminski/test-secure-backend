@@ -43,6 +43,19 @@ class GlobalExceptionHandlerControllerTest {
     }
 
     @Test
+    void shouldAnswer503ForAFailedRollbackOnADeadConnectionAndRethrowOtherJpaFailures() {
+        var deadConnection = new org.springframework.orm.jpa.JpaSystemException(new RuntimeException("rollback",
+                new org.hibernate.TransactionException("Unable to rollback against JDBC Connection",
+                        new java.sql.SQLException("Connection is closed"))));
+        var other = new org.springframework.orm.jpa.JpaSystemException(new RuntimeException("mapping bug"));
+
+        assertThat(controller.handleJpaSystemException(deadConnection).getStatusCode())
+                .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> controller.handleJpaSystemException(other))
+                .isSameAs(other);
+    }
+
+    @Test
     void shouldHandleValidationExceptions() {
         BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "object");
         bindingResult.addError(new FieldError("object", "field", "must not be blank"));

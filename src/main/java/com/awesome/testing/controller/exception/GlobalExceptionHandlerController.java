@@ -100,6 +100,20 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
                 .body(new ErrorDto(DatabaseUnavailable.MESSAGE));
     }
 
+    /**
+     * A JPA or transaction failure whose cause is a dead connection (for example a rollback that
+     * failed after the query lost its pooled connection) is the same outage: 503. Any other
+     * failure keeps the default 500.
+     */
+    @ExceptionHandler({org.springframework.orm.jpa.JpaSystemException.class,
+            org.springframework.transaction.TransactionSystemException.class})
+    public ResponseEntity<ErrorDto> handleJpaSystemException(RuntimeException ex) {
+        if (!DatabaseUnavailable.isCause(ex)) {
+            throw ex;
+        }
+        return handleDatabaseUnavailable(ex);
+    }
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorDto> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
         return ResponseEntity
