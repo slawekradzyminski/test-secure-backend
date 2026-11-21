@@ -80,7 +80,8 @@ class OrderServiceCommerceTest {
                 CheckoutContributors.none(), commerceEvents,
                 new OrderReservations(true, Duration.ofMinutes(30)),
                 stockLedger, stockProjection, stockCommandDispatcher,
-                reservationClaims, transactionManager);
+                reservationClaims, org.mockito.Mockito.mock(com.awesome.testing.service.stock.AbandonedReservations.class),
+                transactionManager);
         product = ProductEntity.builder().id(1L).name("Phone").price(new BigDecimal("40.00")).stockQuantity(10).build();
         address = AddressDto.builder().street("Main 1").city("Warsaw").state("MZ").zipCode("00-001").country("PL").build();
         List<CartItemEntity> cart = List.of(CartItemEntity.builder()

@@ -90,7 +90,8 @@ class CheckoutSagaTest {
                 couponService, idempotencyKeyRepository, Clock.systemUTC(), CheckoutContributors.none(),
                 commerceEvents, new OrderReservations(true, Duration.ofMinutes(30)), stockLedger, stockProjection,
                 stockCommandDispatcher,
-                reservationClaims, transactionManager);
+                reservationClaims, new com.awesome.testing.service.stock.AbandonedReservations(stockLedger, false),
+                transactionManager);
         phone = ProductEntity.builder().id(2L).name("Phone").price(new BigDecimal("40.00")).stockQuantity(10).build();
         cable = ProductEntity.builder().id(1L).name("Cable").price(new BigDecimal("5.00")).stockQuantity(10).build();
         address = AddressDto.builder().street("Main 1").city("Warsaw").state("MZ").zipCode("00-001").country("PL").build();
@@ -258,6 +259,30 @@ class CheckoutSagaTest {
                         error -> assertThat(error.getHttpStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
         verify(orderRepository, never()).save(any());
         verify(cartItemRepository, never()).deleteByUsername(any());
+    }
+
+    @Test
+    void aReserveWithAnUnknownOutcomeReleasesItsReservationId() {
+        // A read timeout: warehouse-service may have deducted the stock before the answer was lost.
+        when(stockLedger.reserve(any(), any(), any()))
+                .thenThrow(new CustomException(StockLedgerClient.UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE));
+
+        assertThatThrownBy(() -> service.createOrder(USER, address, null))
+                .isInstanceOfSatisfying(CustomException.class,
+                        error -> assertThat(error.getHttpStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
+
+        org.mockito.ArgumentCaptor<UUID> reserved = org.mockito.ArgumentCaptor.forClass(UUID.class);
+        verify(stockLedger).reserve(reserved.capture(), any(), any());
+        verify(stockLedger).release(reserved.getValue());
+    }
+
+    @Test
+    void aRejectedReserveReleasesNothing() {
+        when(stockLedger.reserve(any(), any(), any())).thenThrow(new StockLedgerRejection(409, "short", 2L));
+
+        assertThatThrownBy(() -> service.createOrder(USER, address, null)).isInstanceOf(CustomException.class);
+
+        verify(stockLedger, never()).release(any());
     }
 
     @Test

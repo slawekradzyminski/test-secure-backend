@@ -61,6 +61,9 @@ warehouse:
   # background send races a test's own clean-up.
   stock-commands:
     enabled: false
+  # Release abandoned reservations in the request thread so tests can assert right after the 503.
+  abandoned-reservations:
+    async: false
 
 internal:
   service-tokens:

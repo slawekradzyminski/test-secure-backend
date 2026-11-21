@@ -30,6 +30,7 @@ import com.awesome.testing.dto.stock.ReservationDto;
 import com.awesome.testing.dto.stock.ReservedLineDto;
 import com.awesome.testing.dto.stock.StockLineDto;
 import com.awesome.testing.service.stock.StockCommandDispatcher;
+import com.awesome.testing.service.stock.AbandonedReservations;
 import com.awesome.testing.service.stock.StockLedgerClient;
 import com.awesome.testing.service.stock.StockLedgerRejection;
 import com.awesome.testing.service.stock.StockProjection;
@@ -100,6 +101,7 @@ public class OrderService {
     private final StockProjection stockProjection;
     private final StockCommandDispatcher stockCommandDispatcher;
     private final StockReservationClaimRepository reservationClaims;
+    private final AbandonedReservations abandonedReservations;
     private final TransactionTemplate readTransaction;
     private final TransactionTemplate writeTransaction;
 
@@ -117,6 +119,7 @@ public class OrderService {
                         StockProjection stockProjection,
                         StockCommandDispatcher stockCommandDispatcher,
                         StockReservationClaimRepository reservationClaims,
+                        AbandonedReservations abandonedReservations,
                         PlatformTransactionManager transactionManager) {
         this.orderRepository = orderRepository;
         this.cartItemRepository = cartItemRepository;
@@ -132,6 +135,7 @@ public class OrderService {
         this.stockProjection = stockProjection;
         this.stockCommandDispatcher = stockCommandDispatcher;
         this.reservationClaims = reservationClaims;
+        this.abandonedReservations = abandonedReservations;
         this.readTransaction = new TransactionTemplate(transactionManager);
         this.readTransaction.setReadOnly(true);
         this.writeTransaction = new TransactionTemplate(transactionManager);
@@ -172,7 +176,16 @@ public class OrderService {
             return Optional.of(plan.replay());
         }
         UUID reservationId = UUID.randomUUID();
-        ReservationDto reservation = reserve(reservationId, username, plan.quantities());
+        ReservationDto reservation;
+        try {
+            reservation = reserve(reservationId, username, plan.quantities());
+        } catch (CustomException e) {
+            if (e.getHttpStatus() == HttpStatus.SERVICE_UNAVAILABLE) {
+                // Unknown outcome: the reserve may have deducted the stock before its answer was lost.
+                abandonedReservations.release(reservationId);
+            }
+            throw e;
+        }
         Placement placement;
         try {
             placement = writeTransaction.execute(status ->

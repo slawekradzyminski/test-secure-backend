@@ -176,6 +176,29 @@ class InventoryOwnershipFlowTest extends AbstractCommerceFlowTest {
     }
 
     @Test
+    void aCheckoutWhoseReserveTimesOutGivesTheStockBackSoRetriesDoNotPileUp() {
+        // warehouse-service applies the reservation but its answer arrives after the read timeout
+        ProductEntity product = faulty(product("10.00", 3), Injected.appliedThenTimeout(Operation.RESERVE));
+        addToCart(clientToken, product, 1);
+        HttpHeaders headers = getHeadersWith(clientToken);
+        headers.set("Idempotency-Key", "retry-" + UUID.randomUUID().toString().substring(0, 8));
+        var address = getRandomAddress();
+
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            ResponseEntity<ErrorDto> response = executePost(ORDERS_ENDPOINT, address, headers, ErrorDto.class);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+            assertThat(stockLedger.item(product.getId()).orElseThrow().quantity())
+                    .as("ledger stock after attempt %d", attempt).isEqualTo(3);
+        }
+
+        stockLedger.heal(product.getId());
+        ResponseEntity<OrderDto> retry = executePost(ORDERS_ENDPOINT, address, headers, OrderDto.class);
+        assertThat(retry.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(stockLedger.item(product.getId()).orElseThrow().quantity()).isEqualTo(2);
+    }
+
+    @Test
     void aFailedConfirmStillCreatesTheOrderForTheReaperToConfirm() {
         ProductEntity product = faulty(product("10.00", 5), Injected.status(503, Operation.CONFIRM));
 
