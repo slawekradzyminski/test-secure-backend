@@ -109,7 +109,8 @@ class OrderServiceReservationTest {
                 idempotencyKeyRepository, Clock.fixed(NOW, ZoneOffset.UTC), CheckoutContributors.none(), commerceEvents,
                 new OrderReservations(reservations, Duration.ofMinutes(30)),
                 stockLedger, stockProjection, stockCommandDispatcher,
-                reservationClaims, transactionManager);
+                reservationClaims, org.mockito.Mockito.mock(com.awesome.testing.service.stock.AbandonedReservations.class),
+                transactionManager);
     }
 
     @Test

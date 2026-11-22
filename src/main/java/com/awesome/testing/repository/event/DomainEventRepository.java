@@ -23,24 +23,31 @@ public interface DomainEventRepository extends JpaRepository<DomainEventEntity, 
     @Query("SELECT COALESCE(MAX(e.sequence), 0) FROM DomainEventEntity e")
     long maxSequence();
 
-    @Query("""
-            SELECT e FROM DomainEventEntity e
-            WHERE e.sequence > :after AND e.recordedAt <= :settledBefore
-            ORDER BY e.sequence ASC
-            """)
-    List<DomainEventEntity> findSettled(@Param("after") long after,
-                                        @Param("settledBefore") Instant settledBefore,
-                                        Pageable pageable);
+    @Query("SELECT COALESCE(MAX(e.feedPosition), 0) FROM DomainEventEntity e")
+    long maxFeedPosition();
+
+    /** Whether a committed event still waits for its feed position (V29). */
+    boolean existsByFeedPositionIsNull();
+
+    /** Committed events without a feed position, oldest sequence first. */
+    @Query("SELECT e FROM DomainEventEntity e WHERE e.feedPosition IS NULL ORDER BY e.sequence ASC")
+    List<DomainEventEntity> findUnpositioned(Pageable pageable);
 
     @Query("""
             SELECT e FROM DomainEventEntity e
-            WHERE e.sequence > :after AND e.recordedAt <= :settledBefore AND e.type IN :types
-            ORDER BY e.sequence ASC
+            WHERE e.feedPosition > :after
+            ORDER BY e.feedPosition ASC
             """)
-    List<DomainEventEntity> findSettledOfTypes(@Param("after") long after,
-                                               @Param("settledBefore") Instant settledBefore,
-                                               @Param("types") Collection<String> types,
-                                               Pageable pageable);
+    List<DomainEventEntity> findFeed(@Param("after") long after, Pageable pageable);
+
+    @Query("""
+            SELECT e FROM DomainEventEntity e
+            WHERE e.feedPosition > :after AND e.type IN :types
+            ORDER BY e.feedPosition ASC
+            """)
+    List<DomainEventEntity> findFeedOfTypes(@Param("after") long after,
+                                            @Param("types") Collection<String> types,
+                                            Pageable pageable);
 
     /** The oldest events the outbox relay has not handed to the broker yet (broker transport). */
     @Query("SELECT e FROM DomainEventEntity e WHERE e.publishedAt IS NULL ORDER BY e.sequence ASC")

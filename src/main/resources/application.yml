@@ -23,6 +23,15 @@ spring:
       path: /api/v1/graphiql
   main:
     allow-bean-definition-overriding: true
+  datasource:
+    hikari:
+      # A request waits at most 5 s for a pooled connection, then answers 503 Database unavailable
+      # (DatabaseUnavailable). HikariCP's default of 30 s made every request wait 30 s while the
+      # database refused connections. loginTimeout stays at 30 s, so opening a connection over a
+      # slow link (the fault-injection lab's postgres latency) still succeeds in the background.
+      connection-timeout: 5000
+      data-source-properties:
+        loginTimeout: 30
   jpa:
     open-in-view: false
   servlet:
@@ -312,9 +321,6 @@ payment:
 
 # Durable commerce event feed (GET /internal/v1/events) polled by warehouse-service and payment-service.
 events:
-  # Events recorded less than this long ago are not served yet, so a transaction that committed
-  # late with a lower sequence is not skipped.
-  settle-delay: ${EVENTS_SETTLE_DELAY:PT3S}
   retention: ${EVENTS_RETENTION:P30D}
   retention-job:
     enabled: ${EVENTS_RETENTION_JOB_ENABLED:true}

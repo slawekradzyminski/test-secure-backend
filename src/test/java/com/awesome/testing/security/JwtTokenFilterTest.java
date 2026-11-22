@@ -89,6 +89,38 @@ class JwtTokenFilterTest {
     }
 
     @Test
+    void shouldReturn503WhenTheDatabaseCannotBeReachedWhileAuthenticating() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        when(jwtTokenProvider.extractTokenFromRequest(request)).thenReturn("token");
+        when(jwtTokenProvider.validateToken("token")).thenReturn(true);
+        when(jwtTokenProvider.getAuthentication("token")).thenThrow(
+                new org.springframework.transaction.CannotCreateTransactionException("Could not open JPA EntityManager",
+                        new java.sql.SQLTransientConnectionException("Connection is not available")));
+
+        jwtTokenFilter.doFilterInternal(request, response, filterChain);
+
+        assertThat(response.getStatus()).isEqualTo(503);
+        assertThat(response.getContentAsString()).contains("Database unavailable");
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+    @Test
+    void shouldReturn503WhenAControllerFailsToReachTheDatabase() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        when(jwtTokenProvider.extractTokenFromRequest(request)).thenReturn(null);
+        doThrow(new jakarta.servlet.ServletException("Request processing failed",
+                new java.sql.SQLException("Connection to postgres:5432 refused", "08001")))
+                .when(filterChain).doFilter(request, response);
+
+        jwtTokenFilter.doFilterInternal(request, response, filterChain);
+
+        assertThat(response.getStatus()).isEqualTo(503);
+        assertThat(response.getContentAsString()).contains("Database unavailable");
+    }
+
+    @Test
     void shouldRejectAndClearStaleAuthenticationWhenTokenIsNotValid() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();

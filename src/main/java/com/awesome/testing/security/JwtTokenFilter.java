@@ -1,6 +1,7 @@
 package com.awesome.testing.security;
 
 import com.awesome.testing.controller.exception.CustomException;
+import com.awesome.testing.controller.exception.DatabaseUnavailable;
 import com.awesome.testing.traffic.TrafficOwner;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,6 +48,12 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
         } catch (Exception ex) {
             SecurityContextHolder.clearContext();
+            if (DatabaseUnavailable.isCause(ex)) {
+                log.warn("Database unavailable while processing {} {}: {}",
+                        request.getMethod(), request.getRequestURI(), ex.getMessage());
+                sendErrorResponse(response, HttpStatus.SERVICE_UNAVAILABLE, DatabaseUnavailable.MESSAGE);
+                return;
+            }
             log.error("Unexpected error while processing {} {}", request.getMethod(), request.getRequestURI(), ex);
             sendErrorResponse(response, HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
         }

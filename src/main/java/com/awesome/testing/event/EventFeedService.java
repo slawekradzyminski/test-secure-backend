@@ -5,65 +5,63 @@ import com.awesome.testing.dto.event.EventFeedDto;
 import com.awesome.testing.dto.event.FeedEventDto;
 import com.awesome.testing.entity.event.DomainEventEntity;
 import com.awesome.testing.repository.event.DomainEventRepository;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * Reads the {@code domain_events} feed for service consumers. Only events recorded at least
- * {@code events.settle-delay} ago are returned, so a transaction that took a lower sequence but
- * committed later is not skipped by a consumer that already moved its cursor past it.
+ * Reads the {@code domain_events} feed for service consumers, paged by feed position (V29).
+ * Every read first gives committed events their position ({@link FeedPositions}), so an event
+ * whose transaction committed late is served after the events that overtook it instead of being
+ * skipped by a cursor that already moved past its sequence.
  */
 @Service
+@RequiredArgsConstructor
 public class EventFeedService {
 
     public static final int DEFAULT_LIMIT = 100;
     public static final int MAX_LIMIT = 200;
 
     private final DomainEventRepository repository;
-    private final Clock commerceClock;
-    private final Duration settleDelay;
-
-    public EventFeedService(DomainEventRepository repository, Clock commerceClock,
-                            @Value("${events.settle-delay:PT3S}") Duration settleDelay) {
-        this.repository = repository;
-        this.commerceClock = commerceClock;
-        this.settleDelay = settleDelay;
-    }
+    private final FeedPositions feedPositions;
 
     /**
-     * @param after  sequence to continue after; null means 0
+     * Runs without a surrounding transaction: positions are assigned and committed first, then
+     * the page is read.
+     *
+     * @param after  feed position to continue after; null means 0
      * @param limit  page size 1..{@value #MAX_LIMIT}; null means {@value #DEFAULT_LIMIT}
      * @param types  comma-separated wire names; null or blank means every type
      */
-    @Transactional(readOnly = true)
     public EventFeedDto read(String after, String limit, String types) {
         long cursor = parseAfter(after);
         int size = parseLimit(limit);
         Set<String> wireNames = parseTypes(types);
-        Instant settledBefore = commerceClock.instant().minus(settleDelay);
+        feedPositions.assignCommitted();
         PageRequest page = PageRequest.of(0, size + 1);
         List<DomainEventEntity> rows = wireNames.isEmpty()
-                ? repository.findSettled(cursor, settledBefore, page)
-                : repository.findSettledOfTypes(cursor, settledBefore, wireNames, page);
+                ? repository.findFeed(cursor, page)
+                : repository.findFeedOfTypes(cursor, wireNames, page);
         boolean hasMore = rows.size() > size;
-        List<FeedEventDto> events = rows.stream().limit(size).map(EventFeedService::toDto).toList();
+        List<FeedEventDto> events = rows.stream().limit(size)
+                .map(row -> toDto(row, row.getFeedPosition())).toList();
         long nextCursor = events.isEmpty() ? cursor : events.getLast().sequence();
         return new EventFeedDto(events, nextCursor, hasMore);
     }
 
+    /** The event as the broker relay sends it, numbered by its insert {@code sequence}. */
     public static FeedEventDto toDto(DomainEventEntity row) {
-        return new FeedEventDto(row.getSequence(), row.getEventId(), row.getType(),
+        return toDto(row, row.getSequence());
+    }
+
+    private static FeedEventDto toDto(DomainEventEntity row, long sequence) {
+        return new FeedEventDto(sequence, row.getEventId(), row.getType(),
                 DateTimeFormatter.ISO_INSTANT.format(row.getOccurredAt()), row.getOrderId(), row.getUsername(),
                 row.getPayload(), row.getRequestId(), row.getTraceId(), row.getSpanId());
     }

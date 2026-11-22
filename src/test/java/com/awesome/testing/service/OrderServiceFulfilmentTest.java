@@ -76,7 +76,8 @@ class OrderServiceFulfilmentTest {
                 idempotencyKeyRepository, Clock.systemUTC(), CheckoutContributors.none(), commerceEvents,
                 new OrderReservations(true, Duration.ofMinutes(30)),
                 stockLedger, stockProjection, stockCommandDispatcher,
-                reservationClaims, transactionManager);
+                reservationClaims, org.mockito.Mockito.mock(com.awesome.testing.service.stock.AbandonedReservations.class),
+                transactionManager);
         product = ProductEntity.builder().id(4L).name("Phone").price(BigDecimal.TEN).stockQuantity(0).build();
         order = OrderEntity.builder().id(7L).username("buyer").status(OrderStatus.PAID)
                 .shippingAddress(new AddressEntity()).totalAmount(BigDecimal.TEN)

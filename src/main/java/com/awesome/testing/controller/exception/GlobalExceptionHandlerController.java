@@ -7,7 +7,9 @@ import com.awesome.testing.dto.ErrorDto;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.webmvc.error.DefaultErrorAttributes;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -83,6 +85,33 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
                 .status(HttpStatus.CONFLICT)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ErrorDto("Operation conflicts with existing data"));
+    }
+
+    /**
+     * The database cannot be reached (no pooled connection within the connection timeout, or a
+     * refused connection): 503, so callers and the gateway see a retryable outage, not a bug.
+     */
+    @ExceptionHandler({CannotCreateTransactionException.class, DataAccessResourceFailureException.class,
+            org.hibernate.exception.JDBCConnectionException.class})
+    public ResponseEntity<ErrorDto> handleDatabaseUnavailable(Exception ex) {
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorDto(DatabaseUnavailable.MESSAGE));
+    }
+
+    /**
+     * A JPA or transaction failure whose cause is a dead connection (for example a rollback that
+     * failed after the query lost its pooled connection) is the same outage: 503. Any other
+     * failure keeps the default 500.
+     */
+    @ExceptionHandler({org.springframework.orm.jpa.JpaSystemException.class,
+            org.springframework.transaction.TransactionSystemException.class})
+    public ResponseEntity<ErrorDto> handleJpaSystemException(RuntimeException ex) {
+        if (!DatabaseUnavailable.isCause(ex)) {
+            throw ex;
+        }
+        return handleDatabaseUnavailable(ex);
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

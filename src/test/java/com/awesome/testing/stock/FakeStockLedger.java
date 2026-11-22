@@ -1,5 +1,6 @@
 package com.awesome.testing.stock;
 
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.ResponseDefinition;
@@ -52,8 +53,16 @@ public class FakeStockLedger {
     /** Which stock commands a fault applies to. */
     public enum Operation { RESERVE, CONFIRM, RELEASE, ADJUST, ITEMS, MOVEMENTS }
 
-    /** What a faulty command gets: a status, a delay beyond the client's read timeout or a reset. */
-    public record Injected(int status, Duration delay, boolean reset, Set<Operation> operations) {
+    /**
+     * What a faulty command gets: a status, a delay beyond the client's read timeout or a reset.
+     * With {@code applied} the command takes effect first and only its answer is late, like a
+     * request that reached warehouse-service over a slow link.
+     */
+    public record Injected(int status, Duration delay, boolean reset, Set<Operation> operations, boolean applied) {
+
+        public Injected(int status, Duration delay, boolean reset, Set<Operation> operations) {
+            this(status, delay, reset, operations, false);
+        }
 
         public static Injected status(int status, Operation first, Operation... more) {
             return new Injected(status, null, false, EnumSet.of(first, more));
@@ -61,6 +70,11 @@ public class FakeStockLedger {
 
         public static Injected timeout(Operation first, Operation... more) {
             return new Injected(200, Duration.ofMillis(2500), false, EnumSet.of(first, more));
+        }
+
+        /** The command is applied, but its answer arrives after the client's read timeout. */
+        public static Injected appliedThenTimeout(Operation first, Operation... more) {
+            return new Injected(200, Duration.ofMillis(2500), false, EnumSet.of(first, more), true);
         }
 
         public static Injected reset(Operation first, Operation... more) {
@@ -260,10 +274,17 @@ public class FakeStockLedger {
         Map<Long, Integer> lines = new TreeMap<>();
         body.path("lines").forEach(line -> lines.merge(line.path("productId").asLong(),
                 line.path("quantity").asInt(), Integer::sum));
+        Optional<Injected> lateAnswer = appliedFault(lines.keySet(), Operation.RESERVE);
         Optional<ResponseDefinition> fault = fault(lines.keySet(), Operation.RESERVE);
-        if (fault.isPresent()) {
+        if (fault.isPresent() && lateAnswer.isEmpty()) {
             return fault.get();
         }
+        ResponseDefinition answer = reserveNow(id, body, lines);
+        return lateAnswer.map(late -> ResponseDefinitionBuilder.like(answer)
+                .withFixedDelay((int) late.delay().toMillis()).build()).orElse(answer);
+    }
+
+    private ResponseDefinition reserveNow(UUID id, JsonNode body, Map<Long, Integer> lines) {
         Reservation prior = reservations.get(id);
         if (prior != null) {
             return prior.lines().equals(lines)
@@ -321,7 +342,10 @@ public class FakeStockLedger {
     private synchronized ResponseDefinition release(UUID id) {
         Reservation reservation = reservations.get(id);
         if (reservation == null) {
-            return respond(404, Map.of("message", "Reservation not found"));
+            // Contract 2.3: a release that arrives before (or instead of) its reserve leaves a
+            // RELEASED tombstone without lines, so a late reserve with this id deducts nothing.
+            reservations.put(id, new Reservation(id, Map.of(), null, "RELEASED", List.of(), List.of()));
+            return respond(200, Map.of("reservationId", id, "status", "RELEASED"));
         }
         Optional<ResponseDefinition> fault = fault(reservation.lines().keySet(), Operation.RELEASE);
         if (fault.isPresent()) {
@@ -482,6 +506,12 @@ public class FakeStockLedger {
                 actor, reason, requestId, LocalDateTime.now(clock.withZone(ZoneOffset.UTC)).truncatedTo(ChronoUnit.MICROS),
                 next.version()));
         return next;
+    }
+
+    private Optional<Injected> appliedFault(Set<Long> productIds, Operation operation) {
+        return productIds.stream().map(faults::get)
+                .filter(fault -> fault != null && fault.applied() && fault.operations().contains(operation))
+                .findFirst();
     }
 
     private Optional<ResponseDefinition> fault(Set<Long> productIds, Operation operation) {

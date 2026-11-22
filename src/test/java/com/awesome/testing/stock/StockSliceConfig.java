@@ -1,6 +1,7 @@
 package com.awesome.testing.stock;
 
 import com.awesome.testing.correlation.CorrelationTracing;
+import com.awesome.testing.service.stock.AbandonedReservations;
 import com.awesome.testing.service.stock.StockCommandDispatcher;
 import com.awesome.testing.service.stock.StockLedgerClient;
 import com.awesome.testing.service.stock.StockProjection;
@@ -13,7 +14,7 @@ import org.springframework.context.annotation.Import;
  * checkout or adjustments; the client talks to {@link FakeWarehouse}.
  */
 @TestConfiguration(proxyBeanMethods = false)
-@Import({StockLedgerClient.class, StockProjection.class, StockCommandDispatcher.class})
+@Import({StockLedgerClient.class, StockProjection.class, StockCommandDispatcher.class, AbandonedReservations.class})
 public class StockSliceConfig {
 
     @Bean
