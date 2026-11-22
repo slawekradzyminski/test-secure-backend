@@ -2,7 +2,13 @@
 set -euo pipefail
 
 echo "Starting Docker environment..."
-docker compose up --build -d 2>&1 | tee docker.log
+# Pull the dependency images (the Ollama image alone takes about a minute) while the native image builds;
+# `up --build` would pull first and only then start the ~9 minute native compilation.
+docker compose pull --quiet --ignore-buildable &
+PULL_PID=$!
+docker compose build 2>&1 | tee docker.log
+wait "$PULL_PID"
+docker compose up -d 2>&1 | tee -a docker.log
 
 dump_debug() {
   echo "=== docker compose ps ==="

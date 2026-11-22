@@ -147,7 +147,8 @@ jobs:
           distribution: temurin
           cache: maven
           cache-read-only: true
-      - run: ./mvnw -q -Pfast-verify,integration-tests verify
+      # The surefire tests run in unit-tests above; failsafe alone avoids repeating all of them.
+      - run: ./mvnw -q -Pfast-verify,integration-tests test-compile failsafe:integration-test failsafe:verify
 
   verify-local:
     needs: [validate, check-prior-verification]

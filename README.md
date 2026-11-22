@@ -12,6 +12,22 @@ chooses Artemis (`jms`) or the in-memory local outbox (`local-outbox`), and the 
 runners check their properties at runtime. Set the heap with a runtime argument, for example
 `docker run backend -Xmx384m`. See `docs/NATIVE_IMAGE_SPIKE.md`.
 
+## Continuous verification
+
+`.github/workflows/verify.yml` runs on every branch push (tag pushes are excluded; `publish-image.yml`
+verifies releases itself). A newer push to the same branch cancels the unfinished run; `master` runs are
+never cancelled because `release-train.py` needs a completed successful run for the head commit.
+
+- `prior-verification` (default branch only): when a successful `verify.yml` run already tested the git tree of
+  the pushed commit (a squash or merge commit of a verified PR branch), the other jobs are skipped, the run
+  concludes `success` and its summary links the run that verified the tree. Branch pushes always run in full.
+- `unit-tests`: `./mvnw clean verify` (surefire, PMD, JaCoCo gates, SBOM, coverage summary).
+- `integration-tests`: failsafe only (`failsafe:integration-test failsafe:verify`); the unit tests are not
+  repeated because `unit-tests` runs them on the same commit.
+- `verify-local` and `verify-docker`: smoke runs of the local profile and of `docker compose` (which builds
+  the native image, the long pole of the workflow at roughly 10 minutes). `scripts/verify-docker.sh` pulls the
+  dependency images while the native image builds.
+
 ## Release pipeline
 
 Pushing a `vX.Y.Z` tag runs `.github/workflows/publish-image.yml`:
@@ -33,9 +49,9 @@ Pushing a `vX.Y.Z` tag runs `.github/workflows/publish-image.yml`:
 
 A tag whose tree already passed `verify.yml` publishes in about 14–16 minutes instead of 27.
 
-The release does not reuse an image from the PR: `verify.yml` never builds the native
-image, and the published image must carry the release commit in its labels and be built
-on both architectures, so promoting a PR image would need PR runs with `packages: write`.
+The release does not reuse an image from the PR: the image `verify-docker` builds is local to that job
+(amd64 only, never pushed), and the published image must carry the release commit in its labels and be
+built on both architectures, so promoting a PR image would need PR runs with `packages: write`.
 
 ## Profiles
 
