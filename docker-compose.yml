@@ -1,6 +1,8 @@
 services:
   backend:
     build: .
+    # A fixed name lets CI build this image with a layer cache and have Compose start it without rebuilding.
+    image: backend:verify-docker
     restart: always
     ports:
       - "4001:4001"

@@ -291,8 +291,9 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,"name=${{ env.GHCR_IMAGE }},${{ env.DOCKERHUB_IMAGE }}",push-by-digest=true,name-canonical=true,push=true
+          # Read-only: a cache written from a tag ref can only be read by that same tag, so writing it
+          # stored about 1.8 GB per release that no later run could use. verify.yml writes the amd64 scope.
           cache-from: type=gha,scope=native-${{ env.PLATFORM_PAIR }}
-          cache-to: type=gha,mode=max,scope=native-${{ env.PLATFORM_PAIR }}
           provenance: mode=max
           sbom: true
 

@@ -14,7 +14,9 @@ WORKDIR /workspace
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
 RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q -Pnative -Dmaven.test.skip=true dependency:go-offline || true
-COPY src src
+# Only the production sources: the build skips tests (-Dmaven.test.skip=true), so a change under src/test
+# leaves this layer and the native compilation below cached.
+COPY src/main src/main
 COPY config config
 ARG NATIVE_XMX=12g
 # BuildKit's docker-container driver (GitHub Actions) injects OTEL_* variables into RUN steps; Spring Boot
@@ -24,7 +26,8 @@ RUN --mount=type=cache,target=/root/.m2 MAVEN_OPTS="-Xmx768m" \
     env $(env | sed -n "s/^\(OTEL_[A-Za-z0-9_]*\)=.*/-u \1/p") ./mvnw -B -Pnative -Dmaven.test.skip=true -Dnative.xmx=${NATIVE_XMX} native:compile \
     && mkdir /workspace/dist \
     && cp target/backend /workspace/dist/ \
-    && (cp target/*.so /workspace/dist/ 2>/dev/null || true)
+    && (cp target/*.so /workspace/dist/ 2>/dev/null || true) \
+    && rm -rf target
 
 # Small glibc base that keeps bash, so Compose health checks can use /dev/tcp.
 FROM debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
