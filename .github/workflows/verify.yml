@@ -202,11 +202,12 @@ jobs:
       - name: Make scripts executable
         run: chmod +x scripts/verify-docker.sh
 
+      - uses: docker/setup-buildx-action@v4.4.1
+
       # The dependency images (Ollama alone takes about a minute) download while the native image builds.
+      # Started after the Buildx setup: pulling at the same time slowed that step from ~10 s to 98 s.
       - name: Start pulling the dependency images
         run: nohup docker compose pull --quiet --ignore-buildable > compose-pull.log 2>&1 &
-
-      - uses: docker/setup-buildx-action@v4.4.1
 
       # The native compilation (~9 minutes) is one Dockerfile layer keyed by pom.xml, src/main and config.
       # A push that leaves them untouched (tests, docs, scripts, workflows) reuses the layer from an earlier

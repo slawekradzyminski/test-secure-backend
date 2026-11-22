@@ -25,8 +25,11 @@ never cancelled because `release-train.py` needs a completed successful run for 
 - `integration-tests`: failsafe only (`failsafe:integration-test failsafe:verify`); the unit tests are not
   repeated because `unit-tests` runs them on the same commit.
 - `verify-local` and `verify-docker`: smoke runs of the local profile and of `docker compose` (which builds
-  the native image, the long pole of the workflow at roughly 10 minutes). `scripts/verify-docker.sh` pulls the
-  dependency images while the native image builds.
+  the native image, the long pole of the workflow at roughly 10 minutes). In CI the image is built by Buildx
+  with the GitHub Actions layer cache (scope `native-linux-amd64`) and loaded as `backend:verify-docker`; the
+  dependency images are pulled meanwhile. The native compilation is one layer keyed by `pom.xml`, `src/main`
+  and `config`, so a push that changes only tests, docs, scripts or workflows reuses it from an earlier run on
+  the same branch or on `master`. Run locally, `scripts/verify-docker.sh` builds through `docker compose`.
 
 ## Release pipeline
 
