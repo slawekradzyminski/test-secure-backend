@@ -2,13 +2,21 @@
 set -euo pipefail
 
 echo "Starting Docker environment..."
-# Pull the dependency images (the Ollama image alone takes about a minute) while the native image builds;
-# `up --build` would pull first and only then start the ~9 minute native compilation.
-docker compose pull --quiet --ignore-buildable &
-PULL_PID=$!
-docker compose build 2>&1 | tee docker.log
-wait "$PULL_PID"
-docker compose up -d 2>&1 | tee -a docker.log
+if [ "${VERIFY_DOCKER_SKIP_BUILD:-false}" = "true" ]; then
+  # CI built backend:verify-docker in an earlier step (Buildx with the GitHub Actions layer cache).
+  docker image inspect backend:verify-docker > /dev/null \
+    || { echo "VERIFY_DOCKER_SKIP_BUILD=true but backend:verify-docker is not loaded." >&2; exit 1; }
+  docker compose pull --quiet --ignore-buildable
+  : > docker.log
+else
+  # Pull the dependency images (the Ollama image alone takes about a minute) while the native image builds;
+  # `up --build` would pull first and only then start the ~9 minute native compilation.
+  docker compose pull --quiet --ignore-buildable &
+  PULL_PID=$!
+  docker compose build 2>&1 | tee docker.log
+  wait "$PULL_PID"
+fi
+docker compose up -d --no-build 2>&1 | tee -a docker.log
 
 dump_debug() {
   echo "=== docker compose ps ==="
