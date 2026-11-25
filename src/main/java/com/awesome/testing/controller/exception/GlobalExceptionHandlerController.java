@@ -9,6 +9,8 @@ import org.springframework.boot.webmvc.error.DefaultErrorAttributes;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
@@ -28,6 +30,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
+
+    static final String CONCURRENT_MODIFICATION_MESSAGE = "Resource was changed concurrently, please retry";
 
     @Override
     public Map<String, Object> getErrorAttributes(WebRequest webRequest, ErrorAttributeOptions options) {
@@ -85,6 +89,19 @@ public class GlobalExceptionHandlerController extends DefaultErrorAttributes {
                 .status(HttpStatus.CONFLICT)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ErrorDto("Operation conflicts with existing data"));
+    }
+
+    /**
+     * A row changed under the request (stale optimistic-lock version) or its lock could not be taken
+     * (lock timeout, deadlock victim): a retryable conflict, not a 500. Controller-scoped advice may
+     * word it for its resource, as the cart does.
+     */
+    @ExceptionHandler({OptimisticLockingFailureException.class, PessimisticLockingFailureException.class})
+    public ResponseEntity<ErrorDto> handleConcurrentModification(RuntimeException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorDto(CONCURRENT_MODIFICATION_MESSAGE));
     }
 
     /**

@@ -145,7 +145,7 @@ class CartServiceTest {
                 .quantity(2)
                 .build();
         when(productRepository.findById(product.getId())).thenReturn(Optional.of(product));
-        when(cartItemRepository.findByUsernameAndProductId(USERNAME, product.getId())).thenReturn(Optional.empty());
+        when(cartItemRepository.findByUsernameAndProductIdForUpdate(USERNAME, product.getId())).thenReturn(Optional.empty());
         when(cartItemRepository.save(any(CartItemEntity.class))).thenAnswer(inv -> inv.getArgument(0));
         when(cartItemRepository.findByUsername(USERNAME)).thenReturn(List.of(
                 CartItemEntity.builder()
@@ -172,7 +172,7 @@ class CartServiceTest {
                 .quantity(3)
                 .build();
         when(productRepository.findById(product.getId())).thenReturn(Optional.of(product));
-        when(cartItemRepository.findByUsernameAndProductId(USERNAME, product.getId()))
+        when(cartItemRepository.findByUsernameAndProductIdForUpdate(USERNAME, product.getId()))
                 .thenReturn(Optional.of(cartItem));
         when(cartItemRepository.findByUsername(USERNAME)).thenReturn(List.of(cartItem));
 
@@ -203,7 +203,7 @@ class CartServiceTest {
     void shouldUpdateCartItemQuantity() {
         product.setPrice(BigDecimal.valueOf(1250));
         UpdateCartItemDto dto = UpdateCartItemDto.builder().quantity(5).build();
-        when(cartItemRepository.findByUsernameAndProductId(USERNAME, product.getId()))
+        when(cartItemRepository.findByUsernameAndProductIdForUpdate(USERNAME, product.getId()))
                 .thenReturn(Optional.of(cartItem));
         when(cartItemRepository.findByUsername(USERNAME)).thenReturn(List.of(cartItem));
 
@@ -220,7 +220,7 @@ class CartServiceTest {
     @Test
     void shouldDeleteCartItemWhenQuantityBecomesZero() {
         UpdateCartItemDto dto = UpdateCartItemDto.builder().quantity(0).build();
-        when(cartItemRepository.findByUsernameAndProductId(USERNAME, product.getId()))
+        when(cartItemRepository.findByUsernameAndProductIdForUpdate(USERNAME, product.getId()))
                 .thenReturn(Optional.of(cartItem));
         when(cartItemRepository.findByUsername(USERNAME)).thenReturn(List.of());
 
@@ -232,7 +232,7 @@ class CartServiceTest {
 
     @Test
     void shouldThrowWhenUpdatingMissingItem() {
-        when(cartItemRepository.findByUsernameAndProductId(USERNAME, product.getId()))
+        when(cartItemRepository.findByUsernameAndProductIdForUpdate(USERNAME, product.getId()))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> cartService.updateCartItem(USERNAME, product.getId(),
@@ -252,6 +252,17 @@ class CartServiceTest {
 
         assertThat(cart.getTotalItems()).isZero();
         verify(cartItemRepository).deleteByUsernameAndProductId(USERNAME, product.getId());
+    }
+
+    @Test
+    void shouldThrowWhenRemovingMissingItem() {
+        when(cartItemRepository.findByUsernameAndProductId(USERNAME, product.getId()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> cartService.removeFromCart(USERNAME, product.getId()))
+                .isInstanceOf(CartItemNotFoundException.class);
+
+        verify(cartItemRepository, never()).deleteByUsernameAndProductId(any(), any());
     }
 
     @Test

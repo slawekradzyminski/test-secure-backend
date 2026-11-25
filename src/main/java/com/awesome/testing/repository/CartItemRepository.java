@@ -32,6 +32,15 @@ public interface CartItemRepository extends JpaRepository<CartItemEntity, Long> 
     @Query("SELECT ci FROM CartItemEntity ci JOIN FETCH ci.product WHERE ci.username = :username AND ci.product.id = :productId")
     Optional<CartItemEntity> findByUsernameAndProductId(@Param("username") String username, @Param("productId") Long productId);
 
+    /**
+     * Locks one cart line, so parallel edits of it queue instead of failing the optimistic version check.
+     * No fetch join: the lock must cover the cart row only, never the product row.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT ci FROM CartItemEntity ci WHERE ci.username = :username AND ci.product.id = :productId")
+    Optional<CartItemEntity> findByUsernameAndProductIdForUpdate(
+            @Param("username") String username, @Param("productId") Long productId);
+
     void deleteByUsername(String username);
 
     void deleteByUsernameAndProductId(String username, Long productId);

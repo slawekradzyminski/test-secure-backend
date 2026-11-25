@@ -60,7 +60,9 @@ public class CartService {
         ProductEntity product = productRepository.findById(cartItemDto.getProductId())
                 .orElseThrow(() -> new ProductNotFoundException("Product not found"));
 
-        CartItemEntity cartItem = cartItemRepository.findByUsernameAndProductId(username, cartItemDto.getProductId())
+        // Locked: two parallel adds to the same line must both count, not fail on the version check.
+        CartItemEntity cartItem = cartItemRepository
+                .findByUsernameAndProductIdForUpdate(username, cartItemDto.getProductId())
                 .map(existingItem -> updateItem(cartItemDto, existingItem, product))
                 .orElseGet(() -> createItem(username, cartItemDto, product));
 
@@ -71,7 +73,7 @@ public class CartService {
 
     @Transactional
     public CartDto updateCartItem(String username, Long productId, UpdateCartItemDto updateCartItemDto) {
-        CartItemEntity cartItem = getCartItemEntity(username, productId);
+        CartItemEntity cartItem = getCartItemEntityForUpdate(username, productId);
 
         int quantity = updateCartItemDto.getQuantity();
         if (quantity == 0) {
@@ -104,6 +106,12 @@ public class CartService {
 
     private CartItemEntity getCartItemEntity(String username, Long productId) {
         return cartItemRepository.findByUsernameAndProductId(username, productId)
+                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found"));
+    }
+
+    /** Locked so parallel quantity updates of one line apply one after another instead of returning 409. */
+    private CartItemEntity getCartItemEntityForUpdate(String username, Long productId) {
+        return cartItemRepository.findByUsernameAndProductIdForUpdate(username, productId)
                 .orElseThrow(() -> new CartItemNotFoundException("Cart item not found"));
     }
 
