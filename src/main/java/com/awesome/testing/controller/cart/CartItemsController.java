@@ -35,7 +35,8 @@ public class CartItemsController {
     @Operation(summary = "Add item to cart",
             description = "Adds a product to the authenticated user's cart or increases the quantity of an existing cart item.")
     @ApiResponse(responseCode = "200", description = "Item added successfully")
-    @ApiResponse(responseCode = "409", description = "Requested quantity exceeds available stock",
+    @ApiResponse(responseCode = "409",
+            description = "Requested quantity exceeds available stock, or the cart line was changed concurrently (retry)",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "400", description = "Invalid input",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))
@@ -51,7 +52,8 @@ public class CartItemsController {
     @Operation(summary = "Update item quantity",
             description = "Sets the quantity for a product already in the authenticated user's cart. Quantity zero removes the item.")
     @ApiResponse(responseCode = "200", description = "Item quantity updated successfully")
-    @ApiResponse(responseCode = "409", description = "Requested quantity exceeds available stock",
+    @ApiResponse(responseCode = "409",
+            description = "Requested quantity exceeds available stock, or the cart line was changed concurrently (retry)",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDto.class)))
     @ApiResponse(responseCode = "400", description = "Invalid input",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorsDto.class)))

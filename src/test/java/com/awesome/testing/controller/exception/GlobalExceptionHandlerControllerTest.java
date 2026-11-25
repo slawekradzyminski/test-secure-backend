@@ -113,6 +113,19 @@ class GlobalExceptionHandlerControllerTest {
         assertThat(response.getBody().getMessage()).isEqualTo("Operation conflicts with existing data");
     }
 
+    @Test
+    void shouldAnswerAStaleVersionOrAnUnavailableRowLockWithConflict() {
+        ResponseEntity<ErrorDto> optimistic = controller.handleConcurrentModification(
+                new org.springframework.orm.ObjectOptimisticLockingFailureException("CartItemEntity", 1L));
+        ResponseEntity<ErrorDto> pessimistic = controller.handleConcurrentModification(
+                new org.springframework.dao.CannotAcquireLockException("lock timeout"));
+
+        assertThat(optimistic.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(optimistic.getBody().getMessage()).isEqualTo("Resource was changed concurrently, please retry");
+        assertThat(pessimistic.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(pessimistic.getBody().getMessage()).isEqualTo("Resource was changed concurrently, please retry");
+    }
+
     private static final class Dummy {
         @SuppressWarnings("unused")
         void dummy(String arg) {}

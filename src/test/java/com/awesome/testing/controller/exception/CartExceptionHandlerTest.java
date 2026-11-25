@@ -24,4 +24,12 @@ class CartExceptionHandlerTest {
 
         assertThat(response.getMessage()).isEqualTo("Missing cart item");
     }
+
+    @Test
+    void shouldWordAConcurrentCartChangeAsARetryableCartConflict() {
+        ErrorDto response = handler.handleConcurrentCartChange(
+                new org.springframework.orm.ObjectOptimisticLockingFailureException("CartItemEntity", 1L));
+
+        assertThat(response.getMessage()).isEqualTo("Cart was changed concurrently, please retry");
+    }
 }
