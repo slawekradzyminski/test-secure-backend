@@ -157,6 +157,12 @@ public class UserService {
         return getUser(username);
     }
 
+    /**
+     * Keep the transaction when rotation fails with a {@link CustomException}: replaying a consumed refresh
+     * token revokes its whole family before the 401 is thrown, and that revoke must commit. With the default
+     * rollback rule the exception leaving this class-level transaction undid it, so the successor stayed valid.
+     */
+    @Transactional(noRollbackFor = CustomException.class)
     public TokenPair refresh(String refreshToken) {
         IssuedRefreshToken rotatedToken = refreshTokenService.rotateToken(refreshToken);
         UserEntity user = rotatedToken.user();

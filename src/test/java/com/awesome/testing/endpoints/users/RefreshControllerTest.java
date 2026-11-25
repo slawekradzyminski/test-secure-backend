@@ -82,4 +82,39 @@ class RefreshControllerTest extends DomainHelper {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    void shouldRevokeWholeTokenFamilyWhenRotatedRefreshTokenIsReplayed() {
+        // given
+        UserRegisterDto user = getRandomUserWithRoles(List.of(Role.ROLE_CLIENT));
+        LoginResponseDto loginResponse = registerAndLogin(user);
+        String firstRefreshToken = loginResponse.getRefreshToken();
+        String secondRefreshToken = executePost(
+                REFRESH_ENDPOINT,
+                new RefreshTokenRequestDto(firstRefreshToken),
+                getJsonOnlyHeaders(),
+                TokenRefreshResponseDto.class
+        ).getBody().getRefreshToken();
+
+        // when
+        ResponseEntity<ErrorDto> replay = executePost(
+                REFRESH_ENDPOINT,
+                new RefreshTokenRequestDto(firstRefreshToken),
+                getJsonOnlyHeaders(),
+                ErrorDto.class
+        );
+        ResponseEntity<ErrorDto> successorAfterReplay = executePost(
+                REFRESH_ENDPOINT,
+                new RefreshTokenRequestDto(secondRefreshToken),
+                getJsonOnlyHeaders(),
+                ErrorDto.class
+        );
+
+        // then
+        assertThat(replay.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(replay.getBody().getMessage()).isEqualTo("Invalid refresh token");
+        assertThat(successorAfterReplay.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(successorAfterReplay.getBody().getMessage()).isEqualTo("Invalid refresh token");
+    }
+
 }
