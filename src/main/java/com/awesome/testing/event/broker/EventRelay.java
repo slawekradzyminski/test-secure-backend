@@ -8,8 +8,11 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSException;
 import jakarta.jms.MessageProducer;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.activemq.artemis.api.core.ActiveMQException;
+import org.apache.activemq.artemis.api.core.ActiveMQExceptionType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.PageRequest;
@@ -39,7 +42,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * </ol>
  * Delivery is at least once: a crash between 2 and 3 sends the batch again, and the broker's duplicate
  * detection ({@code _AMQ_DUPL_ID}, on unless {@code events.broker.duplicate-detection=false}) or the
- * consumers' {@code processed_events} drop the copy. Rows recorded more than {@code events.broker.max-age}
+ * consumers' {@code processed_events} drop the copy. Artemis rejects a whole transaction that holds one
+ * duplicate id ({@code AMQ222059}, {@code DUPLICATE_ID_REJECTED}), so when a batch commit fails that way
+ * the relay sends the batch again one event per transaction: an event the broker rejects alone as a
+ * duplicate already reached it, is marked published and logged at WARN, and the stream moves on. Rows recorded more than {@code events.broker.max-age}
  * ago are marked published without being sent. While the broker is unreachable the relay backs off from
  * one second to {@value #MAX_BACKOFF_SECONDS} seconds and logs once per outage; requests are not affected.
  *
@@ -56,6 +62,8 @@ public class EventRelay {
     static final int MAX_BATCHES_PER_RUN = 20;
     static final long MAX_BACKOFF_SECONDS = 30;
     static final String SPAN_PREFIX = "publish ";
+    /** Bounds the walk through causes and linked exceptions (they can refer to each other). */
+    private static final int MAX_CAUSE_DEPTH = 8;
 
     private final DomainEventRepository repository;
     private final TransactionTemplate readOnly;
@@ -70,6 +78,7 @@ public class EventRelay {
     private final Counter published;
     private final Counter skipped;
     private final Counter failures;
+    private final Counter duplicates;
 
     private Duration backoff = Duration.ZERO;
     private Instant nextAttempt = Instant.MIN;
@@ -105,6 +114,9 @@ public class EventRelay {
                 .register(meterRegistry);
         this.failures = Counter.builder("events.relay.failures")
                 .description("Relay runs that could not reach the broker or the database").register(meterRegistry);
+        this.duplicates = Counter.builder("events.relay.duplicates")
+                .description("Domain events the broker rejected as already received, marked published without a copy")
+                .register(meterRegistry);
     }
 
     public EventTransport getTransport() {
@@ -176,11 +188,66 @@ public class EventRelay {
         if (fresh.isEmpty()) {
             return 0;
         }
-        send(fresh);
+        try {
+            send(fresh);
+        } catch (JmsException e) {
+            if (!isDuplicateRejection(e)) {
+                throw e;
+            }
+            log.info("The broker rejected a batch of {} event(s) from #{} because it already holds one of them;"
+                    + " sending them one at a time", fresh.size(), fresh.getFirst().getSequence());
+            return publishOneByOne(fresh);
+        }
         repository.markPublished(sequences(fresh), commerceClock.instant());
         published.increment(fresh.size());
         log.debug("Published {} event(s) up to #{} to {}", fresh.size(), fresh.getLast().getSequence(), address);
         return fresh.size();
+    }
+
+    /**
+     * Sends each event in its own transaction and marks it published right away, so a broker failure
+     * half-way resends only the rest. An event rejected as a duplicate is marked published unsent.
+     */
+    private int publishOneByOne(List<DomainEventEntity> events) {
+        int sent = 0;
+        for (DomainEventEntity event : events) {
+            try {
+                send(List.of(event));
+                published.increment();
+                sent++;
+            } catch (JmsException e) {
+                if (!isDuplicateRejection(e)) {
+                    throw e;
+                }
+                duplicates.increment();
+                log.warn("The broker already holds event #{} ({} {}); marking it published without sending a copy",
+                        event.getSequence(), event.getType(), event.getEventId());
+            }
+            repository.markPublished(List.of(event.getSequence()), commerceClock.instant());
+        }
+        return sent;
+    }
+
+    /**
+     * True when the failure, or one of its causes, is Artemis' duplicate id rejection. Spring wraps the
+     * client's {@link JMSException}, whose cause and linked exception is the {@link ActiveMQException}
+     * with type {@link ActiveMQExceptionType#DUPLICATE_ID_REJECTED} (an {@code ActiveMQDuplicateIdException}).
+     */
+    static boolean isDuplicateRejection(Throwable failure) {
+        return isDuplicateRejection(failure, 0);
+    }
+
+    private static boolean isDuplicateRejection(Throwable failure, int depth) {
+        if (failure == null || depth > MAX_CAUSE_DEPTH) {
+            return false;
+        }
+        if (failure instanceof ActiveMQException amq) {
+            return amq.getType() == ActiveMQExceptionType.DUPLICATE_ID_REJECTED;
+        }
+        if (failure instanceof JMSException jms && isDuplicateRejection(jms.getLinkedException(), depth + 1)) {
+            return true;
+        }
+        return isDuplicateRejection(failure.getCause(), depth + 1);
     }
 
     private void send(List<DomainEventEntity> events) {

@@ -6,11 +6,13 @@ import com.awesome.testing.event.broker.EventMessages;
 import com.awesome.testing.event.broker.EventRelay;
 import com.awesome.testing.event.broker.EventTransport;
 import com.awesome.testing.repository.event.DomainEventRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.jms.Connection;
 import jakarta.jms.ConnectionFactory;
 import jakarta.jms.JMSException;
 import jakarta.jms.Message;
 import jakarta.jms.MessageConsumer;
+import jakarta.jms.MessageProducer;
 import jakarta.jms.Session;
 import jakarta.jms.TextMessage;
 import org.junit.jupiter.api.AfterEach;
@@ -52,6 +54,9 @@ class EventBrokerRelayTest extends AbstractPaymentFlowTest {
 
     @Autowired
     private ConnectionFactory connectionFactory;
+
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     private Connection connection;
     private MessageConsumer subscriber;
@@ -129,6 +134,44 @@ class EventBrokerRelayTest extends AbstractPaymentFlowTest {
         // then
         assertThat(forOrder(drain(), 987_654L)).isEmpty();
         assertThat(eventRepository.findByEventId(old.getEventId()).orElseThrow().getPublishedAt()).isNotNull();
+    }
+
+    @Test
+    void anEventTheBrokerAlreadyHoldsIsMarkedPublishedAndTheRestOfTheBatchStillFlows() throws JMSException {
+        // given an event the broker received before the relay could set published_at (a crash, a reset database)
+        DomainEventEntity delivered = eventRepository.save(event(987_655L));
+        DomainEventEntity next = eventRepository.save(event(987_656L));
+        try (Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+             MessageProducer producer = session.createProducer(session.createTopic(ADDRESS))) {
+            producer.send(EventMessages.toMessage(session, delivered, null, true));
+        }
+        assertThat(forOrder(drain(), 987_655L)).hasSize(1);
+        double duplicatesBefore = meterRegistry.get("events.relay.duplicates").counter().count();
+
+        // when
+        int sent = relay.relay();
+
+        // then the batch is not wedged: the duplicate is skipped, the next event is delivered once
+        List<TextMessage> messages = drain();
+        assertThat(forOrder(messages, 987_655L)).as("no second copy of the delivered event").isEmpty();
+        assertThat(forOrder(messages, 987_656L)).hasSize(1);
+        assertThat(sent).isEqualTo(1);
+        assertThat(eventRepository.findByEventId(delivered.getEventId()).orElseThrow().getPublishedAt()).isNotNull();
+        assertThat(eventRepository.findByEventId(next.getEventId()).orElseThrow().getPublishedAt()).isNotNull();
+        assertThat(meterRegistry.get("events.relay.duplicates").counter().count()).isEqualTo(duplicatesBefore + 1);
+        assertThat(relay.relay()).isZero();
+        assertThat(relay.getPending()).isZero();
+    }
+
+    private static DomainEventEntity event(long orderId) {
+        return DomainEventEntity.builder()
+                .eventId(UUID.randomUUID())
+                .type("order.paid")
+                .orderId(orderId)
+                .occurredAt(Instant.now())
+                .recordedAt(Instant.now())
+                .payload("{\"orderId\":" + orderId + "}")
+                .build();
     }
 
     private List<TextMessage> drain() throws JMSException {
