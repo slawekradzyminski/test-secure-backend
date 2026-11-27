@@ -6,7 +6,10 @@ import com.awesome.testing.repository.event.DomainEventRepository;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.jms.ConnectionFactory;
 import jakarta.jms.JMSException;
+import org.apache.activemq.artemis.api.core.ActiveMQDuplicateIdException;
+import org.apache.activemq.artemis.api.core.ActiveMQNotConnectedException;
 import org.junit.jupiter.api.Test;
+import org.springframework.jms.UncategorizedJmsException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
@@ -82,6 +85,22 @@ class EventRelayTest {
         clock.advance(Duration.ofMillis(1500));
         relay.relay();
         verify(connectionFactory, times(2)).createConnection();
+    }
+
+    @Test
+    void aDuplicateIdRejectionIsRecognisedThroughSpringsAndTheClientsWrappers() {
+        JMSException linked = new JMSException("AMQ229000");
+        linked.setLinkedException(new ActiveMQDuplicateIdException());
+        JMSException caused = new JMSException("AMQ229000");
+        caused.initCause(new ActiveMQDuplicateIdException());
+        JMSException other = new JMSException("Connection refused");
+        other.setLinkedException(new ActiveMQNotConnectedException());
+
+        assertThat(EventRelay.isDuplicateRejection(new UncategorizedJmsException(linked))).isTrue();
+        assertThat(EventRelay.isDuplicateRejection(new UncategorizedJmsException(caused))).isTrue();
+        assertThat(EventRelay.isDuplicateRejection(new UncategorizedJmsException(other))).isFalse();
+        assertThat(EventRelay.isDuplicateRejection(new UncategorizedJmsException("no cause"))).isFalse();
+        assertThat(EventRelay.isDuplicateRejection(null)).isFalse();
     }
 
     @Test
